@@ -1,0 +1,155 @@
+{
+  "version": "1.0",
+  "pois": [
+    {
+      "id": "poi_001",
+      "name": "牌坊",
+      "aliases": ["武大正门", "主入口", "校门"],
+      "coordinates": {"lng": 114.3625, "lat": 30.5362},
+      "type": "landmark",
+      "description": "武大主入口，标志性建筑",
+      "season_tags": ["all"],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_002",
+      "name": "樱园",
+      "aliases": ["樱花大道", "樱花园"],
+      "coordinates": {"lng": 114.3630, "lat": 30.5375},
+      "type": "scenery",
+      "description": "樱花大道核心区，每年三月樱花盛开",
+      "season_tags": ["spring"],
+      "scenery_score": 5
+    },
+    {
+      "id": "poi_003",
+      "name": "樱顶",
+      "aliases": ["樱花顶", "樱园顶"],
+      "coordinates": {"lng": 114.3635, "lat": 30.5378},
+      "type": "scenery",
+      "description": "樱花大道顶端，可俯瞰校园",
+      "season_tags": ["spring"],
+      "scenery_score": 5
+    },
+    {
+      "id": "poi_004",
+      "name": "老图书馆",
+      "aliases": ["老图", "总馆", "图书馆老馆"],
+      "coordinates": {"lng": 114.3633, "lat": 30.5376},
+      "type": "scenery",
+      "description": "武大标志性建筑，百年历史",
+      "season_tags": ["all"],
+      "scenery_score": 5
+    },
+    {
+      "id": "poi_005",
+      "name": "行政楼",
+      "aliases": ["行政中心", "办公楼"],
+      "coordinates": {"lng": 114.3640, "lat": 30.5385},
+      "type": "scenery",
+      "description": "武大标志性建筑群",
+      "season_tags": ["all"],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_006",
+      "name": "梅园",
+      "aliases": ["梅园宿舍区"],
+      "coordinates": {"lng": 114.3630, "lat": 30.5380},
+      "type": "scenery",
+      "description": "梅花盛开之处，安静清幽",
+      "season_tags": ["winter"],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_007",
+      "name": "桂园",
+      "aliases": ["桂园宿舍区"],
+      "coordinates": {"lng": 114.3615, "lat": 30.5355},
+      "type": "scenery",
+      "description": "桂花飘香，秋季最美",
+      "season_tags": ["autumn"],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_008",
+      "name": "图书馆",
+      "aliases": ["新图书馆", "总图书馆"],
+      "coordinates": {"lng": 114.3635, "lat": 30.5395},
+      "type": "study",
+      "description": "总图书馆，自习好去处",
+      "season_tags": ["all"],
+      "scenery_score": 3
+    },
+    {
+      "id": "poi_009",
+      "name": "教五",
+      "aliases": ["第五教学楼", "教五楼"],
+      "coordinates": {"lng": 114.3610, "lat": 30.5360},
+      "type": "study",
+      "description": "第五教学楼",
+      "season_tags": ["all"],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_010",
+      "name": "万林艺术馆",
+      "aliases": ["万林博物馆", "艺术馆"],
+      "coordinates": {"lng": 114.3628, "lat": 30.5368},
+      "type": "scenery",
+      "description": "现代艺术博物馆",
+      "season_tags": ["all"],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_011",
+      "name": "枫园",
+      "aliases": ["枫园宿舍区"],
+      "coordinates": {"lng": 114.3650, "lat": 30.5400},
+      "type": "scenery",
+      "description": "留学生教育学院附近",
+      "season_tags": ["autumn"],
+      "scenery_score": 3
+    },
+    {
+      "id": "poi_012",
+      "name": "珞珈山",
+      "aliases": ["珞珈山顶", "环山"],
+      "coordinates": {"lng": 114.3660, "lat": 30.5415},
+      "type": "scenery",
+      "description": "校园最高点，环山路适合散步",
+      "season_tags": ["all"],
+      "scenery_score": 5
+    },
+    {
+      "id": "poi_013",
+      "name": "工学部",
+      "aliases": ["工学部校区"],
+      "coordinates": {"lng": 114.3490, "lat": 30.5330},
+      "type": "study",
+      "description": "武汉大学工学部校区",
+      "season_tags": ["all"],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_014",
+      "name": "信息学部",
+      "aliases": ["信息学部校区", "广埠屯"],
+      "coordinates": {"lng": 114.3520, "lat": 30.5320},
+      "type": "study",
+      "description": "武汉大学信息学部校区",
+      "season_tags": ["all"],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_015",
+      "name": "文理学部",
+      "aliases": ["本部", "主校区"],
+      "coordinates": {"lng": 114.3630, "lat": 30.5365},
+      "type": "landmark",
+      "description": "武汉大学文理学部主校区",
+      "season_tags": ["all"],
+      "scenery_score": 3
+    }
+  ]
+}

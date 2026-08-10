@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ===== 漫步珞珈 (WHU-Walker) =====
+.env
+data/*.graphml
+output/*.html
+__pycache__/
+.venv/
+venv/
+*.pyc
+.playwright-mcp/
+prototype/

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1976D2">
+    <meta name="description" content="漫步珞珈 — 武大校园智能路径规划助手">
+    <title>漫步珞珈 · WHU-Walker</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚶</text></svg>">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="app-title">
+                <span class="title-icon">🚶</span>
+                漫步珞珈
+            </h1>
+            <p class="app-subtitle">武大校园智能路径规划</p>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <section class="input-section">
+            <div class="input-area">
+                <textarea
+                    id="nl-input"
+                    class="nl-input"
+                    placeholder="告诉我你的漫步需求…&#10;例如：从牌坊到樱顶，走风景好的路"
+                    maxlength="200"
+                    rows="2"
+                ></textarea>
+                <div class="input-counter">
+                    <span id="char-count">0</span>/200
+                </div>
+            </div>
+
+            <div class="shortcut-buttons">
+                <button class="shortcut-btn" data-mode="distance_first" type="button">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-label">最短路径</span>
+                </button>
+                <button class="shortcut-btn" data-mode="scenery_first" type="button">
+                    <span class="btn-icon">🌸</span>
+                    <span class="btn-label">风景优先</span>
+                </button>
+                <button class="shortcut-btn" data-mode="slope_first" type="button">
+                    <span class="btn-icon">🪜</span>
+                    <span class="btn-label">平坦优先</span>
+                </button>
+            </div>
+
+            <button id="submit-btn" class="submit-btn" type="button">
+                <span class="submit-icon">🧭</span>
+                <span>规划路线</span>
+            </button>
+        </section>
+
+        <section class="map-section">
+            <div id="map-container" class="map-container">
+                <div class="map-placeholder" id="map-placeholder">
+                    <div class="placeholder-spinner"></div>
+                    <p>地图加载中…</p>
+                </div>
+            </div>
+
+            <div class="map-legend" id="map-legend">
+                <div class="legend-item">
+                    <span class="legend-line recommended"></span>
+                    <span>推荐路线</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-line shortest"></span>
+                    <span>最短路径</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot poi"></span>
+                    <span>POI 景点</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section" id="results-section" hidden>
+            <div class="results-header">
+                <h2 class="results-title">路线详情</h2>
+                <button class="collapse-btn" id="collapse-btn" type="button" aria-label="折叠">
+                    <span class="collapse-icon">▼</span>
+                </button>
+            </div>
+
+            <div class="results-content" id="results-content">
+                <div class="route-summary">
+                    <div class="summary-card">
+                        <div class="summary-value" id="recommended-distance">—</div>
+                        <div class="summary-label">推荐距离</div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-card">
+                        <div class="summary-value" id="shortest-distance">—</div>
+                        <div class="summary-label">最短距离</div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-card">
+                        <div class="summary-value" id="overlap-rate">—</div>
+                        <div class="summary-label">重叠率</div>
+                    </div>
+                </div>
+
+                <div class="poi-list" id="poi-list">
+                    <h3>途经景点</h3>
+                    <ul id="poi-items"></ul>
+                </div>
+
+                <div class="explanation-box" id="explanation-box">
+                    <h3>路线说明</h3>
+                    <p id="explanation-text">—</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="loading-section" id="loading-section" hidden>
+            <div class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p class="loading-text" id="loading-text">正在解析你的需求…</p>
+                <p class="loading-subtext" id="loading-subtext">请稍候</p>
+            </div>
+        </section>
+
+        <section class="error-section" id="error-section" hidden>
+            <div class="error-card">
+                <div class="error-icon">⚠️</div>
+                <h3 class="error-title" id="error-title">出错了</h3>
+                <p class="error-message" id="error-message">抱歉，规划路线时出现问题</p>
+                <button class="error-close-btn" id="error-close-btn" type="button">知道了</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>漫步珞珈 · WHU-Walker · 基于 LLM 的校园空间智能助手</p>
+    </footer>
+
+    <script src="/js/config.js"></script>
+    <script>
+        (function () {
+            var cfg = window.WHU_WALKER_CONFIG || {};
+            var key = cfg.amapKey || '';
+            if (!key) {
+                console.warn('AMAP_KEY 未配置，地图功能不可用。请在 .env 中设置 AMAP_KEY。');
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar';
+            script.onerror = function () {
+                console.error('高德地图 JS API 加载失败');
+                var ph = document.getElementById('map-placeholder');
+                if (ph) {
+                    ph.innerHTML = '<p style="color:#E53935;">地图加载失败，请检查网络或 Key 配置</p>';
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <script src="/js/app.js"></script>
+
+    <script>
+    (function() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(function() {});
+        }
+    })();
+    </script>
+</body>
+</html>
