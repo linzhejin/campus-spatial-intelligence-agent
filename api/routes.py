@@ -266,6 +266,9 @@ def route():
     if end_poi is None:
         return _err("poi_not_found", f"终点 '{end_name}' 未找到", 404)
 
+    if start_poi["name"] == end_poi["name"]:
+        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
+
     # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
     start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
     end_lon_wgs, end_lat_wgs = gcj02_to_wgs84(end_poi["lon"], end_poi["lat"])
@@ -396,6 +399,9 @@ def chat():
     end_poi = get_poi(end_name)
     if end_poi is None:
         return _err("poi_not_found", f"终点 '{end_name}' 未找到", 404)
+
+    if start_poi["name"] == end_poi["name"]:
+        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
     # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
     start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])

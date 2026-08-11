@@ -84,8 +84,9 @@ def _normalize_lengths(G: nx.MultiDiGraph) -> tuple:
     if max_len == 0:
         return 0.0, {}
 
-    norm_map = {(u, v): data.get("length", 0) / max_len
-                for u, v, data in G.edges(data=True)}
+    norm_map = {}
+    for u, v, k, data in G.edges(keys=True, data=True):
+        norm_map[(u, v, k)] = data.get("length", 0) / max_len
     return max_len, norm_map
 
 
@@ -169,7 +170,7 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
         if slope_level == 5:
             edges_to_remove.append((u, v, k))
         elif slope_level == 4:
-            penalty_map[(u, v)] = 2.0
+            penalty_map[(u, v, k)] = 2.0
 
     if not edges_to_remove and not penalty_map:
         return G, "no_filter", {}
@@ -180,16 +181,10 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
     if nx.is_empty(G_filtered):
         G_filtered = G.copy()
         penalty_map = {}
-        for u, v, data in G.edges(data=True):
+        for u, v, k, data in G.edges(keys=True, data=True):
             if data.get("slope_level") == 5:
-                penalty_map[(u, v)] = 3.0
+                penalty_map[(u, v, k)] = 3.0
         logger.info("硬约束过滤后无可行路径，降级为 slope_level=4+5 均可通行")
-        return G_filtered, "degraded_slope", penalty_map
-
-    if not nx.is_connected(G_filtered.to_undirected()):
-        logger.info("硬约束导致图不连通，降级为原图")
-        G_filtered = G.copy()
-        penalty_map = {}
         return G_filtered, "degraded_slope", penalty_map
 
     return G_filtered, "filtered", penalty_map
@@ -222,17 +217,19 @@ def _edge_cost_factory(
     返回的函数签名: edge_weight(u, v, data) -> float
     """
     def edge_weight(u, v, data):
-        key = (u, v)
+        edge_k = data.get("_key", 0)
+        key = (u, v, edge_k)
         raw_length = data.get("length", 0)
-        norm = norm_lengths.get(key, raw_length / 1000.0)
+        max_len_for_fallback = max(norm_lengths.values()) if norm_lengths else 1000.0
+        fallback_norm = raw_length / max_len_for_fallback if max_len_for_fallback > 0 else 0.0
+        norm = norm_lengths.get(key, fallback_norm)
 
         if annotation_degraded_tag is not None:
             cost = weights["distance"] * norm
         else:
             cost, _ = _compute_edge_cost(data, norm, weights)
 
-        edge_key = (u, v)
-        penalty = penalty_map.get(edge_key, 1.0)
+        penalty = penalty_map.get(key, 1.0)
         cost *= penalty
 
         return cost
@@ -336,6 +333,10 @@ def compute_route(
 
     G_filtered, filter_status, penalty_map = _filter_by_constraints(G, constraints)
 
+    # 将 edge key 注入边数据，使 edge_weight 能按 (u, v, k) 查找 norm 和 penalty
+    for u, v, k, data in G_filtered.edges(keys=True, data=True):
+        data["_key"] = k
+
     if annotation_degraded is not None:
         if filter_status == "no_filter":
             filter_status = annotation_degraded
@@ -370,19 +371,15 @@ def compute_route(
 
     if shortest_len > 0 and recommended_len > shortest_len * cap_multplier:
         logger.info(
-            "推荐路径 %.0fm 超过最短路径 %.0fm 的 %.0f 倍，裁剪为最短路径",
+            "推荐路径 %.0fm 超过最短路径 %.0fm 的 %.0f 倍，标记为超长",
             recommended_len, shortest_len, cap_multplier
         )
-        recommended = shortest
-        recommended_len = shortest_len
         length_capped = True
     elif recommended_len > cap_max:
         logger.info(
-            "推荐路径 %.0fm 超过上限 %.0fm，裁剪为最短路径",
+            "推荐路径 %.0fm 超过上限 %.0fm，标记为超长",
             recommended_len, cap_max
         )
-        recommended = shortest
-        recommended_len = shortest_len
         length_capped = True
 
     overlap_rate = _compute_overlap(recommended, shortest)
@@ -446,14 +443,16 @@ def compute_route_with_annotations(
             scenery = ann.get("scenery_level")
             name = ann.get("name", "")
 
-            for eid in edge_ids:
-                for u, v, k, data in G_annotated.edges(keys=True, data=True):
-                    if k == eid:
-                        if slope is not None:
-                            data["slope_level"] = slope
-                        if scenery is not None:
-                            data["scenery_level"] = scenery
-                        if name:
-                            data["name"] = name
+            # edge_ids = [u_node, v_node, key] — use as triple, don't iterate
+            if len(edge_ids) >= 3:
+                u_target, v_target, k_target = int(edge_ids[0]), int(edge_ids[1]), int(edge_ids[2])
+                if G_annotated.has_edge(u_target, v_target, k_target):
+                    data = G_annotated[u_target][v_target][k_target]
+                    if slope is not None:
+                        data["slope_level"] = int(slope)
+                    if scenery is not None:
+                        data["scenery_level"] = int(scenery)
+                    if name:
+                        data["name"] = str(name)
 
     return compute_route(G_annotated, start_node, end_node, constraints, weights)

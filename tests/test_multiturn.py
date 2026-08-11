@@ -1247,9 +1247,11 @@ class TestFourTaskTypesCoverage:
 
     def test_rule_classifier_task_types(self):
         """TC-TYPE-05: 规则分类器正确识别 4 种类型。"""
-        # path_planning: 规则不覆盖（返回 None），由 LLM 处理
+        # path_planning: 规则 fallback 直接识别 A→B
         r1 = _rule_based_classify("从牌坊到樱顶")
-        assert r1["task_type"] is None  # 不覆盖，留待 LLM
+        assert r1["task_type"] == "path_planning"
+        assert r1["start_name"] == "牌坊"
+        assert r1["end_name"] == "樱顶"
 
         # poi_query: 规则识别 ("怎么走" 含路径词, 用 "在哪" 测试规则分类)
         r2 = _rule_based_classify("老图书馆在哪")

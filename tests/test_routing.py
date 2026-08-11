@@ -64,7 +64,7 @@ class TestThreeFactorNormalization:
         max_len, norm_map = _normalize_lengths(mock_graph)
         assert max_len == 400.0
         assert len(norm_map) > 0
-        for (u, v), val in norm_map.items():
+        for (u, v, k), val in norm_map.items():
             assert 0.0 <= val <= 1.0
 
     def test_compute_edge_cost_three_components(self, mock_graph):

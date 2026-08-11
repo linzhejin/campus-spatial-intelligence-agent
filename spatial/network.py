@@ -67,19 +67,27 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
     global _annotation_coverage_rate
 
     cache = _cache_path()
+    bbox = bbox or _bbox()
 
     if os.path.exists(cache):
-        logger.info("从缓存加载路网: %s", cache)
-        _G = _load_graphml(cache)
-    else:
-        logger.info("缓存不存在，从 OSM 下载路网...")
-        bbox = bbox or _bbox()
-        _G = _download_network(bbox)
+        try:
+            logger.info("从缓存加载路网: %s", cache)
+            _G = _load_graphml(cache)
+        except RuntimeError:
+            logger.warning("路网缓存损坏，删除后重新下载: %s", cache)
+            try:
+                os.remove(cache)
+            except OSError:
+                pass
+            _G = None
 
+    if _G is None:
+        logger.info("从 OSM 下载路网...")
+        _G = _download_network(bbox)
         try:
             _save_graphml(_G, cache)
             logger.info("路网已缓存: %s", cache)
-        except IOError as e:
+        except Exception as e:
             logger.warning("路网缓存失败（不影响运行）: %s", e)
 
     ann_path = _annotations_path()
@@ -102,7 +110,7 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
 
 def _load_graphml(path: str) -> nx.MultiDiGraph:
     try:
-        G = nx.read_graphml(path)
+        G = nx.read_graphml(path, node_type=int)
         logger.info("路网加载成功: %d 节点, %d 边", G.number_of_nodes(), G.number_of_edges())
         return G
     except Exception as e:
@@ -111,19 +119,26 @@ def _load_graphml(path: str) -> nx.MultiDiGraph:
 
 def _save_graphml(G: nx.MultiDiGraph, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    # 清洗非原始类型属性值（osmnx 2.x 可能产生 list/dict 属性，GraphML 不支持）
+    # 清洗非原始类型属性值（osmnx 2.x 可能产生 list/dict/geometry，GraphML 不支持）
     G_clean = G.copy()
     for _, _, data in G_clean.edges(data=True):
         for key in list(data.keys()):
-            val = data[key]
-            if isinstance(val, (list, dict, set, tuple)):
-                data[key] = str(val)
+            data[key] = _graphml_safe_value(data[key])
     for _, data in G_clean.nodes(data=True):
         for key in list(data.keys()):
-            val = data[key]
-            if isinstance(val, (list, dict, set, tuple)):
-                data[key] = str(val)
+            data[key] = _graphml_safe_value(data[key])
     nx.write_graphml(G_clean, path)
+
+
+def _graphml_safe_value(val):
+    """Convert a graph attribute value into a GraphML-serializable form."""
+    if isinstance(val, (list, dict, set, tuple)):
+        return str(val)
+    if hasattr(val, "wkt"):
+        return val.wkt
+    if isinstance(val, (str, int, float, bool)) or val is None:
+        return val
+    return str(val)
 
 
 def _download_network(bbox: dict) -> nx.MultiDiGraph:
@@ -300,7 +315,7 @@ def _merge_annotations(G: nx.MultiDiGraph, annotations_path: str) -> float:
         if "name" in ann and ann["name"]:
             edge_data["name"] = str(ann["name"])
 
-        annotated_set.add((u_t, v_t, k_t))
+        annotated_set.add((orig_u, orig_v, orig_k))
 
     return len(annotated_set) / total_edges if total_edges > 0 else 0.0
 

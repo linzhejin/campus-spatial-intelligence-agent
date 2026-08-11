@@ -26,7 +26,7 @@ def _transform_lat(x: float, y: float) -> float:
     ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
     ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
     ret += (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
-    ret += (160.0 * math.sin(y / 12.0 * math.pi) + 320 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+    ret += (160.0 * math.sin(y / 12.0 * math.pi) + 320.0 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
     return ret
 
 
@@ -82,11 +82,14 @@ def gcj02_to_wgs84(lng: float, lat: float) -> tuple:
         return lng, lat
 
     clng, clat = lng, lat
-    for _ in range(3):
+    for _ in range(10):  # 最多 10 次迭代，收敛即退出
         wlng, wlat = clng, clat
         glng, glat = wgs84_to_gcj02(wlng, wlat)
-        clng += (lng - glng)
-        clat += (lat - glat)
+        dlng, dlat = lng - glng, lat - glat
+        clng += dlng
+        clat += dlat
+        if abs(dlng) < 1e-7 and abs(dlat) < 1e-7:
+            break
 
     return clng, clat
 

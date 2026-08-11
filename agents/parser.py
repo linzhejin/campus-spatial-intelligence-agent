@@ -90,7 +90,7 @@ def _load_system_prompt() -> str:
         [{"name": k, "type": v["type"], "desc": v.get("desc", "")} for k, v in WHU_POIS.items()],
         ensure_ascii=False,
     )
-    _system_prompt_cache = template.replace("{poi_list_json}", poi_list)
+    _system_prompt_cache = template.replace("{poi_list_json}", poi_list).replace("{poi_count}", str(len(poi_list)))
     return _system_prompt_cache
 
 
@@ -259,26 +259,37 @@ _POI_QUERY_PATTERNS = [
     r"^(.+?)的?(位置|地址|坐标|在哪)",
     r"^找(.+?)$",
     r"^查(一?下)?(.+?)$",
+    r"^(.+?)怎么走$",   # "X怎么走" 无起点 → poi_query
+    r"^(.+?)怎么去$",   # "X怎么去" 无起点 → poi_query
 ]
 
 # Help 查询关键词（T-011 验收 8）
 _HELP_PATTERNS = [
     r"你能做什么|你会什么|有什么功能|功能介绍|介?绍(一下)?你|怎么(用|玩|操作|使用)",
-    r"推?荐(几个|一些|一下)?景点|有哪些(景点|好玩的|好看的|地方)",
+    r"推?荐(几个|一些|一下)?景点|有哪些(景点|好玩的|好看的|地方)|有什么(景点|好玩的|好看的|地方)",
     r"推荐|help|帮助|功能|怎么用|说明|guide",
     r"武大(有什么|有啥)(景点|好玩的|地方)",
+    r"想去赏|想看.*(景|花|校园|最美)",
 ]
 
 # 明显无关的闲聊关键词（T-011 验收 10）——命中即 unknown，不参与 POI/path 解析
+# 注意: 不含 "你好" "谢谢" 等礼貌用语，它们常作为路径 query 的前后缀
 _UNRELATED_KEYWORDS = [
     "天气", "下雨", "温度", "湿度", "刮风",
     "吃饭", "餐厅", "外卖", "食堂推荐", "吃什么", "好吃", "美食",
     "酒店", "住宿", "订房", "订酒店",
     "电影", "唱歌", "逛街", "购物",
-    "笑话", "故事", "你好", "你是谁", "谢谢", "再见",
+    "笑话", "故事", "你是谁", "再见",
     "讲个", "写个", "翻译", "代码", "编程",
     "股票", "基金", "理财",
     "高考", "考研", "分数", "分数线", "招生",
+]
+
+# 路径语义关键词 — 当 query 同时命中 _UNRELATED_KEYWORDS 和这些词时，
+# 说明用户可能在礼貌语或补充说明中提到了无关词，但主体仍是路径请求
+_PATH_SEMANTIC_KEYWORDS = [
+    "从", "到", "去", "走", "路线", "路径", "怎么走", "避开", "风景", "平坦",
+    "最短", "陡坡", "逛", "出发", "规划",
 ]
 
 
@@ -293,18 +304,20 @@ def _rule_based_classify(query: str) -> dict:
         "end_name": str | None,
       }
     """
-    import re
     q = query.strip()
     q_lower = q.lower()
 
     # Step 1: 先匹配明确无关词（T-011 验收 10）
-    for kw in _UNRELATED_KEYWORDS:
-        if kw in q:
-            return {
-                "task_type": "unknown",
-                "start_name": None,
-                "end_name": None,
-            }
+    # 但如果 query 同时含路径语义关键词，跳过（礼貌用语 + 路径请求不误判）
+    has_path_semantics = any(kw in q for kw in _PATH_SEMANTIC_KEYWORDS)
+    if not has_path_semantics:
+        for kw in _UNRELATED_KEYWORDS:
+            if kw in q:
+                return {
+                    "task_type": "unknown",
+                    "start_name": None,
+                    "end_name": None,
+                }
 
     # Step 2: 匹配 Help / 功能说明（T-011 验收 8）
     for pattern in _HELP_PATTERNS:
@@ -315,8 +328,32 @@ def _rule_based_classify(query: str) -> dict:
                 "end_name": None,
             }
 
-    # Step 3: 匹配 POI 纯查询（T-011 验收 7）—— 不包含 A→B 路径语义
-    has_path_word = any(w in q for w in ["到", "去", "往", "走", "出发", "从", "路线", "路径", "怎么走"])
+    # Step 3: 匹配 "我在X" → 声明起点，path_planning
+    at_pattern = re.match(r"我?在(.+?)(?:附近|周围)?$", q)
+    if at_pattern:
+        candidate = at_pattern.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
+        matched = _fuzzy_match_poi_name(candidate)
+        if matched and len(candidate) <= 6:
+            return {
+                "task_type": "path_planning",
+                "start_name": matched,
+                "end_name": None,
+            }
+
+    # Step 4: 匹配 POI 纯查询（T-011 验收 7）—— 不包含 A→B 路径语义
+    # "X怎么走/去哪" 无起点 → poi_query（只有孤立的目的地问路）
+    m_x_how = re.match(r"^(.+?)(?:怎么走|怎么去|去哪|在哪里|在哪儿|在哪)$", q)
+    if m_x_how:
+        candidate = m_x_how.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
+        matched_poi = _fuzzy_match_poi_name(candidate)
+        if matched_poi:
+            return {
+                "task_type": "poi_query",
+                "start_name": matched_poi,
+                "end_name": None,
+            }
+
+    has_path_word = any(w in q for w in ["到", "去", "往", "走", "出发", "从", "路线", "路径"])
     if not has_path_word:
         for pattern in _POI_QUERY_PATTERNS:
             m = re.match(pattern, q)
@@ -338,12 +375,11 @@ def _rule_based_classify(query: str) -> dict:
                 "end_name": None,
             }
 
-    # Step 4: 路径提取兜底 — "从X到Y"、"X去Y" 等模式
-    import re as _re
+    # Step 5: 路径提取兜底 — "从X到Y"、"X去Y" 等模式
     path_patterns = [
-        _re.compile(r"从(.+?)(?:出发|走|去|到)(.+)(?:怎么走|路线|怎么去|的路线)?$"),
-        _re.compile(r"(.+?)去(.+)(?:怎么走|路线|怎么去)?$"),
-        _re.compile(r"(.+?)到(.+)(?:怎么走|路线|怎么去)?$"),
+        re.compile(r"从(.+?)(?:出发|走|去|到)(.+)(?:怎么走|路线|怎么去|的路线)?$"),
+        re.compile(r"(.+?)去(.+)(?:怎么走|路线|怎么去)?$"),
+        re.compile(r"(.+?)到(.+)(?:怎么走|路线|怎么去)?$"),
     ]
     for pat in path_patterns:
         m = pat.search(q)

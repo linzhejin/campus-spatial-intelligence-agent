@@ -227,3 +227,4 @@ venv/
 *.pyc
 .playwright-mcp/
 prototype/
+.pytest_tmp/

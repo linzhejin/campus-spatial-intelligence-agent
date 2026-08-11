@@ -21,7 +21,12 @@ def create_app() -> Flask:
     )
 
     if os.getenv("FLASK_ENV", "development") == "production":
-        CORS(app, origins=os.getenv("CORS_ORIGINS", "").split(","))
+        origins_raw = os.getenv("CORS_ORIGINS", "")
+        origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
+        if origins:
+            CORS(app, origins=origins)
+        else:
+            CORS(app, origins=["https://your-app.onrender.com"])
         app.config["DEBUG"] = False
         app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
     else:
@@ -54,6 +59,10 @@ def create_app() -> Flask:
         }
         js = "window.WHU_WALKER_CONFIG = " + json.dumps(config_data, ensure_ascii=False) + ";"
         return Response(js, mimetype="application/javascript; charset=utf-8")
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        return jsonify({"error": "bad_request", "message": "请求参数不合法"}), 400
 
     @app.errorhandler(404)
     def not_found(e):
