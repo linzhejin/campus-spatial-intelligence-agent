@@ -1290,3 +1290,10 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ===== 确保 hidden 属性不被 display:flex 覆盖 ===== */
+.loading-section[hidden],
+.error-section[hidden] {
+    display: none !important;
+}
+
