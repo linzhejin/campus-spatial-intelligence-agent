@@ -1,26 +1,44 @@
+/* ===== 漫步珞珈 · Cherry Blossom Design System ===== */
+
 :root {
-    --color-primary: #1976D2;
-    --color-primary-light: #42A5F5;
-    --color-primary-dark: #1565C0;
-    --color-secondary: #66BB6A;
-    --color-danger: #E53935;
-    --color-warning: #FB8C00;
-    --color-bg: #F5F5F5;
-    --color-surface: #FFFFFF;
-    --color-text: #212121;
-    --color-text-secondary: #757575;
-    --color-text-light: #9E9E9E;
-    --color-border: #E0E0E0;
-    --color-divider: #EEEEEE;
-    --color-recommended: #1976D2;
-    --color-shortest: #9E9E9E;
-    --color-poi: #FF9800;
+    /* Cherry Blossom Palette */
+    --cherry: #E8929C;
+    --cherry-deep: #C76B7A;
+    --cherry-soft: #FDF0F2;
+    --cherry-tint: rgba(232, 146, 156, 0.12);
+
+    /* Ink & Paper */
+    --ink: #2D2D2D;
+    --ink-soft: #6B6B6B;
+    --ink-light: #A8A5A2;
+    --paper: #FAF8F5;
+    --surface: #FFFFFF;
+
+    /* Jade — campus greenery */
+    --jade: #4A7C6F;
+    --jade-deep: #3A6359;
+    --jade-soft: #E8F0ED;
+
+    /* Warm neutrals */
+    --stone: #DDD8D3;
+    --divider: #EDE9E5;
+
+    /* Route colors */
+    --color-recommended: #E8929C;
+    --color-shortest: #B5B0AB;
+    --color-poi: #D4915C;
+
+    /* Radii */
     --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --radius-md: 12px;
+    --radius-lg: 20px;
+
+    /* Shadows — warm, soft */
+    --shadow-sm: 0 1px 3px rgba(45, 45, 45, 0.06);
+    --shadow-md: 0 4px 16px rgba(45, 45, 45, 0.08);
+    --shadow-lg: 0 8px 32px rgba(45, 45, 45, 0.10);
+
+    /* Touch */
     --touch-min: 44px;
     --header-height: 56px;
 }
@@ -40,39 +58,22 @@ html {
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
                  "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-    color: var(--color-text);
-    background-color: var(--color-bg);
-    line-height: 1.5;
+    color: var(--ink);
+    background-color: var(--paper);
+    line-height: 1.6;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
 }
 
-button {
-    cursor: pointer;
-    font-family: inherit;
-    font-size: inherit;
-    border: none;
-    background: none;
-    -webkit-appearance: none;
-    appearance: none;
-    min-height: var(--touch-min);
-    min-width: var(--touch-min);
-}
-
-button:focus-visible,
-textarea:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-}
+/* ===== Header ===== */
 
 .app-header {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: white;
-    padding: 16px 20px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-    box-shadow: var(--shadow-sm);
+    background: linear-gradient(135deg, #FDF0F2 0%, #F5E6E8 40%, #E8F0ED 100%);
+    border-bottom: 1px solid var(--divider);
+    padding: 20px 20px 16px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -81,25 +82,34 @@ textarea:focus-visible {
 .header-content {
     max-width: 720px;
     margin: 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
 }
 
 .app-title {
-    font-size: 1.4rem;
+    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+    font-size: 1.5rem;
     font-weight: 600;
+    color: var(--ink);
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: 0.02em;
 }
 
 .title-icon {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
 }
 
 .app-subtitle {
     font-size: 0.8rem;
-    opacity: 0.85;
-    margin-top: 2px;
+    color: var(--ink-soft);
+    margin-left: auto;
+    white-space: nowrap;
 }
+
+/* ===== Main layout ===== */
 
 .app-main {
     flex: 1;
@@ -110,41 +120,45 @@ textarea:focus-visible {
     padding-bottom: 80px;
 }
 
+/* ===== Input section ===== */
+
 .input-section {
-    background: var(--color-surface);
+    background: var(--surface);
     border-radius: var(--radius-lg);
-    padding: 16px;
+    padding: 18px;
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--divider);
     margin-bottom: 16px;
 }
 
 .input-area {
     position: relative;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .nl-input {
     width: 100%;
     min-height: 72px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     font-size: 1rem;
     font-family: inherit;
-    border: 2px solid var(--color-border);
+    border: 2px solid var(--stone);
     border-radius: var(--radius-md);
     resize: vertical;
-    color: var(--color-text);
-    background-color: var(--color-surface);
-    transition: border-color 0.2s, box-shadow 0.2s;
-    line-height: 1.5;
+    color: var(--ink);
+    background-color: var(--paper);
+    transition: border-color 0.25s, box-shadow 0.25s;
+    line-height: 1.6;
 }
 
 .nl-input::placeholder {
-    color: var(--color-text-light);
+    color: var(--ink-light);
 }
 
 .nl-input:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--cherry-tint);
+    background-color: var(--surface);
 }
 
 .input-counter {
@@ -152,11 +166,13 @@ textarea:focus-visible {
     bottom: 8px;
     right: 12px;
     font-size: 0.75rem;
-    color: var(--color-text-light);
+    color: var(--ink-light);
     background: rgba(255, 255, 255, 0.9);
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 10px;
 }
+
+/* ===== Shortcut buttons ===== */
 
 .shortcut-buttons {
     display: flex;
@@ -168,22 +184,23 @@ textarea:focus-visible {
 .shortcut-btn {
     flex: 1;
     min-width: 100px;
-    padding: 10px 12px;
+    padding: 12px;
     border-radius: var(--radius-md);
-    background: var(--color-bg);
-    border: 2px solid var(--color-border);
+    background: var(--paper);
+    border: 2px solid var(--stone);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    transition: all 0.2s;
-    color: var(--color-text);
+    gap: 4px;
+    transition: all 0.2s ease;
+    color: var(--ink-soft);
     font-size: 0.85rem;
 }
 
 .shortcut-btn:hover {
-    border-color: var(--color-primary-light);
-    background: rgba(25, 118, 210, 0.05);
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
 }
 
 .shortcut-btn:active {
@@ -191,13 +208,13 @@ textarea:focus-visible {
 }
 
 .shortcut-btn.active {
-    border-color: var(--color-primary);
-    background: rgba(25, 118, 210, 0.1);
-    color: var(--color-primary-dark);
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
 }
 
 .btn-icon {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
 }
 
 .btn-label {
@@ -205,11 +222,13 @@ textarea:focus-visible {
     font-weight: 500;
 }
 
+/* ===== Submit button ===== */
+
 .submit-btn {
     width: 100%;
     min-height: 52px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
     color: white;
     border-radius: var(--radius-md);
     font-size: 1.05rem;
@@ -218,12 +237,12 @@ textarea:focus-visible {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
-    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
+    box-shadow: 0 2px 8px rgba(199, 107, 122, 0.25);
 }
 
 .submit-btn:hover {
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 16px rgba(199, 107, 122, 0.35);
 }
 
 .submit-btn:active {
@@ -239,11 +258,14 @@ textarea:focus-visible {
     font-size: 1.2rem;
 }
 
+/* ===== Map ===== */
+
 .map-section {
-    background: var(--color-surface);
+    background: var(--surface);
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--divider);
     margin-bottom: 16px;
     position: relative;
 }
@@ -251,7 +273,7 @@ textarea:focus-visible {
 .map-container {
     width: 100%;
     height: 300px;
-    background: #E8E8E8;
+    background: #E8E5E1;
     position: relative;
 }
 
@@ -262,16 +284,16 @@ textarea:focus-visible {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--color-bg);
-    color: var(--color-text-secondary);
+    background: var(--paper);
+    color: var(--ink-soft);
     font-size: 0.9rem;
 }
 
 .placeholder-spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-primary);
+    border: 3px solid var(--stone);
+    border-top-color: var(--cherry);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin-bottom: 12px;
@@ -281,27 +303,29 @@ textarea:focus-visible {
     to { transform: rotate(360deg); }
 }
 
+/* ===== Map legend ===== */
+
 .map-legend {
     position: absolute;
     bottom: 12px;
     right: 12px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(8px);
-    padding: 10px 12px;
+    padding: 10px 14px;
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
     font-size: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     z-index: 10;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: var(--color-text-secondary);
+    gap: 8px;
+    color: var(--ink-soft);
 }
 
 .legend-line {
@@ -315,7 +339,6 @@ textarea:focus-visible {
 }
 
 .legend-line.shortest {
-    background: var(--color-shortest);
     background: repeating-linear-gradient(
         90deg,
         var(--color-shortest) 0,
@@ -335,10 +358,13 @@ textarea:focus-visible {
     background: var(--color-poi);
 }
 
+/* ===== Results section ===== */
+
 .results-section {
-    background: var(--color-surface);
+    background: var(--surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--divider);
     margin-bottom: 16px;
     overflow: hidden;
 }
@@ -347,13 +373,15 @@ textarea:focus-visible {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--color-divider);
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--divider);
 }
 
 .results-title {
-    font-size: 1.05rem;
+    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+    font-size: 1.1rem;
     font-weight: 600;
+    color: var(--ink);
 }
 
 .collapse-btn {
@@ -367,12 +395,13 @@ textarea:focus-visible {
 }
 
 .collapse-btn:hover {
-    background: var(--color-bg);
+    background: var(--paper);
 }
 
 .collapse-icon {
     transition: transform 0.3s;
     display: inline-block;
+    color: var(--ink-soft);
 }
 
 .results-section.collapsed .collapse-icon {
@@ -384,17 +413,19 @@ textarea:focus-visible {
 }
 
 .results-content {
-    padding: 16px;
+    padding: 18px;
 }
+
+/* ===== Route summary cards ===== */
 
 .route-summary {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    background: var(--color-bg);
+    background: var(--paper);
     border-radius: var(--radius-md);
-    padding: 14px 8px;
-    margin-bottom: 16px;
+    padding: 16px 8px;
+    margin-bottom: 18px;
 }
 
 .summary-card {
@@ -403,33 +434,38 @@ textarea:focus-visible {
 }
 
 .summary-value {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    color: var(--color-primary-dark);
+    color: var(--cherry-deep);
+    font-variant-numeric: tabular-nums;
 }
 
 .summary-label {
     font-size: 0.75rem;
-    color: var(--color-text-secondary);
-    margin-top: 2px;
+    color: var(--ink-soft);
+    margin-top: 4px;
 }
 
 .summary-divider {
     width: 1px;
     height: 36px;
-    background: var(--color-border);
+    background: var(--stone);
 }
 
+/* ===== POI list ===== */
+
 .poi-list {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 .poi-list h3,
 .explanation-box h3 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    margin-bottom: 8px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .poi-list ul {
@@ -443,11 +479,11 @@ textarea:focus-visible {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 10px;
-    background: rgba(255, 152, 0, 0.1);
+    padding: 6px 12px;
+    background: var(--cherry-soft);
     border-radius: 20px;
     font-size: 0.8rem;
-    color: #E65100;
+    color: var(--cherry-deep);
 }
 
 .poi-list li::before {
@@ -455,24 +491,28 @@ textarea:focus-visible {
     font-size: 0.85rem;
 }
 
+/* ===== Explanation box ===== */
+
 .explanation-box {
-    background: linear-gradient(135deg, rgba(25, 118, 210, 0.05), rgba(102, 187, 106, 0.05));
+    background: linear-gradient(135deg, var(--cherry-soft), var(--jade-soft));
     border-radius: var(--radius-md);
-    padding: 12px 14px;
-    border-left: 3px solid var(--color-primary);
+    padding: 14px 16px;
+    border-left: 3px solid var(--cherry);
 }
 
 .explanation-box p {
     font-size: 0.9rem;
-    line-height: 1.6;
-    color: var(--color-text);
+    line-height: 1.7;
+    color: var(--ink);
 }
+
+/* ===== Loading overlay ===== */
 
 .loading-section {
     position: fixed;
     inset: 0;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(4px);
+    background: rgba(250, 248, 245, 0.92);
+    backdrop-filter: blur(6px);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -488,8 +528,8 @@ textarea:focus-visible {
 .loading-spinner {
     width: 48px;
     height: 48px;
-    border: 4px solid var(--color-border);
-    border-top-color: var(--color-primary);
+    border: 4px solid var(--stone);
+    border-top-color: var(--cherry);
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
     margin: 0 auto 16px;
@@ -498,19 +538,21 @@ textarea:focus-visible {
 .loading-text {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: var(--ink);
     margin-bottom: 4px;
 }
 
 .loading-subtext {
     font-size: 0.85rem;
-    color: var(--color-text-secondary);
+    color: var(--ink-soft);
 }
+
+/* ===== Error modal ===== */
 
 .error-section {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(45, 45, 45, 0.4);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -519,9 +561,9 @@ textarea:focus-visible {
 }
 
 .error-card {
-    background: var(--color-surface);
+    background: var(--surface);
     border-radius: var(--radius-lg);
-    padding: 28px 24px;
+    padding: 32px 28px;
     text-align: center;
     max-width: 340px;
     width: 100%;
@@ -542,21 +584,21 @@ textarea:focus-visible {
 .error-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: var(--ink);
     margin-bottom: 8px;
 }
 
 .error-message {
     font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    line-height: 1.5;
+    color: var(--ink-soft);
+    line-height: 1.6;
     margin-bottom: 20px;
 }
 
 .error-close-btn {
     min-height: var(--touch-min);
     padding: 10px 32px;
-    background: var(--color-primary);
+    background: var(--cherry);
     color: white;
     border-radius: var(--radius-md);
     font-size: 0.95rem;
@@ -565,22 +607,28 @@ textarea:focus-visible {
 }
 
 .error-close-btn:hover {
-    background: var(--color-primary-dark);
+    background: var(--cherry-deep);
 }
+
+/* ===== Footer ===== */
 
 .app-footer {
     text-align: center;
     padding: 20px 16px;
     font-size: 0.75rem;
-    color: var(--color-text-light);
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-divider);
+    color: var(--ink-light);
+    background: var(--surface);
+    border-top: 1px solid var(--divider);
 }
+
+/* ===== Amap overrides ===== */
 
 .amap-logo,
 .amap-copyright {
     opacity: 0.5 !important;
 }
+
+/* ===== Responsive breakpoints ===== */
 
 @media (min-width: 480px) {
     .map-container {
@@ -604,11 +652,11 @@ textarea:focus-visible {
     }
 
     .app-header {
-        padding: 20px 32px;
+        padding: 24px 32px;
     }
 
     .app-title {
-        font-size: 1.5rem;
+        font-size: 1.65rem;
     }
 
     .app-main {
@@ -620,15 +668,15 @@ textarea:focus-visible {
     }
 
     .route-summary {
-        padding: 20px 16px;
+        padding: 22px 16px;
     }
 
     .summary-value {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
     }
 
     .input-section {
-        padding: 20px;
+        padding: 22px;
     }
 
     .submit-btn {
@@ -678,6 +726,8 @@ textarea:focus-visible {
     }
 }
 
+/* ===== Accessibility ===== */
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -690,12 +740,553 @@ textarea:focus-visible {
 
 @media (prefers-contrast: high) {
     :root {
-        --color-border: #999;
-        --color-text-secondary: #555;
+        --stone: #999;
+        --ink-soft: #555;
     }
 
     .nl-input,
     .shortcut-btn {
         border-width: 3px;
+    }
+}
+
+/* ========================================================================
+   漫步珞珈 · 冷启动欢迎卡片（方案 1）样式
+   · 100% 复用 :root 樱花主题变量，不新增自定义色值
+   · Append-only，不覆盖任何原有样式类
+   ======================================================================== */
+
+/* ===== ===== 1. 基础骨架：overlay + mask + card ===== ===== */
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999; /* 压过高德地图所有原生控件 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.welcome-overlay.hidden { display: none; }
+
+.welcome-mask {
+    position: absolute;
+    inset: 0;
+    background-color: var(--paper);
+    opacity: 0.68; /* 半透 68%，能隐约看到后面地图 */
+    backdrop-filter: blur(2px);
+}
+
+.welcome-card {
+    position: relative;
+    width: 480px;
+    max-width: 100%;
+    height: 640px;
+    max-height: calc(100vh - 32px);
+    background-color: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--divider);
+    /* 入场动画初始态（通过 .opening 类触发补间） */
+    transform: translateY(24px) scale(0.98);
+    opacity: 0;
+}
+
+/* ===== ===== 2. 签名元素 · 樱顶老斋舍窗棂纹装饰条 ===== ===== */
+/* 三层叠加顺序（从下往上）：①米黄底 #FFF6EC → ②朱红 #E8636F 主渐变叠纹 → ③青蓝 inset 高光 rgba(52,140,170,0.35) */
+.welcome-card-topbar {
+    height: 48px;
+    flex: 0 0 48px;
+    position: relative;
+    background:
+        /* ③ 纵向柱子：每 96px 一个周期，2px 宽朱红主色 #E8636F（窗棂） */
+        repeating-linear-gradient(
+            90deg,
+            transparent 0 48px,
+            #E8636F 48px 50px,
+            rgba(232, 146, 156, 0.32) 50px 96px
+        ),
+        /* ② 横向屋檐线：朱红 #E8636F + 米黄高光 rgba(232,198,80,0.18) 叠纹 */
+        linear-gradient(
+            180deg,
+            transparent 0 11px,
+            #E8636F 11px 12px,
+            rgba(232, 198, 80, 0.18) 12px 40px,
+            rgba(52, 140, 170, 0.25) 40px 41px,
+            transparent 41px 100%
+        ),
+        /* ① 米黄底 #FFF6EC（樱顶老斋舍米黄墙面底色，最底层） */
+        linear-gradient(90deg, #FFF6EC 0%, #FAFAF9 100%);
+    box-shadow: inset 2px 0 0 rgba(52, 140, 170, 0.35);
+}
+/* 窗棂纹 ::before 4px 朱红竖条 accent */
+.welcome-card-topbar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to right, #E8636F 0%, rgba(232, 198, 80, 0.18) 50%, rgba(232, 146, 156, 0.32) 100%);
+}
+
+/* ===== ===== 3. 右上角关闭 X 按钮 ===== ===== */
+.welcome-close {
+    position: absolute;
+    top: 56px; /* 低于 48px topbar，不压装饰条 */
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    z-index: 2; /* 高于 mask */
+}
+.welcome-close:hover {
+    background-color: var(--cherry-soft);
+    color: var(--cherry-deep);
+}
+.welcome-close:active { transform: scale(0.92); }
+.welcome-close:focus-visible {
+    outline: 2px solid var(--cherry-deep);
+    outline-offset: 2px;
+}
+
+/* ===== ===== 4. 标题区 ===== ===== */
+.welcome-header {
+    padding: 20px 28px 12px;
+    flex: 0 0 auto;
+    border-bottom: 1px solid var(--divider);
+}
+.welcome-title {
+    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+.welcome-subtitle {
+    margin: 6px 0 0;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+/* ===== ===== 5. 5 个快捷查询卡片（核心！） ===== ===== */
+.welcome-shortcuts {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 28px 12px;
+    /* 桌面端 3+2 网格：第一行 3 张，第二行 2 张（第 5 张宽卡占满，用 grid-column 1/-1） */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    grid-auto-rows: min-content;
+    align-content: start;
+}
+
+.shortcut-card {
+    /* 公共基类：所有 5 张卡共享 */
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 14px 14px 12px; /* 左侧 12px 给 accent bar 留呼吸 */
+    border-radius: var(--radius-md);
+    border: none;
+    background-color: var(--paper);
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    box-shadow: var(--shadow-sm);
+    /* 最小触摸目标 44px（卡片高度 84px 已满足） */
+    min-height: 84px;
+}
+/* 左边框 accent bar（每张卡颜色不同，见 sc-* 类） */
+.shortcut-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%;
+    bottom: 10%;
+    width: 2px;
+    border-radius: 2px;
+}
+/* 第 5 张宽卡：横跨整个第二行 */
+.shortcut-card.sc-wide {
+    grid-column: 1 / -1;
+}
+
+/* 5 种 accent bar 颜色 + emoji 底色（全复用现有变量，除了 3 个特例保留裸色） */
+.shortcut-card.sc-accent::before { background-color: var(--cherry-deep); }
+.shortcut-card.sc-accent .sc-emoji { background-color: var(--cherry-soft); color: var(--cherry-deep); }
+.shortcut-card.sc-pink::before { background-color: var(--cherry); }
+.shortcut-card.sc-pink .sc-emoji { background-color: var(--cherry-soft); color: var(--cherry-deep); }
+.shortcut-card.sc-jade::before { background-color: var(--jade); }
+.shortcut-card.sc-jade .sc-emoji { background-color: var(--jade-soft); color: var(--jade-deep); }
+.shortcut-card.sc-stone::before { background-color: var(--ink-light); }
+.shortcut-card.sc-stone .sc-emoji { background-color: #FAFAF9; color: var(--ink-soft); } /* 特例 1 */
+.shortcut-card.sc-wide::before { background-color: var(--color-poi); } /* 暖橙：语义对应 POI */
+.shortcut-card.sc-wide .sc-emoji { background-color: #FFF6EC; color: var(--color-poi); } /* 特例 2 */
+
+/* Hover 反馈（符合樱花主题轻盈感） */
+.shortcut-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background-color: var(--surface);
+}
+.shortcut-card:active { transform: translateY(0) scale(0.98); }
+.shortcut-card:focus-visible {
+    outline: 2px solid var(--cherry-deep);
+    outline-offset: 2px;
+}
+
+/* Emoji 容器（卡片左侧圆形色块） */
+.sc-emoji {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+/* 卡片文字部分（名字 + 说明） */
+.sc-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0; /* 防止溢出 */
+}
+.sc-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.4;
+}
+.sc-desc {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    /* 单行省略，太长截断 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== ===== 6. 3 步新手提示 ===== ===== */
+.welcome-tips {
+    flex: 0 0 auto;
+    padding: 0 28px;
+    margin-bottom: 8px;
+}
+.welcome-tips-details {
+    background-color: var(--jade-soft);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    border: 1px solid var(--divider);
+}
+.welcome-tips-summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--jade-deep);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.welcome-tips-summary::-webkit-details-marker { display: none; }
+.welcome-tips-summary::after {
+    content: '▾';
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+}
+.welcome-tips-details[open] .welcome-tips-summary::after { transform: rotate(180deg); }
+.welcome-tips-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+}
+.tip-num {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: var(--surface);
+    color: var(--jade-deep);
+    font-weight: 700;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== ===== 7. 底部操作区（开始按钮 + 不再显示复选框） ===== ===== */
+.welcome-footer {
+    flex: 0 0 auto;
+    padding: 14px 28px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 1px solid var(--divider);
+    background-color: var(--paper);
+}
+/* 复用现有 .btn.btn-primary 类（樱花粉渐变），不写新按钮样式！ */
+.welcome-start {
+    width: 100%;
+    height: 48px; /* 满足 44px 触摸目标 */
+    font-size: 1rem;
+    font-weight: 600;
+}
+.welcome-dont-show {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    user-select: none;
+    justify-content: center;
+}
+.welcome-dont-show input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cherry-deep); /* 选中框颜色用樱粉主题色 */
+    cursor: pointer;
+}
+
+/* ===== ===== 8. Header ？帮助按钮 ===== ===== */
+.help-btn {
+    margin-left: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--divider);
+    background-color: var(--surface);
+    color: var(--ink-soft);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    box-shadow: var(--shadow-sm);
+    vertical-align: middle;
+    line-height: 1;
+}
+.help-btn:hover {
+    background-color: var(--cherry-soft);
+    color: var(--cherry-deep);
+    border-color: var(--cherry);
+}
+.help-btn:focus-visible {
+    outline: 2px solid var(--cherry-deep);
+    outline-offset: 2px;
+}
+
+/* ===== ===== 9. 入场/退场动画（纯 CSS，不加 JS 动画逻辑） ===== ===== */
+/* --- 入场：加 .opening 类触发，动画完成后移除 --- */
+.welcome-overlay.opening .welcome-mask {
+    animation: welcome-mask-in 200ms linear forwards;
+}
+.welcome-overlay.opening .welcome-card {
+    animation: welcome-card-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+/* 5 张卡片 stagger 入场：用 nth-child 按索引加 animation-delay */
+.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(1) { animation: shortcut-in 240ms ease-out 60ms both; }
+.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(2) { animation: shortcut-in 240ms ease-out 120ms both; }
+.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(3) { animation: shortcut-in 240ms ease-out 180ms both; }
+.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(4) { animation: shortcut-in 240ms ease-out 240ms both; }
+.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(5) { animation: shortcut-in 240ms ease-out 300ms both; }
+
+@keyframes welcome-mask-in {
+    from { opacity: 0; }
+    to { opacity: 0.68; }
+}
+@keyframes welcome-card-in {
+    from { transform: translateY(24px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes shortcut-in {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- 退场：加 .closing 类触发，动画完成后 JS 切 .hidden --- */
+.welcome-overlay.closing .welcome-mask {
+    animation: welcome-mask-out 150ms linear forwards;
+}
+.welcome-overlay.closing .welcome-card {
+    animation: welcome-card-out 180ms ease-in forwards;
+}
+@keyframes welcome-mask-out {
+    from { opacity: 0.68; }
+    to { opacity: 0; }
+}
+@keyframes welcome-card-out {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to { transform: translateY(16px) scale(0.98); opacity: 0; }
+}
+
+/* --- ？帮助按钮唤回卡片高亮脉冲动画 --- */
+.welcome-overlay.highlight .welcome-card {
+    animation: welcome-card-pulse 600ms ease-out 1;
+}
+@keyframes welcome-card-pulse {
+    0%, 100% { box-shadow: var(--shadow-lg); }
+    50% { box-shadow: 0 0 0 6px rgba(232, 146, 156, 0.32), var(--shadow-lg); }
+}
+
+/* ===== ===== 10. 推荐景点侧边栏高亮（点推荐景点卡片时触发） ===== ===== */
+.poi-sidebar.flash-highlight {
+    animation: sidebar-flash 2s ease-out 1;
+}
+@keyframes sidebar-flash {
+    0% { background-color: rgba(232, 198, 80, 0.18); } /* 特例 3：淡黄色高亮 */
+    100% { background-color: transparent; }
+}
+
+/* ===== ===== 11. 无障碍 · prefers-reduced-motion 无动画降级 ===== ===== */
+@media (prefers-reduced-motion: reduce) {
+    /* 干掉所有 transition + animation：秒开秒关 */
+    .welcome-close,
+    .shortcut-card,
+    .help-btn,
+    .welcome-tips-summary::after {
+        transition: none !important;
+    }
+    .welcome-overlay.opening .welcome-mask,
+    .welcome-overlay.opening .welcome-card,
+    .welcome-overlay.opening .welcome-shortcuts .shortcut-card,
+    .welcome-overlay.closing .welcome-mask,
+    .welcome-overlay.closing .welcome-card,
+    .welcome-overlay.highlight .welcome-card,
+    .poi-sidebar.flash-highlight {
+        animation: none !important;
+    }
+    /* 直接置为终态，避免 animation 覆盖造成白屏 */
+    .welcome-overlay:not(.hidden) .welcome-card {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    .welcome-overlay:not(.hidden) .welcome-mask {
+        opacity: 0.68;
+    }
+}
+
+/* ===== ===== 12. 响应式 · 移动端 < 768px ===== ===== */
+@media (max-width: 767px) {
+    /* 卡片尺寸自适应：92vw 宽，88vh 最大高 */
+    .welcome-card {
+        width: 92vw;
+        min-width: 300px;
+        height: auto;
+        max-height: 88vh;
+    }
+    /* 欢迎卡 padding 整体缩小一点 */
+    .welcome-header { padding: 16px 20px 10px; }
+    .welcome-title { font-size: 1.35rem; }
+    .welcome-shortcuts {
+        padding: 12px 20px;
+        /* 移动端：改为单列纵向排列，不再用网格 */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .shortcut-card {
+        min-height: 72px; /* 紧凑一点 */
+        padding: 12px 12px 12px 10px;
+    }
+    .sc-emoji {
+        width: 36px;
+        height: 36px;
+        font-size: 1.15rem;
+        flex-basis: 36px;
+    }
+    .sc-name { font-size: 0.95rem; }
+    .sc-desc { font-size: 0.78rem; }
+    /* 新手提示：移动端默认折叠（[open] 属性删掉）——用 JS 也会处理，但这里先强制折叠让用户主动看 */
+    .welcome-tips { padding: 0 20px; }
+    .welcome-tips-details { padding: 8px 12px; }
+    .welcome-tips-summary { font-size: 0.8rem; }
+    .tip-item { font-size: 0.78rem; }
+    .welcome-footer { padding: 12px 20px 18px; gap: 10px; }
+    .welcome-start { height: 46px; font-size: 0.95rem; }
+    .welcome-dont-show { font-size: 0.76rem; }
+
+    /* ？帮助按钮：移动端缩小 4px，避免 header 太挤 */
+    .help-btn {
+        margin-left: 10px;
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ===== ===== 13. 平板横屏小修复（768~1024px） ===== ===== */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    .welcome-card {
+        height: 600px; /* 稍微矮一点避免横向遮挡 */
+    }
+}
+
+/* ========================================================================
+   T-018 §4 追加规则：触摸目标统一 ≥ 44×44px（append-only 不覆盖原有）
+   · welcome-close 36×36 → 44×44
+   · .help-btn (桌面端) 32×32 → 44×44；(移动端) 28×28 → 44×44
+   · 所有写死尺寸的可交互控件统一提升到 WCAG AA 44×44 最低标准
+   ======================================================================== */
+
+/* 关闭按钮：36→44，top 从 56px 下调到 52px（低于 topbar 48px 更多一点） */
+.welcome-close {
+    width: 44px !important;
+    height: 44px !important;
+    top: 52px;
+    right: 12px;
+    font-size: 1.1rem;
+}
+
+/* Header ？帮助按钮：桌面端 32→44，同时 margin-left 稍缩避免挤 */
+.help-btn {
+    width: 44px !important;
+    height: 44px !important;
+    margin-left: 10px;
+    font-size: 1.05rem;
+}
+/* 移动端也统一到 44（之前 28，现在 WCAG 达标），移动端 header 仍能容纳 */
+@media (max-width: 767px) {
+    .help-btn {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1rem;
     }
 }

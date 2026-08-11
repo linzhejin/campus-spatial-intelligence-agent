@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1976D2">
+    <meta name="theme-color" content="#E8929C">
     <meta name="description" content="漫步珞珈 — 武大校园智能路径规划助手">
     <title>漫步珞珈 · WHU-Walker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚶</text></svg>">
@@ -19,6 +24,8 @@
                 漫步珞珈
             </h1>
             <p class="app-subtitle">武大校园智能路径规划</p>
+            <!-- ？帮助按钮（手动唤回欢迎卡片） -->
+            <button id="help-btn" class="help-btn" aria-label="帮助/欢迎引导" title="查看帮助引导">?</button>
         </div>
     </header>
 
@@ -144,6 +151,15 @@
 
     <script src="/js/config.js"></script>
     <script>
+        // 高德 JS API 2.0 安全密钥（必须在加载 API 之前设置）
+        (function () {
+            var cfg = window.WHU_WALKER_CONFIG || {};
+            if (cfg.amapSecurityCode) {
+                window._AMapSecurityConfig = { securityJsCode: cfg.amapSecurityCode };
+            }
+        })();
+    </script>
+    <script>
         (function () {
             var cfg = window.WHU_WALKER_CONFIG || {};
             var key = cfg.amapKey || '';
@@ -165,6 +181,7 @@
     </script>
     <script src="/js/app.js"></script>
 
+    <!-- Service Worker 暂禁（调试地图加载问题，调试完成后取消注释）
     <script>
     (function() {
         if ('serviceWorker' in navigator) {
@@ -172,5 +189,113 @@
         }
     })();
     </script>
+    -->
+
+    <!-- ===== 漫步珞珈 · 冷启动欢迎卡片覆盖层 ===== -->
+    <div id="welcome-overlay" class="welcome-overlay hidden" aria-hidden="true">
+        <!-- 遮罩层（点击遮罩也能关闭卡片） -->
+        <div class="welcome-mask" data-close-welcome="true"></div>
+
+        <!-- 卡片本体（防止点击内容冒泡到遮罩误关，JS 里会加 stopPropagation） -->
+        <div class="welcome-card" role="dialog" aria-label="欢迎使用漫步珞珈" aria-modal="true">
+            <!-- 【签名元素】樱顶老斋舍窗棂纹装饰条（纯 CSS 画，无需图片） -->
+            <div class="welcome-card-topbar" aria-hidden="true"></div>
+
+            <!-- 右上角关闭 X 按钮 -->
+            <button class="welcome-close" data-close-welcome="true" aria-label="关闭欢迎页">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
+            <!-- ① 标题区 -->
+            <header class="welcome-header">
+                <h1 class="welcome-title">🗺️ 漫步珞珈</h1>
+                <p class="welcome-subtitle">武大校园 · 问路 · 查景点 · 推荐路线</p>
+            </header>
+
+            <!-- ② 5 个快捷查询卡片（声明式 data-*，JS 统一事件委托处理） -->
+            <section class="welcome-shortcuts" aria-label="快捷查询示例">
+                <button class="shortcut-card sc-accent"
+                        data-action="path_planning"
+                        data-start="牌坊" data-end="樱顶"
+                        data-constraints='{"distance":"medium","slope":"normal","scenery":"high"}'
+                        data-display-text="经典路线 · 牌坊 → 樱顶（景观优先）">
+                    <span class="sc-emoji" aria-hidden="true">🚶</span>
+                    <div class="sc-text">
+                        <span class="sc-name">经典路线</span>
+                        <small class="sc-desc">牌坊 → 樱顶 · 走风景最好的主路</small>
+                    </div>
+                </button>
+
+                <button class="shortcut-card sc-pink"
+                        data-action="path_planning"
+                        data-start="樱花大道" data-end="樱顶"
+                        data-constraints='{"distance":"relaxed","slope":"normal","scenery":"high"}'
+                        data-display-text="赏樱路线 · 樱花大道 → 樱顶（春天必走）">
+                    <span class="sc-emoji" aria-hidden="true">🌸</span>
+                    <div class="sc-text">
+                        <span class="sc-name">赏樱路线</span>
+                        <small class="sc-desc">樱花大道 → 樱顶 · 春天打卡必走</small>
+                    </div>
+                </button>
+
+                <button class="shortcut-card sc-jade"
+                        data-action="poi_query" data-name="樱顶"
+                        data-display-text="景点查询 · 樱顶在哪？给我介绍一下">
+                    <span class="sc-emoji" aria-hidden="true">🏯</span>
+                    <div class="sc-text">
+                        <span class="sc-name">景点查询</span>
+                        <small class="sc-desc">樱顶在哪？介绍 + 地图自动定位</small>
+                    </div>
+                </button>
+
+                <button class="shortcut-card sc-stone"
+                        data-action="path_planning"
+                        data-start="教五" data-end="总图书馆"
+                        data-constraints='{"distance":"short","slope":"normal","scenery":"normal"}'
+                        data-display-text="最短路径 · 教五 → 总图书馆（赶时间）">
+                    <span class="sc-emoji" aria-hidden="true">⚡</span>
+                    <div class="sc-text">
+                        <span class="sc-name">最短路径</span>
+                        <small class="sc-desc">教五 → 总图书馆 · 赶时间最快</small>
+                    </div>
+                </button>
+
+                <!-- 第 5 张：宽卡推荐景点（展开侧边栏，不调 API） -->
+                <button class="shortcut-card sc-wide"
+                        data-action="recommend_poi"
+                        data-display-text="推荐景点 · 展开侧边栏看 5 个精华">
+                    <span class="sc-emoji" aria-hidden="true">🌟</span>
+                    <div class="sc-text">
+                        <span class="sc-name">推荐景点</span>
+                        <small class="sc-desc">展开侧边栏看 5 个精华 POI</small>
+                    </div>
+                </button>
+            </section>
+
+            <!-- ③ 3 步新手提示（桌面端默认展开，移动端默认折叠，CSS + <details> 原生交互） -->
+            <section class="welcome-tips" aria-label="新手提示">
+                <details class="welcome-tips-details" open>
+                    <summary class="welcome-tips-summary">新手提示 · 3 步快速上手</summary>
+                    <div class="welcome-tips-list">
+                        <div class="tip-item"><span class="tip-num" aria-hidden="true">①</span><span class="tip-text">直接说人话就行：「从牌坊到樱顶，避开陡坡」</span></div>
+                        <div class="tip-item"><span class="tip-num" aria-hidden="true">②</span><span class="tip-text">点地图上的 🔴 红点查看景点，可快捷设出发/到达</span></div>
+                        <div class="tip-item"><span class="tip-num" aria-hidden="true">③</span><span class="tip-text">左侧侧边栏按类别浏览 24 个地点</span></div>
+                    </div>
+                </details>
+            </section>
+
+            <!-- ④ 底部操作区 -->
+            <footer class="welcome-footer">
+                <button class="btn btn-primary welcome-start" data-close-welcome="true">✨ 开始使用</button>
+                <label class="welcome-dont-show">
+                    <input type="checkbox" id="welcome_dont_show">
+                    <span>以后不再显示此欢迎页</span>
+                </label>
+            </footer>
+        </div>
+    </div>
 </body>
 </html>

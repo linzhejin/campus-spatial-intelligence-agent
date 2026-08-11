@@ -8,6 +8,11 @@ import os
 import sys
 from datetime import datetime
 
+# Windows PowerShell 默认 GBK 编码，强制 UTF-8 避免 emoji 输出崩溃
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import networkx as nx
 import osmnx as ox
 
@@ -16,17 +21,30 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from config import WHU_BBOX, WHU_POIS, OUTPUT_DIR
+from config import WHU_BBOX, OUTPUT_DIR, DATA_DIR
+
+
+def load_pois():
+    """从 data/pois.json 加载 POI 列表（T-004 已迁移，15 个 POI）"""
+    pois_path = os.path.join(DATA_DIR, "pois.json")
+    with open(pois_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    pois = {}
+    for poi in data["pois"]:
+        name = poi["name"]
+        coords = poi["coordinates"]
+        pois[name] = {"lat": coords["lat"], "lon": coords["lng"]}
+    return pois
+
+
+WHU_POIS = load_pois()
 
 
 def download_road_network():
     print("[1/5] 下载武大校园步行道网络...")
     try:
         G = ox.graph_from_bbox(
-            north=WHU_BBOX["north"],
-            south=WHU_BBOX["south"],
-            east=WHU_BBOX["east"],
-            west=WHU_BBOX["west"],
+            bbox=(WHU_BBOX["west"], WHU_BBOX["south"], WHU_BBOX["east"], WHU_BBOX["north"]),
             network_type="walk",
             simplify=True,
             retain_all=False,
@@ -40,23 +58,15 @@ def download_road_network():
 
 
 def filter_pedestrian_edges(G):
-    print("[2/5] 筛选 footway/path 路段...")
-    edges_to_remove = []
-    for u, v, k, data in G.edges(data=True, keys=True):
-        highway = data.get("highway", "")
-        if isinstance(highway, list):
-            if not any(h in ("footway", "path") for h in highway):
-                edges_to_remove.append((u, v, k))
-        elif highway not in ("footway", "path"):
-            edges_to_remove.append((u, v, k))
-
-    G_filtered = G.copy()
-    G_filtered.remove_edges_from(edges_to_remove)
-    isolated = list(nx.isolates(G_filtered))
-    G_filtered.remove_nodes_from(isolated)
-
-    print(f"  ✓ 保留 {len(G_filtered.edges)} 条路段, 删除 {len(edges_to_remove)} 条非步行路段, {len(isolated)} 个孤立节点")
-    return G_filtered
+    # DEC-012: 取消 footway/path 二次筛选，直接使用 network_type="walk" 全量路网
+    # 原因: OSM 武大校园 footway/path 标注不全，筛选后路网碎片化（235 个连通分量）
+    print("[2/5] 全量 walk 路网（含 residential/service/pedestrian/steps 等，跳过 footway/path 筛选）...")
+    isolated = list(nx.isolates(G))
+    if isolated:
+        G = G.copy()
+        G.remove_nodes_from(isolated)
+    print(f"  ✓ 保留 {len(G.edges)} 条路段, 删除 {len(isolated)} 个孤立节点")
+    return G
 
 
 def compute_network_stats(G):
@@ -67,7 +77,7 @@ def compute_network_stats(G):
         edges.append({"u": u, "v": v, "k": k, "length": length})
 
     if not edges:
-        return {"error": "没有找到任何 footway/path 路段"}
+        return {"error": "没有找到任何 walk 类型路段"}
 
     lengths = [e["length"] for e in edges]
     total_length = sum(lengths)
@@ -95,17 +105,19 @@ def _find_nearest_nodes(G, poi_names):
         poi_info = WHU_POIS[name]
         lat, lon = poi_info["lat"], poi_info["lon"]
         try:
-            nearest_node = ox.nearest_nodes(G, lon, lat)
+            nearest_node = ox.nearest_nodes(G, X=lon, Y=lat)
             poi_nodes[name] = int(nearest_node)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"  ⚠ {name} 定位失败: {e}")
     return poi_nodes
 
 
 def check_connectivity(G):
     print("[4/5] 检查路网连通性...")
-    is_connected = nx.is_connected(G)
-    components = list(nx.connected_components(G))
+    # osmnx 下载的是 MultiDiGraph，连通性检测需转无向图
+    G_undirected = nx.Graph(G) if G.is_directed() else G
+    is_connected = nx.is_connected(G_undirected)
+    components = list(nx.connected_components(G_undirected))
 
     connectivity = {
         "is_fully_connected": is_connected,
@@ -134,7 +146,7 @@ def check_connectivity(G):
                 continue
             total_pairs += 1
             try:
-                path_length = nx.shortest_path_length(G, src_node, dst_node, weight="length")
+                path_length = nx.shortest_path_length(G_undirected, src_node, dst_node, weight="length")
                 reachability[f"{src_name}→{dst_name}"] = {
                     "reachable": True,
                     "distance_m": round(path_length, 1),
@@ -167,7 +179,7 @@ def check_connectivity(G):
             key_path_results[f"{src}→{dst}"] = {"error": "POI 未找到最近节点"}
             continue
         try:
-            path_length = nx.shortest_path_length(G, src_node, dst_node, weight="length")
+            path_length = nx.shortest_path_length(G_undirected, src_node, dst_node, weight="length")
             key_path_results[f"{src}→{dst}"] = {
                 "reachable": True,
                 "distance_m": round(path_length, 1),
@@ -206,28 +218,36 @@ def estimate_coverage(G):
     max_distance = max(distances)
 
     if avg_distance < 20:
-        rate, level = "95%+", "优秀"
+        rate, level = 0.95, "优秀"
     elif avg_distance < 50:
-        rate, level = "80-95%", "良好"
+        rate, level = 0.85, "良好"
     elif avg_distance < 100:
-        rate, level = "60-80%", "一般"
+        rate, level = 0.70, "一般"
     else:
-        rate, level = "<60%", "较差"
+        rate, level = 0.50, "较差"
 
     coverage = {
         "avg_poi_to_node_distance_m": round(avg_distance, 1),
         "max_poi_to_node_distance_m": round(max_distance, 1),
-        "coverage_rate_estimate": rate,
+        "coverage_rate": rate,
         "coverage_level": level,
         "note": f"基于 {len(distances)} 个 POI 到最近路网节点的直线距离估算",
     }
 
     print(f"  ✓ 平均 POI-节点距离: {avg_distance:.1f} 米")
-    print(f"  ✓ 覆盖率估算: {rate} ({level})")
+    print(f"  ✓ 覆盖率: {rate:.0%} ({level})")
     return coverage
 
 
 def generate_report(stats, connectivity, coverage):
+    coverage_rate = coverage.get("coverage_rate", 0)
+    if coverage_rate >= 0.80:
+        verdict = "PASS"
+        next_step = "覆盖率达标，可进入后续阶段"
+    else:
+        verdict = "FAIL"
+        next_step = "覆盖率不足 80%，触发降级方案：手动补段或降级为高德路径 API"
+
     report = {
         "script": "validate_osm_network.py",
         "timestamp": datetime.now().isoformat(),
@@ -236,6 +256,8 @@ def generate_report(stats, connectivity, coverage):
         "stats": stats,
         "connectivity": connectivity,
         "coverage": coverage,
+        "verdict": verdict,
+        "next_step": next_step,
     }
 
     print("\n" + "=" * 60)
@@ -263,8 +285,11 @@ def generate_report(stats, connectivity, coverage):
 
     print(f"\n📈 覆盖率:")
     print(f"  平均 POI 距离: {coverage.get('avg_poi_to_node_distance_m', 'N/A')} 米")
-    print(f"  覆盖率估算: {coverage.get('coverage_rate_estimate', 'N/A')}")
+    print(f"  覆盖率: {coverage_rate:.0%}")
     print(f"  评价: {coverage.get('coverage_level', 'N/A')}")
+
+    print(f"\n✅ 验收结论: {verdict}")
+    print(f"  {next_step}")
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     output_path = os.path.join(OUTPUT_DIR, "osm_validation_report.json")

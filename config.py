@@ -6,6 +6,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _env_float(key: str, default: float) -> float:
+    """读取 float 类型 env 变量，非法值 fallback 到默认值（避免 .env typo 导致 app 启动崩溃）"""
+    raw = os.getenv(key)
+    if raw is None or raw == "":
+        return default
+    try:
+        return float(raw)
+    except (ValueError, TypeError):
+        import warnings
+        warnings.warn(f"config: env {key}={raw!r} 非法，使用默认值 {default}", stacklevel=2)
+        return default
+
+
 # ===== LLM 配置（DEC-006: DeepSeek V4-Flash）=====
 # 兼容 OpenAI SDK：仅改 base_url + model id，无需替换 SDK
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
@@ -15,18 +29,22 @@ LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")  # DeepSeek V4-Flash 别名
 
 # ===== 高德地图配置 =====
 AMAP_KEY = os.getenv("AMAP_KEY", "")
+AMAP_SECURITY_CODE = os.getenv("AMAP_SECURITY_CODE", "")  # 高德 JS API 2.0 安全密钥
 
-# ===== 武汉大学校园范围 (经纬度边界) =====
+# ===== 武汉大学校园范围 (经纬度边界) — .env 可覆盖 =====
 WHU_BBOX = {
-    "north": 30.5480,
-    "south": 30.5280,
-    "east":  114.3750,
-    "west":  114.3500,
+    "north": _env_float("WHU_BBOX_NORTH", 30.5480),
+    "south": _env_float("WHU_BBOX_SOUTH", 30.5280),
+    "east":  _env_float("WHU_BBOX_EAST",  114.3750),
+    "west":  _env_float("WHU_BBOX_WEST",  114.3500),
 }
 
-# 地图默认中心点 (武大核心区)
-MAP_CENTER = {"lat": 30.5365, "lng": 114.3630}
-MAP_ZOOM = 16
+# 地图默认中心点 (武大核心区) — .env 可覆盖
+MAP_CENTER = {
+    "lat": _env_float("MAP_CENTER_LAT", 30.5365),
+    "lng": _env_float("MAP_CENTER_LNG", 114.3630),
+}
+MAP_ZOOM = int(_env_float("MAP_ZOOM", 16))
 
 # ===== 多因素成本默认权重（DEC-004 修订 + DEC-010 LLM 直接生成）=====
 # 默认场景"从A到B"用户未表达偏好时使用；接近普通导航基线
@@ -48,21 +66,29 @@ PATH_LENGTH_CAP_MAX = 2000.0
 # LLM 在解析阶段直接输出 weights 字段，不再通过约束等级规则映射
 # 约束等级（constraints）仍保留，用于 DEC-011 硬约束过滤（如 slope=avoid 过滤陡坡路段）
 
-# ===== POI 数据（V1 硬编码，V2 迁移到文件）=====
-WHU_POIS = {
-    "牌坊":    {"lat": 30.5362, "lon": 114.3625, "type": "landmark", "desc": "武大主入口，标志性建筑"},
-    "樱园":    {"lat": 30.5375, "lon": 114.3630, "type": "scenery",  "desc": "樱花大道核心区，每年三月樱花盛开"},
-    "樱顶":    {"lat": 30.5378, "lon": 114.3635, "type": "scenery",  "desc": "樱花大道顶端，可俯瞰校园"},
-    "老图书馆": {"lat": 30.5376, "lon": 114.3633, "type": "scenery",  "desc": "武大标志性建筑，百年历史"},
-    "行政楼":   {"lat": 30.5385, "lon": 114.3640, "type": "scenery",  "desc": "武大标志性建筑群"},
-    "梅园":    {"lat": 30.5380, "lon": 114.3630, "type": "scenery",  "desc": "梅花盛开之处，安静清幽"},
-    "桂园":    {"lat": 30.5355, "lon": 114.3615, "type": "scenery",  "desc": "桂花飘香，秋季最美"},
-    "图书馆":   {"lat": 30.5395, "lon": 114.3635, "type": "study",    "desc": "总图书馆，自习好去处"},
-    "教五":    {"lat": 30.5360, "lon": 114.3610, "type": "study",    "desc": "第五教学楼"},
-    "万林艺术馆": {"lat": 30.5368, "lon": 114.3628, "type": "scenery","desc": "现代艺术博物馆"},
-    "枫园":    {"lat": 30.5400, "lon": 114.3650, "type": "scenery",  "desc": "留学生教育学院附近"},
-    "珞珈山":   {"lat": 30.5415, "lon": 114.3660, "type": "scenery",  "desc": "校园最高点，环山路适合散步"},
-}
+# ===== POI 数据（迁移到 data/pois.json，此处仅喂给 LLM 解析 Agent 拼 Prompt） =====
+def _load_whu_pois_for_prompt() -> dict:
+    """从 data/pois.json 读取 POI，返回 {name: {type, desc}} 字典供 parser 使用。
+    若 JSON 不可用，返回空字典（LLM Prompt 中 POI 列表将为空，已及时发现）。
+    """
+    import json as _json
+    from pathlib import Path as _Path
+    pois_path = _Path(__file__).parent / "data" / "pois.json"
+    try:
+        with open(pois_path, "r", encoding="utf-8") as f:
+            raw = _json.load(f)
+        result = {}
+        for poi in raw.get("pois", []):
+            result[poi["name"]] = {
+                "type": poi.get("type", "landmark"),
+                "desc": poi.get("description", ""),
+            }
+        return result
+    except Exception:
+        return {}
+
+
+WHU_POIS = _load_whu_pois_for_prompt()
 
 # ===== 文件路径 =====
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")

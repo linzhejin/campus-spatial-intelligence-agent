@@ -1,0 +1,17 @@
+{
+  "A1": true,
+  "A3": false,
+  "A4_1": true,
+  "A4_all": true,
+  "G11": true,
+  "B5_all": true,
+  "css_lines": 754,
+  "css_total": 1261,
+  "js_lines": 506,
+  "js_total": 823,
+  "window_assigns": [
+    "WelcomeColdStart",
+    "showPoiSidebar",
+    "submitNaturalLanguageQuery"
+  ]
+}

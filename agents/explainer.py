@@ -14,10 +14,17 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 MAX_EXPLANATION_LENGTH = 150
 
 
+_system_prompt_cache = None
+
+
 def _load_system_prompt() -> str:
+    global _system_prompt_cache
+    if _system_prompt_cache is not None:
+        return _system_prompt_cache
     prompt_path = PROMPTS_DIR / "explain_system.txt"
     with open(prompt_path, "r", encoding="utf-8") as f:
-        return f.read()
+        _system_prompt_cache = f.read()
+    return _system_prompt_cache
 
 
 def _build_route_summary(route_data: dict) -> str:
@@ -56,10 +63,22 @@ def _build_costs_summary(route_data: dict) -> str:
     return ", ".join(parts)
 
 
+def _build_weight_source_prefix(weight_source: Optional[str]) -> str:
+    """根据 weight_source 返回解释开头的偏好来源标注（T-024 §2）。"""
+    if weight_source == "explicit_nl":
+        return "已按您的空间偏好推荐。"
+    elif weight_source == "shortcut":
+        return "已按快捷按钮预设偏好推荐。"
+    elif weight_source == "default":
+        return "已按默认路线推荐。"
+    return ""
+
+
 def _build_template_explanation(
     route_data: dict,
     user_constraints: Optional[dict],
     user_weights: Optional[dict],
+    weight_source: Optional[str] = None,
 ) -> str:
     distance = route_data.get("distance_m", route_data.get("distance", 0))
     shortest_distance = route_data.get("shortest_distance_m", route_data.get("shortest_distance", 0))
@@ -67,6 +86,10 @@ def _build_template_explanation(
     filter_status = route_data.get("filter_status", "no_filter")
 
     segments = []
+
+    prefix = _build_weight_source_prefix(weight_source)
+    if prefix:
+        segments.append(prefix.rstrip("。"))
 
     if user_constraints:
         slope = user_constraints.get("slope", "normal")
@@ -103,16 +126,17 @@ def generate_explanation(
     route_data: dict,
     user_constraints: Optional[dict] = None,
     user_weights: Optional[dict] = None,
+    weight_source: Optional[str] = None,
 ) -> str:
     if not DEEPSEEK_API_KEY:
         logger.error("DEEPSEEK_API_KEY 未配置，使用模板解释")
-        return _build_template_explanation(route_data, user_constraints, user_weights)
+        return _build_template_explanation(route_data, user_constraints, user_weights, weight_source)
 
     try:
         from openai import OpenAI
     except ImportError:
         logger.error("openai SDK 未安装，使用模板解释")
-        return _build_template_explanation(route_data, user_constraints, user_weights)
+        return _build_template_explanation(route_data, user_constraints, user_weights, weight_source)
 
     system_prompt = _load_system_prompt()
 
@@ -120,8 +144,10 @@ def generate_explanation(
     shortest_summary = _build_shortest_summary(route_data)
     costs_summary = _build_costs_summary(route_data)
     filter_status = route_data.get("filter_status", "no_filter")
+    weight_source_label = _build_weight_source_prefix(weight_source).rstrip("。") or "无来源标注"
 
     user_content = (
+        f"偏好来源：{weight_source_label}\n"
         f"约束：{json.dumps(user_constraints or {}, ensure_ascii=False)}\n"
         f"权重：{json.dumps(user_weights or {}, ensure_ascii=False)}\n"
         f"推荐路线：{route_summary}\n"
@@ -138,7 +164,7 @@ def generate_explanation(
     client = OpenAI(
         api_key=DEEPSEEK_API_KEY,
         base_url=OPENAI_BASE_URL,
-        timeout=httpx.Timeout(connect=5.0, read=10.0),
+        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
     )
 
     for attempt in range(3):
@@ -158,8 +184,8 @@ def generate_explanation(
             if attempt < 2:
                 messages.append({
                     "role": "user",
-                    "content": "请重新生成解释，注意控制在 150 字以内。",
+                    "content": "请重新生成解释，注意控制在 150 字以内，并在开头说明偏好来源。",
                 })
 
     logger.error("解释生成全部失败，使用模板兜底")
-    return _build_template_explanation(route_data, user_constraints, user_weights)
+    return _build_template_explanation(route_data, user_constraints, user_weights, weight_source)

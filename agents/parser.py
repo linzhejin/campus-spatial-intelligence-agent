@@ -32,7 +32,23 @@ FEW_SHOT_EXAMPLES = [
     ),
     (
         "带朋友逛，从教五去图书馆，走风景好的路",
-        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"总图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "樱顶在哪里",
+        '{"task_type":"poi_query","start":{"name":"樱顶","type":"poi"},"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "你能做什么",
+        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "推荐几个景点",
+        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "今天天气怎么样",
+        '{"task_type":"unknown","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":"抱歉，我只能回答武大校园内的路径规划和景点信息查询问题哦。可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~"}',
     ),
 ]
 
@@ -50,16 +66,23 @@ class Constraints(BaseModel):
 
 
 class TaskIntent(BaseModel):
-    task_type: Literal["path_planning", "poi_query"]
+    task_type: Literal["path_planning", "poi_query", "help", "unknown"]
     start: Optional[PoiRef] = None
     end: Optional[PoiRef] = None
     constraints: Constraints
     weights: Optional[dict] = None
     input_method: Literal["nl", "shortcut", "map_click"] = "nl"
     ambiguity: Optional[str] = None
+    weight_source: Optional[Literal["explicit_nl", "shortcut", "default"]] = None
+
+
+_system_prompt_cache = None
 
 
 def _load_system_prompt() -> str:
+    global _system_prompt_cache
+    if _system_prompt_cache is not None:
+        return _system_prompt_cache
     prompt_path = PROMPTS_DIR / "parse_system.txt"
     with open(prompt_path, "r", encoding="utf-8") as f:
         template = f.read()
@@ -67,7 +90,8 @@ def _load_system_prompt() -> str:
         [{"name": k, "type": v["type"], "desc": v.get("desc", "")} for k, v in WHU_POIS.items()],
         ensure_ascii=False,
     )
-    return template.replace("{poi_list_json}", poi_list)
+    _system_prompt_cache = template.replace("{poi_list_json}", poi_list)
+    return _system_prompt_cache
 
 
 def _build_messages(query: str, context: Optional[dict] = None) -> list[dict]:
@@ -134,7 +158,7 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
     client = OpenAI(
         api_key=DEEPSEEK_API_KEY,
         base_url=OPENAI_BASE_URL,
-        timeout=httpx.Timeout(connect=5.0, read=10.0),
+        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
     )
 
     messages = _build_messages(query, context)
@@ -150,7 +174,7 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
             )
             raw_text = response.choices[0].message.content
             data = _extract_json(raw_text)
-            return TaskIntent(**data)
+            return _t011_post_process(_annotate_weight_source(TaskIntent(**data)), query, context)
         except ValidationError as e:
             last_error = e
             logger.warning(f"Pydantic 校验失败 (attempt {attempt + 1}): {e}")
@@ -168,4 +192,440 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
             })
 
     logger.error(f"解析全部失败，使用兜底方案。最后错误: {last_error}")
-    return _fallback_task_intent(query)
+    return _t011_post_process(_annotate_weight_source(_fallback_task_intent(query)), query, context)
+
+
+def _annotate_weight_source(intent: TaskIntent) -> TaskIntent:
+    """根据输入来源和 weights 状态，打标 weight_source 字段（DEC-013）。
+
+    优先级规则（架构审核 N6）：
+      - input_method=shortcut                  → shortcut     （快捷按钮预设）
+      - input_method=nl 且 weights != null     → explicit_nl  （NL 明确表达偏好）
+      - input_method=nl 且 weights == null     → default      （无偏好，用默认权重）
+    """
+    if intent.input_method == "shortcut":
+        intent.weight_source = "shortcut"
+    elif intent.input_method == "nl":
+        if intent.weights is not None:
+            intent.weight_source = "explicit_nl"
+        else:
+            intent.weight_source = "default"
+    else:
+        intent.weight_source = "default"
+    return intent
+
+
+# ====== T-011 append-only 扩展：验收 5~11 辅助函数 ======
+# 不动原 parse_query 函数体的 LLM 调用逻辑，新增规则兜底 + 后处理
+
+DEFAULT_CONSTRAINTS_DICT = {
+    "distance": "medium",
+    "slope": "normal",
+    "scenery": "normal",
+}
+
+UNKNOWN_GUIDE_TEXT = (
+    "抱歉，我只能回答武大校园内的路径规划和景点信息查询问题哦。"
+    "可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~"
+)
+
+HELP_GUIDE_AMBIGUITY = None
+
+# 快捷按钮 mode → weights + constraints 预设（T-011 验收 5）
+SHORTCUT_MODE_PRESETS = {
+    "scenery_priority": {
+        "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7},
+        "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"},
+    },
+    "slope_avoid": {
+        "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2},
+        "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
+    },
+    "shortest": {
+        "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1},
+        "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"},
+    },
+}
+
+# 从 WHU_POIS 提取 POI 名称 + 别名（小写），用于规则匹配
+_POI_NAMES_SET = set(WHU_POIS.keys())
+_POI_NAMES_LOWER = {name.lower(): name for name in WHU_POIS.keys()}
+
+# POI 查询关键词模式（T-011 验收 7）
+_POI_QUERY_PATTERNS = [
+    r"^(.+?)在(哪|哪里|哪儿|什么地方|哪块)",
+    r"^(.+?)介?绍(一下)?$",
+    r"^(.+?)是(什么|啥|咋样|怎么样)",
+    r"^(.+?)的?(位置|地址|坐标|在哪)",
+    r"^找(.+?)$",
+    r"^查(一?下)?(.+?)$",
+]
+
+# Help 查询关键词（T-011 验收 8）
+_HELP_PATTERNS = [
+    r"你能做什么|你会什么|有什么功能|功能介绍|介?绍(一下)?你|怎么(用|玩|操作|使用)",
+    r"推?荐(几个|一些|一下)?景点|有哪些(景点|好玩的|好看的|地方)",
+    r"推荐|help|帮助|功能|怎么用|说明|guide",
+    r"武大(有什么|有啥)(景点|好玩的|地方)",
+]
+
+# 明显无关的闲聊关键词（T-011 验收 10）——命中即 unknown，不参与 POI/path 解析
+_UNRELATED_KEYWORDS = [
+    "天气", "下雨", "温度", "湿度", "刮风",
+    "吃饭", "餐厅", "外卖", "食堂推荐", "吃什么", "好吃", "美食",
+    "酒店", "住宿", "订房", "订酒店",
+    "电影", "唱歌", "逛街", "购物",
+    "笑话", "故事", "你好", "你是谁", "谢谢", "再见",
+    "讲个", "写个", "翻译", "代码", "编程",
+    "股票", "基金", "理财",
+    "高考", "考研", "分数", "分数线", "招生",
+]
+
+
+def _rule_based_classify(query: str) -> dict:
+    """规则优先兜底分类（T-011 验收 7/8/10）。
+
+    当 LLM 未配置 / 调用失败 / 输出不稳定时，
+    用关键词规则识别 task_type。返回 dict：
+      {
+        "task_type": "path_planning" | "poi_query" | "help" | "unknown",
+        "start_name": str | None,
+        "end_name": str | None,
+      }
+    """
+    import re
+    q = query.strip()
+    q_lower = q.lower()
+
+    # Step 1: 先匹配明确无关词（T-011 验收 10）
+    for kw in _UNRELATED_KEYWORDS:
+        if kw in q:
+            return {
+                "task_type": "unknown",
+                "start_name": None,
+                "end_name": None,
+            }
+
+    # Step 2: 匹配 Help / 功能说明（T-011 验收 8）
+    for pattern in _HELP_PATTERNS:
+        if re.search(pattern, q, flags=re.IGNORECASE):
+            return {
+                "task_type": "help",
+                "start_name": None,
+                "end_name": None,
+            }
+
+    # Step 3: 匹配 POI 纯查询（T-011 验收 7）—— 不包含 A→B 路径语义
+    has_path_word = any(w in q for w in ["到", "去", "往", "走", "出发", "从", "路线", "路径", "怎么走"])
+    if not has_path_word:
+        for pattern in _POI_QUERY_PATTERNS:
+            m = re.match(pattern, q)
+            if m:
+                candidate = m.group(1).strip(" 的地得了吗啊呀你我他她它")
+                matched_poi = _fuzzy_match_poi_name(candidate)
+                if matched_poi:
+                    return {
+                        "task_type": "poi_query",
+                        "start_name": matched_poi,
+                        "end_name": None,
+                    }
+        # 纯 POI 名（无动词）也视为 poi_query
+        pure_name = _fuzzy_match_poi_name(q)
+        if pure_name and len(q) <= 8:
+            return {
+                "task_type": "poi_query",
+                "start_name": pure_name,
+                "end_name": None,
+            }
+
+    # Step 4: 路径提取兜底 — "从X到Y"、"X去Y" 等模式
+    import re as _re
+    path_patterns = [
+        _re.compile(r"从(.+?)(?:出发|走|去|到)(.+)(?:怎么走|路线|怎么去|的路线)?$"),
+        _re.compile(r"(.+?)去(.+)(?:怎么走|路线|怎么去)?$"),
+        _re.compile(r"(.+?)到(.+)(?:怎么走|路线|怎么去)?$"),
+    ]
+    for pat in path_patterns:
+        m = pat.search(q)
+        if m:
+            start_candidate = m.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
+            end_candidate = m.group(2).strip(" 的地得了吗啊呀你我他她它，。！？、")
+            start_match = _fuzzy_match_poi_name(start_candidate)
+            end_match = _fuzzy_match_poi_name(end_candidate)
+            if start_match and end_match and start_match != end_match:
+                return {
+                    "task_type": "path_planning",
+                    "start_name": start_match,
+                    "end_name": end_match,
+                }
+            elif start_match and not end_match:
+                return {
+                    "task_type": "path_planning",
+                    "start_name": start_match,
+                    "end_name": None,
+                }
+            elif end_match and not start_match:
+                return {
+                    "task_type": "path_planning",
+                    "start_name": None,
+                    "end_name": end_match,
+                }
+            break  # first matching pattern wins
+
+    # Step 5: 其他 — 保留 path_planning 默认（让原 parse_query / LLM 继续处理）
+    return {
+        "task_type": None,  # None 表示不覆盖，走原逻辑
+        "start_name": None,
+        "end_name": None,
+    }
+
+
+def _fuzzy_match_poi_name(candidate: str) -> str | None:
+    """按字符串包含关系 + 大小写近似匹配 POI 名（规则兜底用，确定性匹配）。
+
+    匹配优先级 (降序):
+      1. 精确名称匹配
+      2. 精确别名匹配（通过 WHU_POIS 中的 name 字段）
+      3. 候选是 name 的前缀 或 name 是候选的前缀
+      4. 子串包含
+    同优先级内按 name 字母序解耦，保证确定性。
+    """
+    if not candidate:
+        return None
+    cand = candidate.strip()
+    # 精确匹配名称
+    if cand in _POI_NAMES_SET:
+        return cand
+    # 精确匹配小写名称
+    cand_low = cand.lower()
+    if cand_low in _POI_NAMES_LOWER:
+        return _POI_NAMES_LOWER[cand_low]
+    # 分级模糊匹配（确定性排序）
+    prefix_matches = []
+    substring_matches = []
+    for name in sorted(_POI_NAMES_SET):  # 按字母序遍历保证确定性
+        if name.startswith(cand) or cand.startswith(name):
+            prefix_matches.append(name)
+        elif cand in name or name in cand:
+            substring_matches.append(name)
+    # 前缀匹配优先，然后子串匹配，各内部按字母序
+    if prefix_matches:
+        return prefix_matches[0]
+    if substring_matches:
+        return substring_matches[0]
+    return None
+
+
+def _shortcut_mode_resolve(start_name: str, end_name: str, mode: str) -> TaskIntent:
+    """快捷按钮模式：直接映射 mode→weights+constraints，不走 LLM（T-011 验收 5）。
+
+    优先级架构：快捷按钮 weight_source="shortcut"。
+    """
+    preset = SHORTCUT_MODE_PRESETS.get(
+        mode,
+        SHORTCUT_MODE_PRESETS["scenery_priority"],
+    )
+    start_ref = None
+    if start_name:
+        start_ref = PoiRef(name=start_name, type="poi")
+    end_ref = None
+    if end_name:
+        end_ref = PoiRef(name=end_name, type="poi")
+
+    intent = TaskIntent(
+        task_type="path_planning",
+        start=start_ref,
+        end=end_ref,
+        constraints=Constraints(**preset["constraints"]),
+        weights=preset["weights"],
+        input_method="shortcut",
+        ambiguity=None,
+    )
+    return _annotate_weight_source(intent)
+
+
+def _apply_priority_logic(intent: TaskIntent, weight_source_hint: str | None = None) -> TaskIntent:
+    """显式打标优先级来源（T-011 验收 6 · 架构审核 N6）。
+
+    优先级顺序：explicit_nl > shortcut > default
+    - NL 明确写了偏好（weights != null） → explicit_nl
+    - 快捷按钮 mode                     → shortcut
+    - 其他 fallback / 无偏好              → default
+    """
+    if weight_source_hint:
+        intent.weight_source = weight_source_hint
+        return intent
+    # 默认已经由 _annotate_weight_source 打标
+    if intent.weight_source is None:
+        intent = _annotate_weight_source(intent)
+    return intent
+
+
+def _merge_context_with_intent(intent: TaskIntent, context: dict | None, query: str) -> TaskIntent:
+    """多轮上下文承接：本轮缺 start/end 时复用 context 中的起终点（T-011 验收 9）。
+
+    context 结构示例（前端从 localStorage 的 whu_walker:context:{sid} 透传）：
+      {
+        "start": {"name": "牌坊", "type": "poi"},
+        "end":   {"name": "樱顶",  "type": "poi"},
+        "constraints": {...},
+        "weights": {...},
+        "previous_intent": {...TaskIntent snapshot...}
+      }
+    """
+    if not context:
+        return intent
+    if intent.task_type not in ("path_planning", "poi_query"):
+        return intent
+
+    # 缺 start → 补 context.start
+    if intent.start is None and isinstance(context.get("start"), dict):
+        ctx_start = context["start"]
+        if ctx_start.get("name"):
+            intent.start = PoiRef(
+                name=ctx_start["name"],
+                type=ctx_start.get("type", "poi"),
+                coordinates=ctx_start.get("coordinates"),
+            )
+    # 缺 end → 补 context.end（poi_query 不需要 end）
+    if intent.task_type == "path_planning" and intent.end is None and isinstance(context.get("end"), dict):
+        ctx_end = context["end"]
+        if ctx_end.get("name"):
+            intent.end = PoiRef(
+                name=ctx_end["name"],
+                type=ctx_end.get("type", "poi"),
+                coordinates=ctx_end.get("coordinates"),
+            )
+    # 清除已补全字段的 ambiguity 提示
+    if intent.start is not None and intent.end is not None and intent.ambiguity in (
+        "请指定起点", "请指定终点", "请指定起点和终点"
+    ):
+        intent.ambiguity = None
+    return intent
+
+
+def _resolve_ambiguity_completion(intent: TaskIntent, query: str, context: dict | None) -> TaskIntent:
+    """ambiguity 补全：上轮返回 ambiguity 提示，本轮用户单 POI 名视为补字段（T-011 验收 11）。
+
+    场景：
+      - 上轮 ambiguity="请指定起点"，本轮用户回复"牌坊" → start=牌坊，保留 context 中的 end/constraints/weights
+      - 上轮 ambiguity="请指定终点"，本轮用户回复"樱顶" → end=樱顶，保留 context 中的 start/constraints/weights
+    """
+    if not context:
+        return intent
+
+    prev = context.get("previous_intent") or {}
+    prev_ambi = prev.get("ambiguity") or context.get("last_ambiguity") or ""
+    if not prev_ambi:
+        return intent
+
+    # 本轮 query 解析出的纯 POI 名
+    matched_poi = _fuzzy_match_poi_name(query.strip())
+    if not matched_poi:
+        return intent
+
+    prev_start = prev.get("start")
+    prev_end = prev.get("end")
+    prev_constraints = prev.get("constraints") or DEFAULT_CONSTRAINTS_DICT
+    prev_weights = prev.get("weights")
+
+    merged = False
+    if "请指定起点" in prev_ambi and prev_end is not None:
+        # 上轮缺起点，本轮补的是起点
+        intent.start = PoiRef(name=matched_poi, type="poi")
+        intent.end = PoiRef(
+            name=prev_end["name"],
+            type=prev_end.get("type", "poi"),
+            coordinates=prev_end.get("coordinates"),
+        )
+        merged = True
+    elif "请指定终点" in prev_ambi and prev_start is not None:
+        # 上轮缺终点，本轮补的是终点
+        intent.start = PoiRef(
+            name=prev_start["name"],
+            type=prev_start.get("type", "poi"),
+            coordinates=prev_start.get("coordinates"),
+        )
+        intent.end = PoiRef(name=matched_poi, type="poi")
+        merged = True
+
+    if merged:
+        # 保留上轮 constraints / weights，防止 LLM 重新识别为空
+        try:
+            intent.constraints = Constraints(**prev_constraints)
+        except (ValidationError, TypeError):
+            pass
+        if prev_weights is not None:
+            intent.weights = prev_weights
+        intent.ambiguity = None
+        intent.task_type = "path_planning"
+
+    return intent
+
+
+def _t011_post_process(
+    intent: TaskIntent,
+    query: str,
+    context: dict | None,
+    shortcut_mode_hint: bool = False,
+) -> TaskIntent:
+    """T-011 统一后处理入口（append-only 在 parse_query 返回前调用，不修改原 LLM 流程）。
+
+    处理顺序（符合优先级规则）：
+      1. 规则兜底分类（验收 7/8/10）—— LLM 误判时强覆盖 task_type
+      2. ambiguity 补全（验收 11）—— 用户单 POI 名补缺字段
+      3. 多轮上下文承接（验收 9）—— 缺 start/end 从 context 复用
+      4. 优先级打标（验收 6）—— weight_source 字段
+      5. unknown 兜底文案（验收 10）—— task_type=unknown 时填充引导语
+    """
+    # 1. 规则分类优先覆盖（LLM 没判对 / fallback 默认 intent 时用规则纠正）
+    classified = _rule_based_classify(query)
+    if classified["task_type"] == "poi_query":
+        intent.task_type = "poi_query"
+        intent.start = PoiRef(name=classified["start_name"], type="poi")
+        intent.end = None
+        intent.ambiguity = None
+    elif classified["task_type"] == "help":
+        intent.task_type = "help"
+        intent.start = None
+        intent.end = None
+        intent.ambiguity = None
+    elif classified["task_type"] == "unknown":
+        intent.task_type = "unknown"
+        intent.start = None
+        intent.end = None
+        intent.ambiguity = UNKNOWN_GUIDE_TEXT
+    elif classified["task_type"] == "path_planning":
+        # 正则兜底：从 query 中提取到起终点，覆盖 LLM fallback 的空值
+        if classified["start_name"]:
+            intent.start = PoiRef(name=classified["start_name"], type="poi")
+        if classified["end_name"]:
+            intent.end = PoiRef(name=classified["end_name"], type="poi")
+        # 两个都补全了 → 清除 ambiguity
+        if intent.start is not None and intent.end is not None and intent.ambiguity:
+            intent.ambiguity = None
+
+    # 2. ambiguity 补全（T-011 验收 11）—— 在 context 合并之前判断是否命中补全语义
+    intent = _resolve_ambiguity_completion(intent, query, context)
+
+    # 3. 多轮 context 承接（T-011 验收 9）—— 缺 start/end 时用 context 补齐
+    intent = _merge_context_with_intent(intent, context, query)
+
+    # 4. 优先级打标（T-011 验收 6）
+    if shortcut_mode_hint:
+        intent = _apply_priority_logic(intent, weight_source_hint="shortcut")
+    else:
+        intent = _apply_priority_logic(intent)
+
+    # 5. unknown 兜底：如果 task_type=unknown 且 ambiguity 空，补引导语
+    if intent.task_type == "unknown" and not intent.ambiguity:
+        intent.ambiguity = UNKNOWN_GUIDE_TEXT
+
+    # 6. help / unknown 类型的 constraints 保证合法（T-011 验收 12）
+    if intent.task_type in ("help", "unknown"):
+        try:
+            intent.constraints = Constraints(**DEFAULT_CONSTRAINTS_DICT)
+        except (ValidationError, TypeError):
+            pass
+
+    return intent

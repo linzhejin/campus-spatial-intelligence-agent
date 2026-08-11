@@ -23,9 +23,11 @@ def create_app() -> Flask:
     if os.getenv("FLASK_ENV", "development") == "production":
         CORS(app, origins=os.getenv("CORS_ORIGINS", "").split(","))
         app.config["DEBUG"] = False
+        app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
     else:
         CORS(app)
         app.config["DEBUG"] = True
+        app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB dev
 
     from api.routes import api_bp
     app.register_blueprint(api_bp)
@@ -34,10 +36,18 @@ def create_app() -> Flask:
     def serve_index():
         return send_from_directory(app.static_folder, "index.html")
 
+    @app.route("/health")
+    def health_check():
+        return jsonify({
+            "status": "ok",
+            "project": "漫步珞珈",
+        })
+
     @app.route("/js/config.js")
     def serve_config_js():
         config_data = {
             "amapKey": config.AMAP_KEY or "",
+            "amapSecurityCode": config.AMAP_SECURITY_CODE or "",
             "apiBase": "",
             "mapCenter": [config.MAP_CENTER["lng"], config.MAP_CENTER["lat"]],
             "mapZoom": config.MAP_ZOOM,

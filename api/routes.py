@@ -11,14 +11,16 @@
 """
 import logging
 import math
+import os
 
+import networkx as nx
 from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
 from agents.explainer import generate_explanation
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
-from spatial.routing import compute_route, resolve_weights
+from spatial.routing import compute_route, resolve_weights, _path_length
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 
 logger = logging.getLogger(__name__)
@@ -51,15 +53,15 @@ def _node_to_coord(G, node_id):
     return {"node_id": int(node_id), "lng": round(lng, 6), "lat": round(lat, 6)}
 
 
-def _compute_route_costs(G, route_nodes, weights):
+def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
     if len(route_nodes) < 2:
         return {"distance": 0.0, "slope": 0.0, "scenery": 0.0}
 
-    max_len = 0.0
-    for u, v, data in G.edges(data=True):
-        length = data.get("length", 0)
-        if length > max_len:
-            max_len = length
+    if max_len == 0:
+        for u, v, data in G.edges(data=True):
+            length = data.get("length", 0)
+            if length > max_len:
+                max_len = length
 
     if max_len == 0:
         max_len = 1.0
@@ -136,15 +138,9 @@ def _ensure_network():
     if G is not None:
         return G, None
 
-    if not _network_initialized:
-        return None, _err(
-            "network_not_initialized",
-            "路网尚未加载，请先调用 POST /api/network/init 初始化路网",
-            503,
-        )
-
     try:
         G = load_or_download_network()
+        _network_initialized = True
         return G, None
     except RuntimeError as e:
         return None, _err("network_load_failed", f"路网加载失败: {e}", 500)
@@ -200,6 +196,7 @@ def parse():
             "weights": mode_weights.get(mode),
             "input_method": "shortcut",
             "ambiguity": None,
+            "weight_source": "shortcut",
         })
     else:
         return _err("invalid_input_method", "input_method 必须为 'nl' 或 'shortcut'", 400)
@@ -307,7 +304,7 @@ def route():
     recommended_coords = [_node_to_coord(G, nid) for nid in recommended_nodes]
     shortest_coords = [_node_to_coord(G, nid) for nid in shortest_nodes]
 
-    costs = _compute_route_costs(G, recommended_nodes, resolved_weights)
+    costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
@@ -438,7 +435,7 @@ def chat():
     recommended_coords = [_node_to_coord(G, nid) for nid in recommended_nodes]
     shortest_coords = [_node_to_coord(G, nid) for nid in shortest_nodes]
 
-    costs = _compute_route_costs(G, recommended_nodes, resolved_weights)
+    costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
@@ -452,7 +449,8 @@ def chat():
 
     explanation = ""
     try:
-        explanation = generate_explanation(route_data_for_explainer, constraints, weights)
+        weight_source = intent_data.get("weight_source")
+        explanation = generate_explanation(route_data_for_explainer, constraints, weights, weight_source)
     except Exception:
         explanation = "已为您规划好路线。"
 
@@ -564,13 +562,16 @@ def network_init():
                 "cached": True,
             })
 
+        from config import ROAD_NETWORK_CACHE
+        cache_existed = os.path.exists(ROAD_NETWORK_CACHE)
+
         G = load_or_download_network()
         _network_initialized = True
         return _ok({
             "status": "loaded",
             "nodes": G.number_of_nodes(),
             "edges": G.number_of_edges(),
-            "cached": True,
+            "cached": cache_existed,
         })
     except RuntimeError as e:
         logger.exception("路网加载失败")
@@ -578,3 +579,105 @@ def network_init():
     except Exception as e:
         logger.exception("路网初始化异常")
         return _err("network_init_failed", f"路网初始化失败: {e}", 500)
+
+
+# ===========================================================================
+# T-022: 场景 3 候选 POI 交互 — POST /api/candidates
+# ===========================================================================
+@api_bp.route("/candidates", methods=["POST"])
+def candidates():
+    """POST /api/candidates — scenario 3: find candidate POIs by type near a start point.
+
+    Input: {"start": {"name": "牌坊"}, "poi_type": "scenery", "keyword": "樱花"}
+    Output: {"candidates": [{"name": "...", "type": "...", "scenery_score": N, "distance_m": N}, ...]}
+    """
+    body = request.get_json(silent=True)
+    if body is None:
+        return _err("invalid_json", "请求体必须为合法 JSON", 400)
+
+    start = body.get("start")
+    if not start or not start.get("name"):
+        return _err("missing_start", "start.name 必填", 400)
+
+    start_poi = get_poi(start.get("name"))
+    if start_poi is None:
+        return _err("poi_not_found", f"起点 '{start.get('name')}' 未找到", 404)
+
+    poi_type = body.get("poi_type")
+    keyword = body.get("keyword", "").strip()
+
+    # Get all POIs matching type
+    all_pois = list_all_pois(poi_type=poi_type if poi_type else None)
+
+    # Filter by keyword if provided, exclude start POI
+    candidates = []
+    for poi in all_pois:
+        if poi["name"] == start.get("name"):
+            continue
+        if keyword and keyword not in poi.get("name", "") and keyword not in poi.get("description", ""):
+            continue
+        candidates.append(poi)
+
+    if not candidates:
+        return _err(
+            "no_candidates",
+            f"未找到匹配的候选POI（类型={poi_type}, 关键词={keyword}）",
+            404,
+        )
+
+    # Calculate road-network distance from start to each candidate
+    G, err = _ensure_network()
+    if err:
+        # Fallback: use haversine distance if network not loaded
+        start_lat = start_poi["lat"]
+        start_lon = start_poi["lon"]
+        for c in candidates:
+            c_lat = c.get("lat", 0)
+            c_lon = c.get("lon", 0)
+            dist = _haversine(start_lat, start_lon, c_lat, c_lon)
+            c["distance_m"] = round(dist, 1)
+            c["scenery_score"] = c.get("scenery_score", 3)
+    else:
+        start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
+        try:
+            start_node = get_nearest_node(G, start_lon_wgs, start_lat_wgs)
+        except Exception:
+            start_node = None
+
+        for c in candidates:
+            c_lat = c.get("lat", 0)
+            c_lon = c.get("lon", 0)
+            if start_node is not None:
+                try:
+                    c_lon_wgs, c_lat_wgs = gcj02_to_wgs84(c_lon, c_lat)
+                    end_node = get_nearest_node(G, c_lon_wgs, c_lat_wgs)
+                    try:
+                        path = nx.dijkstra_path(G, start_node, end_node, weight="length")
+                        dist = _path_length(G, path)
+                        c["distance_m"] = round(dist, 1)
+                    except Exception:
+                        dist = _haversine(start_poi["lat"], start_poi["lon"], c_lat, c_lon)
+                        c["distance_m"] = round(dist, 1)
+                except Exception:
+                    dist = _haversine(start_poi["lat"], start_poi["lon"], c_lat, c_lon)
+                    c["distance_m"] = round(dist, 1)
+            else:
+                dist = _haversine(start_poi["lat"], start_poi["lon"], c_lat, c_lon)
+                c["distance_m"] = round(dist, 1)
+            c["scenery_score"] = c.get("scenery_score", 3)
+
+    # Sort by scenery_score desc, then distance asc
+    candidates.sort(key=lambda p: (-p.get("scenery_score", 3), p.get("distance_m", 9999)))
+
+    # Return top 5
+    result = []
+    for c in candidates[:5]:
+        result.append({
+            "name": c["name"],
+            "type": c.get("type", "landmark"),
+            "scenery_score": c.get("scenery_score", 3),
+            "distance_m": c.get("distance_m", 0),
+            "description": c.get("description", "")[:80],
+        })
+
+    return _ok({"candidates": result, "start": start})

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tests/test_t011_checklist.py)",
+      "Bash(python scripts/validate_t018.py)",
+      "Bash(python scripts/validate_t005_prompts.py)",
+      "Bash(python scripts/T026_validate_annotations.py)",
+      "Bash(python -c \"from config import DEEPSEEK_API_KEY, AMAP_KEY; print\\('DEEPSEEK_KEY:', 'SET' if DEEPSEEK_API_KEY else 'MISSING'\\); print\\('AMAP_KEY:', 'SET' if AMAP_KEY else 'MISSING'\\)\")",
+      "Bash(python -m pytest tests/ -q --tb=no)",
+      "Bash(curl -s http://localhost:5000/)",
+      "mcp__playwright__browser_type",
+      "Bash(python -c \"from config import WHU_POIS; print\\('樱顶' in WHU_POIS, '牌坊' in WHU_POIS, '樱花大道' in WHU_POIS\\); print\\(sorted\\(WHU_POIS.keys\\(\\)\\)[:10]\\)\")",
+      "Bash(python -c \"import os; p='data/whu_road_network.graphml'; os.remove\\(p\\) if os.path.exists\\(p\\) else None; print\\('deleted' if not os.path.exists\\(p\\) else 'still exists'\\)\")",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(python app.py)",
+      "Bash(curl -s http://localhost:5000/health)",
+      "Bash(python -c \"import os, signal, subprocess; result = subprocess.run\\(['cmd', '/c', 'taskkill /F /IM python.exe'], capture_output=True, text=True\\); print\\(result.stdout\\); print\\(result.stderr\\)\")",
+      "Bash(python -c \"import requests; r = requests.get\\('http://localhost:5000/'\\); print\\('h1' in r.text, 'error-section' in r.text, r.status_code\\)\")",
+      "Bash(python -c \"import subprocess; subprocess.run\\(['cmd','/c','netstat -ano | findstr :5000'], capture_output=False\\)\")",
+      "Bash(python -c \"import subprocess, os; result = subprocess.run\\(['cmd','/c','netstat -ano | findstr :5000'], capture_output=True, text=True\\); print\\(result.stdout\\)\")"
+    ]
+  }
+}

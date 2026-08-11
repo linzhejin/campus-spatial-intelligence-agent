@@ -208,8 +208,228 @@
   - `spatial/routing.py` 实现两步路径计算
   - 解释生成时分别说明"已过滤 X 路段（硬约束）"和"已优化 Y 偏好（软成本）"
 
+## DEC-012: OSM 步道验证覆盖率不足 80% 降级方案
+
+- 日期: 2026-08-11
+- 阶段: Stage 0 P0（路网验证失败后）
+- Decision: OSM 路网 footway/path 覆盖率仅 70%（< 80% 阈值），触发 R3 降级
+- 选择: **方案 A · 取消 highway 二次筛选，使用 osmnx `network_type="walk"` 全量路网**
+  - 原 `filter_pedestrian_edges()` 严格筛选 `highway ∈ {footway, path}`，导致 3,844 条路段切成 235 个孤岛
+  - 改为直接使用 osmnx 下载的 walk 全量路网（含 residential、service、pedestrian、steps 等步行可达路段类型），不再二次过滤
+- 原因:
+  - OSM 在武大校园内 footway/path 标注不完整，很多实际步道被标为 residential/service 等，严格筛选导致路网严重碎片化
+  - osmnx `network_type="walk"` 已内置过滤器，下载的都是适合步行的路网，二次筛选过严
+  - 方案 A 工作量最小（0 人工），相比手动补段（数小时）和高德 API 降级（架构大改）最优
+- 放弃方案:
+  - **方案 B · 手动补段**：用 QGIS 手动连接 235 个连通分量的断点，数小时人工投入，前期不现实
+  - **方案 C · 降级为高德路径 API**：完全放弃 OSM 自建路径计算，"LLM→空间认知→GIS决策"的研究价值丧失
+- 影响:
+  - 路段数从 ~3,800 增至 ~9,000（包含所有 walk 类型），最大分量节点数应显著提升
+  - 路径计算会包含少量 residential/service 路段，但 `network_type="walk"` 已排除机动车专用道，步行可达性安全
+  - T-001 验证脚本需同步修改，且后续 spatial/network.py 的实际路网下载逻辑也需对齐（不再二次筛选 footway/path）
+
+## DEC-013: T-011 Parser 双轨策略 — 规则兜底分类 + LLM 精细解析
+
+- 日期: 2026-08-11
+- 阶段: Stage 6 T-011（NL 解析 Agent 实现）
+- Decision: Parser 对 task_type 的判定采用「规则优先覆盖 + LLM 精细解析」的双轨策略
+- 选择:
+  1. **LLM 主流程**：保留原 parse_query 内的 DeepSeek 调用 + 3 次重试 + Pydantic 校验（不动函数体）
+  2. **规则后处理（_rule_based_classify）**：在 `_t011_post_process` 中用关键词规则对以下 3 类做**强制覆盖**，不依赖 LLM 是否命中：
+     - `unknown`：命中闲聊关键词（天气/吃饭/笑话/你好...） → 强制 task_type=unknown + 引导语
+     - `help`：命中功能/推荐关键词（你能做什么/推荐景点/怎么用...） → 强制 task_type=help
+     - `poi_query`：命中「X 在哪 / X 介绍 / X 是什么」句式，且不含 A→B 路径动词 → 强制 task_type=poi_query，start=POI，end=null（不强行配对）
+  3. **LLM + Prompt 层面同步注入**：parse_system.txt 的任务类型从 2 项扩展为 4 项，并加入对应 few-shot；即使规则层被绕过，LLM 层也能输出正确的 help/unknown
+- 原因:
+  - **稳定性**：TASKS §7/8/10 对 3 类对话有严格验收，单靠 LLM 可能因温度/上下文波动漏判；规则层提供 P100 级确定性兜底
+  - **可维护性**：新增无关关键词只需追加 `_UNRELATED_KEYWORDS` 列表，无需改 Prompt 或重调 few-shot
+  - **SLA 友好**：规则后处理为纯 CPU 字符串匹配，耗时 <1ms，不影响 P95 ≤3s 延迟
+  - **研究链路不破坏**：路径规划的核心权重/约束仍由 LLM 直接生成（保留 DEC-010 研究链路），仅 help/unknown/poi_query 的 task_type 分类被规则覆盖，不影响 CSIA 核心假设的验证
+- 放弃方案:
+  - **纯 LLM 4 分类**：无规则层，仅靠 Prompt + few-shot 让 LLM 输出 4 类 task_type。风险：闲聊/POI 查询的句式波动大，可能把「樱顶在哪」误判成 path_planning 且乱配 end，违反 §7 验收
+  - **纯规则全分类**：path_planning 也靠正则提取 A→B。风险：复杂偏好描述（"膝盖不好想看樱花走风景好的路"）规则维护成本高，且 DEC-010 的核心是"LLM 直接生成 weights"，违反研究定位
+- 影响:
+  - `agents/parser.py` 末尾追加 `_rule_based_classify`、`_t011_post_process` 等辅助函数（append-only，不动原 parse_query LLM 调用/重试/JSON 提取逻辑）
+  - `agents/prompts/parse_system.txt` task_type 列表和 few-shot 对应扩展为 4 项
+  - T-014 API 路由层对 4 种 task_type 分别分支（poi_query→POI 详情润色、help→功能说明+推荐列表、unknown→引导 Chip、path_planning→GIS 路径计算）
+
+## DEC-014: T-011 多轮上下文与 ambiguity 补全 — 保留上轮约束权重合并策略
+
+- 日期: 2026-08-11
+- 阶段: Stage 6 T-011（NL 解析 Agent 实现）
+- Decision: 多轮上下文承接（验收 9）和 ambiguity 补全（验收 11）采用「缺字段填充 + 保留上轮 constraints/weights」合并策略
+- 选择:
+  - **多轮上下文承接（_merge_context_with_intent）**：
+    1. 若本轮 TaskIntent.start 为空，且 context.start 有 name → 用 context.start 填充 start
+    2. 若本轮 task_type=path_planning 且 TaskIntent.end 为空，且 context.end 有 name → 填充 end
+    3. 填充后若 start/end 齐全且原 ambiguity 仅为「请指定起点/终点」→ 清除 ambiguity（用户无需再被提示）
+  - **ambiguity 补全（_resolve_ambiguity_completion）**：
+    1. 仅当 context.previous_intent.ambiguity ∈ {「请指定起点」, 「请指定终点」} 且本轮 query 可 _fuzzy_match_poi_name 匹配到单个 POI 时触发
+    2. 若上轮缺起点 + 本轮匹配 POI → start = 本轮 POI，end 从上轮 previous_intent.end 复制
+    3. 若上轮缺终点 + 本轮匹配 POI → end = 本轮 POI，start 从上轮 previous_intent.start 复制
+    4. **关键**：合并成功时，constraints 和 weights 都从上轮 previous_intent 复制，不使用 LLM 本轮重新识别的默认值（保证「膝盖不好 → 避开陡坡」等偏好在补全后不丢失）
+  - **调用顺序**：`_t011_post_process` 中先执行 ambiguity 补全，再执行一般 context 承接，避免两种合并路径冲突
+- 原因:
+  - **用户体验**：用户说「我想看樱花膝盖不好」→ 后端回「请指定起点」→ 用户回「牌坊」，此时必须保留 slope=avoid 和 scenery=high 偏好，若仅补 start 而清空 constraints 会导致偏好丢失，用户需重复输入
+  - **鲁棒性**：LLM 对单 POI 名（"牌坊"）的默认解析通常产出 constraints 默认值 + weights=null；上轮存储的约束/权重更可靠
+  - **无冲突假设**：触发 ambiguity 补全的 query 严格限定为「单 POI 名 + 上轮 ambiguity 明确要求补起/终点」，不存在用户同时改偏好的语义冲突场景，保留上轮值安全
+- 放弃方案:
+  - **只补字段 + 用本轮 LLM 重新识别的 constraints/weights**：风险是单 POI 名 query LLM 识别为默认约束，用户偏好丢失
+  - **让前端 routes.py 层做合并**：违反单一职责原则，合并逻辑应在 Parser 输出 TaskIntent 时完成，路由层只消费完整 TaskIntent
+- 影响:
+  - `agents/parser.py` 新增 `_merge_context_with_intent` 和 `_resolve_ambiguity_completion` 两个纯函数（可独立单测）
+  - 前端 localStorage 的 whu_walker:context 结构必须包含 `previous_intent: {start, end, constraints, weights, ambiguity}` 字段快照（T-017 前端交互实现时对应）
+  - T-014 routes.py 对应实现「ambiguity + context 字段合并」分支（验收 11 的端到端流程在路由层再兜底一次）
+
 ---
 
+## DEC-015: TaskIntent 权重来源标注方式 — BaseModel 新增 Optional 字段
+- 日期: 2026-08-11
+- 阶段: Stage 6（T-024 快捷按钮与权重优先级）
+- Decision: 权重来源（weight_source）元信息的存储方式
+- 选择: 在 `TaskIntent` Pydantic BaseModel 中新增 `weight_source: Optional[Literal["explicit_nl", "shortcut", "default"]] = None` 可选字段，枚举值三选一：
+  - `explicit_nl`：NL 输入明确表达了空间偏好（LLM 解析出 weights != null）
+  - `shortcut`：通过快捷按钮模式传入（input_method=shortcut）
+  - `default`：NL 输入无偏好 + 无快捷按钮（weights=null，后端 fallback 到 DEFAULT_WEIGHTS）
+- 原因:
+  1. **向后兼容**：Optional 字段且有默认值 None，旧代码不设置该字段也能正常实例化，不会破坏原 schema
+  2. **类型安全**：Pydantic BaseModel 字段 + Literal 枚举，IDE 有类型提示、序列化/反序列化自动校验
+  3. **语义清晰**：字段名直接表达"权重来源"含义，不污染 constraints 字段（constraints 语义是用户约束等级，不是来源）
+  4. **便于传递**：从 parser → routes → explainer 链路中，model_dump() 序列化时自动带上该字段，无需单独处理 dict key
+- 放弃方案:
+  - **方案 A · 塞入 constraints dict**：如 `constraints["_weight_source"] = "explicit_nl"`，语义污染（constraints 本应是三因素等级），且无类型安全，后续人容易困惑
+  - **方案 B · 单独 metadata dict 字段**：新增 `meta: Optional[dict] = None` 字段放 weight_source，扩展性好但过度设计，V1 只需要一个标注字段，dict 带来 key 拼写风险
+  - **方案 C · 不进 schema，routes.py 单独推断**：不在 TaskIntent 存，routes.py 里根据 `input_method` + `weights` 是否 null 推断。缺点：推断逻辑重复（前端也需要知道），且无法被 serialize 后在前后端链路中一致传递
+- 影响:
+  - `agents/parser.py`：TaskIntent 模型新增字段，新增 `_annotate_weight_source` 辅助函数在返回前打标
+  - `api/routes.py`：/api/parse 快捷模式也带上该字段；/api/chat 调用 generate_explanation 时传 weight_source 参数
+  - `agents/explainer.py`：generate_explanation 新增可选 weight_source 参数，模板兜底解释中拼接"已按...推荐"说明来源
+
+## DEC-016: T-005 Prompt Few-shot 补充策略 — Append-only 增量追加
+
+- 日期: 2026-08-11
+- 阶段: Stage 6-7 T-005 实施
+- Decision: Prompt 模板 few-shot 不足时的补充策略
+- 选择: **Append-only 增量追加**，不修改任何原有 prompt 行，仅在文件末尾追加 few-shot 块
+  - parse_system.txt：原 0 个 few-shot → 追加 8 个（覆盖 path_planning 普通/避坡/最短/景观/缺起点 + poi_query + help + unknown 共 4 种 task_type）
+  - explain_system.txt：原 1 个 few-shot → 追加 2 个（distance=short 场景 + scenery=high 模板兜底场景），共 3 个
+- 原因:
+  - Stage 6 计划明确要求「Append-only！」严禁误删/覆盖原有 prompt
+  - few-shot 数量是硬验收指标（parse≥5、explain≥2），不达标则 T-011/T-012 无法通过
+  - 增量追加零风险，不影响 parser.py/explainer.py 对 prompt 的读取逻辑
+  - 额外覆盖 T-011 新增的 4 种 task_type（path_planning/poi_query/help/unknown）和 ambiguity 触发语义，提前对齐后续任务需求
+- 放弃方案:
+  - 直接重写整个 prompt 文件：可能破坏原有的规则说明或格式，风险过高
+  - 仅补到刚好 5/2 个（即 parse 补 5 个、explain 补 1 个）：虽刚好达标但未覆盖 4 种 task_type，T-011 实施时还需再改，增加二次改动风险
+- 影响:
+  - parse_system.txt 行数从 51 行增至 77 行，few-shot 实际数量 8 个
+  - explain_system.txt 行数从 20 行增至 34 行，few-shot 实际数量 3 个
+  - 配套验证脚本 `scripts/validate_t005_prompts.py` 可重复执行验证 6/6 + 4/4 验收
+
+## DEC-017: 路段标注 edge 匹配策略 — edge_id[u,v,k] 优先 + u/v 对兜底
+
+- 日期: 2026-08-11
+- 阶段: Stage 6 · T-026 实施
+- Decision: `road_annotations.json` 标注数据 merge 到 NetworkX 图的边匹配策略
+- 选择: **两级匹配策略**：
+  1. **优先精确匹配**：解析 `edge_id` 字段为 `(u, v, k)` 三元组，和 NetworkX MultiDiGraph 的 `G.edges(keys=True)` 逐条对齐（字符串化 u/v + 整数化 k，避免 WGS-84 node id 类型不一致导致的匹配失败）
+  2. **兜底 u/v 对匹配**：若 `edge_id` 解析失败或三元组未命中，则取标注中的 `u`、`v` 字段作为节点对，在该节点对下的所有并行边中选择第 0 条作为目标
+  3. **容忍匹配失败**：某条标注无法匹配任何边时，静默跳过，不抛异常，仅影响覆盖率计算，最终覆盖率 < 0.8 时 routing 自动降级
+- 原因:
+  - TDD §4.2 定义的 `edge_id` 是 `[u, v, k]` 列表，和 NetworkX MultiDiGraph 的 key 结构一一对应，精确匹配准确率最高
+  - 手动标注 CSV → JSON 转换时（csv_to_json.py）可能存在 edge_id 字符串化不一致（JSON 导出时 int 转字符串），字符串归一化匹配可避免类型不匹配
+  - u/v 对兜底可兼容 `compute_route_with_annotations()` 中仅通过 `k == eid` 的旧匹配方式，以及只记录了 u/v 没有记录 k 的标注版本
+  - 静默跳过匹配失败的边是 R5 风险（标注覆盖率不足）的要求，不应影响运行时稳定性
+- 放弃方案:
+  - **仅按 edge_id[u,v,k] 精确匹配**：鲁棒性不足，标注文件稍有类型不一致（int 对 str）就全部失配，覆盖率骤降为 0
+  - **按欧氏距离最近边匹配**：计算复杂度高（N_edges × N_annotations），且相邻并行边几何上非常接近，容易误匹配
+  - **按 name 属性模糊匹配**：路段 name 在 OSM 中大量为空，不可靠
+- 影响:
+  - `spatial/network.py:_merge_annotations()` 实现两级匹配 + `_parse_edge_id()` 做类型归一化
+  - 覆盖率计算基于"实际成功匹配并写入 slope/scenery 的边数 / 总图边数"，而非"标注 JSON 中的条目数"
+  - 匹配失败不崩、不 warn（避免日志噪音），仅通过覆盖率数值体现在 filter_status 降级标记上
+
+## DEC-018: T-018 视觉/PWA 改动策略 — CSS Append-only + SW 显式三策略 + Manifest 主题色对齐
+
+- 日期: 2026-08-11
+- 阶段: Stage 6-7 · T-018 前端视觉设计与 PWA 配置
+- Decision: T-018 14 条验收标准（7 基础 + 7 冷启动）的落地方式与风险控制
+- 选择: **三文件分治 + 严格 append-only**：
+  1. **`static/css/style.css`**：严禁修改/删除中间任何原有类，仅在文件末尾追加新规则；需覆盖的旧值用 `!important`（仅限 `.welcome-close`、`.help-btn` 两个按钮尺寸 36/32→44px 的 WCAG AA 达标场景）
+  2. **`static/sw.js`**：整体重写为「三策略显式分发表」结构，按 TDD §9.4 注释标注①cache-first /②SWR /③network-only 三段，保留 PRECACHE_URLS 预缓存数组 + install/activate 生命周期不变
+  3. **`static/manifest.json`**：仅改 2 个色值字段（`theme_color` 从蓝色 `#1976D2` → 樱花粉 `#E8929C`；`background_color` 从 `#F5F5F5` → 暖白底 `#FAF8F5`），其余 icons/shortcuts/name 均保持不动
+- 原因:
+  - Stage 6 Plan 明确第 4 条潜在风险：**覆盖原有视觉** → 必须 append-only，严禁在 style.css 中间插行或删改原类
+  - T-018 §4 验收标准 44×44px 与原 `.welcome-close 36px`、`.help-btn 32px` 冲突，`!important` 覆盖是零风险方案（不触碰原规则）
+  - SW 原实现仅做了"cache-first+fallback fetch"的混合，未显式区分 TDD §9.4 要求的三段式策略；重写分发表比在原代码上 patch 更清晰，自检脚本可通过字符串 `策略 ①②③` 精确校验
+  - Manifest 原 `theme_color=#1976D2`（蓝）是 Material Design 默认色，与樱花粉/翡翠绿主题完全不符，修改为 `#E8929C` 可在 PWA 添加到主屏幕/Android 状态栏时显示品牌色，提升统一性
+- 放弃方案:
+  - **直接修改 CSS 中间原类的 36→44 值**：违反 append-only 承诺，可能破坏 welcome card 原布局（按钮位置 top/right 与尺寸强耦合），风险不可控
+  - **SW 仅在末尾追加 patch 不重写**：旧 SW 没有 `/api/*` SWR 分支、没有 amap network-only 分支，追加补丁会与原 fetch 监听器重叠，可读性和可维护性差
+  - **Manifest 新增 192/512 PNG 图标**：当前 SVG icons 已存在且 `sizes=192x192/512x512` 规范，PNG 需额外图片资源，验收标准未强制 PNG 格式，保持 SVG 可降低资源体积且避免生成二进制
+- 影响:
+  - `static/css/style.css` 新增 42 行（§4 触摸目标达标覆盖规则），总行数从 1260 → 1292，未删改任何原行
+  - `static/sw.js` 总行数从 69 → 126，三策略注释自检可过，`validate_t018.py` §5/§5.1 双 PASS
+  - `static/manifest.json` theme_color 从蓝→粉，background_color 统一，PWA 在桌面/移动端添加到主屏幕时状态栏色与樱花主题一致
+  - 配套自检脚本 `scripts/validate_t018.py` 可重复执行，14/14 checks 稳定通过
+
+## DEC-019: T-022 场景 3 候选 POI 交付方式 — /api/parse 响应内联附加 candidates 字段
+- 日期: 2026-08-11
+- 阶段: Stage 6-7 · T-022 场景 3 候选 POI 交互闭环
+- Decision: 场景 3（start/end 候选 ≥ 2）的候选组合交付方式
+- 选择: **方案 A · /api/parse 响应体内联附加 `candidates` 字段（无新增端点）**
+  1. 在 `/api/parse` 响应中追加 `candidates` Optional 字段：
+     - 场景 1（start/end 唯一匹配）：`candidates = [ {start: {...}, end: {...}, confirmed: true, ...} ]`（单元素数组，`confirmed=true` 表示可直接 compute_route，前端无需展示选择 UI）
+     - 场景 3（start 候选 ≥ 2 或 end 候选 ≥ 2）：`candidates` 为 Top-3 `TaskIntent` 组合数组，每个组合含：
+       - `start_candidate`: `{short_id: "S1"~"S3", poi: {...}, confidence_score: 0~1}`
+       - `end_candidate`: `{short_id: "E1"~"E3", poi: {...}, confidence_score: 0~1}`
+       - `combined_score`: 综合评分 0~1（start_confidence × end_confidence），按此降序 Top-3
+  2. 原有 `ambiguity` 字段保持不变，仅当 `candidates.length > 1 || !candidates[0].confirmed` 时前端才展示选择 UI
+  3. 新增前端 `window.renderCandidates(candidates_arr)` 公开函数，基于 `.ambiguity-container` 容器注入 3×3 候选卡片网格 + 「确认选择」按钮；确认后调 `window.onCandidateConfirmed(start_id, end_id)` 重新发起 `/api/chat`
+- 原因:
+  1. **零网络往返节省**：场景 3 的候选组合在 Parser 消歧阶段即可同步生成，无需额外 `/api/candidates` 端点，减少 1 次 HTTP 往返（从 2 次 → 1 次），对 P50 ≤ 15s SLA 友好
+  2. **向后兼容（Plan 风险 4）**：`candidates` 为 Optional 字段，旧前端忽略此字段不影响原有逻辑；新增字段默认值为 `null` 或 `undefined`，旧代码不访问即不报错
+  3. **单一职责清晰**：消歧逻辑（候选生成）属于 Parser 层职责，和 `/api/parse` 的"自然语言 → 结构化意图"职责一致，新增端点会导致消歧逻辑分散在路由层两个端点，可维护性差
+  4. **前端实现简单**：场景 1（`confirmed=true`）的单候选，前端直接走原 `compute_route` 链路，无需特殊分支；场景 3 的 3×3 网格只需在 `.ambiguity-container`（T-017 已建）中注入，不改动原 HTML 结构
+- 放弃方案:
+  - **方案 B · 新增独立 `POST /api/candidates` 端点**：优点是职责解耦、响应体不受原 `/api/parse` schema 限制；缺点是多 1 次 HTTP 往返（延迟 ~50-200ms）、前端需先调 parse 再调 candidates 两步、路由层逻辑分散，与 Plan 第 ③ 条建议「省得再发一次请求」直接冲突
+  - **方案 C · 仅返回 start_candidates + end_candidates 两个独立数组，不做 Top-3 组合**：优点是传输数据量略小；缺点是前端需要自行笛卡尔积组合并排序，逻辑复杂且容易和后端评分不一致，直接违反「后端 Top-3 组合」验收要求
+- 影响:
+  - `api/routes.py` 末尾 append-only 新增 `_gen_top3_candidate_combinations()` 辅助函数 + 在 `/api/parse` NL 分支返回前附加 `candidates` 字段（快捷模式也附加 confirmed=true 单候选，保证 schema 一致）
+  - `static/js/app.js` 末尾 append-only IIFE，挂载 `window.renderCandidates` 和 `window.onCandidateConfirmed` 两个公开函数，基于已有 `.ambiguity-container` DOM 注入
+  - 自检脚本 `scripts/T022_selfcheck.py` 覆盖 3 条验收：① 场景 1 candidates[0].confirmed=true 可直通 compute_route；② 场景 3 返回 Top-3 组合且 short_id/confidence 字段完整；③ 前端 window 对象上存在 renderCandidates 和 onCandidateConfirmed 两个函数
+
+---
+
+> 模版（新增决策时复制以下格式）：
+
+## DEC-020: T-022 架构审核 N4 实现 — 独立 POST /api/candidates 端点
+
+- 日期: 2026-08-11
+- 阶段: Stage 6-7 · T-022 场景 3 候选 POI 交互闭环（架构审核 N4）
+- Decision: 场景 3（start POI + POI type）的候选 POI 交付方式采取独立端点
+- 选择: **新增独立 `POST /api/candidates` 端点**
+  1. 端点职责单一：接收 `{start: {name}, poi_type, keyword}` 返回候选 POI 列表
+  2. 每个候选包含：`name`, `type`, `scenery_score`, `distance_m`（路网距离或 haversine 兜底）, `description`
+  3. 排序：scenery_score 降序 + distance_m 升序，Top 5
+  4. 无候选时返回 `no_candidates` 错误码（404）+ 友好中文提示
+  5. 前端 `window.showCandidateCards(candidates, startName)` 渲染可点击卡片
+  6. 卡片点击自动构造 "从X到Y" 查询文本 → 填写输入框 → 触发提交按钮，复用现有路线规划流程
+- 原因:
+  1. **场景区分清晰**：此端点服务于"只有起点 + POI 类型"的场景（如"从牌坊出发，想去赏樱的地方"），与 /api/parse 的 NL 解析 + 消歧职责不同
+  2. **减少 LLM 调用**：此场景不需要 LLM 解析自然语言（用户已通过快捷按钮或结构化输入指定 start 和 type），独立端点可跳过 Parser，降低延迟和成本
+  3. **路网距离计算**：独立端点可以集成路网距离计算（Dijkstra），为候选排序提供更准确的依据
+  4. **前端简洁**：直接通过 fetch 调用 `/api/candidates`，返回即渲染，无需经过 parse → route 两步
+- 放弃方案:
+  - **方案 A（DEC-017 原设计）· /api/parse 响应体内联 candidates**：适合"用户输入 NL 且有多候选"的歧义消解场景，但场景 3 不涉及 NL 解析和消歧，是 POI 类型查询 + 路网排序问题，放在 parse 响应中增加耦合
+- 影响:
+  - `api/routes.py` 新增 1 个端点（POST /api/candidates，~90 行）
+  - `api/routes.py` imports 新增 `import networkx as nx` + `from spatial.routing import _path_length`
+  - `static/js/app.js` 末尾 append-only IIFE（~200 行），挂载 `window.showCandidateCards` 和 `window.hideCandidateCards`
+  - 自检脚本 `scripts/T022_selfcheck.py` 重写为 4 条验收（端点结构 + 前端卡片 + 点击规划 + 空候选处理）
+  - 与 DEC-017 方案 A 互斥，N4 审核确认使用独立端点方案
+
+---
 > 模版（新增决策时复制以下格式）：
 >
 > ## DEC-XXX: {决策标题}

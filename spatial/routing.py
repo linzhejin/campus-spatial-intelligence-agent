@@ -66,7 +66,15 @@ def resolve_weights(llm_weights: Optional[dict]) -> dict:
     return {k: v / total for k, v in w.items()}
 
 
-def _normalize_lengths(G: nx.MultiDiGraph) -> dict:
+def _normalize_lengths(G: nx.MultiDiGraph) -> tuple:
+    """
+    计算所有边的归一化长度。
+
+    Returns:
+        (max_len, norm_map) 元组：
+        - max_len: 全图最长边长度（米）
+        - norm_map: {(u, v): norm_length} 归一化长度映射
+    """
     max_len = 0.0
     for u, v, data in G.edges(data=True):
         length = data.get("length", 0)
@@ -74,10 +82,11 @@ def _normalize_lengths(G: nx.MultiDiGraph) -> dict:
             max_len = length
 
     if max_len == 0:
-        return {}
+        return 0.0, {}
 
-    return {(u, v, k): data.get("length", 0) / max_len
-            for u, v, k, data in G.edges(keys=True, data=True)}
+    norm_map = {(u, v): data.get("length", 0) / max_len
+                for u, v, data in G.edges(data=True)}
+    return max_len, norm_map
 
 
 def _get_edge_attr(data: dict, attr: str) -> tuple:
@@ -160,7 +169,7 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
         if slope_level == 5:
             edges_to_remove.append((u, v, k))
         elif slope_level == 4:
-            penalty_map[(u, v, k)] = 2.0
+            penalty_map[(u, v)] = 2.0
 
     if not edges_to_remove and not penalty_map:
         return G, "no_filter", {}
@@ -171,9 +180,9 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
     if nx.is_empty(G_filtered):
         G_filtered = G.copy()
         penalty_map = {}
-        for u, v, k, data in G.edges(keys=True, data=True):
+        for u, v, data in G.edges(data=True):
             if data.get("slope_level") == 5:
-                penalty_map[(u, v, k)] = 3.0
+                penalty_map[(u, v)] = 3.0
         logger.info("硬约束过滤后无可行路径，降级为 slope_level=4+5 均可通行")
         return G_filtered, "degraded_slope", penalty_map
 
@@ -186,11 +195,26 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
     return G_filtered, "filtered", penalty_map
 
 
+def _should_degrade_annotations() -> Optional[str]:
+    try:
+        from spatial.network import get_annotation_coverage_rate
+        rate = get_annotation_coverage_rate()
+    except Exception:
+        rate = 0.0
+
+    if rate <= 0.0:
+        return "no_annotations"
+    if rate < 0.8:
+        return "degraded_annotations"
+    return None
+
+
 def _edge_cost_factory(
     G: nx.MultiDiGraph,
     norm_lengths: dict,
     weights: dict,
     penalty_map: dict,
+    annotation_degraded_tag: Optional[str] = None,
 ):
     """
     创建边权函数（用于 Dijkstra 路径计算）。
@@ -199,9 +223,13 @@ def _edge_cost_factory(
     """
     def edge_weight(u, v, data):
         key = (u, v)
-        norm = norm_lengths.get(key, data.get("length", 0) / 1000.0)
+        raw_length = data.get("length", 0)
+        norm = norm_lengths.get(key, raw_length / 1000.0)
 
-        cost, _ = _compute_edge_cost(data, norm, weights)
+        if annotation_degraded_tag is not None:
+            cost = weights["distance"] * norm
+        else:
+            cost, _ = _compute_edge_cost(data, norm, weights)
 
         edge_key = (u, v)
         penalty = penalty_map.get(edge_key, 1.0)
@@ -302,12 +330,20 @@ def compute_route(
     constraints = constraints or {}
     resolved_weights = resolve_weights(weights)
 
-    norm_lengths = _normalize_lengths(G)
+    max_len, norm_lengths = _normalize_lengths(G)
+
+    annotation_degraded = _should_degrade_annotations()
 
     G_filtered, filter_status, penalty_map = _filter_by_constraints(G, constraints)
 
+    if annotation_degraded is not None:
+        if filter_status == "no_filter":
+            filter_status = annotation_degraded
+        else:
+            filter_status = f"{filter_status}+{annotation_degraded}"
+
     edge_weight = _edge_cost_factory(
-        G_filtered, norm_lengths, resolved_weights, penalty_map
+        G_filtered, norm_lengths, resolved_weights, penalty_map, annotation_degraded
     )
 
     try:
@@ -374,6 +410,8 @@ def compute_route(
         "shortest_length_m": round(shortest_len, 1),
         "applied_weights": resolved_weights,
         "length_capped": length_capped,
+        "max_len": max_len,
+        "_annotation_degraded": annotation_degraded is not None,
     }
 
 
