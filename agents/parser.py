@@ -269,7 +269,8 @@ _HELP_PATTERNS = [
     r"推?荐(几个|一些|一下)?景点|有哪些(景点|好玩的|好看的|地方)|有什么(景点|好玩的|好看的|地方)",
     r"推荐|help|帮助|功能|怎么用|说明|guide",
     r"武大(有什么|有啥)(景点|好玩的|地方)",
-    r"想去赏|想看.*(景|花|校园|最美)",
+    r"想去赏樱|想去赏花|想去赏景",   # 想赏樱/花/景 → help（推荐赏花地点）
+    r"想看.*(?:樱花|最美的景|最美的花|最美的校园)(?!.*路线)",   # 想看风景 → help（除非含路线）
 ]
 
 # 明显无关的闲聊关键词（T-011 验收 10）——命中即 unknown，不参与 POI/path 解析
@@ -319,6 +320,18 @@ def _rule_based_classify(query: str) -> dict:
                     "end_name": None,
                 }
 
+    # Step 1.5: "X附近有什么" → poi_query（在 help 之前，因为更具体）
+    m_nearby = re.match(r"^(.+?)附近有(?:什么|哪些)", q)
+    if m_nearby:
+        candidate = m_nearby.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
+        matched_poi = _fuzzy_match_poi_name(candidate)
+        if matched_poi:
+            return {
+                "task_type": "poi_query",
+                "start_name": matched_poi,
+                "end_name": None,
+            }
+
     # Step 2: 匹配 Help / 功能说明（T-011 验收 8）
     for pattern in _HELP_PATTERNS:
         if re.search(pattern, q, flags=re.IGNORECASE):
@@ -345,13 +358,16 @@ def _rule_based_classify(query: str) -> dict:
     m_x_how = re.match(r"^(.+?)(?:怎么走|怎么去|去哪|在哪里|在哪儿|在哪)$", q)
     if m_x_how:
         candidate = m_x_how.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
-        matched_poi = _fuzzy_match_poi_name(candidate)
-        if matched_poi:
-            return {
-                "task_type": "poi_query",
-                "start_name": matched_poi,
-                "end_name": None,
-            }
+        # 只有当候选不含路径结构（从/到）且能匹配到单个 POI 时才判为 poi_query
+        has_path_structure = any(w in candidate for w in ["从", "到", "去", "走"])
+        if not has_path_structure:
+            matched_poi = _fuzzy_match_poi_name(candidate)
+            if matched_poi:
+                return {
+                    "task_type": "poi_query",
+                    "start_name": matched_poi,
+                    "end_name": None,
+                }
 
     has_path_word = any(w in q for w in ["到", "去", "往", "走", "出发", "从", "路线", "路径"])
     if not has_path_word:
