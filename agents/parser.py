@@ -359,7 +359,7 @@ def _rule_based_classify(query: str) -> dict:
     if m_x_how:
         candidate = m_x_how.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、")
         # 只有当候选不含路径结构（从/到）且能匹配到单个 POI 时才判为 poi_query
-        has_path_structure = any(w in candidate for w in ["从", "到", "去", "走"])
+        has_path_structure = any(w in candidate for w in _PATH_SEMANTIC_KEYWORDS)
         if not has_path_structure:
             matched_poi = _fuzzy_match_poi_name(candidate)
             if matched_poi:

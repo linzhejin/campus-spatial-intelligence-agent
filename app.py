@@ -26,7 +26,9 @@ def create_app() -> Flask:
         if origins:
             CORS(app, origins=origins)
         else:
-            CORS(app, origins=["https://your-app.onrender.com"])
+            # Render 自动注入 RENDER_EXTERNAL_URL；本地生产回退到 onrender
+            render_url = os.getenv("RENDER_EXTERNAL_URL", "https://your-app.onrender.com")
+            CORS(app, origins=[render_url])
         app.config["DEBUG"] = False
         app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
     else:

@@ -352,6 +352,18 @@ def compute_route(
             G_filtered, start_node, end_node, weight=edge_weight
         )
     except nx.NetworkXNoPath:
+        # 诊断信息：记录过滤状态、起终点坐标、连通分量
+        from spatial.network import get_node_coords
+        try:
+            sn_coords = get_node_coords(G, start_node)
+            en_coords = get_node_coords(G, end_node)
+        except Exception:
+            sn_coords, en_coords = None, None
+        logger.warning(
+            "路径不可达: start=%s (%s) end=%s (%s) filter=%s edges=%d/%d",
+            start_node, sn_coords, end_node, en_coords,
+            filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
+        )
         raise ValueError(
             f"起点 {start_node} 到终点 {end_node} 不可达。"
             f"可能原因：硬约束过严导致无可行路径，或路网数据不足。"
