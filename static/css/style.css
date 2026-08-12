@@ -1297,3 +1297,118 @@ body {
     display: none !important;
 }
 
+/* ===== Results entrance animation ===== */
+.results-section:not([hidden]) {
+    animation: result-fade-in 0.4s ease-out;
+}
+
+@keyframes result-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Follow-up suggestions ===== */
+.suggestions-area {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--stone);
+}
+
+.suggestions-prompt {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.suggestions-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--stone);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.suggestion-chip:hover {
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(232, 146, 156, 0.15);
+}
+
+.suggestion-chip:active {
+    transform: scale(0.97);
+}
+
+/* ===== Loading message animation ===== */
+.loading-text {
+    transition: opacity 0.3s ease;
+}
+
+.loading-text.fade {
+    opacity: 0;
+}
+
+/* ===== Welcome hint chat bubble feel ===== */
+.explanation-box p {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: var(--ink);
+}
+
+/* ===== POI chips - slightly bigger, more tap friendly ===== */
+.poi-list li {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.poi-list li:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(232, 146, 156, 0.1);
+}
+
+/* ===== Error modal - warmer feel ===== */
+.error-close-btn {
+    min-height: 44px;
+    padding: 10px 32px;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: white;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.error-close-btn:hover {
+    box-shadow: 0 4px 14px rgba(199, 107, 122, 0.3);
+}
+
+.error-close-btn:active {
+    transform: scale(0.97);
+}
+
+/* ===== Map height bump on mobile ===== */
+@media (max-width: 480px) {
+    .map-container {
+        height: 250px;
+    }
+}
+

@@ -32,7 +32,45 @@
         sessionId: null,
         conversationHistory: [],
         activeMode: null,
+        loadingTimer: null,  // 轮播加载语定时器
     };
+
+    // ========== 轮播加载语（有人味儿） ==========
+    var LOADING_MESSAGES = [
+        { text: '正在理解你的需求…', sub: '嗯，让我想想怎么走最好' },
+        { text: '正在查地图…', sub: '珞珈山的路我都熟' },
+        { text: '正在计算最佳路线…', sub: '帮你避开那些不好走的路' },
+        { text: '正在找沿途的好风景…', sub: '这条路樱花季特别美' },
+        { text: '快好了…', sub: '稍等一下下' },
+    ];
+
+    function startLoadingMessages() {
+        var idx = 0;
+        var textEl = document.getElementById('loading-text');
+        var subEl = document.getElementById('loading-subtext');
+        showLoading(LOADING_MESSAGES[0].text, LOADING_MESSAGES[0].sub);
+
+        state.loadingTimer = setInterval(function () {
+            idx = (idx + 1) % LOADING_MESSAGES.length;
+            var msg = LOADING_MESSAGES[idx];
+            // 淡入淡出效果
+            textEl.classList.add('fade');
+            subEl.classList.add('fade');
+            setTimeout(function () {
+                textEl.textContent = msg.text;
+                subEl.textContent = msg.sub;
+                textEl.classList.remove('fade');
+                subEl.classList.remove('fade');
+            }, 200);
+        }, 2200);
+    }
+
+    function stopLoadingMessages() {
+        if (state.loadingTimer) {
+            clearInterval(state.loadingTimer);
+            state.loadingTimer = null;
+        }
+    }
 
     function generateSessionId() {
         return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -266,6 +304,59 @@
 
         var explanation = data.explanation || '已为您规划好路线';
         document.getElementById('explanation-text').textContent = explanation;
+
+        // 跟进建议
+        showSuggestions(data);
+    }
+
+    function showSuggestions(data) {
+        var area = document.getElementById('suggestions-area');
+        var chips = document.getElementById('suggestions-chips');
+        if (!area || !chips) return;
+
+        var suggestions = buildSuggestions(data);
+        if (suggestions.length === 0) { area.hidden = true; return; }
+
+        chips.innerHTML = '';
+        suggestions.forEach(function (s) {
+            var chip = document.createElement('button');
+            chip.className = 'suggestion-chip';
+            chip.textContent = s.label;
+            chip.title = s.query;
+            chip.addEventListener('click', function () {
+                document.getElementById('nl-input').value = s.query;
+                document.getElementById('submit-btn').click();
+            });
+            chips.appendChild(chip);
+        });
+        area.hidden = false;
+    }
+
+    function buildSuggestions(data) {
+        var suggestions = [];
+        var constraints = data.constraints || {};
+        var recLen = data.recommended_length_m || data.distance_m || 0;
+        var shortLen = data.shortest_length_m || data.shortest_distance_m || 0;
+
+        // 如果没避开陡坡 → 建议避开
+        if (constraints.slope !== 'avoid') {
+            suggestions.push({ label: '🪜 走更平坦的路', query: '帮我找一条更平坦的路线' });
+        }
+        // 如果没优先风景 → 建议看风景
+        if (constraints.scenery !== 'high') {
+            suggestions.push({ label: '🌸 想看风景好的路', query: '走风景更好的路线' });
+        }
+        // 如果推荐比最短长不少 → 建议最短
+        if (recLen > shortLen * 1.3 && constraints.distance !== 'short') {
+            suggestions.push({ label: '⚡ 我要最短路径', query: '帮我规划最短路径' });
+        }
+        // 总有一条默认
+        if (suggestions.length === 0) {
+            suggestions.push({ label: '🪜 换条更平坦的', query: '换一条更平坦的路线' });
+            suggestions.push({ label: '🌸 换条风景更好的', query: '换一条风景更好的路线' });
+        }
+        // 最多 4 条
+        return suggestions.slice(0, 4);
     }
 
     function collapseResults() {
@@ -283,13 +374,14 @@
 
     function hideLoading() {
         state.loading = false;
+        stopLoadingMessages();
         document.getElementById('loading-section').hidden = true;
     }
 
     function showError(title, message) {
         var section = document.getElementById('error-section');
-        document.getElementById('error-title').textContent = title || '出错了';
-        document.getElementById('error-message').textContent = message || '抱歉，出现了未知错误';
+        document.getElementById('error-title').textContent = title || '唔，出错了';
+        document.getElementById('error-message').textContent = message || '抱歉，出了点意外状况';
         section.hidden = false;
     }
 
@@ -331,26 +423,26 @@
 
     function mapError(code, msg) {
         var errorMap = {
-            'missing_query': '请输入你的漫步需求',
-            'missing_endpoints': '请提供起点和终点',
-            'missing_poi_names': '起点和终点名称不能为空',
-            'poi_not_found': '未找到指定的地点，请尝试其他名称',
-            'route_not_found': '无法找到符合条件的路线，请尝试调整条件',
-            'network_not_initialized': '路网尚未初始化，请稍后再试',
-            'network_load_failed': '路网加载失败，请刷新页面重试',
-            'parse_failed': '需求解析失败，请尝试更明确的表述',
-            'parse_validation_error': '需求格式有误，请检查输入',
-            'route_computation_failed': '路径计算失败，请重试',
-            'nearest_node_failed': '地点定位失败，请尝试其他地点',
-            'unsupported_task': '暂不支持此任务类型',
-            'internal_error': '服务器内部错误，请稍后重试',
+            'missing_query': '嗯？你还没告诉我你想去哪呢～试试输入「从牌坊到樱顶」',
+            'missing_endpoints': '需要起点和终点才能规划路线哦，在地图上选点或者打字告诉我吧',
+            'missing_poi_names': '起点和终点得有个名字才行～',
+            'poi_not_found': '抱歉，我没找到这个地方😅 试试换个说法？比如「教五」就是「第五教学楼」',
+            'route_not_found': '这条路线走不通…可能是路网数据还不够全，试试换个目的地？',
+            'network_not_initialized': '地图还没加载完，稍等一下下就好～',
+            'network_load_failed': '地图数据加载失败了，刷新一下页面试试？',
+            'parse_failed': '我没太理解你的意思…试试简单一点的说法，比如「从牌坊到樱顶」',
+            'parse_validation_error': '输入格式有点问题，试试更简洁的描述？',
+            'route_computation_failed': '路线计算出错了，可能是网络不太好，再试一次？',
+            'nearest_node_failed': '这个位置我没法定位，换个附近的地点试试？',
+            'unsupported_task': '这个功能我暂时还不会，试试问路或者查景点吧～',
+            'internal_error': '出了点小问题，稍等一下再试就好',
         };
-        return errorMap[code] || msg || '未知错误';
+        return errorMap[code] || msg || '出了点意外，再试一次吧';
     }
 
     async function handleNlSubmit(query) {
         hideError();
-        showLoading('正在解析你的需求…', '与空间智能助手对话中');
+        startLoadingMessages();
 
         try {
             var context = state.conversationHistory.length > 0
@@ -499,9 +591,12 @@
         document.getElementById('shortest-distance').textContent = '—';
         document.getElementById('overlap-rate').textContent = '—';
         document.getElementById('poi-items').innerHTML =
-            '<li style="background:#FDF0F2;color:#C76B7A;">输入需求或点击快捷按钮开始规划</li>';
+            '<li style="background:#FDF0F2;color:#C76B7A;">✨ 试试输入你的漫步需求</li>';
         document.getElementById('explanation-text').textContent =
-            '👋 欢迎来到漫步珞珈！输入自然语言描述或使用下方快捷按钮，即可为你规划武大校园的最优漫步路线。';
+            '👋 嗨！我是你的珞珈漫步向导。告诉我你想从哪走到哪，有什么特别的偏好（比如想边走边看风景、或者不想爬坡），我来帮你找最合适的路线～';
+        // 清空建议区
+        var sa = document.getElementById('suggestions-area');
+        if (sa) sa.hidden = true;
     }
 
     function init() {
