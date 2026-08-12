@@ -189,3 +189,58 @@ def generate_explanation(
 
     logger.error("解释生成全部失败，使用模板兜底")
     return _build_template_explanation(route_data, user_constraints, user_weights, weight_source)
+
+
+# ====== 校园闲聊回复生成 ======
+
+_chat_prompt_cache = None
+
+
+def _load_chat_prompt() -> str:
+    global _chat_prompt_cache
+    if _chat_prompt_cache is not None:
+        return _chat_prompt_cache
+    prompt_path = PROMPTS_DIR / "chat_system.txt"
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        _chat_prompt_cache = f.read()
+    return _chat_prompt_cache
+
+
+def generate_chat_response(query: str) -> str:
+    """生成校园闲聊回复（chat task_type）。
+
+    调用 LLM 以学生向导口吻回答校园问题。
+    如果 LLM 不可用，返回模板兜底回复。
+    """
+    if not DEEPSEEK_API_KEY:
+        return "我是珞珈漫步向导，关于校园的问题都可以问我～比如樱花开了没、哪个食堂好吃、图书馆几点开门等等。"
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return "我是珞珈漫步向导，你问的关于武大的事情我尽量回答～"
+
+    system_prompt = _load_chat_prompt()
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": query},
+    ]
+
+    client = OpenAI(
+        api_key=DEEPSEEK_API_KEY,
+        base_url=OPENAI_BASE_URL,
+        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=messages,
+            temperature=0.6,
+            max_tokens=200,
+        )
+        reply = response.choices[0].message.content.strip()
+        return reply if reply else "嗯…这个问题我得想想，换个问法试试？"
+    except Exception as e:
+        logger.warning(f"闲聊回复生成失败: {type(e).__name__}: {e}")
+        return "哎呀，网络不太好，稍等一下再问我吧～"

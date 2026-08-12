@@ -17,7 +17,7 @@ import networkx as nx
 from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
-from agents.explainer import generate_explanation
+from agents.explainer import generate_explanation, generate_chat_response
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import compute_route, resolve_weights, _path_length
@@ -377,8 +377,51 @@ def chat():
         logger.exception("NL 解析失败")
         return _err("parse_failed", f"NL 解析失败: {e}", 500)
 
-    if intent_data.get("task_type") != "path_planning":
-        return _err("unsupported_task", f"暂不支持的任务类型: {intent_data.get('task_type')}", 400)
+    task_type = intent_data.get("task_type")
+
+    # poi_query → 返回景点详情
+    if task_type == "poi_query":
+        start = intent_data.get("start")
+        poi_name = start.get("name") if start else None
+        if poi_name:
+            poi = get_poi(poi_name, fuzzy=True)
+            if poi:
+                return _ok({
+                    "task_type": "poi_query",
+                    "poi": poi,
+                    "message": f"这是 {poi['name']} 的信息～",
+                })
+        return _err("poi_not_found", f"未找到 '{poi_name}' 的信息", 404)
+
+    # help → 返回功能介绍
+    if task_type == "help":
+        return _ok({
+            "task_type": "help",
+            "message": "我可以帮你规划武大校园路线、查询景点、回答校园问题～",
+            "features": ["路径规划（支持避开陡坡/风景优先/最短路径）", "景点查询与介绍", "校园生活问答"],
+            "example_queries": ["从牌坊到樱顶，避开陡坡", "樱花开了吗", "哪个食堂好吃"],
+        })
+
+    # unknown → 返回引导
+    if task_type == "unknown":
+        return _ok({
+            "task_type": "unknown",
+            "message": intent_data.get("ambiguity", "抱歉，我只能回答武大校园相关的问题哦～"),
+            "example_queries": ["从牌坊到樱顶", "樱顶在哪", "樱花开了吗"],
+        })
+
+    # chat → 调用 LLM 闲聊回复
+    if task_type == "chat":
+        chat_reply = generate_chat_response(query)
+        return _ok({
+            "task_type": "chat",
+            "query": query,
+            "reply": chat_reply,
+        })
+
+    # path_planning → 继续现有逻辑
+    if task_type != "path_planning":
+        return _err("unsupported_task", f"暂不支持的任务类型: {task_type}", 400)
 
     start = intent_data.get("start")
     end = intent_data.get("end")

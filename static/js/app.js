@@ -468,6 +468,40 @@
                 context: context,
             });
 
+            var taskType = result.task_type;
+
+            // chat → 在对话流中显示闲聊回复
+            if (taskType === 'chat') {
+                hideWelcomeElements();
+                showChatBubble(query, result.reply || result.message || '嗯…这个问题有点难，换个问法试试？');
+                addConversationTurn(query, result);
+                stopLoadingMessages();
+                hideLoading();
+                return;
+            }
+
+            // help / unknown → 显示引导消息
+            if (taskType === 'help' || taskType === 'unknown') {
+                hideWelcomeElements();
+                showChatBubble(query, result.message || '有什么可以帮你的？');
+                addConversationTurn(query, result);
+                stopLoadingMessages();
+                hideLoading();
+                return;
+            }
+
+            // poi_query → 显示景点信息
+            if (taskType === 'poi_query') {
+                hideWelcomeElements();
+                var poi = result.poi;
+                showChatBubble(query, result.message || (poi ? poi.description : '找到相关信息了～'));
+                addConversationTurn(query, result);
+                stopLoadingMessages();
+                hideLoading();
+                return;
+            }
+
+            // path_planning → 渲染路线
             if (result.recommended && result.recommended.length > 0) {
                 renderRoute(result);
                 showResults(result);
@@ -480,6 +514,41 @@
         } finally {
             hideLoading();
         }
+    }
+
+    // 在对话流中显示聊天气泡
+    function showChatBubble(query, reply) {
+        var chatContent = document.getElementById('chat-content');
+        if (!chatContent) return;
+
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble-row';
+        bubble.innerHTML =
+            '<div class="chat-bubble chat-bubble-reply">' +
+                '<div class="chat-bubble-avatar">🌸</div>' +
+                '<div class="chat-bubble-body">' +
+                    '<p class="chat-bubble-text">' + escapeHtml(reply) + '</p>' +
+                '</div>' +
+            '</div>';
+        chatContent.appendChild(bubble);
+
+        // 自动滚动到底部
+        setTimeout(function () {
+            chatContent.scrollTo({ top: chatContent.scrollHeight, behavior: 'smooth' });
+        }, 100);
+    }
+
+    function hideWelcomeElements() {
+        var welcomeBubble = document.getElementById('welcome-bubble');
+        var shortcutCards = document.getElementById('shortcut-cards-row');
+        if (welcomeBubble) welcomeBubble.style.display = 'none';
+        if (shortcutCards) shortcutCards.style.display = 'none';
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     async function handleShortcutMode(mode) {

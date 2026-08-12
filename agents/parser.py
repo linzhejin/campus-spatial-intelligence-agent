@@ -66,7 +66,7 @@ class Constraints(BaseModel):
 
 
 class TaskIntent(BaseModel):
-    task_type: Literal["path_planning", "poi_query", "help", "unknown"]
+    task_type: Literal["path_planning", "poi_query", "help", "unknown", "chat"]
     start: Optional[PoiRef] = None
     end: Optional[PoiRef] = None
     constraints: Constraints
@@ -293,6 +293,25 @@ _PATH_SEMANTIC_KEYWORDS = [
     "最短", "陡坡", "逛", "出发", "规划",
 ]
 
+# 校园闲聊关键词 — 命中则 task_type=chat（不是 unknown）
+_CAMPUS_CHAT_KEYWORDS = [
+    "樱花", "开了吗", "花期", "枫叶", "银杏", "桂花", "梅花",
+    "食堂", "好吃", "美食", "餐厅",
+    "教学楼", "教室", "自习", "座位",
+    "操场", "体育馆", "游泳", "篮球", "足球",
+    "校车", "公交", "怎么坐车", "交通",
+    "宿舍", "寝室", "住宿",
+    "学长", "学姐", "新生", "入学", "报到",
+    "社团", "活动", "讲座", "演出",
+    "武大", "珞珈山", "校园", "学校",
+    "上课", "下课", "课程", "选修",
+    "附近", "周边", "购物", "超市",
+    "几点", "时间", "开门", "关门", "开放",
+    "人多吗", "拥挤", "排队",
+    "拍照", "打卡",
+    "天气", "热", "冷", "下雨",
+]
+
 
 def _rule_based_classify(query: str) -> dict:
     """规则优先兜底分类（T-011 验收 7/8/10）。
@@ -307,6 +326,17 @@ def _rule_based_classify(query: str) -> dict:
     """
     q = query.strip()
     q_lower = q.lower()
+
+    # Step 0.5: 校园闲聊检测 — 含校园关键词但不含路径语义
+    has_path_semantics_0 = any(kw in q for kw in _PATH_SEMANTIC_KEYWORDS)
+    if not has_path_semantics_0:
+        for kw in _CAMPUS_CHAT_KEYWORDS:
+            if kw in q:
+                return {
+                    "task_type": "chat",
+                    "start_name": None,
+                    "end_name": None,
+                }
 
     # Step 1: 先匹配明确无关词（T-011 验收 10）
     # 但如果 query 同时含路径语义关键词，跳过（礼貌用语 + 路径请求不误判）
@@ -647,6 +677,11 @@ def _t011_post_process(
         intent.start = None
         intent.end = None
         intent.ambiguity = UNKNOWN_GUIDE_TEXT
+    elif classified["task_type"] == "chat":
+        intent.task_type = "chat"
+        intent.start = None
+        intent.end = None
+        intent.ambiguity = None
     elif classified["task_type"] == "path_planning":
         # 正则兜底：从 query 中提取到起终点，覆盖 LLM fallback 的空值
         if classified["start_name"]:
@@ -673,8 +708,8 @@ def _t011_post_process(
     if intent.task_type == "unknown" and not intent.ambiguity:
         intent.ambiguity = UNKNOWN_GUIDE_TEXT
 
-    # 6. help / unknown 类型的 constraints 保证合法（T-011 验收 12）
-    if intent.task_type in ("help", "unknown"):
+    # 6. help / unknown / chat 类型的 constraints 保证合法（T-011 验收 12）
+    if intent.task_type in ("help", "unknown", "chat"):
         try:
             intent.constraints = Constraints(**DEFAULT_CONSTRAINTS_DICT)
         except (ValidationError, TypeError):

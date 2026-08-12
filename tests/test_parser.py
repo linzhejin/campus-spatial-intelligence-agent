@@ -60,7 +60,7 @@ class TestFourTaskTypes:
         ("从牌坊到樱顶", "path_planning"),
         ("樱顶在哪里", "poi_query"),
         ("你能做什么", "help"),
-        ("今天天气怎么样", "unknown"),
+        ("今天天气怎么样", "chat"),
     ])
     def test_rule_based_classify_four_types(self, query, expected_type):
         result = _rule_based_classify(query)
@@ -99,9 +99,23 @@ class TestFourTaskTypes:
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
-        processed = _t011_post_process(base_intent, "今天天气怎么样", None)
+        # 真正无关的闲聊 → unknown
+        processed = _t011_post_process(base_intent, "今天股票怎么样", None)
         assert processed.task_type == "unknown"
         assert processed.ambiguity is not None
+
+    def test_post_process_chat(self):
+        """校园相关闲聊 → chat，不是 unknown"""
+        base_intent = TaskIntent(
+            task_type="path_planning",
+            start=None,
+            end=None,
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        )
+        processed = _t011_post_process(base_intent, "今天天气怎么样", None)
+        assert processed.task_type == "chat"
+        assert processed.start is None
+        assert processed.end is None
 
 
 class TestExtractJsonFallback:
