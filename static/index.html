@@ -17,87 +17,97 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
 </head>
 <body>
-    <header class="app-header">
-        <div class="header-content">
-            <h1 class="app-title">
-                <span class="title-icon">🚶</span>
-                漫步珞珈
-            </h1>
-            <p class="app-subtitle">武大校园智能路径规划</p>
-            <!-- ？帮助按钮（手动唤回欢迎卡片） -->
-            <button id="help-btn" class="help-btn" aria-label="帮助/欢迎引导" title="查看帮助引导">?</button>
+
+    <!-- ====== 沉浸式地图面板 (edge-to-edge) ====== -->
+    <div class="map-panel" id="map-panel">
+        <div id="map-container" class="map-container">
+            <div class="map-placeholder" id="map-placeholder">
+                <div class="placeholder-spinner"></div>
+                <p>地图加载中…</p>
+            </div>
         </div>
-    </header>
+        <!-- 地图图例浮层 -->
+        <div class="map-legend" id="map-legend">
+            <div class="legend-item">
+                <span class="legend-line recommended"></span>
+                <span>推荐路线</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line shortest"></span>
+                <span>最短路径</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot poi"></span>
+                <span>景点</span>
+            </div>
+        </div>
+    </div>
 
-    <main class="app-main">
-        <section class="input-section">
-            <div class="input-area">
-                <textarea
-                    id="nl-input"
-                    class="nl-input"
-                    placeholder="告诉我你的漫步需求…&#10;例如：从牌坊到樱顶，走风景好的路"
-                    maxlength="200"
-                    rows="2"
-                ></textarea>
-                <div class="input-counter">
-                    <span id="char-count">0</span>/200
+    <!-- ====== 对话面板 (毛玻璃) ====== -->
+    <div class="chat-panel" id="chat-panel">
+
+        <!-- 浮动顶栏 -->
+        <header class="floating-header" id="floating-header">
+            <div class="header-left">
+                <h1 class="app-title">
+                    <span class="title-icon">🌸</span>
+                    漫步珞珈
+                </h1>
+            </div>
+            <div class="header-right">
+                <span class="header-tagline">武大校园 · AI 漫步向导</span>
+                <button id="help-btn" class="help-btn" aria-label="帮助引导" title="查看引导">?</button>
+            </div>
+        </header>
+
+        <!-- 对话区：滚动内容 -->
+        <div class="chat-content" id="chat-content">
+
+            <!-- 欢迎语 -->
+            <div class="welcome-bubble" id="welcome-bubble">
+                <div class="bubble-avatar">🌸</div>
+                <div class="bubble-body">
+                    <p class="bubble-greeting">嗨！我是你的珞珈漫步向导～</p>
+                    <p class="bubble-text">告诉我想从哪走到哪，有什么偏好——比如想看风景、不想爬坡——我帮你找最合适的路线。</p>
                 </div>
             </div>
 
-            <div class="shortcut-buttons">
-                <button class="shortcut-btn" data-mode="distance_first" type="button">
-                    <span class="btn-icon">⚡</span>
-                    <span class="btn-label">最短路径</span>
+            <!-- 快捷 Chip 条 -->
+            <div class="quick-chips" id="quick-chips">
+                <button class="quick-chip" data-mode="scenery_first">
+                    <span class="chip-emoji">🌸</span> 风景优先
                 </button>
-                <button class="shortcut-btn" data-mode="scenery_first" type="button">
-                    <span class="btn-icon">🌸</span>
-                    <span class="btn-label">风景优先</span>
+                <button class="quick-chip" data-mode="slope_first">
+                    <span class="chip-emoji">🪜</span> 平坦优先
                 </button>
-                <button class="shortcut-btn" data-mode="slope_first" type="button">
-                    <span class="btn-icon">🪜</span>
-                    <span class="btn-label">平坦优先</span>
-                </button>
-            </div>
-
-            <button id="submit-btn" class="submit-btn" type="button">
-                <span class="submit-icon">🧭</span>
-                <span>规划路线</span>
-            </button>
-        </section>
-
-        <section class="map-section">
-            <div id="map-container" class="map-container">
-                <div class="map-placeholder" id="map-placeholder">
-                    <div class="placeholder-spinner"></div>
-                    <p>地图加载中…</p>
-                </div>
-            </div>
-
-            <div class="map-legend" id="map-legend">
-                <div class="legend-item">
-                    <span class="legend-line recommended"></span>
-                    <span>推荐路线</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-line shortest"></span>
-                    <span>最短路径</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot poi"></span>
-                    <span>POI 景点</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="results-section" id="results-section" hidden>
-            <div class="results-header">
-                <h2 class="results-title">路线详情</h2>
-                <button class="collapse-btn" id="collapse-btn" type="button" aria-label="折叠">
-                    <span class="collapse-icon">▼</span>
+                <button class="quick-chip" data-mode="distance_first">
+                    <span class="chip-emoji">⚡</span> 最短路径
                 </button>
             </div>
 
-            <div class="results-content" id="results-content">
+            <!-- 快捷卡片（欢迎引导用） -->
+            <div class="shortcut-cards-row" id="shortcut-cards-row">
+                <button class="mini-card sc-accent"
+                        data-action="path_planning"
+                        data-start="牌坊" data-end="樱顶"
+                        data-constraints='{"distance":"medium","slope":"normal","scenery":"high"}'
+                        data-display-text="经典路线 · 牌坊 → 樱顶（景观优先）">
+                    <span class="mini-card-icon">🚶</span>
+                    <span class="mini-card-text">经典路线 牌坊→樱顶</span>
+                </button>
+                <button class="mini-card sc-pink"
+                        data-action="path_planning"
+                        data-start="樱花大道" data-end="樱顶"
+                        data-constraints='{"distance":"relaxed","slope":"normal","scenery":"high"}'
+                        data-display-text="赏樱路线 · 樱花大道 → 樱顶（春天必走）">
+                    <span class="mini-card-icon">🌸</span>
+                    <span class="mini-card-text">赏樱路线 樱花大道→樱顶</span>
+                </button>
+            </div>
+
+            <!-- 结果区 -->
+            <section class="results-section" id="results-section" hidden>
+                <!-- 路线摘要卡片 -->
                 <div class="route-summary">
                     <div class="summary-card">
                         <div class="summary-value" id="recommended-distance">—</div>
@@ -115,112 +125,80 @@
                     </div>
                 </div>
 
-                <div class="poi-list" id="poi-list">
-                    <h3>途经景点</h3>
-                    <ul id="poi-items"></ul>
+                <!-- 途经景点 -->
+                <div class="poi-section">
+                    <h3 class="section-label">途经景点</h3>
+                    <ul class="poi-tags" id="poi-items"></ul>
                 </div>
 
+                <!-- 路线说明 -->
                 <div class="explanation-box" id="explanation-box">
-                    <h3>路线说明</h3>
                     <p id="explanation-text">—</p>
                 </div>
 
+                <!-- 跟进建议 -->
                 <div class="suggestions-area" id="suggestions-area" hidden>
                     <p class="suggestions-prompt">💬 你可能想问…</p>
                     <div class="suggestions-chips" id="suggestions-chips"></div>
                 </div>
+            </section>
+        </div>
+
+        <!-- 底部输入区 -->
+        <div class="chat-input-bar" id="chat-input-bar">
+            <textarea
+                id="nl-input"
+                class="nl-input"
+                placeholder="告诉我你的漫步需求…"
+                maxlength="200"
+                rows="1"
+            ></textarea>
+            <button id="submit-btn" class="submit-btn" type="button" title="发送">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+            </button>
+            <div class="input-counter" id="input-counter">
+                <span id="char-count">0</span>/200
             </div>
-        </section>
+        </div>
+    </div>
 
-        <section class="loading-section" id="loading-section" hidden>
-            <div class="loading-overlay">
-                <div class="loading-spinner"></div>
-                <p class="loading-text" id="loading-text">正在解析你的需求…</p>
-                <p class="loading-subtext" id="loading-subtext">请稍候</p>
-            </div>
-        </section>
+    <!-- ====== Loading 遮罩 ====== -->
+    <section class="loading-section" id="loading-section" hidden>
+        <div class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p class="loading-text" id="loading-text">正在理解你的需求…</p>
+            <p class="loading-subtext" id="loading-subtext">请稍候</p>
+        </div>
+    </section>
 
-        <section class="error-section" id="error-section" hidden>
-            <div class="error-card">
-                <div class="error-icon">⚠️</div>
-                <h3 class="error-title" id="error-title">出错了</h3>
-                <p class="error-message" id="error-message">抱歉，规划路线时出现问题</p>
-                <button class="error-close-btn" id="error-close-btn" type="button">知道了</button>
-            </div>
-        </section>
-    </main>
+    <!-- ====== Error 弹窗 ====== -->
+    <section class="error-section" id="error-section" hidden>
+        <div class="error-card">
+            <div class="error-icon">🌸</div>
+            <h3 class="error-title" id="error-title">唔，出错了</h3>
+            <p class="error-message" id="error-message">抱歉，出了点意外状况</p>
+            <button class="error-close-btn" id="error-close-btn" type="button">知道了</button>
+        </div>
+    </section>
 
-    <footer class="app-footer">
-        <p>漫步珞珈 · WHU-Walker · 基于 LLM 的校园空间智能助手</p>
-    </footer>
-
-    <script src="/js/config.js"></script>
-    <script>
-        // 高德 JS API 2.0 安全密钥（必须在加载 API 之前设置）
-        (function () {
-            var cfg = window.WHU_WALKER_CONFIG || {};
-            if (cfg.amapSecurityCode) {
-                window._AMapSecurityConfig = { securityJsCode: cfg.amapSecurityCode };
-            }
-        })();
-    </script>
-    <script>
-        (function () {
-            var cfg = window.WHU_WALKER_CONFIG || {};
-            var key = cfg.amapKey || '';
-            if (!key) {
-                console.warn('AMAP_KEY 未配置，地图功能不可用。请在 .env 中设置 AMAP_KEY。');
-                return;
-            }
-            var script = document.createElement('script');
-            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar';
-            script.onerror = function () {
-                console.error('高德地图 JS API 加载失败');
-                var ph = document.getElementById('map-placeholder');
-                if (ph) {
-                    ph.innerHTML = '<p style="color:#E53935;">地图加载失败，请检查网络或 Key 配置</p>';
-                }
-            };
-            document.head.appendChild(script);
-        })();
-    </script>
-    <script src="/js/app.js"></script>
-
-    <!-- Service Worker 暂禁（调试地图加载问题，调试完成后取消注释）
-    <script>
-    (function() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(function() {});
-        }
-    })();
-    </script>
-    -->
-
-    <!-- ===== 漫步珞珈 · 冷启动欢迎卡片覆盖层 ===== -->
+    <!-- ====== 欢迎覆盖层（冷启动） ====== -->
     <div id="welcome-overlay" class="welcome-overlay hidden" aria-hidden="true">
-        <!-- 遮罩层（点击遮罩也能关闭卡片） -->
         <div class="welcome-mask" data-close-welcome="true"></div>
-
-        <!-- 卡片本体（防止点击内容冒泡到遮罩误关，JS 里会加 stopPropagation） -->
         <div class="welcome-card" role="dialog" aria-label="欢迎使用漫步珞珈" aria-modal="true">
-            <!-- 【签名元素】樱顶老斋舍窗棂纹装饰条（纯 CSS 画，无需图片） -->
             <div class="welcome-card-topbar" aria-hidden="true"></div>
-
-            <!-- 右上角关闭 X 按钮 -->
             <button class="welcome-close" data-close-welcome="true" aria-label="关闭欢迎页">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-
-            <!-- ① 标题区 -->
             <header class="welcome-header">
-                <h1 class="welcome-title">🗺️ 漫步珞珈</h1>
+                <h1 class="welcome-title">🌸 漫步珞珈</h1>
                 <p class="welcome-subtitle">武大校园 · 问路 · 查景点 · 推荐路线</p>
             </header>
-
-            <!-- ② 5 个快捷查询卡片（声明式 data-*，JS 统一事件委托处理） -->
             <section class="welcome-shortcuts" aria-label="快捷查询示例">
                 <button class="shortcut-card sc-accent"
                         data-action="path_planning"
@@ -233,7 +211,6 @@
                         <small class="sc-desc">牌坊 → 樱顶 · 走风景最好的主路</small>
                     </div>
                 </button>
-
                 <button class="shortcut-card sc-pink"
                         data-action="path_planning"
                         data-start="樱花大道" data-end="樱顶"
@@ -245,7 +222,6 @@
                         <small class="sc-desc">樱花大道 → 樱顶 · 春天打卡必走</small>
                     </div>
                 </button>
-
                 <button class="shortcut-card sc-jade"
                         data-action="poi_query" data-name="樱顶"
                         data-display-text="景点查询 · 樱顶在哪？给我介绍一下">
@@ -255,7 +231,6 @@
                         <small class="sc-desc">樱顶在哪？介绍 + 地图自动定位</small>
                     </div>
                 </button>
-
                 <button class="shortcut-card sc-stone"
                         data-action="path_planning"
                         data-start="教五" data-end="总图书馆"
@@ -267,8 +242,6 @@
                         <small class="sc-desc">教五 → 总图书馆 · 赶时间最快</small>
                     </div>
                 </button>
-
-                <!-- 第 5 张：宽卡推荐景点（展开侧边栏，不调 API） -->
                 <button class="shortcut-card sc-wide"
                         data-action="recommend_poi"
                         data-display-text="推荐景点 · 展开侧边栏看 5 个精华">
@@ -279,28 +252,54 @@
                     </div>
                 </button>
             </section>
-
-            <!-- ③ 3 步新手提示（桌面端默认展开，移动端默认折叠，CSS + <details> 原生交互） -->
             <section class="welcome-tips" aria-label="新手提示">
                 <details class="welcome-tips-details" open>
                     <summary class="welcome-tips-summary">新手提示 · 3 步快速上手</summary>
                     <div class="welcome-tips-list">
-                        <div class="tip-item"><span class="tip-num" aria-hidden="true">①</span><span class="tip-text">直接说人话就行：「从牌坊到樱顶，避开陡坡」</span></div>
-                        <div class="tip-item"><span class="tip-num" aria-hidden="true">②</span><span class="tip-text">点地图上的 🔴 红点查看景点，可快捷设出发/到达</span></div>
-                        <div class="tip-item"><span class="tip-num" aria-hidden="true">③</span><span class="tip-text">左侧侧边栏按类别浏览 24 个地点</span></div>
+                        <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">直接说人话就行：「从牌坊到樱顶，避开陡坡」</span></div>
+                        <div class="tip-item"><span class="tip-num">②</span><span class="tip-text">点地图上的景点标记，可快捷设出发/到达</span></div>
+                        <div class="tip-item"><span class="tip-num">③</span><span class="tip-text">规划后点「你可能想问」快速调整路线</span></div>
                     </div>
                 </details>
             </section>
-
-            <!-- ④ 底部操作区 -->
             <footer class="welcome-footer">
-                <button class="btn btn-primary welcome-start" data-close-welcome="true">✨ 开始使用</button>
+                <button class="btn btn-primary welcome-start" data-close-welcome="true">✨ 开始漫步</button>
                 <label class="welcome-dont-show">
                     <input type="checkbox" id="welcome_dont_show">
-                    <span>以后不再显示此欢迎页</span>
+                    <span>以后不再显示</span>
                 </label>
             </footer>
         </div>
     </div>
+
+    <script src="/js/config.js"></script>
+    <script>
+        (function () {
+            var cfg = window.WHU_WALKER_CONFIG || {};
+            if (cfg.amapSecurityCode) {
+                window._AMapSecurityConfig = { securityJsCode: cfg.amapSecurityCode };
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            var cfg = window.WHU_WALKER_CONFIG || {};
+            var key = cfg.amapKey || '';
+            if (!key) {
+                console.warn('高德地图 Key 未配置');
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar';
+            script.onerror = function () {
+                var ph = document.getElementById('map-placeholder');
+                if (ph) {
+                    ph.innerHTML = '<p style="color:#E53935;">地图加载失败，请检查网络或 Key 配置</p>';
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <script src="/js/app.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* ===== 漫步珞珈 · Cherry Blossom Design System ===== */
+/* ===== 漫步珞珈 · 旅行向导设计系统 ===== */
 
 :root {
     /* Cherry Blossom Palette */
@@ -14,7 +14,7 @@
     --paper: #FAF8F5;
     --surface: #FFFFFF;
 
-    /* Jade — campus greenery */
+    /* Jade */
     --jade: #4A7C6F;
     --jade-deep: #3A6359;
     --jade-soft: #E8F0ED;
@@ -29,252 +29,56 @@
     --color-poi: #D4915C;
 
     /* Radii */
-    --radius-sm: 6px;
-    --radius-md: 12px;
-    --radius-lg: 20px;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
 
-    /* Shadows — warm, soft */
-    --shadow-sm: 0 1px 3px rgba(45, 45, 45, 0.06);
-    --shadow-md: 0 4px 16px rgba(45, 45, 45, 0.08);
-    --shadow-lg: 0 8px 32px rgba(45, 45, 45, 0.10);
+    /* Shadows */
+    --shadow-sm: 0 1px 4px rgba(45, 45, 45, 0.04);
+    --shadow-md: 0 4px 20px rgba(45, 45, 45, 0.06);
+    --shadow-lg: 0 8px 40px rgba(45, 45, 45, 0.08);
+    --shadow-float: 0 12px 60px rgba(45, 45, 45, 0.12);
 
     /* Touch */
     --touch-min: 44px;
-    --header-height: 56px;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
                  "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
     color: var(--ink);
-    background-color: var(--paper);
-    line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-}
-
-/* ===== Header ===== */
-
-.app-header {
-    background: linear-gradient(135deg, #FDF0F2 0%, #F5E6E8 40%, #E8F0ED 100%);
-    border-bottom: 1px solid var(--divider);
-    padding: 20px 20px 16px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.header-content {
-    max-width: 720px;
-    margin: 0 auto;
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-}
-
-.app-title {
-    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    letter-spacing: 0.02em;
-}
-
-.title-icon {
-    font-size: 1.3rem;
-}
-
-.app-subtitle {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-/* ===== Main layout ===== */
-
-.app-main {
-    flex: 1;
-    max-width: 720px;
-    margin: 0 auto;
-    width: 100%;
-    padding: 16px;
-    padding-bottom: 80px;
-}
-
-/* ===== Input section ===== */
-
-.input-section {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    padding: 18px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--divider);
-    margin-bottom: 16px;
-}
-
-.input-area {
-    position: relative;
-    margin-bottom: 14px;
-}
-
-.nl-input {
-    width: 100%;
-    min-height: 72px;
-    padding: 14px 16px;
-    font-size: 1rem;
-    font-family: inherit;
-    border: 2px solid var(--stone);
-    border-radius: var(--radius-md);
-    resize: vertical;
-    color: var(--ink);
-    background-color: var(--paper);
-    transition: border-color 0.25s, box-shadow 0.25s;
-    line-height: 1.6;
-}
-
-.nl-input::placeholder {
-    color: var(--ink-light);
-}
-
-.nl-input:focus {
-    border-color: var(--cherry);
-    box-shadow: 0 0 0 3px var(--cherry-tint);
-    background-color: var(--surface);
-}
-
-.input-counter {
-    position: absolute;
-    bottom: 8px;
-    right: 12px;
-    font-size: 0.75rem;
-    color: var(--ink-light);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-
-/* ===== Shortcut buttons ===== */
-
-.shortcut-buttons {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-}
-
-.shortcut-btn {
-    flex: 1;
-    min-width: 100px;
-    padding: 12px;
-    border-radius: var(--radius-md);
-    background: var(--paper);
-    border: 2px solid var(--stone);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s ease;
-    color: var(--ink-soft);
-    font-size: 0.85rem;
-}
-
-.shortcut-btn:hover {
-    border-color: var(--cherry);
-    background: var(--cherry-soft);
-    color: var(--cherry-deep);
-}
-
-.shortcut-btn:active {
-    transform: scale(0.97);
-}
-
-.shortcut-btn.active {
-    border-color: var(--cherry);
-    background: var(--cherry-soft);
-    color: var(--cherry-deep);
-}
-
-.btn-icon {
-    font-size: 1.25rem;
-}
-
-.btn-label {
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-/* ===== Submit button ===== */
-
-.submit-btn {
-    width: 100%;
-    min-height: 52px;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
-    color: white;
-    border-radius: var(--radius-md);
-    font-size: 1.05rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
-    box-shadow: 0 2px 8px rgba(199, 107, 122, 0.25);
-}
-
-.submit-btn:hover {
-    box-shadow: 0 4px 16px rgba(199, 107, 122, 0.35);
-}
-
-.submit-btn:active {
-    transform: scale(0.98);
-}
-
-.submit-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.submit-icon {
-    font-size: 1.2rem;
-}
-
-/* ===== Map ===== */
-
-.map-section {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
+    background: #1a1a1a;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    grid-template-rows: 1fr;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--divider);
-    margin-bottom: 16px;
+}
+
+/* ==============================
+   MAP PANEL — edge-to-edge
+   ============================== */
+.map-panel {
     position: relative;
+    background: #E8E5E1;
+    overflow: hidden;
+    order: 2;
 }
 
 .map-container {
     width: 100%;
-    height: 300px;
-    background: #E8E5E1;
-    position: relative;
+    height: 100%;
+    position: absolute;
+    inset: 0;
 }
 
 .map-placeholder {
@@ -284,14 +88,15 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--paper);
+    background: #EAE7E2;
     color: var(--ink-soft);
     font-size: 0.9rem;
+    z-index: 1;
 }
 
 .placeholder-spinner {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 3px solid var(--stone);
     border-top-color: var(--cherry);
     border-radius: 50%;
@@ -299,25 +104,23 @@ body {
     margin-bottom: 12px;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ===== Map legend ===== */
-
+/* Map legend — floating overlay */
 .map-legend {
     position: absolute;
-    bottom: 12px;
-    right: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
+    bottom: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 10px 14px;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md);
-    font-size: 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    font-size: 0.72rem;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     z-index: 10;
 }
 
@@ -329,14 +132,12 @@ body {
 }
 
 .legend-line {
-    width: 24px;
-    height: 4px;
+    width: 22px;
+    height: 3px;
     border-radius: 2px;
 }
 
-.legend-line.recommended {
-    background: var(--color-recommended);
-}
+.legend-line.recommended { background: var(--color-recommended); }
 
 .legend-line.shortest {
     background: repeating-linear-gradient(
@@ -353,182 +154,455 @@ body {
     height: 10px;
     border-radius: 50%;
 }
+.legend-dot.poi { background: var(--color-poi); }
 
-.legend-dot.poi {
-    background: var(--color-poi);
-}
-
-/* ===== Results section ===== */
-
-.results-section {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--divider);
-    margin-bottom: 16px;
+/* ==============================
+   CHAT PANEL — frosted glass
+   ============================== */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    background: rgba(250, 248, 245, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 0.5px solid rgba(0,0,0,0.08);
+    order: 1;
+    position: relative;
+    z-index: 2;
+    box-shadow: 2px 0 40px rgba(0,0,0,0.06);
     overflow: hidden;
 }
 
-.results-header {
+/* ===== Floating Header ===== */
+.floating-header {
+    padding: 18px 22px 14px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--divider);
+    flex-shrink: 0;
 }
 
-.results-title {
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-title {
     font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.02em;
 }
 
-.collapse-btn {
-    width: var(--touch-min);
-    height: var(--touch-min);
+.title-icon { font-size: 1.2rem; }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-tagline {
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    white-space: nowrap;
+}
+
+.help-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--stone);
+    background: var(--surface);
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
+}
+.help-btn:hover {
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+}
+
+/* ===== Chat Content (scrollable) ===== */
+.chat-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+.chat-content::-webkit-scrollbar { width: 4px; }
+.chat-content::-webkit-scrollbar-track { background: transparent; }
+.chat-content::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 2px;
+}
+
+/* ===== Welcome bubble ===== */
+.welcome-bubble {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: bubble-in 0.5s ease-out;
+}
+
+@keyframes bubble-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.bubble-avatar {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    transition: background 0.2s;
+    background: linear-gradient(135deg, var(--cherry-soft), #FDE8EC);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
-.collapse-btn:hover {
-    background: var(--paper);
+.bubble-body {
+    background: var(--surface);
+    border-radius: 16px 16px 16px 4px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    max-width: 320px;
 }
 
-.collapse-icon {
-    transition: transform 0.3s;
-    display: inline-block;
+.bubble-greeting {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+}
+
+.bubble-text {
+    font-size: 0.82rem;
     color: var(--ink-soft);
+    line-height: 1.65;
 }
 
-.results-section.collapsed .collapse-icon {
-    transform: rotate(-90deg);
+/* ===== Quick chips ===== */
+.quick-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.results-section.collapsed .results-content {
-    display: none;
+.quick-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1.5px solid var(--stone);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    white-space: nowrap;
 }
 
-.results-content {
-    padding: 18px;
+.quick-chip:hover,
+.quick-chip.active {
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px rgba(232, 146, 156, 0.15);
 }
 
-/* ===== Route summary cards ===== */
+.quick-chip:active { transform: scale(0.96); }
 
+.chip-emoji { font-size: 0.95rem; }
+
+/* ===== Mini shortcut cards row ===== */
+.shortcut-cards-row {
+    display: flex;
+    gap: 8px;
+}
+
+.mini-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--stone);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    text-align: left;
+    min-width: 0;
+}
+
+.mini-card:hover {
+    border-color: var(--cherry);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(232, 146, 156, 0.12);
+}
+
+.mini-card-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+.mini-card-text {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.3;
+}
+
+.mini-card.sc-accent { border-left: 3px solid var(--cherry-deep); }
+.mini-card.sc-pink { border-left: 3px solid var(--cherry); }
+
+/* ===== Results ===== */
+.results-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: result-in 0.45s ease-out;
+}
+
+@keyframes result-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Route summary cards */
 .route-summary {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    background: var(--paper);
+    background: var(--surface);
     border-radius: var(--radius-md);
-    padding: 16px 8px;
-    margin-bottom: 18px;
+    padding: 14px 6px;
+    box-shadow: var(--shadow-sm);
 }
 
-.summary-card {
-    text-align: center;
-    flex: 1;
-}
+.summary-card { text-align: center; flex: 1; }
 
 .summary-value {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--cherry-deep);
     font-variant-numeric: tabular-nums;
 }
 
 .summary-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--ink-soft);
-    margin-top: 4px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .summary-divider {
     width: 1px;
-    height: 36px;
-    background: var(--stone);
+    height: 30px;
+    background: var(--divider);
 }
 
-/* ===== POI list ===== */
-
-.poi-list {
-    margin-bottom: 18px;
-}
-
-.poi-list h3,
-.explanation-box h3 {
-    font-size: 0.85rem;
+/* Section label */
+.section-label {
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--ink-soft);
-    margin-bottom: 10px;
+    color: var(--ink-light);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
 }
 
-.poi-list ul {
+/* POI tags */
+.poi-section { margin-top: 2px; }
+
+.poi-tags {
     list-style: none;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
-.poi-list li {
+.poi-tags li {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
     padding: 6px 12px;
     background: var(--cherry-soft);
-    border-radius: 20px;
-    font-size: 0.8rem;
     color: var(--cherry-deep);
+    border-radius: 16px;
+    font-size: 0.78rem;
+    font-weight: 500;
 }
 
-.poi-list li::before {
-    content: "📍";
-    font-size: 0.85rem;
-}
-
-/* ===== Explanation box ===== */
-
+/* Explanation card */
 .explanation-box {
-    background: linear-gradient(135deg, var(--cherry-soft), var(--jade-soft));
+    background: linear-gradient(135deg, var(--cherry-soft) 0%, var(--jade-soft) 100%);
     border-radius: var(--radius-md);
     padding: 14px 16px;
     border-left: 3px solid var(--cherry);
 }
 
 .explanation-box p {
-    font-size: 0.9rem;
-    line-height: 1.7;
+    font-size: 0.88rem;
+    line-height: 1.75;
     color: var(--ink);
 }
 
-/* ===== Loading overlay ===== */
+/* Follow-up suggestions */
+.suggestions-area {
+    padding-top: 8px;
+}
 
-.loading-section {
-    position: fixed;
-    inset: 0;
-    background: rgba(250, 248, 245, 0.92);
-    backdrop-filter: blur(6px);
-    z-index: 1000;
+.suggestions-prompt {
+    font-size: 0.76rem;
+    color: var(--ink-light);
+    margin-bottom: 8px;
+}
+
+.suggestions-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--stone);
+    border-radius: 18px;
+    font-size: 0.78rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.suggestion-chip:hover {
+    border-color: var(--cherry);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+    transform: translateY(-1px);
+}
+
+.suggestion-chip:active { transform: scale(0.96); }
+
+/* ===== Chat input bar ===== */
+.chat-input-bar {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.nl-input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    border: 1.5px solid var(--stone);
+    border-radius: 20px;
+    resize: none;
+    color: var(--ink);
+    background: var(--surface);
+    transition: border-color 0.25s, box-shadow 0.25s;
+    line-height: 1.5;
+    max-height: 100px;
+}
+
+.nl-input::placeholder { color: var(--ink-light); }
+
+.nl-input:focus {
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--cherry-tint);
+}
+
+.submit-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: white;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
+    box-shadow: 0 2px 10px rgba(199, 107, 122, 0.3);
+    flex-shrink: 0;
 }
 
-.loading-overlay {
-    text-align: center;
-    max-width: 320px;
+.submit-btn:hover {
+    box-shadow: 0 4px 18px rgba(199, 107, 122, 0.4);
+    transform: scale(1.05);
 }
+
+.submit-btn:active { transform: scale(0.95); }
+
+.submit-btn:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+
+.input-counter {
+    position: absolute;
+    top: -20px;
+    right: 60px;
+    font-size: 0.68rem;
+    color: var(--ink-light);
+    pointer-events: none;
+}
+
+/* ===== Loading overlay ===== */
+.loading-section {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.loading-section[hidden] { display: none !important; }
+
+.loading-overlay { text-align: center; }
 
 .loading-spinner {
     width: 48px;
     height: 48px;
-    border: 4px solid var(--stone);
+    border: 3px solid rgba(255,255,255,0.3);
     border-top-color: var(--cherry);
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
@@ -538,36 +612,43 @@ body {
 .loading-text {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--ink);
+    color: white;
     margin-bottom: 4px;
+    transition: opacity 0.3s ease;
 }
 
 .loading-subtext {
     font-size: 0.85rem;
-    color: var(--ink-soft);
+    color: rgba(255,255,255,0.8);
+    transition: opacity 0.3s ease;
 }
 
-/* ===== Error modal ===== */
+.loading-text.fade,
+.loading-subtext.fade { opacity: 0; }
 
+/* ===== Error modal ===== */
 .error-section {
     position: fixed;
     inset: 0;
-    background: rgba(45, 45, 45, 0.4);
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
 }
+.error-section[hidden] { display: none !important; }
 
 .error-card {
     background: var(--surface);
     border-radius: var(--radius-lg);
     padding: 32px 28px;
     text-align: center;
-    max-width: 340px;
+    max-width: 320px;
     width: 100%;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-float);
     animation: error-in 0.25s ease-out;
 }
 
@@ -576,822 +657,30 @@ body {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.error-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-}
+.error-icon { font-size: 2.5rem; margin-bottom: 8px; }
 
 .error-title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: var(--ink);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .error-message {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--ink-soft);
     line-height: 1.6;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .error-close-btn {
-    min-height: var(--touch-min);
-    padding: 10px 32px;
-    background: var(--cherry);
-    color: white;
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    font-weight: 500;
-    transition: background 0.2s;
-}
-
-.error-close-btn:hover {
-    background: var(--cherry-deep);
-}
-
-/* ===== Footer ===== */
-
-.app-footer {
-    text-align: center;
-    padding: 20px 16px;
-    font-size: 0.75rem;
-    color: var(--ink-light);
-    background: var(--surface);
-    border-top: 1px solid var(--divider);
-}
-
-/* ===== Amap overrides ===== */
-
-.amap-logo,
-.amap-copyright {
-    opacity: 0.5 !important;
-}
-
-/* ===== Responsive breakpoints ===== */
-
-@media (min-width: 480px) {
-    .map-container {
-        height: 340px;
-    }
-
-    .shortcut-btn {
-        flex-direction: row;
-        gap: 6px;
-        font-size: 0.9rem;
-    }
-
-    .btn-label {
-        font-size: 0.85rem;
-    }
-}
-
-@media (min-width: 768px) {
-    :root {
-        --header-height: 64px;
-    }
-
-    .app-header {
-        padding: 24px 32px;
-    }
-
-    .app-title {
-        font-size: 1.65rem;
-    }
-
-    .app-main {
-        padding: 24px;
-    }
-
-    .map-container {
-        height: 420px;
-    }
-
-    .route-summary {
-        padding: 22px 16px;
-    }
-
-    .summary-value {
-        font-size: 1.6rem;
-    }
-
-    .input-section {
-        padding: 22px;
-    }
-
-    .submit-btn {
-        font-size: 1.1rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .app-main {
-        max-width: 960px;
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        grid-template-rows: auto auto;
-        gap: 20px;
-        align-items: start;
-    }
-
-    .input-section {
-        grid-column: 1;
-        grid-row: 1;
-        position: sticky;
-        top: calc(var(--header-height) + 16px);
-    }
-
-    .map-section {
-        grid-column: 2;
-        grid-row: 1;
-    }
-
-    .results-section {
-        grid-column: 1 / -1;
-        grid-row: 2;
-    }
-
-    .map-container {
-        height: 520px;
-    }
-}
-
-@media (min-width: 1440px) {
-    .app-main {
-        max-width: 1200px;
-    }
-
-    .map-container {
-        height: 600px;
-    }
-}
-
-/* ===== Accessibility ===== */
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-@media (prefers-contrast: high) {
-    :root {
-        --stone: #999;
-        --ink-soft: #555;
-    }
-
-    .nl-input,
-    .shortcut-btn {
-        border-width: 3px;
-    }
-}
-
-/* ========================================================================
-   漫步珞珈 · 冷启动欢迎卡片（方案 1）样式
-   · 100% 复用 :root 樱花主题变量，不新增自定义色值
-   · Append-only，不覆盖任何原有样式类
-   ======================================================================== */
-
-/* ===== ===== 1. 基础骨架：overlay + mask + card ===== ===== */
-.welcome-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999; /* 压过高德地图所有原生控件 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-.welcome-overlay.hidden { display: none; }
-
-.welcome-mask {
-    position: absolute;
-    inset: 0;
-    background-color: var(--paper);
-    opacity: 0.68; /* 半透 68%，能隐约看到后面地图 */
-    backdrop-filter: blur(2px);
-}
-
-.welcome-card {
-    position: relative;
-    width: 480px;
-    max-width: 100%;
-    height: 640px;
-    max-height: calc(100vh - 32px);
-    background-color: var(--surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--divider);
-    /* 入场动画初始态（通过 .opening 类触发补间） */
-    transform: translateY(24px) scale(0.98);
-    opacity: 0;
-}
-
-/* ===== ===== 2. 签名元素 · 樱顶老斋舍窗棂纹装饰条 ===== ===== */
-/* 三层叠加顺序（从下往上）：①米黄底 #FFF6EC → ②朱红 #E8636F 主渐变叠纹 → ③青蓝 inset 高光 rgba(52,140,170,0.35) */
-.welcome-card-topbar {
-    height: 48px;
-    flex: 0 0 48px;
-    position: relative;
-    background:
-        /* ③ 纵向柱子：每 96px 一个周期，2px 宽朱红主色 #E8636F（窗棂） */
-        repeating-linear-gradient(
-            90deg,
-            transparent 0 48px,
-            #E8636F 48px 50px,
-            rgba(232, 146, 156, 0.32) 50px 96px
-        ),
-        /* ② 横向屋檐线：朱红 #E8636F + 米黄高光 rgba(232,198,80,0.18) 叠纹 */
-        linear-gradient(
-            180deg,
-            transparent 0 11px,
-            #E8636F 11px 12px,
-            rgba(232, 198, 80, 0.18) 12px 40px,
-            rgba(52, 140, 170, 0.25) 40px 41px,
-            transparent 41px 100%
-        ),
-        /* ① 米黄底 #FFF6EC（樱顶老斋舍米黄墙面底色，最底层） */
-        linear-gradient(90deg, #FFF6EC 0%, #FAFAF9 100%);
-    box-shadow: inset 2px 0 0 rgba(52, 140, 170, 0.35);
-}
-/* 窗棂纹 ::before 4px 朱红竖条 accent */
-.welcome-card-topbar::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(to right, #E8636F 0%, rgba(232, 198, 80, 0.18) 50%, rgba(232, 146, 156, 0.32) 100%);
-}
-
-/* ===== ===== 3. 右上角关闭 X 按钮 ===== ===== */
-.welcome-close {
-    position: absolute;
-    top: 56px; /* 低于 48px topbar，不压装饰条 */
-    right: 16px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background-color: var(--paper);
-    color: var(--ink-soft);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-sm);
-    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
-    z-index: 2; /* 高于 mask */
-}
-.welcome-close:hover {
-    background-color: var(--cherry-soft);
-    color: var(--cherry-deep);
-}
-.welcome-close:active { transform: scale(0.92); }
-.welcome-close:focus-visible {
-    outline: 2px solid var(--cherry-deep);
-    outline-offset: 2px;
-}
-
-/* ===== ===== 4. 标题区 ===== ===== */
-.welcome-header {
-    padding: 20px 28px 12px;
-    flex: 0 0 auto;
-    border-bottom: 1px solid var(--divider);
-}
-.welcome-title {
-    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    letter-spacing: 0.02em;
-}
-.welcome-subtitle {
-    margin: 6px 0 0;
-    color: var(--ink-soft);
-    font-size: 0.88rem;
-    line-height: 1.5;
-}
-
-/* ===== ===== 5. 5 个快捷查询卡片（核心！） ===== ===== */
-.welcome-shortcuts {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 16px 28px 12px;
-    /* 桌面端 3+2 网格：第一行 3 张，第二行 2 张（第 5 张宽卡占满，用 grid-column 1/-1） */
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    grid-auto-rows: min-content;
-    align-content: start;
-}
-
-.shortcut-card {
-    /* 公共基类：所有 5 张卡共享 */
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 14px 14px 12px; /* 左侧 12px 给 accent bar 留呼吸 */
-    border-radius: var(--radius-md);
-    border: none;
-    background-color: var(--paper);
-    text-align: left;
-    cursor: pointer;
-    position: relative;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-    box-shadow: var(--shadow-sm);
-    /* 最小触摸目标 44px（卡片高度 84px 已满足） */
-    min-height: 84px;
-}
-/* 左边框 accent bar（每张卡颜色不同，见 sc-* 类） */
-.shortcut-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 10%;
-    bottom: 10%;
-    width: 2px;
-    border-radius: 2px;
-}
-/* 第 5 张宽卡：横跨整个第二行 */
-.shortcut-card.sc-wide {
-    grid-column: 1 / -1;
-}
-
-/* 5 种 accent bar 颜色 + emoji 底色（全复用现有变量，除了 3 个特例保留裸色） */
-.shortcut-card.sc-accent::before { background-color: var(--cherry-deep); }
-.shortcut-card.sc-accent .sc-emoji { background-color: var(--cherry-soft); color: var(--cherry-deep); }
-.shortcut-card.sc-pink::before { background-color: var(--cherry); }
-.shortcut-card.sc-pink .sc-emoji { background-color: var(--cherry-soft); color: var(--cherry-deep); }
-.shortcut-card.sc-jade::before { background-color: var(--jade); }
-.shortcut-card.sc-jade .sc-emoji { background-color: var(--jade-soft); color: var(--jade-deep); }
-.shortcut-card.sc-stone::before { background-color: var(--ink-light); }
-.shortcut-card.sc-stone .sc-emoji { background-color: #FAFAF9; color: var(--ink-soft); } /* 特例 1 */
-.shortcut-card.sc-wide::before { background-color: var(--color-poi); } /* 暖橙：语义对应 POI */
-.shortcut-card.sc-wide .sc-emoji { background-color: #FFF6EC; color: var(--color-poi); } /* 特例 2 */
-
-/* Hover 反馈（符合樱花主题轻盈感） */
-.shortcut-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    background-color: var(--surface);
-}
-.shortcut-card:active { transform: translateY(0) scale(0.98); }
-.shortcut-card:focus-visible {
-    outline: 2px solid var(--cherry-deep);
-    outline-offset: 2px;
-}
-
-/* Emoji 容器（卡片左侧圆形色块） */
-.sc-emoji {
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-}
-/* 卡片文字部分（名字 + 说明） */
-.sc-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1 1 auto;
-    min-width: 0; /* 防止溢出 */
-}
-.sc-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.4;
-}
-.sc-desc {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    line-height: 1.45;
-    /* 单行省略，太长截断 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* ===== ===== 6. 3 步新手提示 ===== ===== */
-.welcome-tips {
-    flex: 0 0 auto;
-    padding: 0 28px;
-    margin-bottom: 8px;
-}
-.welcome-tips-details {
-    background-color: var(--jade-soft);
-    border-radius: var(--radius-md);
-    padding: 10px 14px;
-    border: 1px solid var(--divider);
-}
-.welcome-tips-summary {
-    list-style: none;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--jade-deep);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.welcome-tips-summary::-webkit-details-marker { display: none; }
-.welcome-tips-summary::after {
-    content: '▾';
-    font-size: 1.1rem;
-    transition: transform 0.2s ease;
-}
-.welcome-tips-details[open] .welcome-tips-summary::after { transform: rotate(180deg); }
-.welcome-tips-list {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.tip-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-    line-height: 1.5;
-}
-.tip-num {
-    flex: 0 0 22px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background-color: var(--surface);
-    color: var(--jade-deep);
-    font-weight: 700;
-    font-size: 0.78rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-sm);
-}
-
-/* ===== ===== 7. 底部操作区（开始按钮 + 不再显示复选框） ===== ===== */
-.welcome-footer {
-    flex: 0 0 auto;
-    padding: 14px 28px 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    border-top: 1px solid var(--divider);
-    background-color: var(--paper);
-}
-/* 复用现有 .btn.btn-primary 类（樱花粉渐变），不写新按钮样式！ */
-.welcome-start {
-    width: 100%;
-    height: 48px; /* 满足 44px 触摸目标 */
-    font-size: 1rem;
-    font-weight: 600;
-}
-.welcome-dont-show {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-    cursor: pointer;
-    user-select: none;
-    justify-content: center;
-}
-.welcome-dont-show input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--cherry-deep); /* 选中框颜色用樱粉主题色 */
-    cursor: pointer;
-}
-
-/* ===== ===== 8. Header ？帮助按钮 ===== ===== */
-.help-btn {
-    margin-left: 14px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid var(--divider);
-    background-color: var(--surface);
-    color: var(--ink-soft);
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    box-shadow: var(--shadow-sm);
-    vertical-align: middle;
-    line-height: 1;
-}
-.help-btn:hover {
-    background-color: var(--cherry-soft);
-    color: var(--cherry-deep);
-    border-color: var(--cherry);
-}
-.help-btn:focus-visible {
-    outline: 2px solid var(--cherry-deep);
-    outline-offset: 2px;
-}
-
-/* ===== ===== 9. 入场/退场动画（纯 CSS，不加 JS 动画逻辑） ===== ===== */
-/* --- 入场：加 .opening 类触发，动画完成后移除 --- */
-.welcome-overlay.opening .welcome-mask {
-    animation: welcome-mask-in 200ms linear forwards;
-}
-.welcome-overlay.opening .welcome-card {
-    animation: welcome-card-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-/* 5 张卡片 stagger 入场：用 nth-child 按索引加 animation-delay */
-.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(1) { animation: shortcut-in 240ms ease-out 60ms both; }
-.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(2) { animation: shortcut-in 240ms ease-out 120ms both; }
-.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(3) { animation: shortcut-in 240ms ease-out 180ms both; }
-.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(4) { animation: shortcut-in 240ms ease-out 240ms both; }
-.welcome-overlay.opening .welcome-shortcuts .shortcut-card:nth-child(5) { animation: shortcut-in 240ms ease-out 300ms both; }
-
-@keyframes welcome-mask-in {
-    from { opacity: 0; }
-    to { opacity: 0.68; }
-}
-@keyframes welcome-card-in {
-    from { transform: translateY(24px) scale(0.98); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes shortcut-in {
-    from { transform: translateY(8px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-/* --- 退场：加 .closing 类触发，动画完成后 JS 切 .hidden --- */
-.welcome-overlay.closing .welcome-mask {
-    animation: welcome-mask-out 150ms linear forwards;
-}
-.welcome-overlay.closing .welcome-card {
-    animation: welcome-card-out 180ms ease-in forwards;
-}
-@keyframes welcome-mask-out {
-    from { opacity: 0.68; }
-    to { opacity: 0; }
-}
-@keyframes welcome-card-out {
-    from { transform: translateY(0) scale(1); opacity: 1; }
-    to { transform: translateY(16px) scale(0.98); opacity: 0; }
-}
-
-/* --- ？帮助按钮唤回卡片高亮脉冲动画 --- */
-.welcome-overlay.highlight .welcome-card {
-    animation: welcome-card-pulse 600ms ease-out 1;
-}
-@keyframes welcome-card-pulse {
-    0%, 100% { box-shadow: var(--shadow-lg); }
-    50% { box-shadow: 0 0 0 6px rgba(232, 146, 156, 0.32), var(--shadow-lg); }
-}
-
-/* ===== ===== 10. 推荐景点侧边栏高亮（点推荐景点卡片时触发） ===== ===== */
-.poi-sidebar.flash-highlight {
-    animation: sidebar-flash 2s ease-out 1;
-}
-@keyframes sidebar-flash {
-    0% { background-color: rgba(232, 198, 80, 0.18); } /* 特例 3：淡黄色高亮 */
-    100% { background-color: transparent; }
-}
-
-/* ===== ===== 11. 无障碍 · prefers-reduced-motion 无动画降级 ===== ===== */
-@media (prefers-reduced-motion: reduce) {
-    /* 干掉所有 transition + animation：秒开秒关 */
-    .welcome-close,
-    .shortcut-card,
-    .help-btn,
-    .welcome-tips-summary::after {
-        transition: none !important;
-    }
-    .welcome-overlay.opening .welcome-mask,
-    .welcome-overlay.opening .welcome-card,
-    .welcome-overlay.opening .welcome-shortcuts .shortcut-card,
-    .welcome-overlay.closing .welcome-mask,
-    .welcome-overlay.closing .welcome-card,
-    .welcome-overlay.highlight .welcome-card,
-    .poi-sidebar.flash-highlight {
-        animation: none !important;
-    }
-    /* 直接置为终态，避免 animation 覆盖造成白屏 */
-    .welcome-overlay:not(.hidden) .welcome-card {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-    .welcome-overlay:not(.hidden) .welcome-mask {
-        opacity: 0.68;
-    }
-}
-
-/* ===== ===== 12. 响应式 · 移动端 < 768px ===== ===== */
-@media (max-width: 767px) {
-    /* 卡片尺寸自适应：92vw 宽，88vh 最大高 */
-    .welcome-card {
-        width: 92vw;
-        min-width: 300px;
-        height: auto;
-        max-height: 88vh;
-    }
-    /* 欢迎卡 padding 整体缩小一点 */
-    .welcome-header { padding: 16px 20px 10px; }
-    .welcome-title { font-size: 1.35rem; }
-    .welcome-shortcuts {
-        padding: 12px 20px;
-        /* 移动端：改为单列纵向排列，不再用网格 */
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .shortcut-card {
-        min-height: 72px; /* 紧凑一点 */
-        padding: 12px 12px 12px 10px;
-    }
-    .sc-emoji {
-        width: 36px;
-        height: 36px;
-        font-size: 1.15rem;
-        flex-basis: 36px;
-    }
-    .sc-name { font-size: 0.95rem; }
-    .sc-desc { font-size: 0.78rem; }
-    /* 新手提示：移动端默认折叠（[open] 属性删掉）——用 JS 也会处理，但这里先强制折叠让用户主动看 */
-    .welcome-tips { padding: 0 20px; }
-    .welcome-tips-details { padding: 8px 12px; }
-    .welcome-tips-summary { font-size: 0.8rem; }
-    .tip-item { font-size: 0.78rem; }
-    .welcome-footer { padding: 12px 20px 18px; gap: 10px; }
-    .welcome-start { height: 46px; font-size: 0.95rem; }
-    .welcome-dont-show { font-size: 0.76rem; }
-
-    /* ？帮助按钮：移动端缩小 4px，避免 header 太挤 */
-    .help-btn {
-        margin-left: 10px;
-        width: 28px;
-        height: 28px;
-        font-size: 0.9rem;
-    }
-}
-
-/* ===== ===== 13. 平板横屏小修复（768~1024px） ===== ===== */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-    .welcome-card {
-        height: 600px; /* 稍微矮一点避免横向遮挡 */
-    }
-}
-
-/* ========================================================================
-   T-018 §4 追加规则：触摸目标统一 ≥ 44×44px（append-only 不覆盖原有）
-   · welcome-close 36×36 → 44×44
-   · .help-btn (桌面端) 32×32 → 44×44；(移动端) 28×28 → 44×44
-   · 所有写死尺寸的可交互控件统一提升到 WCAG AA 44×44 最低标准
-   ======================================================================== */
-
-/* 关闭按钮：36→44，top 从 56px 下调到 52px（低于 topbar 48px 更多一点） */
-.welcome-close {
-    width: 44px !important;
-    height: 44px !important;
-    top: 52px;
-    right: 12px;
-    font-size: 1.1rem;
-}
-
-/* Header ？帮助按钮：桌面端 32→44，同时 margin-left 稍缩避免挤 */
-.help-btn {
-    width: 44px !important;
-    height: 44px !important;
-    margin-left: 10px;
-    font-size: 1.05rem;
-}
-/* 移动端也统一到 44（之前 28，现在 WCAG 达标），移动端 header 仍能容纳 */
-@media (max-width: 767px) {
-    .help-btn {
-        width: 44px !important;
-        height: 44px !important;
-        font-size: 1rem;
-    }
-}
-
-/* ===== 确保 hidden 属性不被 display:flex 覆盖 ===== */
-.loading-section[hidden],
-.error-section[hidden] {
-    display: none !important;
-}
-
-/* ===== Results entrance animation ===== */
-.results-section:not([hidden]) {
-    animation: result-fade-in 0.4s ease-out;
-}
-
-@keyframes result-fade-in {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ===== Follow-up suggestions ===== */
-.suggestions-area {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px dashed var(--stone);
-}
-
-.suggestions-prompt {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    margin-bottom: 10px;
-    font-weight: 500;
-}
-
-.suggestions-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.suggestion-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 14px;
-    background: var(--surface);
-    border: 1.5px solid var(--stone);
-    border-radius: 20px;
-    font-size: 0.82rem;
-    color: var(--ink);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    font-family: inherit;
-}
-
-.suggestion-chip:hover {
-    border-color: var(--cherry);
-    background: var(--cherry-soft);
-    color: var(--cherry-deep);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(232, 146, 156, 0.15);
-}
-
-.suggestion-chip:active {
-    transform: scale(0.97);
-}
-
-/* ===== Loading message animation ===== */
-.loading-text {
-    transition: opacity 0.3s ease;
-}
-
-.loading-text.fade {
-    opacity: 0;
-}
-
-/* ===== Welcome hint chat bubble feel ===== */
-.explanation-box p {
-    font-size: 0.95rem;
-    line-height: 1.75;
-    color: var(--ink);
-}
-
-/* ===== POI chips - slightly bigger, more tap friendly ===== */
-.poi-list li {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-    cursor: default;
-    transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.poi-list li:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(232, 146, 156, 0.1);
-}
-
-/* ===== Error modal - warmer feel ===== */
-.error-close-btn {
-    min-height: 44px;
+    min-height: 40px;
     padding: 10px 32px;
     background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
     color: white;
-    border-radius: 24px;
-    font-size: 0.9rem;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.2s;
@@ -1401,14 +690,274 @@ body {
     box-shadow: 0 4px 14px rgba(199, 107, 122, 0.3);
 }
 
-.error-close-btn:active {
-    transform: scale(0.97);
+.error-close-btn:active { transform: scale(0.97); }
+
+/* ==============================
+   WELCOME OVERLAY (unchanged)
+   ============================== */
+.welcome-overlay { /* ... kept from original for welcome card compatibility ... */ }
+
+/* ==============================
+   RESPONSIVE: Mobile (<768px)
+   ============================== */
+@media (max-width: 767px) {
+    body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 260px 1fr;
+    }
+
+    .map-panel { order: 1; }
+
+    .chat-panel {
+        order: 2;
+        border-right: none;
+        border-top: 0.5px solid rgba(0,0,0,0.08);
+        border-radius: 20px 20px 0 0;
+        margin-top: -16px;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.08);
+    }
+
+    .floating-header { padding: 14px 18px 10px; }
+
+    .header-tagline { display: none; }
+
+    .chat-content { padding: 12px 16px; gap: 10px; }
+
+    .bubble-body { max-width: 280px; }
+
+    .route-summary { padding: 12px 4px; }
+    .summary-value { font-size: 1.1rem; }
+
+    .chat-input-bar { padding: 10px 12px; }
+
+    .nl-input { font-size: 0.85rem; padding: 10px 14px; }
+
+    .submit-btn { width: 40px; height: 40px; }
+
+    .map-legend { bottom: 10px; right: 10px; padding: 8px 10px; font-size: 0.68rem; }
 }
 
-/* ===== Map height bump on mobile ===== */
-@media (max-width: 480px) {
-    .map-container {
-        height: 250px;
-    }
+/* ==============================
+   RESPONSIVE: Large desktop (≥1200px)
+   ============================== */
+@media (min-width: 1200px) {
+    body { grid-template-columns: 440px 1fr; }
+
+    .chat-content { padding: 20px 28px; }
+
+    .bubble-body { max-width: 360px; }
+}
+
+/* ==============================
+   WELCOME OVERLAY (冷启动欢迎卡片)
+   ============================== */
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.welcome-overlay.hidden { display: none !important; }
+
+.welcome-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(45, 45, 45, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.welcome-card {
+    position: relative;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 440px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-float);
+    padding: 0;
+    z-index: 1;
+    animation: welcome-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes welcome-in {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.welcome-card-topbar {
+    height: 48px;
+    background: linear-gradient(
+        135deg,
+        var(--cherry-soft) 0%,
+        var(--cherry) 40%,
+        var(--jade-soft) 100%
+    );
+    position: relative;
+}
+.welcome-card-topbar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 24px,
+        rgba(255,255,255,0.25) 24px,
+        rgba(255,255,255,0.25) 26px
+    );
+}
+
+.welcome-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.85);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.2s;
+}
+.welcome-close:hover { background: white; }
+
+.welcome-header {
+    padding: 20px 24px 12px;
+    text-align: center;
+}
+.welcome-title {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+.welcome-subtitle {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+}
+
+.welcome-shortcuts {
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.shortcut-card {
+    padding: 14px 10px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--stone);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    text-align: center;
+}
+.shortcut-card:hover {
+    border-color: var(--cherry);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(232, 146, 156, 0.15);
+}
+.shortcut-card:nth-child(1),
+.shortcut-card:nth-child(2),
+.shortcut-card:nth-child(3) { grid-column: span 1; }
+.shortcut-card:nth-child(4),
+.shortcut-card:nth-child(5) { grid-column: span 1; }
+
+.sc-emoji { font-size: 1.4rem; }
+.sc-name { font-weight: 600; font-size: 0.85rem; color: var(--ink); }
+.sc-desc { font-size: 0.7rem; color: var(--ink-soft); line-height: 1.3; }
+
+.sc-accent { border-left: 3px solid var(--cherry-deep); }
+.sc-pink { border-left: 3px solid var(--cherry); }
+.sc-jade { border-left: 3px solid var(--jade); }
+.sc-stone { border-left: 3px solid var(--ink-light); }
+.sc-wide { border-left: 3px solid var(--color-poi); }
+
+/* Welcome tips */
+.welcome-tips {
+    padding: 14px 24px;
+    border-top: 1px solid var(--divider);
+    margin-top: 12px;
+}
+
+.welcome-tips-summary {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.tip-item {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    align-items: baseline;
+}
+.tip-num {
+    font-size: 0.75rem;
+    color: var(--cherry-deep);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.tip-text { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* Welcome footer */
+.welcome-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--divider);
+}
+
+.welcome-start {
+    width: 100%;
+    min-height: 46px;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: white;
+    border: none;
+    border-radius: 23px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+.welcome-start:hover {
+    box-shadow: 0 4px 18px rgba(199, 107, 122, 0.35);
+}
+.welcome-start:active { transform: scale(0.98); }
+
+.welcome-dont-show {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+@media (max-width: 767px) {
+    .welcome-card { width: 92vw; }
+    .welcome-shortcuts { padding: 0 16px; gap: 8px; }
+    .welcome-header { padding: 16px 16px 10px; }
+    .welcome-tips { padding: 10px 16px; }
+    .welcome-footer { padding: 12px 16px 16px; }
 }
 

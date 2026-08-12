@@ -279,6 +279,12 @@
     }
 
     function showResults(data) {
+        // 隐藏欢迎气泡
+        var welcomeBubble = document.getElementById('welcome-bubble');
+        var shortcutCards = document.getElementById('shortcut-cards-row');
+        if (welcomeBubble) welcomeBubble.style.display = 'none';
+        if (shortcutCards) shortcutCards.style.display = 'none';
+
         var section = document.getElementById('results-section');
         section.hidden = false;
 
@@ -307,6 +313,14 @@
 
         // 跟进建议
         showSuggestions(data);
+
+        // 自动滚到结果区
+        var chatContent = document.getElementById('chat-content');
+        if (chatContent) {
+            setTimeout(function () {
+                chatContent.scrollTo({ top: chatContent.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
     }
 
     function showSuggestions(data) {
@@ -524,25 +538,25 @@
         var nlInput = document.getElementById('nl-input');
         var charCount = document.getElementById('char-count');
         var submitBtn = document.getElementById('submit-btn');
-        var shortcutBtns = document.querySelectorAll('.shortcut-btn');
-        var collapseBtn = document.getElementById('collapse-btn');
+        var quickChips = document.querySelectorAll('.quick-chip');
         var errorCloseBtn = document.getElementById('error-close-btn');
 
         if (nlInput) {
+            // 字数统计 + auto-resize
             nlInput.addEventListener('input', function () {
                 var len = nlInput.value.length;
-                charCount.textContent = len;
-                if (len >= 200) {
-                    charCount.style.color = '#C76B7A';
-                } else {
-                    charCount.style.color = '';
-                }
+                if (charCount) charCount.textContent = len;
+                if (len >= 200 && charCount) charCount.style.color = '#C76B7A';
+                else if (charCount) charCount.style.color = '';
+                // auto-resize
+                nlInput.style.height = 'auto';
+                nlInput.style.height = Math.min(nlInput.scrollHeight, 100) + 'px';
             });
 
             nlInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    submitBtn.click();
+                    if (submitBtn) submitBtn.click();
                 }
             });
         }
@@ -551,7 +565,7 @@
             submitBtn.addEventListener('click', function () {
                 var query = nlInput.value.trim();
                 if (!query) {
-                    showError('请输入需求', '请先输入你的漫步需求，例如"从牌坊到樱顶"');
+                    showError('嗯？还没说去哪呢', '告诉我你想从哪走到哪吧～比如「从牌坊到樱顶」');
                     nlInput.focus();
                     return;
                 }
@@ -559,19 +573,29 @@
             });
         }
 
-        shortcutBtns.forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                shortcutBtns.forEach(function (b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                var mode = btn.getAttribute('data-mode');
+        // 快捷 Chip 按钮
+        quickChips.forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                quickChips.forEach(function (c) { c.classList.remove('active'); });
+                chip.classList.add('active');
+                var mode = chip.getAttribute('data-mode');
                 state.activeMode = mode;
                 handleShortcutMode(mode);
             });
         });
 
-        if (collapseBtn) {
-            collapseBtn.addEventListener('click', collapseResults);
-        }
+        // 快捷小卡片（经典路线、赏樱路线）
+        var miniCards = document.querySelectorAll('.mini-card');
+        miniCards.forEach(function (card) {
+            card.addEventListener('click', function () {
+                var displayText = card.getAttribute('data-display-text');
+                if (nlInput && displayText) {
+                    nlInput.value = displayText;
+                    nlInput.dispatchEvent(new Event('input'));
+                }
+                if (submitBtn) submitBtn.click();
+            });
+        });
 
         if (errorCloseBtn) {
             errorCloseBtn.addEventListener('click', hideError);
@@ -585,16 +609,12 @@
     }
 
     function showWelcomeHint() {
+        var welcomeBubble = document.getElementById('welcome-bubble');
+        var shortcutCards = document.getElementById('shortcut-cards-row');
+        if (welcomeBubble) welcomeBubble.style.display = '';
+        if (shortcutCards) shortcutCards.style.display = '';
         var results = document.getElementById('results-section');
-        results.hidden = false;
-        document.getElementById('recommended-distance').textContent = '—';
-        document.getElementById('shortest-distance').textContent = '—';
-        document.getElementById('overlap-rate').textContent = '—';
-        document.getElementById('poi-items').innerHTML =
-            '<li style="background:#FDF0F2;color:#C76B7A;">✨ 试试输入你的漫步需求</li>';
-        document.getElementById('explanation-text').textContent =
-            '👋 嗨！我是你的珞珈漫步向导。告诉我你想从哪走到哪，有什么特别的偏好（比如想边走边看风景、或者不想爬坡），我来帮你找最合适的路线～';
-        // 清空建议区
+        if (results) results.hidden = true;
         var sa = document.getElementById('suggestions-area');
         if (sa) sa.hidden = true;
     }
