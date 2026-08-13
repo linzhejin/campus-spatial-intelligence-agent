@@ -80,6 +80,7 @@ def create_app() -> Flask:
 app = create_app()
 
 if __name__ == "__main__":
-    port = int(os.getenv("FLASK_PORT", "5000"))
+    # Glitch/Cloud 等平台注入 PORT 环境变量，本地开发用 FLASK_PORT
+    port = int(os.getenv("PORT", os.getenv("FLASK_PORT", "5000")))
     debug = os.getenv("FLASK_ENV", "development") == "development"
     app.run(host="0.0.0.0", port=port, debug=debug)

@@ -1,4 +1,6 @@
-# ===== 漫步珞珈 (WHU-Walker) V1 依赖 =====
+# ===== 漫步珞珈 (WHU-Walker) 运行时依赖 =====
+# 精简版：路网缓存 data/whu_road_network.graphml 已存在，运行时无需 osmnx 下载
+# 如需重新下载路网，请用 requirements-dev.txt
 
 # Web 框架
 flask>=3.0
@@ -11,14 +13,8 @@ httpx>=0.27
 # 数据校验
 pydantic>=2.0
 
-# 空间分析
-osmnx>=1.9
+# 图算法（加载 GraphML + Dijkstra）
 networkx>=3.0
-geopandas>=0.14
-shapely>=2.0
-
-# 可视化
-folium>=0.15
 
 # 环境配置
 python-dotenv>=1.0

@@ -1,0 +1,23 @@
+# ===== 漫步珞珈 (WHU-Walker) 开发依赖（完整版） =====
+# 本地重新下载路网时需要 osmnx/geopandas
+# 安装: pip install -r requirements-dev.txt
+
+# 运行时依赖（与 requirements.txt 相同）
+flask>=3.0
+flask-cors>=4.0
+openai>=1.0
+httpx>=0.27
+pydantic>=2.0
+networkx>=3.0
+python-dotenv>=1.0
+gunicorn>=22.0
+
+# 开发/数据下载依赖
+osmnx>=1.9
+geopandas>=0.14
+shapely>=2.0
+folium>=0.15
+
+# 测试
+pytest>=8.0
+pytest-timeout>=2.0

@@ -1,0 +1,8 @@
+{
+  "name": "whu-walker",
+  "version": "1.0.0",
+  "description": "漫步珞珈 — 武大校园空间智能体",
+  "scripts": {
+    "start": "gunicorn app:app --workers 1 --timeout 60 --bind 0.0.0.0:$PORT"
+  }
+}

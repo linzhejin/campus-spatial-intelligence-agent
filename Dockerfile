@@ -7,8 +7,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 装精简生产依赖（利用 Docker 层缓存）
-COPY requirements-prod.txt .
-RUN pip install --no-cache-dir -r requirements-prod.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制项目代码 + 路网缓存
 COPY . .
