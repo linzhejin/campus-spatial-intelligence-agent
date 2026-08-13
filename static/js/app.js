@@ -694,6 +694,9 @@
         bindEvents();
         showWelcomeHint();
         initMap();
+
+        // 暴露公开函数给欢迎卡片等模块调用
+        window.submitNaturalLanguageQuery = handleNlSubmit;
     }
 
     if (document.readyState === 'loading') {
@@ -949,7 +952,11 @@
             }
         });
         // ①+ 关键！点卡片内部区域必须阻止冒泡到 mask，否则点哪里都关（最常见 bug，Constraint 6）
+        // 但 data-close-welcome 元素（X / 开始使用）在卡片内部，必须允许冒泡到 overlay 触发关闭
         $card.addEventListener('click', function (e) {
+            if (e.target.closest('[data-close-welcome="true"]')) {
+                return; // 关闭按钮不阻止冒泡，让 overlay 的委托监听器处理
+            }
             e.stopPropagation();
         });
 
