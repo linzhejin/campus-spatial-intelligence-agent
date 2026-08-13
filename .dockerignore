@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest_tmp/
+
+# Git
+.git/
+.gitignore
+
+# 输出与临时文件
+output/
+*.png
+*.jpg
+_tmp_*.json
+_tmp_*.py
+
+# 本地环境
+.env
+.env.example
+.claude/
+.superpowers/
+project-docs/
+
+# 部署无关
+render.yaml
+Procfile

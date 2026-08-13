@@ -211,13 +211,31 @@ def clear_cache() -> None:
 
 
 def get_nearest_node(G: nx.MultiDiGraph, lng: float, lat: float) -> int:
-    try:
-        import osmnx as ox
-    except ImportError:
-        raise RuntimeError("osmnx 未安装，无法查找最近节点。请执行: pip install osmnx")
+    """查找距离 (lng, lat) 最近的路网节点。
 
-    node_id = ox.nearest_nodes(G, lng, lat)
-    return int(node_id)
+    纯 networkx 实现，不依赖 osmnx（减少运行时内存占用）。
+    校园尺度下用等距圆柱近似即可，精度足够（误差 < 1 米）。
+    """
+    best_node = None
+    best_dist = float("inf")
+    # 纬度修正因子：经度 1 度对应的实际距离随纬度缩短
+    cos_lat = __import__("math").cos(__import__("math").radians(lat))
+
+    for node_id, data in G.nodes(data=True):
+        x = float(data.get("x", 0))
+        y = float(data.get("y", 0))
+        # 等距圆柱近似：经度差 × cos(lat) 修正
+        dx = (x - lng) * cos_lat
+        dy = y - lat
+        dist = dx * dx + dy * dy
+        if dist < best_dist:
+            best_dist = dist
+            best_node = node_id
+
+    if best_node is None:
+        raise RuntimeError("路网为空，无法查找最近节点")
+
+    return int(best_node)
 
 
 def get_node_coords(G: nx.MultiDiGraph, node_id: int) -> tuple:
