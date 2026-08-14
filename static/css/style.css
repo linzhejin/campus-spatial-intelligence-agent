@@ -705,7 +705,7 @@ body {
 @media (max-width: 767px) {
     body {
         grid-template-columns: 1fr;
-        grid-template-rows: 260px 1fr;
+        grid-template-rows: 55vh 1fr;
     }
 
     .map-panel { order: 1; }
