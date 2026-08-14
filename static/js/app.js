@@ -278,6 +278,48 @@
         state.poiMarkers = [];
     }
 
+    // 返回键：清空路线 + 清空对话 + 复位地图，回到初始欢迎状态
+    function handleReset() {
+        // 1. 清空地图路线和标记
+        clearMap();
+        // 2. 复位地图视角
+        if (state.map) {
+            state.map.setCenter(MAP_CENTER);
+            state.map.setZoom(MAP_ZOOM);
+        }
+        // 3. 清空对话气泡（保留欢迎元素）
+        var chatContent = document.getElementById('chat-content');
+        if (chatContent) {
+            chatContent.querySelectorAll('.chat-bubble-row').forEach(function (b) {
+                b.remove();
+            });
+        }
+        // 4. 恢复欢迎元素
+        var welcomeBubble = document.getElementById('welcome-bubble');
+        var shortcutCards = document.getElementById('shortcut-cards-row');
+        if (welcomeBubble) welcomeBubble.style.display = '';
+        if (shortcutCards) shortcutCards.style.display = '';
+        // 5. 隐藏结果区
+        var results = document.getElementById('results-section');
+        if (results) results.hidden = true;
+        var suggestions = document.getElementById('suggestions-area');
+        if (suggestions) suggestions.hidden = true;
+        // 6. 清空多轮对话上下文
+        state.conversationHistory = [];
+        saveContext();
+        // 7. 清空输入框
+        var nlInput = document.getElementById('nl-input');
+        if (nlInput) { nlInput.value = ''; nlInput.style.height = 'auto'; }
+        var charCount = document.getElementById('char-count');
+        if (charCount) charCount.textContent = '0';
+        // 8. 隐藏错误与加载遮罩
+        hideError();
+        hideLoading();
+        // 9. 重置快捷 chip 高亮
+        state.activeMode = null;
+        document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
+    }
+
     function showResults(data) {
         // 隐藏欢迎气泡
         var welcomeBubble = document.getElementById('welcome-bubble');
@@ -429,7 +471,9 @@
             var errMsg = (result && result.message) || ('请求失败 (' + response.status + ')');
             var errCode = result && result.error;
             var userMsg = mapError(errCode, errMsg);
-            throw new Error(userMsg);
+            var err = new Error(userMsg);
+            err.code = errCode;  // 带上错误码，供调用方判断是否对话式引导
+            throw err;
         }
 
         return result.data || result;
@@ -452,6 +496,16 @@
             'internal_error': '出了点小问题，稍等一下再试就好',
         };
         return errorMap[code] || msg || '出了点意外，再试一次吧';
+    }
+
+    // 可"对话式引导"的错误码：信息不完整 / 输入无法理解，用气泡友好提示而非报错弹窗
+    var GUIDEABLE_ERRORS = [
+        'missing_query', 'missing_endpoints', 'missing_poi_names',
+        'poi_not_found', 'same_poi', 'parse_failed',
+        'parse_validation_error', 'unsupported_task',
+    ];
+    function isGuideableError(code) {
+        return GUIDEABLE_ERRORS.indexOf(code) !== -1;
     }
 
     async function handleNlSubmit(query) {
@@ -510,7 +564,13 @@
                 showError('路线规划失败', '未能生成有效的路线，请尝试更明确的需求描述');
             }
         } catch (err) {
-            showError('规划出错', err.message);
+            if (err.code && isGuideableError(err.code)) {
+                // 信息不完整 / 输入无法理解 → 对话式引导，不弹错误窗
+                hideWelcomeElements();
+                showChatBubble(query, err.message);
+            } else {
+                showError('规划出错', err.message);
+            }
         } finally {
             hideLoading();
         }
@@ -609,6 +669,7 @@
         var submitBtn = document.getElementById('submit-btn');
         var quickChips = document.querySelectorAll('.quick-chip');
         var errorCloseBtn = document.getElementById('error-close-btn');
+        var resetBtn = document.getElementById('reset-btn');
 
         if (nlInput) {
             // 字数统计 + auto-resize
@@ -639,6 +700,10 @@
                     return;
                 }
                 handleNlSubmit(query);
+                // 提交后清空输入框 + 重置字数统计与高度
+                nlInput.value = '';
+                nlInput.style.height = 'auto';
+                if (charCount) charCount.textContent = '0';
             });
         }
 
@@ -668,6 +733,10 @@
 
         if (errorCloseBtn) {
             errorCloseBtn.addEventListener('click', hideError);
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', handleReset);
         }
 
         document.addEventListener('keydown', function (e) {

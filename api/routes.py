@@ -12,6 +12,7 @@
 import logging
 import math
 import os
+import re
 
 import networkx as nx
 from flask import Blueprint, request, jsonify
@@ -51,6 +52,73 @@ def _haversine(lat1, lon1, lat2, lon2):
 def _node_to_coord(G, node_id):
     lng, lat = get_node_coords(G, node_id)
     return {"node_id": int(node_id), "lng": round(lng, 6), "lat": round(lat, 6)}
+
+
+def _parse_linestring(wkt):
+    """解析 WKT LINESTRING 字符串为 [(lng, lat), ...] 坐标点列表。
+
+    路网边的 geometry 以 WKT 字符串形式存储（如 "LINESTRING (114.36 30.53, ...)"），
+    坐标顺序为 lng lat（经度 纬度）。解析失败返回 None。
+    """
+    if not wkt or not isinstance(wkt, str):
+        return None
+    m = re.match(r"LINESTRING\s*\((.*)\)", wkt.strip(), re.IGNORECASE | re.DOTALL)
+    if not m:
+        return None
+    pts = []
+    for pair in m.group(1).split(","):
+        parts = pair.strip().split()
+        if len(parts) >= 2:
+            try:
+                pts.append((float(parts[0]), float(parts[1])))
+            except ValueError:
+                continue
+    return pts if pts else None
+
+
+def _path_to_coords(G, route_nodes):
+    """把路径节点序列展开为密集坐标序列（含边的 geometry 中间点）。
+
+    路网下载时用了 simplify=True，节点只保留交叉路口，弯曲道路的中间点
+    保存在边的 geometry 属性里。若只返回节点坐标，前端用直线连接会丢失弯道
+    细节（"曲线变直线"）。这里沿路径逐边展开 geometry 中间点，让渲染贴合道路。
+
+    Args:
+        G: 路网图
+        route_nodes: [node_id, ...] 路径节点序列
+
+    Returns:
+        [{"lng": float, "lat": float}, ...] 密集坐标序列（不含 node_id，前端只画线）
+    """
+    if not route_nodes:
+        return []
+
+    coords = []
+    for i in range(len(route_nodes) - 1):
+        u, v = route_nodes[i], route_nodes[i + 1]
+        edge_data = G.get_edge_data(u, v)
+        if not edge_data:
+            continue
+
+        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+
+        # 添加当前边起点（首段才加；后续段的起点已由上一段终点覆盖）
+        if not coords:
+            ulng, ulat = get_node_coords(G, u)
+            coords.append({"lng": round(ulng, 6), "lat": round(ulat, 6)})
+
+        geom = data.get("geometry")
+        pts = _parse_linestring(geom) if geom else None
+        if pts and len(pts) >= 2:
+            # geometry 首尾点即 u/v，跳过首点，追加中间点与终点
+            for lng, lat in pts[1:]:
+                coords.append({"lng": round(lng, 6), "lat": round(lat, 6)})
+        else:
+            # 无 geometry（直线边）→ 直接用终点 v
+            vlng, vlat = get_node_coords(G, v)
+            coords.append({"lng": round(vlng, 6), "lat": round(vlat, 6)})
+
+    return coords
 
 
 def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
@@ -304,8 +372,8 @@ def route():
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
 
-    recommended_coords = [_node_to_coord(G, nid) for nid in recommended_nodes]
-    shortest_coords = [_node_to_coord(G, nid) for nid in shortest_nodes]
+    recommended_coords = _path_to_coords(G, recommended_nodes)
+    shortest_coords = _path_to_coords(G, shortest_nodes)
 
     costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
 
@@ -426,7 +494,18 @@ def chat():
     start = intent_data.get("start")
     end = intent_data.get("end")
     if not start or not end:
-        return _err("missing_endpoints", "解析结果缺少起点或终点，请提供更明确的位置信息", 400)
+        # 缺起终点不是"错误"，而是信息不完整——用对话式引导，而非报错弹窗
+        if not start and not end:
+            guide = "想从哪走到哪呢？告诉我起点和终点，我就能帮你规划啦～比如「从牌坊到樱顶」😊"
+        elif not start:
+            guide = "从哪出发呢？告诉我起点就好啦～比如「从牌坊出发」"
+        else:
+            guide = "要去哪儿呢？告诉我目的地，我帮你规划路线～比如「到樱顶」"
+        return _ok({
+            "task_type": "unknown",
+            "message": guide,
+            "example_queries": ["从牌坊到樱顶", "从教五到总图书馆", "去樱顶"],
+        })
 
     start_name = start.get("name")
     end_name = end.get("name")
@@ -481,8 +560,8 @@ def chat():
     shortest_nodes = route_result["shortest"]
     resolved_weights = resolve_weights(weights)
 
-    recommended_coords = [_node_to_coord(G, nid) for nid in recommended_nodes]
-    shortest_coords = [_node_to_coord(G, nid) for nid in shortest_nodes]
+    recommended_coords = _path_to_coords(G, recommended_nodes)
+    shortest_coords = _path_to_coords(G, shortest_nodes)
 
     costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
 

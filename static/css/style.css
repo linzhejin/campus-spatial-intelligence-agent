@@ -215,7 +215,8 @@ body {
     white-space: nowrap;
 }
 
-.help-btn {
+.help-btn,
+.reset-btn {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -230,7 +231,8 @@ body {
     justify-content: center;
     transition: all 0.2s;
 }
-.help-btn:hover {
+.help-btn:hover,
+.reset-btn:hover {
     border-color: var(--cherry);
     background: var(--cherry-soft);
     color: var(--cherry-deep);
