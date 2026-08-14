@@ -528,6 +528,9 @@
     async function handleNlSubmit(query) {
         hideError();
         startLoadingMessages();
+        // 隐藏欢迎元素 + 记录用户输入气泡（对话流完整）
+        hideWelcomeElements();
+        showUserBubble(query);
 
         try {
             // 传最近一轮完整意图快照，供后端多轮承接（补起点/终点）
@@ -597,6 +600,23 @@
         } finally {
             hideLoading();
         }
+    }
+
+    // 显示用户输入气泡（靠右，主题色）
+    function showUserBubble(query) {
+        if (!query) return;
+        var chatContent = document.getElementById('chat-content');
+        if (!chatContent) return;
+
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble-row';
+        bubble.innerHTML =
+            '<div class="chat-bubble chat-bubble-user">' +
+                '<div class="chat-bubble-body">' +
+                    '<p class="chat-bubble-text">' + escapeHtml(query) + '</p>' +
+                '</div>' +
+            '</div>';
+        chatContent.appendChild(bubble);
     }
 
     // 在对话流中显示聊天气泡

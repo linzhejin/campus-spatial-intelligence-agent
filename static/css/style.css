@@ -1000,3 +1000,20 @@ body {
     line-height: 1.65;
 }
 
+/* 用户气泡（靠右，主题色） */
+.chat-bubble-user {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.chat-bubble-user .chat-bubble-body {
+    background: linear-gradient(135deg, var(--cherry), #E8929C);
+    border-radius: 14px 14px 4px 14px;
+    box-shadow: var(--shadow-sm);
+    max-width: 260px;
+}
+
+.chat-bubble-user .chat-bubble-text {
+    color: #fff;
+}
+
