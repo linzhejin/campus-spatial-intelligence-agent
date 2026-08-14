@@ -639,20 +639,14 @@
 
         var modeConfig = {
             distance_first: {
-                start: '牌坊',
-                end: '樱顶',
                 loadingText: '正在规划最短路径…',
                 loadingSubtext: '优先考虑距离',
             },
             scenery_first: {
-                start: '牌坊',
-                end: '樱顶',
                 loadingText: '正在规划风景路线…',
                 loadingSubtext: '优先考虑景观',
             },
             slope_first: {
-                start: '牌坊',
-                end: '樱顶',
                 loadingText: '正在规划平坦路线…',
                 loadingSubtext: '优先考虑坡度',
             },
@@ -661,12 +655,20 @@
         var cfg = modeConfig[mode];
         if (!cfg) return;
 
+        // 优先沿用当前对话的起终点；没有的话才用默认的牌坊→樱顶
+        var startName = '牌坊';
+        var endName = '樱顶';
+        if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
+            startName = state.lastIntent.start.name || '牌坊';
+            endName = state.lastIntent.end.name || '樱顶';
+        }
+
         showLoading(cfg.loadingText, cfg.loadingSubtext);
 
         try {
             var parseResult = await apiRequest('/api/parse', {
-                start: { name: cfg.start },
-                end: { name: cfg.end },
+                start: { name: startName },
+                end: { name: endName },
                 mode: mode,
                 input_method: 'shortcut',
             });
