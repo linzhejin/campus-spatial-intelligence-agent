@@ -385,7 +385,9 @@
         var chips = document.getElementById('suggestions-chips');
         if (!area || !chips) return;
 
-        var suggestions = buildSuggestions(data);
+        var suggestions = (data.suggestions && data.suggestions.length > 0)
+            ? data.suggestions        // 后端 LLM 动态生成的建议
+            : buildSuggestions(data); // 兜底：规则建议
         if (suggestions.length === 0) { area.hidden = true; return; }
 
         chips.innerHTML = '';

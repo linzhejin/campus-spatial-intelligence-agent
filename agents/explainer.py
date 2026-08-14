@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -244,3 +245,100 @@ def generate_chat_response(query: str) -> str:
     except Exception as e:
         logger.warning(f"闲聊回复生成失败: {type(e).__name__}: {e}")
         return "哎呀，网络不太好，稍等一下再问我吧～"
+
+
+# ====== 跟进建议生成（"可能想问"） ======
+
+_suggest_prompt_cache = None
+
+
+def _load_suggest_prompt() -> str:
+    global _suggest_prompt_cache
+    if _suggest_prompt_cache is not None:
+        return _suggest_prompt_cache
+    prompt_path = PROMPTS_DIR / "suggest_system.txt"
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        _suggest_prompt_cache = f.read()
+    return _suggest_prompt_cache
+
+
+def _extract_json_array(text: str):
+    """从 LLM 输出中提取 JSON 数组，失败返回 None。"""
+    text = (text or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+        text = text.strip()
+    try:
+        data = json.loads(text)
+        return data if isinstance(data, list) else None
+    except json.JSONDecodeError:
+        pass
+    m = re.search(r"\[[\s\S]*\]", text)
+    if m:
+        try:
+            data = json.loads(m.group())
+            return data if isinstance(data, list) else None
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+def generate_suggestions(
+    query: str,
+    route_data: dict,
+    constraints: Optional[dict] = None,
+    weights: Optional[dict] = None,
+) -> list:
+    """根据对话上下文用 LLM 生成 2~3 条跟进建议（"可能想问"）。
+
+    返回 [{label, query}, ...]；LLM 不可用或失败时返回空列表（前端兜底到规则建议）。
+    """
+    if not DEEPSEEK_API_KEY:
+        return []
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return []
+
+    system_prompt = _load_suggest_prompt()
+    route_summary = _build_route_summary(route_data)
+
+    user_content = (
+        f"用户原始需求：{query}\n"
+        f"推荐路线：{route_summary}\n"
+        f"约束：{json.dumps(constraints or {}, ensure_ascii=False)}\n"
+        f"权重：{json.dumps(weights or {}, ensure_ascii=False)}"
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+    ]
+
+    client = OpenAI(
+        api_key=DEEPSEEK_API_KEY,
+        base_url=OPENAI_BASE_URL,
+        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=messages,
+            temperature=0.5,
+            max_tokens=256,
+        )
+        raw = response.choices[0].message.content
+        data = _extract_json_array(raw)
+        if not data:
+            return []
+        result = []
+        for item in data:
+            if isinstance(item, dict) and item.get("label") and item.get("query"):
+                result.append({"label": str(item["label"]), "query": str(item["query"])})
+        return result[:3]
+    except Exception as e:
+        logger.warning(f"跟进建议生成失败: {type(e).__name__}: {e}")
+        return []

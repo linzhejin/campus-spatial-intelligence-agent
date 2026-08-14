@@ -18,7 +18,7 @@ import networkx as nx
 from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
-from agents.explainer import generate_explanation, generate_chat_response
+from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import compute_route, resolve_weights, _path_length
@@ -591,6 +591,13 @@ def chat():
     except Exception:
         explanation = "已为您规划好路线。"
 
+    # 跟进建议（"可能想问"）：LLM 根据对话上下文动态生成，失败则空列表（前端兜底）
+    suggestions = []
+    try:
+        suggestions = generate_suggestions(query, route_data_for_explainer, constraints, weights)
+    except Exception as e:
+        logger.warning("跟进建议生成异常: %s", e)
+
     result = {
         "task_type": intent_data.get("task_type"),
         "start": start,
@@ -612,6 +619,7 @@ def chat():
         "applied_weights": route_result.get("applied_weights", resolved_weights),
         "degraded_count": route_result.get("degraded_count", 0),
         "explanation": explanation,
+        "suggestions": suggestions,
     }
     return _ok(result)
 
