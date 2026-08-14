@@ -178,8 +178,13 @@
         if (placeholder) placeholder.style.display = 'none';
 
         try {
+            // 手机屏幕小，用更小的 zoom（比例尺更小）显示更大范围；电脑保持 16
+            var initialZoom = MAP_ZOOM;
+            if (window.innerWidth <= 767) {
+                initialZoom = 14;
+            }
             state.map = new AMap.Map('map-container', {
-                zoom: MAP_ZOOM,
+                zoom: initialZoom,
                 center: [MAP_CENTER[0], MAP_CENTER[1]],
                 mapStyle: 'amap://styles/whitesar',
                 viewMode: '2D',
