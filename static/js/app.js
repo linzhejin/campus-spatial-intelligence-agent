@@ -31,6 +31,7 @@
         loading: false,
         sessionId: null,
         conversationHistory: [],
+        lastIntent: null,  // 最近一轮完整意图快照（多轮对话承接用）
         activeMode: null,
         loadingTimer: null,  // 轮播加载语定时器
     };
@@ -109,6 +110,15 @@
         if (state.conversationHistory.length > 10) {
             state.conversationHistory = state.conversationHistory.slice(-10);
         }
+        // 保存最近一轮完整意图快照（含起终点/缺失标记），供下一轮"补起点/终点"承接
+        state.lastIntent = {
+            task_type: result.task_type || null,
+            start: result.start || null,
+            end: result.end || null,
+            constraints: result.constraints || null,
+            weights: result.weights || null,
+            ambiguity: result.ambiguity || null,
+        };
         saveContext();
     }
 
@@ -518,9 +528,15 @@
         startLoadingMessages();
 
         try {
-            var context = state.conversationHistory.length > 0
-                ? state.conversationHistory
-                : null;
+            // 传最近一轮完整意图快照，供后端多轮承接（补起点/终点）
+            var context = state.lastIntent ? {
+                previous_intent: state.lastIntent,
+                last_ambiguity: state.lastIntent.ambiguity,
+                start: state.lastIntent.start,
+                end: state.lastIntent.end,
+                constraints: state.lastIntent.constraints,
+                weights: state.lastIntent.weights,
+            } : null;
 
             var result = await apiRequest('/api/chat', {
                 query: query,

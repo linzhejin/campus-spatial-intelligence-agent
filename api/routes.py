@@ -436,8 +436,9 @@ def chat():
     if len(query) > 500:
         query = query[:500]
 
+    context = body.get("context")
     try:
-        intent = parse_query(query)
+        intent = parse_query(query, context)
         intent_data = intent.model_dump() if hasattr(intent, "model_dump") else intent.dict()
     except ValueError as e:
         return _err("parse_validation_error", str(e), 400)
@@ -497,13 +498,21 @@ def chat():
         # 缺起终点不是"错误"，而是信息不完整——用对话式引导，而非报错弹窗
         if not start and not end:
             guide = "想从哪走到哪呢？告诉我起点和终点，我就能帮你规划啦～比如「从牌坊到樱顶」😊"
+            ambiguity = "请指定起点和终点"
         elif not start:
             guide = "从哪出发呢？告诉我起点就好啦～比如「从牌坊出发」"
+            ambiguity = "请指定起点"
         else:
             guide = "要去哪儿呢？告诉我目的地，我帮你规划路线～比如「到樱顶」"
+            ambiguity = "请指定终点"
         return _ok({
             "task_type": "unknown",
             "message": guide,
+            "start": start,
+            "end": end,
+            "constraints": intent_data.get("constraints", {}),
+            "weights": intent_data.get("weights"),
+            "ambiguity": ambiguity,
             "example_queries": ["从牌坊到樱顶", "从教五到总图书馆", "去樱顶"],
         })
 
