@@ -342,3 +342,69 @@ def generate_suggestions(
     except Exception as e:
         logger.warning(f"跟进建议生成失败: {type(e).__name__}: {e}")
         return []
+
+
+# ====== 地点引导生成（POI 找不到时友好引导到已知地点） ======
+
+_poi_guide_prompt_cache = None
+
+
+def _load_poi_guide_prompt() -> str:
+    global _poi_guide_prompt_cache
+    if _poi_guide_prompt_cache is not None:
+        return _poi_guide_prompt_cache
+    prompt_path = PROMPTS_DIR / "poi_guide_system.txt"
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        _poi_guide_prompt_cache = f.read()
+    return _poi_guide_prompt_cache
+
+
+def generate_poi_guidance(query: str, unknown_name: str) -> str:
+    """当 POI 找不到时，用 LLM 生成友好引导，把用户引到已知地点。
+
+    返回引导话术；LLM 不可用或失败时返回通用兜底文案。
+    """
+    if not DEEPSEEK_API_KEY:
+        return f"「{unknown_name}」我暂时没找到😅 试试换个说法，比如它的正式名称？"
+
+    try:
+        from openai import OpenAI
+        from config import WHU_POIS
+    except ImportError:
+        return f"「{unknown_name}」我暂时没找到😅 试试换个说法？"
+
+    poi_list = json.dumps(
+        [{"name": k, "type": v.get("type", ""), "desc": v.get("desc", "")} for k, v in WHU_POIS.items()],
+        ensure_ascii=False,
+    )
+
+    system_prompt = _load_poi_guide_prompt()
+    user_content = (
+        f"用户提到：{unknown_name}\n"
+        f"用户原话：{query}\n\n"
+        f"已知地点列表：{poi_list}"
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+    ]
+
+    client = OpenAI(
+        api_key=DEEPSEEK_API_KEY,
+        base_url=OPENAI_BASE_URL,
+        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=messages,
+            temperature=0.5,
+            max_tokens=160,
+        )
+        reply = response.choices[0].message.content.strip()
+        return reply if reply else f"「{unknown_name}」我暂时没找到，换个说法试试？"
+    except Exception as e:
+        logger.warning(f"地点引导生成失败: {type(e).__name__}: {e}")
+        return f"「{unknown_name}」我暂时没找到😅 试试换个说法，比如它的正式名称？"

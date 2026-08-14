@@ -441,15 +441,19 @@ def _rule_based_classify(query: str) -> dict:
                     "end_name": end_match,
                 }
             elif start_match and not end_match:
+                # 终点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）
+                end_name = end_candidate if (end_candidate and len(end_candidate) <= 12) else None
                 return {
                     "task_type": "path_planning",
                     "start_name": start_match,
-                    "end_name": None,
+                    "end_name": end_name,
                 }
             elif end_match and not start_match:
+                # 起点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）
+                start_name = start_candidate if (start_candidate and len(start_candidate) <= 12) else None
                 return {
                     "task_type": "path_planning",
-                    "start_name": None,
+                    "start_name": start_name,
                     "end_name": end_match,
                 }
             break  # first matching pattern wins

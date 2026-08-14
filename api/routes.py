@@ -18,7 +18,7 @@ import networkx as nx
 from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
-from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions
+from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import compute_route, resolve_weights, _path_length
@@ -460,7 +460,12 @@ def chat():
                     "poi": poi,
                     "message": f"这是 {poi['name']} 的信息～",
                 })
-        return _err("poi_not_found", f"未找到 '{poi_name}' 的信息", 404)
+        guidance = generate_poi_guidance(query, poi_name)
+        return _ok({
+            "task_type": "unknown",
+            "message": guidance,
+            "example_queries": ["樱顶在哪", "从牌坊到樱顶"],
+        })
 
     # help → 返回功能介绍
     if task_type == "help":
@@ -525,11 +530,27 @@ def chat():
 
     start_poi = get_poi(start_name)
     if start_poi is None:
-        return _err("poi_not_found", f"起点 '{start_name}' 未找到", 404)
+        guidance = generate_poi_guidance(query, start_name)
+        return _ok({
+            "task_type": "unknown",
+            "message": guidance,
+            "start": start,
+            "end": end,
+            "ambiguity": "请指定起点",
+            "example_queries": ["从牌坊出发"],
+        })
 
     end_poi = get_poi(end_name)
     if end_poi is None:
-        return _err("poi_not_found", f"终点 '{end_name}' 未找到", 404)
+        guidance = generate_poi_guidance(query, end_name)
+        return _ok({
+            "task_type": "unknown",
+            "message": guidance,
+            "start": start,
+            "end": end,
+            "ambiguity": "请指定终点",
+            "example_queries": ["到樱顶"],
+        })
 
     if start_poi["name"] == end_poi["name"]:
         return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
