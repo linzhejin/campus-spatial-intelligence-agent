@@ -30,6 +30,23 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 _network_initialized = False
 
+# 快捷模式预设（与前端 quick-chip 的 data-mode 一一对应）：
+#   distance_first 最短路径 / scenery_first 风景优先 / slope_avoid 平坦优先（避开陡坡）
+SHORTCUT_MODE_PRESETS = {
+    "distance_first": {
+        "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1},
+        "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"},
+    },
+    "scenery_first": {
+        "weights": {"distance": 0.1, "slope": 0.1, "scenery": 0.8},
+        "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"},
+    },
+    "slope_avoid": {
+        "weights": {"distance": 0.1, "slope": 0.8, "scenery": 0.1},
+        "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
+    },
+}
+
 
 def _ok(data, status=200):
     resp = {"data": data}
@@ -245,23 +262,14 @@ def parse():
             return _err("missing_endpoints", "快捷模式下 start 和 end 字段必填", 400)
 
         # 快捷按钮模式 → 直接构建结构化意图，不调 LLM（DEC-011 权重映射）
-        mode_weights = {
-            "distance_first": {"distance": 0.8, "slope": 0.1, "scenery": 0.1},
-            "scenery_first": {"distance": 0.1, "slope": 0.1, "scenery": 0.8},
-            "slope_first":   {"distance": 0.1, "slope": 0.8, "scenery": 0.1},
-        }
-        mode_constraints = {
-            "distance_first": {"distance": "short", "slope": "normal", "scenery": "normal"},
-            "scenery_first": {"distance": "medium", "slope": "normal", "scenery": "high"},
-            "slope_first":   {"distance": "medium", "slope": "avoid", "scenery": "normal"},
-        }
+        preset = SHORTCUT_MODE_PRESETS.get(mode, SHORTCUT_MODE_PRESETS["distance_first"])
 
         return _ok({
             "task_type": "path_planning",
             "start": start,
             "end": end,
-            "constraints": mode_constraints.get(mode, {"distance": "medium", "slope": "normal", "scenery": "normal"}),
-            "weights": mode_weights.get(mode),
+            "constraints": preset["constraints"],
+            "weights": preset["weights"],
             "input_method": "shortcut",
             "ambiguity": None,
             "weight_source": "shortcut",

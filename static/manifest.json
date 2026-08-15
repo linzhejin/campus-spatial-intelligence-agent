@@ -36,7 +36,7 @@
         },
         {
             "name": "平坦优先",
-            "url": "/?mode=slope_first",
+            "url": "/?mode=slope_avoid",
             "description": "优先选择坡度平缓的路线"
         }
     ]

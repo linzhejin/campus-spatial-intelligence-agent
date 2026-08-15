@@ -84,22 +84,17 @@ def t04_check_fallback():
 
 # ====== 5. 快捷按钮模式：mode→weights 映射，不走 LLM ======
 def t05_check_shortcut_mode():
-    from agents import parser
-    has_func = hasattr(parser, "shortcut_parse") or hasattr(parser, "_shortcut_mode_resolve") or hasattr(parser, "parse_shortcut")
-    func_name = None
-    for n in ["shortcut_parse", "_shortcut_mode_resolve", "parse_shortcut", "resolve_shortcut_mode"]:
-        if hasattr(parser, n):
-            func_name = n
-            break
-    ok_func = check("5.1 快捷按钮解析函数存在", has_func, f"found={func_name}")
-    if not has_func:
+    from api.routes import SHORTCUT_MODE_PRESETS
+    has_presets = isinstance(SHORTCUT_MODE_PRESETS, dict) and len(SHORTCUT_MODE_PRESETS) >= 3
+    ok = check("5.1 快捷按钮 mode 预设存在（≥3 档）", has_presets, f"modes={list(SHORTCUT_MODE_PRESETS.keys())}")
+    if not has_presets:
         return False
-
-    func = getattr(parser, func_name)
-    result = func(start_name="牌坊", end_name="樱顶", mode="scenery_priority")
-    ok_result = result is not None and result.input_method == "shortcut"
-    check("5.2 快捷模式 input_method=shortcut", ok_result, f"input_method={result.input_method if result else None}")
-    return ok_func and ok_result
+    expected = {"distance_first", "scenery_first", "slope_avoid"}
+    ok_names = set(SHORTCUT_MODE_PRESETS.keys()) == expected
+    ok_fields = all(("weights" in p and "constraints" in p) for p in SHORTCUT_MODE_PRESETS.values())
+    check("5.2 mode 命名统一 (distance_first/scenery_first/slope_avoid)", ok_names, f"actual={set(SHORTCUT_MODE_PRESETS.keys())}")
+    check("5.3 每档含 weights+constraints", ok_fields)
+    return ok and ok_names and ok_fields
 
 
 # ====== 6. 优先级：显式 NL > 快捷按钮 > 默认权重 ======
@@ -212,16 +207,15 @@ def t09_check_context_carry():
     return ok
 
 
-# ====== 10. 闲聊兜底：task_type="unknown" + ambiguity 引导语 ======
+# ====== 10. 闲聊兜底：task_type="chat"（无关话题交给 DeepSeek 闲聊） ======
 def t10_check_unknown():
     from agents import parser
     ok = True
-    guide_snippet = "我只能回答武大校园内的路径规划和景点信息查询"
     if hasattr(parser, "_rule_based_classify"):
         for q in ["今天天气怎么样", "推荐一个餐厅", "你好啊", "讲个笑话"]:
             c = parser._rule_based_classify(q)
-            ok_q = c["task_type"] == "unknown"
-            check(f"10.1 '{q}' → unknown", ok_q)
+            ok_q = c["task_type"] == "chat"
+            check(f"10.1 '{q}' → chat", ok_q)
             ok &= ok_q
     elif hasattr(parser, "_t011_post_process"):
         fake_intent = parser.TaskIntent(
@@ -231,13 +225,12 @@ def t10_check_unknown():
         )
         for q in ["今天天气", "推荐吃饭的地方"]:
             post = parser._t011_post_process(fake_intent, q, None)
-            ok_q = post.task_type == "unknown"
-            ok_guide = post.ambiguity is not None and (guide_snippet in post.ambiguity or "武大校园" in post.ambiguity)
-            check(f"10.2 '{q}' → unknown + 引导语", ok_q and ok_guide,
-                  f"task_type={post.task_type} ambiguity={post.ambiguity!r}")
-            ok &= ok_q and ok_guide
+            ok_q = post.task_type == "chat"
+            check(f"10.2 '{q}' → chat",
+                  ok_q, f"task_type={post.task_type}")
+            ok &= ok_q
     else:
-        ok = check("10.X unknown 规则函数缺失", False)
+        ok = check("10.X 闲聊规则函数缺失", False)
     return ok
 
 

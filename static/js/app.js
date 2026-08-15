@@ -690,7 +690,7 @@
                 loadingText: '正在规划风景路线…',
                 loadingSubtext: '优先考虑景观',
             },
-            slope_first: {
+            slope_avoid: {
                 loadingText: '正在规划平坦路线…',
                 loadingSubtext: '优先考虑坡度',
             },

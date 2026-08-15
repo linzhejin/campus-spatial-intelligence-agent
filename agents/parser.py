@@ -231,22 +231,6 @@ UNKNOWN_GUIDE_TEXT = (
 
 HELP_GUIDE_AMBIGUITY = None
 
-# 快捷按钮 mode → weights + constraints 预设（T-011 验收 5）
-SHORTCUT_MODE_PRESETS = {
-    "scenery_priority": {
-        "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7},
-        "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"},
-    },
-    "slope_avoid": {
-        "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2},
-        "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
-    },
-    "shortest": {
-        "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1},
-        "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"},
-    },
-}
-
 # 从 WHU_POIS 提取 POI 名称 + 别名（小写），用于规则匹配
 _POI_NAMES_SET = set(WHU_POIS.keys())
 _POI_NAMES_LOWER = {name.lower(): name for name in WHU_POIS.keys()}
@@ -324,6 +308,21 @@ _CAMPUS_CHAT_KEYWORDS = [
 ]
 
 
+def _is_explicit_poi_query(q: str) -> bool:
+    """判断 query 是否是明确的 POI 查询模式（"X在哪/是什么/怎么走"等）。
+
+    这些模式优先级高于闲聊检测：即使 X 含"樱花/珞珈山"等闲聊词，
+    "樱花大道在哪里"、"珞珈山是什么" 也应判为 poi_query 而非 chat。
+    """
+    q = q.strip()
+    if re.match(r"^(.+?)(?:怎么走|怎么去|去哪|在哪里|在哪儿|在哪)$", q):
+        return True
+    for pattern in _POI_QUERY_PATTERNS:
+        if re.match(pattern, q):
+            return True
+    return False
+
+
 def _rule_based_classify(query: str) -> dict:
     """规则优先兜底分类（T-011 验收 7/8/10）。
 
@@ -338,9 +337,9 @@ def _rule_based_classify(query: str) -> dict:
     q = query.strip()
     q_lower = q.lower()
 
-    # Step 0.5: 校园闲聊检测 — 含校园关键词但不含路径语义
+    # Step 0.5: 校园闲聊检测 — 含校园关键词但不含路径语义，且不是明确的 POI 查询
     has_path_semantics_0 = any(kw in q for kw in _PATH_SEMANTIC_KEYWORDS)
-    if not has_path_semantics_0:
+    if not has_path_semantics_0 and not _is_explicit_poi_query(q):
         for kw in _CAMPUS_CHAT_KEYWORDS:
             if kw in q:
                 return {
@@ -520,34 +519,6 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
     if substring_matches:
         return substring_matches[0]
     return None
-
-
-def _shortcut_mode_resolve(start_name: str, end_name: str, mode: str) -> TaskIntent:
-    """快捷按钮模式：直接映射 mode→weights+constraints，不走 LLM（T-011 验收 5）。
-
-    优先级架构：快捷按钮 weight_source="shortcut"。
-    """
-    preset = SHORTCUT_MODE_PRESETS.get(
-        mode,
-        SHORTCUT_MODE_PRESETS["scenery_priority"],
-    )
-    start_ref = None
-    if start_name:
-        start_ref = PoiRef(name=start_name, type="poi")
-    end_ref = None
-    if end_name:
-        end_ref = PoiRef(name=end_name, type="poi")
-
-    intent = TaskIntent(
-        task_type="path_planning",
-        start=start_ref,
-        end=end_ref,
-        constraints=Constraints(**preset["constraints"]),
-        weights=preset["weights"],
-        input_method="shortcut",
-        ambiguity=None,
-    )
-    return _annotate_weight_source(intent)
 
 
 def _apply_priority_logic(intent: TaskIntent, weight_source_hint: str | None = None) -> TaskIntent:
