@@ -461,6 +461,8 @@ def chat():
                     "task_type": "poi_query",
                     "poi": poi,
                     "message": message,
+                    # 供前端多轮上下文保存：问「X在哪」后，下一轮「从A怎么去」可把 X 当作终点承接
+                    "start": start,
                 })
         guidance = generate_poi_guidance(query, poi_name)
         return _ok({

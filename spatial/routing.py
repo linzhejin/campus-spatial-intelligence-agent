@@ -33,6 +33,15 @@ _EDGE_ATTR_DEFAULTS = {
     "scenery_level": 3,
 }
 
+# 校外市政道路（武大校园周边的马路）：推荐路径应尽量避开，
+# 只在起终点本身就在这些路边时（凌波门/牌坊/珞瑜门等）才必要地经过。
+# 这些路的 scenery 标注可能很高（如东湖南路沿湖），若不惩罚会导致推荐路线绕出校园。
+_OUTSIDE_ROAD_NAMES = {
+    "八一路", "东湖南路", "卓刀泉北路", "广八路", "茶港路", "广卓路",
+    "珞狮路", "珞狮北路", "珞瑜路", "珞喻路",
+}
+_OUTSIDE_ROAD_PENALTY = 3.0  # 校外道路的距离成本放大倍数
+
 
 def resolve_weights(llm_weights: Optional[dict]) -> dict:
     """
@@ -217,9 +226,17 @@ def _edge_cost_factory(
     返回的函数签名: edge_weight(u, v, data) -> float
     """
     def edge_weight(u, v, data):
-        edge_k = data.get("_key", 0)
+        # networkx 3.x 对 MultiDiGraph 传给 weight 函数的 data 是 {edge_key: edge_attr_dict}，
+        # 必须先取出真正的边属性 dict，否则 name/slope_level/scenery_level/length 都读不到
+        if isinstance(data, dict) and data:
+            edge_k = next(iter(data))
+            edge_data = data[edge_k]
+        else:
+            edge_k = 0
+            edge_data = data or {}
+
         key = (u, v, edge_k)
-        raw_length = data.get("length", 0)
+        raw_length = edge_data.get("length", 0)
         max_len_for_fallback = max(norm_lengths.values()) if norm_lengths else 1000.0
         fallback_norm = raw_length / max_len_for_fallback if max_len_for_fallback > 0 else 0.0
         norm = norm_lengths.get(key, fallback_norm)
@@ -227,7 +244,11 @@ def _edge_cost_factory(
         if annotation_degraded_tag is not None:
             cost = weights["distance"] * norm
         else:
-            cost, _ = _compute_edge_cost(data, norm, weights)
+            cost, _ = _compute_edge_cost(edge_data, norm, weights)
+
+        # 校外道路惩罚：尽量避免推荐路线绕出校园（东湖南路/八一路等市政路）
+        if edge_data.get("name") in _OUTSIDE_ROAD_NAMES:
+            cost *= _OUTSIDE_ROAD_PENALTY
 
         penalty = penalty_map.get(key, 1.0)
         cost *= penalty
