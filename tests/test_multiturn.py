@@ -152,13 +152,13 @@ MULTITURN_TEST_CASES = [
     },
     {
         "id": "mt_006",
-        "description": "未知闲聊 (task_type=unknown) 单轮兜底",
+        "description": "闲聊 (task_type=chat) 单轮兜底",
         "turns": [
             {
                 "query": "今天天气怎么样",
                 "expected": {
-                    "task_type": "unknown",
-                    "has_ambiguity": True,
+                    "task_type": "chat",
+                    "has_ambiguity": False,
                 },
             },
         ],
@@ -380,7 +380,7 @@ class TestMultiturnOfflineDefinitions:
                 if etype:
                     covered_types.add(etype)
 
-        required_types = {"path_planning", "poi_query", "help", "unknown"}
+        required_types = {"path_planning", "poi_query", "help", "chat"}
         missing = required_types - covered_types
         assert not missing, (
             f"缺少 task_type 覆盖: {missing}，已覆盖: {covered_types}"
@@ -753,12 +753,11 @@ class TestMultiturnPostProcessPipeline:
         assert processed.ambiguity is None
 
     def test_unknown_fallback(self):
-        """TC-PIPE-07: unknown 兜底 (mt_006)。"""
+        """TC-PIPE-07: 无关闲聊兜底走 chat (mt_006)。"""
         base = make_base_intent()
         processed = _t011_post_process(base, "今天天气怎么样", None)
-        assert processed.task_type == "unknown"
-        assert processed.ambiguity is not None
-        assert processed.ambiguity != ""
+        assert processed.task_type == "chat"
+        assert processed.ambiguity is None
 
     def test_three_turn_complete_flow_mt009(self):
         """TC-PIPE-08: mt_009 三轮完整流程 (我在牌坊→想去樱花大道→不爬坡)。"""
@@ -1240,10 +1239,10 @@ class TestFourTaskTypesCoverage:
         mt005 = [c for c in MULTITURN_TEST_CASES if c["id"] == "mt_005"][0]
         assert mt005["turns"][0]["expected"]["task_type"] == "help"
 
-    def test_unknown_coverage(self):
-        """TC-TYPE-04: unknown — mt_006 覆盖。"""
+    def test_chat_coverage(self):
+        """TC-TYPE-04: chat — mt_006 覆盖。"""
         mt006 = [c for c in MULTITURN_TEST_CASES if c["id"] == "mt_006"][0]
-        assert mt006["turns"][0]["expected"]["task_type"] == "unknown"
+        assert mt006["turns"][0]["expected"]["task_type"] == "chat"
 
     def test_rule_classifier_task_types(self):
         """TC-TYPE-05: 规则分类器正确识别 4 种类型。"""
@@ -1261,9 +1260,9 @@ class TestFourTaskTypesCoverage:
         r3 = _rule_based_classify("你能做什么")
         assert r3["task_type"] == "help"
 
-        # unknown: 规则识别
+        # chat: 规则识别（无关闲聊走 chat 而非 unknown）
         r4 = _rule_based_classify("今天天气怎么样")
-        assert r4["task_type"] == "unknown"
+        assert r4["task_type"] == "chat"
 
 
 # ============================================================================
@@ -1326,13 +1325,13 @@ class TestMultiturnE2E:
         if "data" in result:
             assert result["data"]["task_type"] in ("help", "path_planning")
 
-    def test_e2e_parse_unknown(self):
-        """E2E-02: /api/parse 识别 unknown 类型。"""
+    def test_e2e_parse_chat(self):
+        """E2E-02: /api/parse 识别 chat 类型（无关闲聊）。"""
         result = self._parse("今天天气怎么样")
         assert result is not None
         if "data" in result:
-            # 规则兜底应修正为 unknown
-            assert result["data"]["task_type"] in ("unknown", "path_planning")
+            # 规则兜底应修正为 chat
+            assert result["data"]["task_type"] in ("chat", "path_planning")
 
     def test_e2e_parse_poi_query(self):
         """E2E-03: /api/parse 识别 poi_query 类型。"""
@@ -1409,7 +1408,7 @@ class TestMultiturnE2E:
             ("我想去赏樱", "help"),
             ("老图书馆怎么走", "poi_query"),
             ("你能做什么", "help"),
-            ("今天天气怎么样", "unknown"),
+            ("今天天气怎么样", "chat"),
             ("从桂园到樱顶", "path_planning"),
             ("附近有什么景点", "help"),
             ("我在牌坊", "path_planning"),

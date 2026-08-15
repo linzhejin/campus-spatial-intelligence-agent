@@ -293,6 +293,27 @@
         state.poiMarkers = [];
     }
 
+    // 定位单个 POI：清空现有覆盖物，移动地图中心到该 POI 并高亮标记
+    function focusPoiOnMap(poi) {
+        if (!state.map) return;
+        clearMap();
+        var lng = poi.lon != null ? poi.lon : poi.lng;
+        var lat = poi.lat;
+        if (lng == null || lat == null) return;
+
+        var marker = new AMap.Marker({
+            position: [lng, lat],
+            title: poi.name || '',
+            content: '<div style="background:#D4915C;color:white;padding:2px 8px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
+                (poi.name || 'POI') + '</div>',
+            zIndex: 100,
+        });
+        marker.setMap(state.map);
+        state.poiMarkers.push(marker);
+        state.map.setCenter([lng, lat]);
+        state.map.setZoom(16);
+    }
+
     // 返回键：清空路线 + 清空对话 + 复位地图，回到初始欢迎状态
     function handleReset() {
         // 1. 清空地图路线和标记
@@ -570,11 +591,14 @@
                 return;
             }
 
-            // poi_query → 显示景点信息
+            // poi_query → 显示景点信息 + 地图定位
             if (taskType === 'poi_query') {
                 hideWelcomeElements();
                 var poi = result.poi;
                 showChatBubble(query, result.message || (poi ? poi.description : '找到相关信息了～'));
+                if (poi && state.map) {
+                    focusPoiOnMap(poi);
+                }
                 addConversationTurn(query, result);
                 stopLoadingMessages();
                 hideLoading();

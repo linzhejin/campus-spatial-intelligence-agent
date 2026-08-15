@@ -48,7 +48,7 @@ FEW_SHOT_EXAMPLES = [
     ),
     (
         "今天天气怎么样",
-        '{"task_type":"unknown","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":"抱歉，我只能回答武大校园内的路径规划和景点信息查询问题哦。可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~"}',
+        '{"task_type":"chat","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
     ),
 ]
 
@@ -273,7 +273,7 @@ _HELP_PATTERNS = [
     r"想看.*(?:樱花|最美的景|最美的花|最美的校园)(?!.*路线)",   # 想看风景 → help（除非含路线）
 ]
 
-# 明显无关的闲聊关键词（T-011 验收 10）——命中即 unknown，不参与 POI/path 解析
+# 明显无关的闲聊关键词 —— 命中即 chat（交给 DeepSeek 对话模型闲聊，而非 unknown 报错）
 # 注意: 不含 "你好" "谢谢" 等礼貌用语，它们常作为路径 query 的前后缀
 _UNRELATED_KEYWORDS = [
     "天气", "下雨", "温度", "湿度", "刮风",
@@ -292,6 +292,14 @@ _PATH_SEMANTIC_KEYWORDS = [
     "从", "到", "去", "走", "路线", "路径", "怎么走", "避开", "风景", "平坦",
     "最短", "陡坡", "逛", "出发", "规划",
 ]
+
+# 路径提取时应忽略的非地名前缀（语气词/否定词/修饰词），
+# 避免 "想去X" 被误判为 start="想"、"不对去X" 被误判为 start="不对"
+_NON_PLACE_PREFIXES = {
+    "想", "要", "不", "别", "就", "先", "再", "改", "换",
+    "不对", "不是", "不想", "不要", "想要", "打算", "准备",
+    "可以", "还能", "还是", "改成", "换成", "然后", "顺便",
+}
 
 # 校园闲聊关键词 — 命中则 task_type=chat（不是 unknown）
 _CAMPUS_CHAT_KEYWORDS = [
@@ -341,14 +349,15 @@ def _rule_based_classify(query: str) -> dict:
                     "end_name": None,
                 }
 
-    # Step 1: 先匹配明确无关词（T-011 验收 10）
+    # Step 1: 先匹配明确无关词（天气/股票/笑话等）
+    # 命中走 chat（交给 DeepSeek 对话模型闲聊），而非 unknown 报错
     # 但如果 query 同时含路径语义关键词，跳过（礼貌用语 + 路径请求不误判）
     has_path_semantics = any(kw in q for kw in _PATH_SEMANTIC_KEYWORDS)
     if not has_path_semantics:
         for kw in _UNRELATED_KEYWORDS:
             if kw in q:
                 return {
-                    "task_type": "unknown",
+                    "task_type": "chat",
                     "start_name": None,
                     "end_name": None,
                 }
@@ -444,16 +453,24 @@ def _rule_based_classify(query: str) -> dict:
                     "end_name": end_match,
                 }
             elif start_match and not end_match:
-                # 终点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）
-                end_name = end_candidate if (end_candidate and len(end_candidate) <= 12) else None
+                # 终点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）；
+                # 但语气词/否定词（如"想去X"的"想"）不保留为地名
+                end_name = end_candidate if (
+                    end_candidate and len(end_candidate) <= 12
+                    and end_candidate not in _NON_PLACE_PREFIXES
+                ) else None
                 return {
                     "task_type": "path_planning",
                     "start_name": start_match,
                     "end_name": end_name,
                 }
             elif end_match and not start_match:
-                # 起点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）
-                start_name = start_candidate if (start_candidate and len(start_candidate) <= 12) else None
+                # 起点未识别但用户明确说了，保留原名（后续 get_poi 找不到时引导）；
+                # 但语气词/否定词（如"想去X"的"想"）不保留为地名
+                start_name = start_candidate if (
+                    start_candidate and len(start_candidate) <= 12
+                    and start_candidate not in _NON_PLACE_PREFIXES
+                ) else None
                 return {
                     "task_type": "path_planning",
                     "start_name": start_name,
@@ -690,7 +707,9 @@ def _t011_post_process(
         intent.end = None
         intent.ambiguity = None
     elif classified["task_type"] == "path_planning":
-        # 正则兜底：从 query 中提取到起终点，覆盖 LLM fallback 的空值
+        # 正则兜底：从 query 中提取到起终点，覆盖 LLM fallback 的空值；
+        # 同时纠正 LLM 误判的 task_type（如 "我在牌坊" 被 LLM 判成 poi_query）
+        intent.task_type = "path_planning"
         if classified["start_name"]:
             intent.start = PoiRef(name=classified["start_name"], type="poi")
         if classified["end_name"]:

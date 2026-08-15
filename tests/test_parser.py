@@ -99,10 +99,10 @@ class TestFourTaskTypes:
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
-        # 真正无关的闲聊 → unknown
+        # 真正无关的闲聊（股票）→ chat，不再 unknown 报错
         processed = _t011_post_process(base_intent, "今天股票怎么样", None)
-        assert processed.task_type == "unknown"
-        assert processed.ambiguity is not None
+        assert processed.task_type == "chat"
+        assert processed.ambiguity is None
 
     def test_post_process_chat(self):
         """校园相关闲聊 → chat，不是 unknown"""

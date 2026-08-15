@@ -6,9 +6,9 @@
 - "path_planning"：路径规划（A→B 怎么走，含「从…到…」「去…」等路径语义）
 - "poi_query"：景点查询（只问「X 在哪」「X 是什么」「X 附近有什么」，不求路径）
 - "help"：帮助引导（问功能、推荐景点、怎么用本系统）
-- "unknown"：无关闲聊（天气、吃饭、笑话等与武大空间导航无关）
+- "chat"：闲聊（天气、吃饭、笑话、校园生活问答等，交给对话模型自然回答）
 
-**判断优先级**：路径语义 > 景点查询 > 帮助 > 无关闲聊
+**判断优先级**：路径语义 > 景点查询 > 帮助 > 闲聊
 
 # 二、约束等级（constraints）提取规则
 
@@ -76,8 +76,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 | path_planning 缺起点 | "请指定起点" |
 | path_planning 缺终点 | "请指定终点" |
 | 地名不在 POI 列表中 | "请更具体描述地点（如：工学部教学楼、总图书馆）" |
-| task_type=unknown | "抱歉，我只能回答武大校园内的路径规划和景点信息查询问题哦。可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~" |
-| 正常解析 | null |
+| 正常解析 / chat | null |
 
 # 六、多轮上下文
 
@@ -146,7 +145,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 输出：{"task_type": "help", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
 
 输入："今天天气怎么样"
-输出：{"task_type": "unknown", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": "抱歉，我只能回答武大校园内的路径规划和景点信息查询问题哦。可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~"}
+输出：{"task_type": "chat", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
 
 输入："从教五到信息学部第一教学楼"
 输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "信息学部第一教学楼", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}

@@ -455,10 +455,12 @@ def chat():
         if poi_name:
             poi = get_poi(poi_name, fuzzy=True)
             if poi:
+                desc = (poi.get("description") or "").strip()
+                message = desc if desc else f"这是 {poi['name']} 的信息～"
                 return _ok({
                     "task_type": "poi_query",
                     "poi": poi,
-                    "message": f"这是 {poi['name']} 的信息～",
+                    "message": message,
                 })
         guidance = generate_poi_guidance(query, poi_name)
         return _ok({
