@@ -1,7 +1,7 @@
 {
-  "version": "1.2",
-  "update_time": "2026-08-13",
-  "source": "高德 Web服务 place/text 批量校验修正（2026-08-13）+ 原人工整理",
+  "version": "1.3",
+  "update_time": "2026-08-15",
+  "source": "高德 Web服务 place/text 全面校验修正（2026-08-15：宋卿体育馆/教五/万林艺术馆/珞珈山 4 处修正）",
   "coordinate_system": "GCJ-02 (高德火星坐标，与 Amap JS API 一致)",
   "pois": [
     {
@@ -187,8 +187,8 @@
         "文理学部五教"
       ],
       "coordinates": {
-        "lng": 114.361,
-        "lat": 30.536
+        "lng": 114.361426,
+        "lat": 30.53616
       },
       "type": "study",
       "description": "自强大道东侧公共教学楼，文理学部核心教室。",
@@ -207,8 +207,8 @@
         "西北门博物馆"
       ],
       "coordinates": {
-        "lng": 114.36262,
-        "lat": 30.53694
+        "lng": 114.363056,
+        "lat": 30.536666
       },
       "type": "scenery",
       "description": "朱镕基题名万林艺术博物馆，校内艺术展览地标。",
@@ -249,8 +249,8 @@
         "珞珈山18栋"
       ],
       "coordinates": {
-        "lng": 114.369,
-        "lat": 30.541
+        "lng": 114.37003,
+        "lat": 30.534684
       },
       "type": "scenery",
       "description": "校园中央珞珈山主峰，环山绿道与十八栋老建筑群。",
@@ -333,11 +333,11 @@
         "老宋卿"
       ],
       "coordinates": {
-        "lng": 114.36715,
-        "lat": 30.53599
+        "lng": 114.361704,
+        "lat": 30.538244
       },
       "type": "scenery",
-      "description": "樱花大道西端宋卿体育馆，民国经典体育馆建筑。",
+      "description": "桂园操场东北、九一二操场西侧的宋卿体育馆，民国经典体育馆建筑。",
       "season_tags": [
         "all"
       ],
