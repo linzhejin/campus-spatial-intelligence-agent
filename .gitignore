@@ -228,3 +228,9 @@ venv/
 .playwright-mcp/
 prototype/
 .pytest_tmp/
+
+# ===== 项目清理（防复发）=====
+.claude/worktrees/
+*.bak
+/*.png
+output/*.png
