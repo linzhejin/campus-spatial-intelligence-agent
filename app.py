@@ -44,6 +44,7 @@ def create_app() -> Flask:
         return send_from_directory(app.static_folder, "index.html")
 
     @app.route("/health")
+    @app.route("/api/health")
     def health_check():
         return jsonify({
             "status": "ok",
