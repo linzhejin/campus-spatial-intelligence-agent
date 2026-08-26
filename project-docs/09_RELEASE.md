@@ -12,6 +12,7 @@
 - 线上地址: http://152.136.102.172:5000/
 - 监听端口: 5000
 - 运行模式: production（FLASK_ENV=production）
+- 进程模型: gunicorn 2 workers × 4 threads（gthread worker class）
 
 ## 发布内容
 

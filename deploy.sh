@@ -70,7 +70,7 @@ After=network.target
 [Service]
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
-ExecStart=${GUNICORN_BIN} app:app --workers 2 --threads 4 --timeout 60 --keepalive 5 --max-requests 1000 --max-requests-jitter 50 --preload --bind 0.0.0.0:${PORT}
+ExecStart=${GUNICORN_BIN} app:app --workers 2 --threads 4 --timeout 60 --max-requests 1000 --bind 0.0.0.0:${PORT}
 Restart=always
 RestartSec=3
 
