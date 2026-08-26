@@ -9,6 +9,11 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://webapi.amap.com" crossorigin>
+    <link rel="preconnect" href="https://webst01.is.autonavi.com" crossorigin>
+    <link rel="preconnect" href="https://webst02.is.autonavi.com" crossorigin>
+    <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
+    <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 
@@ -292,12 +297,23 @@
             }
             var script = document.createElement('script');
             script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar';
+            script.async = true;
+            var loaded = false;
+            script.onload = function () { loaded = true; };
             script.onerror = function () {
                 var ph = document.getElementById('map-placeholder');
                 if (ph) {
                     ph.innerHTML = '<p style="color:#E53935;">地图加载失败，请检查网络或 Key 配置</p>';
                 }
             };
+            setTimeout(function () {
+                if (!loaded) {
+                    var ph = document.getElementById('map-placeholder');
+                    if (ph) {
+                        ph.innerHTML = '<p style="color:#E53935;">地图加载超时，请刷新或稍后重试</p>';
+                    }
+                }
+            }, 8000);
             document.head.appendChild(script);
         })();
     </script>
