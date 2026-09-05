@@ -254,7 +254,8 @@
         }
 
         var pois = routeData.pois || [];
-        pois.forEach(function (poi) {
+        // 只标前 8 个途经点，避免大量标签遮挡路线；用小圆点，悬停显示名称
+        pois.slice(0, 8).forEach(function (poi) {
             var lng = poi.lng || poi.lon;
             var lat = poi.lat;
             if (lng == null || lat == null) return;
@@ -263,8 +264,8 @@
             var marker = new AMap.Marker({
                 position: [lng, lat],
                 title: poi.name || '',
-                content: '<div style="background:#D4915C;color:white;padding:2px 8px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
-                    (poi.name || 'POI') + '</div>',
+                content: '<div style="width:10px;height:10px;border-radius:50%;background:#D4915C;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>',
+                offset: new AMap.Pixel(-7, -7),
                 zIndex: 100,
             });
             marker.setMap(state.map);
