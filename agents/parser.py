@@ -7,7 +7,7 @@ from typing import Literal, Optional
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from config import DEEPSEEK_API_KEY, OPENAI_BASE_URL, LLM_MODEL, WHU_POIS
+from config import DEEPSEEK_API_KEY, OPENAI_BASE_URL, LLM_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ FEW_SHOT_EXAMPLES = [
     ),
     (
         "带朋友逛，从教五去图书馆，走风景好的路",
-        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"总图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"input_method":"nl","ambiguity":null}',
     ),
     (
         "樱顶在哪里",
@@ -80,17 +80,14 @@ _system_prompt_cache = None
 
 
 def _load_system_prompt() -> str:
+    """加载解析 prompt 模板（两阶段架构：LLM 只做原文名提取，不再注入 POI 列表；
+    地名与 POI 库的匹配由后端 _normalize_poi_refs 完成，避免 320+ POI 撑爆 prompt）。"""
     global _system_prompt_cache
     if _system_prompt_cache is not None:
         return _system_prompt_cache
     prompt_path = PROMPTS_DIR / "parse_system.txt"
     with open(prompt_path, "r", encoding="utf-8") as f:
-        template = f.read()
-    poi_list = json.dumps(
-        [{"name": k, "type": v["type"], "desc": v.get("desc", "")} for k, v in WHU_POIS.items()],
-        ensure_ascii=False,
-    )
-    _system_prompt_cache = template.replace("{poi_list_json}", poi_list).replace("{poi_count}", str(len(poi_list)))
+        _system_prompt_cache = f.read()
     return _system_prompt_cache
 
 
@@ -146,14 +143,18 @@ def _fallback_task_intent(query: str) -> TaskIntent:
 
 def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
     if not DEEPSEEK_API_KEY:
-        logger.error("DEEPSEEK_API_KEY 未配置，使用兜底解析")
-        return _fallback_task_intent(query)
+        logger.error("DEEPSEEK_API_KEY 未配置，使用规则兜底解析")
+        return _t011_post_process(
+            _annotate_weight_source(_fallback_task_intent(query)), query, context
+        )
 
     try:
         from openai import OpenAI
     except ImportError:
-        logger.error("openai SDK 未安装")
-        return _fallback_task_intent(query)
+        logger.error("openai SDK 未安装，使用规则兜底解析")
+        return _t011_post_process(
+            _annotate_weight_source(_fallback_task_intent(query)), query, context
+        )
 
     client = OpenAI(
         api_key=DEEPSEEK_API_KEY,
@@ -231,9 +232,30 @@ UNKNOWN_GUIDE_TEXT = (
 
 HELP_GUIDE_AMBIGUITY = None
 
-# 从 WHU_POIS 提取 POI 名称 + 别名（小写），用于规则匹配
-_POI_NAMES_SET = set(WHU_POIS.keys())
-_POI_NAMES_LOWER = {name.lower(): name for name in WHU_POIS.keys()}
+# 从 POI 库（data/pois.json，320+ 条）提取名称 + 别名，用于规则匹配
+def _build_poi_name_index() -> tuple[set, dict]:
+    """返回 (全部名称集合小写索引)。名称含主名与别名。"""
+    try:
+        from spatial.poi import load_pois
+        pois = load_pois()
+    except Exception:
+        pois = []
+    names_set = set()
+    names_lower = {}
+    for p in pois:
+        name = p.get("name", "")
+        if not name:
+            continue
+        names_set.add(name)
+        names_lower.setdefault(name.lower(), name)
+        for alias in p.get("aliases", []) or []:
+            if alias:
+                names_set.add(alias)
+                names_lower.setdefault(alias.lower(), name)
+    return names_set, names_lower
+
+
+_POI_NAMES_SET, _POI_NAMES_LOWER = _build_poi_name_index()
 
 # POI 查询关键词模式（T-011 验收 7）
 _POI_QUERY_PATTERNS = [
@@ -521,6 +543,27 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
     return None
 
 
+def _normalize_poi_refs(intent: TaskIntent) -> TaskIntent:
+    """两阶段识别·第二阶段：把 LLM/规则提取的原始地名匹配到 POI 库规范名（DEC 两阶段架构）。
+
+    - start/end 的 name 通过 spatial.poi.find_poi（别名 + 模糊）映射为规范名
+    - 匹配失败时保留原文名（后续 route 层 get_poi 找不到会给用户引导，不在此拦截）
+    - 仅处理 type="poi" 的引用，coord 类型不动
+    """
+    if intent.task_type not in ("path_planning", "poi_query"):
+        return intent
+
+    from spatial.poi import find_poi
+
+    for ref in (intent.start, intent.end):
+        if ref is None or ref.type != "poi" or not ref.name:
+            continue
+        matched = find_poi(ref.name)
+        if matched and matched.get("name"):
+            ref.name = matched["name"]
+    return intent
+
+
 def _apply_priority_logic(intent: TaskIntent, weight_source_hint: str | None = None) -> TaskIntent:
     """显式打标优先级来源（T-011 验收 6 · 架构审核 N6）。
 
@@ -688,6 +731,9 @@ def _t011_post_process(
         # 两个都补全了 → 清除 ambiguity
         if intent.start is not None and intent.end is not None and intent.ambiguity:
             intent.ambiguity = None
+
+    # 1.5 两阶段·地名归一化（LLM/规则输出的原文名 → POI 库规范名）
+    intent = _normalize_poi_refs(intent)
 
     # 2. ambiguity 补全（T-011 验收 11）—— 在 context 合并之前判断是否命中补全语义
     intent = _resolve_ambiguity_completion(intent, query, context)

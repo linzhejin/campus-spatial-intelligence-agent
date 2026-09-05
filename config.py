@@ -33,10 +33,10 @@ AMAP_SECURITY_CODE = os.getenv("AMAP_SECURITY_CODE", "")  # 高德 JS API 2.0 �
 
 # ===== 武汉大学校园范围 (经纬度边界) — .env 可覆盖 =====
 WHU_BBOX = {
-    "north": _env_float("WHU_BBOX_NORTH", 30.5480),
-    "south": _env_float("WHU_BBOX_SOUTH", 30.5280),
-    "east":  _env_float("WHU_BBOX_EAST",  114.3750),
-    "west":  _env_float("WHU_BBOX_WEST",  114.3500),
+    "north": _env_float("WHU_BBOX_NORTH", 30.5510),
+    "south": _env_float("WHU_BBOX_SOUTH", 30.5170),
+    "east":  _env_float("WHU_BBOX_EAST",  114.3880),
+    "west":  _env_float("WHU_BBOX_WEST",  114.3460),
 }
 
 # 地图默认中心点 (武大核心区) — .env 可覆盖

@@ -61,13 +61,14 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 
 **注意**：每个权重在 [0.05, 0.8] 范围内，无需归一化（后端自动处理）。
 
-# 四、起终点识别
+# 四、起终点识别（原文名提取）
 
-- 从用户输入中提取起点和终点，映射到 POI 列表中的名称
+- 从用户输入中**原样提取**用户提到的地名，填入 start/end 的 name 字段
+- **不要**改写、规范化或猜测地名的正式名称——后端会把提取到的名字与校内地点数据库匹配（支持别名和模糊匹配）
+- 例如用户说「图书馆」就输出「图书馆」，不要改写成「总图书馆」；说「教五」就输出「教五」
+- 去掉地名前的修饰语（如「想去樱顶」提取「樱顶」而非「想去樱顶」）
 - 如果用户只提到一个地点（如「樱顶在哪」），仅填 start，end 为 null
-- 如果起终点无法从 POI 列表匹配 → 在 ambiguity 中提示
-- 「图书馆」→ 应输出「总图书馆」（POI 列表中以「总图书馆」为准）
-- 模糊地名优先匹配：优先精确名，再尝试包含关系
+- 地名无法提取或明显不是地点（如「天气」）时保持 null
 
 # 五、ambiguity 字段
 
@@ -75,7 +76,6 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 |------|-------------|
 | path_planning 缺起点 | "请指定起点" |
 | path_planning 缺终点 | "请指定终点" |
-| 地名不在 POI 列表中 | "请更具体描述地点（如：工学部教学楼、总图书馆）" |
 | 正常解析 / chat | null |
 
 # 六、多轮上下文
@@ -100,9 +100,6 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 
 只输出 JSON，不要输出任何其他文字。
 
-# POI 列表（共 {poi_count} 个）：
-{poi_list_json}
-
 # 八、Few-shot 示例
 
 输入："从牌坊到樱顶"
@@ -118,7 +115,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 输出：{"task_type": "path_planning", "start": {"name": "梅园", "type": "poi"}, "end": {"name": "桂园", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}, "input_method": "nl", "ambiguity": null}
 
 输入："带朋友逛，从教五去图书馆，走风景好的路"
-输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "总图书馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "图书馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": null}
 
 输入："从老斋舍到宋卿体育馆，避开爬坡"
 输出：{"task_type": "path_planning", "start": {"name": "老斋舍", "type": "poi"}, "end": {"name": "宋卿体育馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "input_method": "nl", "ambiguity": null}
@@ -133,7 +130,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："从信息学部到文理学部怎么走"
-输出：{"task_type": "path_planning", "start": {"name": "信息学部第一教学楼", "type": "poi"}, "end": {"name": "文理学部", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "信息学部", "type": "poi"}, "end": {"name": "文理学部", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
 
 输入："樱顶在哪"
 输出：{"task_type": "poi_query", "start": {"name": "樱顶", "type": "poi"}, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}

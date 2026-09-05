@@ -221,8 +221,20 @@ class TestAmbiguityCompletion:
 
 class TestParseQueryOfflineMock:
     def test_parse_query_no_api_key_fallback(self):
+        """无 API key 时走规则兜底：可解析 query 应成功提取起终点（两阶段规则后处理）。"""
         with patch("agents.parser.DEEPSEEK_API_KEY", ""):
             from agents.parser import parse_query
             result = parse_query("从牌坊到樱顶")
+            assert isinstance(result, TaskIntent)
+            assert result.task_type == "path_planning"
+            assert result.start is not None and result.start.name == "牌坊"
+            assert result.end is not None and result.end.name == "樱顶"
+            assert result.ambiguity is None
+
+    def test_parse_query_no_api_key_unparseable(self):
+        """无 API key 且规则也无法提取时，保留解析失败提示。"""
+        with patch("agents.parser.DEEPSEEK_API_KEY", ""):
+            from agents.parser import parse_query
+            result = parse_query("随便说点什么没有地名")
             assert isinstance(result, TaskIntent)
             assert result.ambiguity is not None

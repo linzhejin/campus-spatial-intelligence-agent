@@ -234,3 +234,6 @@ prototype/
 *.bak
 /*.png
 output/*.png
+
+# 运行时缓存
+cache/
