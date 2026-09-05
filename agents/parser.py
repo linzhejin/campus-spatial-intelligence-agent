@@ -230,6 +230,11 @@ UNKNOWN_GUIDE_TEXT = (
     "可以告诉我你想从哪走到哪，或者问「樱顶在哪」查询景点介绍~"
 )
 
+EXTERNAL_GUIDE_TEXT = (
+    "这个地点不在武汉大学校园内哦～我只熟悉武大文理学部、工学部、信息学部"
+    "三个学部的道路和地点，换个校内目的地试试吧？比如「从牌坊到樱花大道」😊"
+)
+
 HELP_GUIDE_AMBIGUITY = None
 
 # 从 POI 库（data/pois.json，320+ 条）提取名称 + 别名，用于规则匹配
@@ -358,6 +363,19 @@ def _rule_based_classify(query: str) -> dict:
     """
     q = query.strip()
     q_lower = q.lower()
+
+    # Step 0: 校外单位查询（华师/华科/武体等）→ unknown + 边界提示
+    try:
+        from spatial.poi import _is_external_query
+        if _is_external_query(q):
+            return {
+                "task_type": "unknown",
+                "start_name": None,
+                "end_name": None,
+                "external": True,
+            }
+    except Exception:
+        pass
 
     # Step 0.5: 校园闲聊检测 — 含校园关键词但不含路径语义，且不是明确的 POI 查询
     has_path_semantics_0 = any(kw in q for kw in _PATH_SEMANTIC_KEYWORDS)
@@ -722,7 +740,7 @@ def _t011_post_process(
         intent.task_type = "unknown"
         intent.start = None
         intent.end = None
-        intent.ambiguity = UNKNOWN_GUIDE_TEXT
+        intent.ambiguity = EXTERNAL_GUIDE_TEXT if classified.get("external") else UNKNOWN_GUIDE_TEXT
     elif classified["task_type"] == "chat":
         intent.task_type = "chat"
         intent.start = None
