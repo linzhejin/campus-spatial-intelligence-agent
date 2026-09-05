@@ -1,26 +1,9 @@
 {
-  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/景点/校内服务（313条）",
-  "count": 313,
+  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/景点/校内服务（298条）",
+  "count": 298,
   "pois": [
     {
       "id": "poi_001",
-      "name": "博海国济武汉教育研究院",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.355027,
-        "lat": 30.536516
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。洪山侧路36号",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_002",
       "name": "梅园综合楼",
       "aliases": [
         "四方楼"
@@ -39,7 +22,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_003",
+      "id": "poi_002",
       "name": "武大动力与机械学院机械工程系",
       "aliases": [
         "动力与机械学院机械工程系",
@@ -61,26 +44,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_004",
-      "name": "武大经济学院宿舍",
-      "aliases": [
-        "经济学院宿舍"
-      ],
-      "coordinates": {
-        "lng": 114.35642,
-        "lat": 30.526373
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。洪山珞狮北路四眼井小区附近",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_005",
+      "id": "poi_003",
       "name": "武昌区防震减灾和信息综合楼",
       "aliases": [],
       "coordinates": {
@@ -97,15 +61,14 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_006",
+      "id": "poi_004",
       "name": "武汉大学万林艺术博物馆",
       "aliases": [
         "万林博物馆",
         "万林艺术博物馆",
         "万林艺术馆",
         "珞珈咖啡",
-        "艺术馆",
-        "西北门博物馆"
+        "艺术馆"
       ],
       "coordinates": {
         "lng": 114.363056,
@@ -121,7 +84,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_007",
+      "id": "poi_005",
       "name": "武汉大学人工智能学院",
       "aliases": [
         "人工智能学院",
@@ -142,7 +105,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_008",
+      "id": "poi_006",
       "name": "武汉大学人文社会科学研究院",
       "aliases": [
         "人文社会科学研究院"
@@ -161,7 +124,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_009",
+      "id": "poi_007",
       "name": "武汉大学刘少奇研究中心",
       "aliases": [
         "刘少奇研究中心",
@@ -188,7 +151,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_010",
+      "id": "poi_008",
       "name": "武汉大学力学实验教学中心",
       "aliases": [
         "力学实验教学中心",
@@ -208,7 +171,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_011",
+      "id": "poi_009",
       "name": "武汉大学动力与机械学院智慧能源研究中心",
       "aliases": [],
       "coordinates": {
@@ -225,7 +188,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_012",
+      "id": "poi_010",
       "name": "武汉大学动力与机械学院自主制作车间",
       "aliases": [],
       "coordinates": {
@@ -242,7 +205,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_013",
+      "id": "poi_011",
       "name": "武汉大学化学与分子科学学院西区",
       "aliases": [
         "化学与分子科学学院",
@@ -263,7 +226,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_014",
+      "id": "poi_012",
       "name": "武汉大学化学实验教学中心",
       "aliases": [
         "化学实验教学中心"
@@ -282,7 +245,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_015",
+      "id": "poi_013",
       "name": "武汉大学历史学院",
       "aliases": [
         "历史学院"
@@ -301,7 +264,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_016",
+      "id": "poi_014",
       "name": "武汉大学国际教育学院(桂园楼)",
       "aliases": [
         "国际教育学院(桂园楼)",
@@ -321,30 +284,10 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_017",
-      "name": "武汉大学国际软件学院C7舍",
-      "aliases": [
-        "7栋",
-        "国际软件学院C7舍",
-        "学生公寓7栋"
-      ],
-      "coordinates": {
-        "lng": 114.35728,
-        "lat": 30.528169
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。珞喻路129号武汉大学信息学部",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_018",
+      "id": "poi_015",
       "name": "武汉大学图书馆(总馆)",
       "aliases": [
+        "图书馆",
         "图书馆(总馆)",
         "总图",
         "总图书馆",
@@ -368,7 +311,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_019",
+      "id": "poi_016",
       "name": "武汉大学图书馆工学分馆",
       "aliases": [
         "图书馆工学分馆",
@@ -391,7 +334,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_020",
+      "id": "poi_017",
       "name": "武汉大学土木建筑工程学院工程结构实验中心",
       "aliases": [],
       "coordinates": {
@@ -408,7 +351,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_021",
+      "id": "poi_018",
       "name": "武汉大学土木建筑工程学院结构楼",
       "aliases": [
         "土木建筑工程学院",
@@ -429,7 +372,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_022",
+      "id": "poi_019",
       "name": "武汉大学城市设计学院",
       "aliases": [
         "城市设计学院",
@@ -449,11 +392,9 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_023",
+      "id": "poi_020",
       "name": "武汉大学大学生创业俱乐部",
       "aliases": [
-        "信息学部二",
-        "信息学部二食堂",
         "大学生创业俱乐部"
       ],
       "coordinates": {
@@ -470,10 +411,11 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_024",
+      "id": "poi_021",
       "name": "武汉大学大学生工程训练与创新实践中心",
       "aliases": [
-        "大创中心"
+        "大创中心",
+        "武汉大学大学生工程训练与创新实践中心(东2门)"
       ],
       "coordinates": {
         "lng": 114.361691,
@@ -489,43 +431,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_025",
-      "name": "武汉大学大学生工程训练与创新实践中心(东2门)",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.362216,
-        "lat": 30.541673
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。弘毅大道与文澜路交叉口东120米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_026",
-      "name": "武汉大学宇航科学与技术研究院",
-      "aliases": [
-        "宇航科学与技术研究院"
-      ],
-      "coordinates": {
-        "lng": 114.357518,
-        "lat": 30.527134
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。珞喻路129号武汉大学信息学部",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_027",
+      "id": "poi_022",
       "name": "武汉大学实验室与设备管理处",
       "aliases": [
         "实验室与设备管理处"
@@ -544,7 +450,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_028",
+      "id": "poi_023",
       "name": "武汉大学广东省电力设计研究院智能电网研究中心",
       "aliases": [
         "工学部3号教学楼"
@@ -563,7 +469,50 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_029",
+      "id": "poi_024",
+      "name": "武汉大学当代楼",
+      "aliases": [
+        "当代楼",
+        "高等研究院大楼"
+      ],
+      "coordinates": {
+        "lng": 114.359931,
+        "lat": 30.532993
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "文理学部校内地点。汉林西路与育才路交叉口东南100米",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_025",
+      "name": "武汉大学教1楼",
+      "aliases": [
+        "教1楼",
+        "教一",
+        "教一楼",
+        "文理学部教1楼",
+        "文理学部教一"
+      ],
+      "coordinates": {
+        "lng": 114.365366,
+        "lat": 30.537207
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "文理学部校内地点。文理学部教一楼（高德核实）",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_026",
       "name": "武汉大学教学楼9号楼",
       "aliases": [
         "教学楼9号楼"
@@ -582,7 +531,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_030",
+      "id": "poi_027",
       "name": "武汉大学教育科学学院",
       "aliases": [
         "国立农学院",
@@ -605,7 +554,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_031",
+      "id": "poi_028",
       "name": "武汉大学数学与统计学院",
       "aliases": [
         "数学与统计学院",
@@ -625,7 +574,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_032",
+      "id": "poi_029",
       "name": "武汉大学文学院",
       "aliases": [
         "哲学学院",
@@ -647,7 +596,32 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_033",
+      "id": "poi_030",
+      "name": "武汉大学文理学部教3楼",
+      "aliases": [
+        "三教",
+        "教三",
+        "教三楼",
+        "文理学部教3楼",
+        "文理学部教三",
+        "文理学部第三教学楼",
+        "第三教学楼"
+      ],
+      "coordinates": {
+        "lng": 114.360183,
+        "lat": 30.5394
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "文理学部校内地点。文理学部教三楼（高德核实）",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_031",
       "name": "武汉大学文理学部第4教学楼",
       "aliases": [
         "4教",
@@ -673,7 +647,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_034",
+      "id": "poi_032",
       "name": "武汉大学文理学部第二教学楼",
       "aliases": [
         "2教",
@@ -698,7 +672,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_035",
+      "id": "poi_033",
       "name": "武汉大学新型电力系统与国际标准研究院",
       "aliases": [],
       "coordinates": {
@@ -715,7 +689,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_036",
+      "id": "poi_034",
       "name": "武汉大学早期建筑图书馆",
       "aliases": [
         "早期建筑图书馆",
@@ -742,7 +716,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_037",
+      "id": "poi_035",
       "name": "武汉大学早期建筑工学院",
       "aliases": [
         "奥林匹克操场",
@@ -765,7 +739,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_038",
+      "id": "poi_036",
       "name": "武汉大学早期建筑法学院",
       "aliases": [
         "早期建筑法学院",
@@ -787,7 +761,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_039",
+      "id": "poi_037",
       "name": "武汉大学机器人学院",
       "aliases": [
         "机器人学院",
@@ -807,7 +781,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_040",
+      "id": "poi_038",
       "name": "武汉大学枫园教学楼",
       "aliases": [
         "枫园教学楼"
@@ -826,7 +800,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_041",
+      "id": "poi_039",
       "name": "武汉大学枫园阅览室",
       "aliases": [
         "枫园阅览室"
@@ -845,15 +819,38 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_042",
+      "id": "poi_040",
+      "name": "武汉大学桃园教8楼",
+      "aliases": [
+        "教八",
+        "教八楼",
+        "桃园教8楼",
+        "桃园教八",
+        "武汉大学水利水电工程实验教学中心",
+        "水利水电工程实验教学中心",
+        "第八教学楼"
+      ],
+      "coordinates": {
+        "lng": 114.362456,
+        "lat": 30.542581
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "文理学部校内地点。桃园教八楼（高德核实）",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_041",
       "name": "武汉大学水利水电学院",
       "aliases": [
         "工8教",
         "工学部8号教学楼",
         "工学部8教",
-        "武汉大学水利水电工程实验教学中心",
-        "水利水电学院",
-        "水利水电工程实验教学中心"
+        "水利水电学院"
       ],
       "coordinates": {
         "lng": 114.36244,
@@ -869,7 +866,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_043",
+      "id": "poi_042",
       "name": "武汉大学水力机械过渡过程教育部重点实验室(弘毅大道)",
       "aliases": [
         "机电实验楼",
@@ -889,7 +886,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_044",
+      "id": "poi_043",
       "name": "武汉大学水工程科学研究院",
       "aliases": [
         "水工程科学研究院"
@@ -908,7 +905,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_045",
+      "id": "poi_044",
       "name": "武汉大学物理学院报告厅",
       "aliases": [
         "武汉大学物理科学与技术学院",
@@ -930,7 +927,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_046",
+      "id": "poi_045",
       "name": "武汉大学物理学院新楼",
       "aliases": [
         "物理学院新楼",
@@ -950,7 +947,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_047",
+      "id": "poi_046",
       "name": "武汉大学理学院",
       "aliases": [
         "理学院"
@@ -969,7 +966,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_048",
+      "id": "poi_047",
       "name": "武汉大学生命科学学院",
       "aliases": [
         "生命科学学院",
@@ -989,7 +986,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_049",
+      "id": "poi_048",
       "name": "武汉大学生命科学学院实验动物中心",
       "aliases": [
         "生命科学学院实验动物中心"
@@ -1008,7 +1005,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_050",
+      "id": "poi_049",
       "name": "武汉大学生命科学学院附楼",
       "aliases": [
         "生命科学学院附楼"
@@ -1027,7 +1024,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_051",
+      "id": "poi_050",
       "name": "武汉大学电子信息学院",
       "aliases": [
         "东科技楼",
@@ -1049,7 +1046,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_052",
+      "id": "poi_051",
       "name": "武汉大学电子信息学院教学实验中心",
       "aliases": [
         "电子信息学院教学实验中心"
@@ -1068,7 +1065,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_053",
+      "id": "poi_052",
       "name": "武汉大学电子信息学院海态实验室",
       "aliases": [
         "武汉大学电子信息学院无线电海洋遥感实验室",
@@ -1089,7 +1086,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_054",
+      "id": "poi_053",
       "name": "武汉大学社会主义学院",
       "aliases": [
         "社会主义学院"
@@ -1108,7 +1105,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_055",
+      "id": "poi_054",
       "name": "武汉大学社会保障研究中心",
       "aliases": [
         "社会保障研究中心"
@@ -1127,7 +1124,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_056",
+      "id": "poi_055",
       "name": "武汉大学科学技术发展研究院",
       "aliases": [
         "科学技术发展研究院"
@@ -1146,7 +1143,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_057",
+      "id": "poi_056",
       "name": "武汉大学第五教学楼",
       "aliases": [
         "5教",
@@ -1175,54 +1172,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_058",
-      "name": "武汉大学经济与管理学院EDP中心新经济高级人才孵化部",
-      "aliases": [
-        "武汉震旦法商专修学院(武大校区)"
-      ],
-      "coordinates": {
-        "lng": 114.355393,
-        "lat": 30.536236
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。科技创业大厦A座",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_059",
-      "name": "武汉大学网络教育学院",
-      "aliases": [
-        "工10教",
-        "工十教",
-        "工学部10教",
-        "工学部10教学楼",
-        "工学部十教",
-        "工学部十教学楼",
-        "工部10教",
-        "工部十教",
-        "武汉大学工学部10教学楼",
-        "网络教育学院"
-      ],
-      "coordinates": {
-        "lng": 114.360981,
-        "lat": 30.544263
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。珞珈山16号武汉大学",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_060",
+      "id": "poi_057",
       "name": "武汉大学董辅礽经济社会发展研究院",
       "aliases": [
         "研究生院",
@@ -1242,7 +1192,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_061",
+      "id": "poi_058",
       "name": "武汉大学计算机学院",
       "aliases": [
         "武汉大学计算机学院大楼",
@@ -1263,7 +1213,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_062",
+      "id": "poi_059",
       "name": "武汉大学资源与环境科学学院环境工程系",
       "aliases": [],
       "coordinates": {
@@ -1280,7 +1230,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_063",
+      "id": "poi_060",
       "name": "武汉大学雷达与信号处理实验室",
       "aliases": [
         "雷达与信号处理实验室"
@@ -1299,7 +1249,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_064",
+      "id": "poi_061",
       "name": "武汉大学高等研究院",
       "aliases": [
         "喻鹏楼",
@@ -1321,7 +1271,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_065",
+      "id": "poi_062",
       "name": "武汉数学与智能研究院",
       "aliases": [],
       "coordinates": {
@@ -1338,7 +1288,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_066",
+      "id": "poi_063",
       "name": "武汉数据智能研究院",
       "aliases": [],
       "coordinates": {
@@ -1355,7 +1305,24 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_067",
+      "id": "poi_064",
+      "name": "武汉震旦法商专修学院(武大校区)",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35549,
+        "lat": 30.536088
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "文理学部校内地点。洪山侧路34号",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_065",
       "name": "湖北经济学院四眼井",
       "aliases": [],
       "coordinates": {
@@ -1372,7 +1339,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_068",
+      "id": "poi_066",
       "name": "湖北经济学院洪山校区学生宿舍",
       "aliases": [],
       "coordinates": {
@@ -1389,43 +1356,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_069",
-      "name": "稻国家重点实验室当代楼",
-      "aliases": [
-        "高等研究院大楼"
-      ],
-      "coordinates": {
-        "lng": 114.359931,
-        "lat": 30.532993
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。汉林西路与育才路交叉口东南100米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_070",
-      "name": "附3教学楼",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.359885,
-        "lat": 30.526227
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_071",
+      "id": "poi_067",
       "name": "枫园风味食堂",
       "aliases": [
         "枫园CBD",
@@ -1445,7 +1376,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_072",
+      "id": "poi_068",
       "name": "桂园一食堂",
       "aliases": [
         "桂1食堂",
@@ -1466,7 +1397,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_073",
+      "id": "poi_069",
       "name": "桂园二食堂",
       "aliases": [
         "桂2食堂",
@@ -1487,7 +1418,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_074",
+      "id": "poi_070",
       "name": "桂园食堂",
       "aliases": [],
       "coordinates": {
@@ -1504,7 +1435,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_075",
+      "id": "poi_071",
       "name": "梅园教工食堂",
       "aliases": [
         "梅园教工"
@@ -1523,24 +1454,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_076",
-      "name": "梅园食堂",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.37455,
-        "lat": 30.52915
-      },
-      "type": "dining",
-      "campus": "文理学部",
-      "category": "dining",
-      "description": "文理学部校内地点。武汉大学文理学部食堂，提供日常餐饮。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_077",
+      "id": "poi_072",
       "name": "武汉大学枫园食堂",
       "aliases": [
         "枫园宿舍",
@@ -1562,7 +1476,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_078",
+      "id": "poi_073",
       "name": "武汉大学梅园食堂",
       "aliases": [
         "梅园食堂"
@@ -1581,7 +1495,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_079",
+      "id": "poi_074",
       "name": "武汉大学湖滨风味食堂",
       "aliases": [
         "湖滨风味",
@@ -1602,7 +1516,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_080",
+      "id": "poi_075",
       "name": "武汉大学田园食堂(暂停营业)",
       "aliases": [
         "田园",
@@ -1624,7 +1538,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_081",
+      "id": "poi_076",
       "name": "老樱园食堂",
       "aliases": [
         "老樱园"
@@ -1643,7 +1557,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_082",
+      "id": "poi_077",
       "name": "凌波门游泳池",
       "aliases": [
         "凌波门游泳池-栈桥日出"
@@ -1662,7 +1576,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_083",
+      "id": "poi_078",
       "name": "梅园排球场",
       "aliases": [],
       "coordinates": {
@@ -1679,7 +1593,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_084",
+      "id": "poi_079",
       "name": "梅园羽毛球场",
       "aliases": [],
       "coordinates": {
@@ -1696,7 +1610,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_085",
+      "id": "poi_080",
       "name": "武汉大学九一二运动场",
       "aliases": [
         "九一二运动场"
@@ -1715,7 +1629,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_086",
+      "id": "poi_081",
       "name": "武汉大学宋卿体育馆",
       "aliases": [
         "与宋卿体育馆牌匾合影",
@@ -1740,7 +1654,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_087",
+      "id": "poi_082",
       "name": "武汉大学梅园操场",
       "aliases": [
         "梅园小操场",
@@ -1760,7 +1674,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_088",
+      "id": "poi_083",
       "name": "武汉大学篮球场(文体路)",
       "aliases": [
         "梅园篮球场",
@@ -1780,7 +1694,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_089",
+      "id": "poi_084",
       "name": "武汉大学网球场",
       "aliases": [
         "工学部网球场",
@@ -1800,7 +1714,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_090",
+      "id": "poi_085",
       "name": "武汉大学足球场",
       "aliases": [
         "桂园操场",
@@ -1821,7 +1735,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_091",
+      "id": "poi_086",
       "name": "武汉大学风雨操场",
       "aliases": [
         "风雨操场"
@@ -1840,31 +1754,20 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_092",
-      "name": "武汉经管学院湖滨高尔夫练习场",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.37931,
-        "lat": 30.523451
-      },
-      "type": "sports",
-      "campus": "文理学部",
-      "category": "sports",
-      "description": "文理学部校内地点。望湖路附近",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_093",
+      "id": "poi_087",
       "name": "枫园六舍、七舍",
       "aliases": [
         "枫6",
         "枫6舍",
+        "枫7",
+        "枫7舍",
+        "枫七",
+        "枫七舍",
         "枫六",
         "枫六舍",
         "枫园6舍",
+        "枫园7舍",
+        "枫园七舍",
         "枫园六舍"
       ],
       "coordinates": {
@@ -1881,7 +1784,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_094",
+      "id": "poi_088",
       "name": "桂园一舍",
       "aliases": [
         "桂1",
@@ -1904,7 +1807,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_095",
+      "id": "poi_089",
       "name": "梅园五舍",
       "aliases": [
         "梅5",
@@ -1927,7 +1830,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_096",
+      "id": "poi_090",
       "name": "梅园四舍",
       "aliases": [
         "梅4",
@@ -1950,7 +1853,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_097",
+      "id": "poi_091",
       "name": "武汉大学学生14舍",
       "aliases": [
         "学生14舍"
@@ -1969,7 +1872,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_098",
+      "id": "poi_092",
       "name": "武汉大学枫园10舍",
       "aliases": [
         "枫10",
@@ -1993,7 +1896,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_099",
+      "id": "poi_093",
       "name": "武汉大学枫园11舍",
       "aliases": [
         "枫11",
@@ -2017,7 +1920,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_100",
+      "id": "poi_094",
       "name": "武汉大学枫园12舍",
       "aliases": [
         "枫12",
@@ -2041,7 +1944,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_101",
+      "id": "poi_095",
       "name": "武汉大学枫园13舍",
       "aliases": [
         "枫13",
@@ -2065,7 +1968,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_102",
+      "id": "poi_096",
       "name": "武汉大学枫园14舍",
       "aliases": [
         "枫14",
@@ -2089,7 +1992,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_103",
+      "id": "poi_097",
       "name": "武汉大学枫园1舍",
       "aliases": [
         "枫1",
@@ -2113,7 +2016,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_104",
+      "id": "poi_098",
       "name": "武汉大学枫园2舍",
       "aliases": [
         "枫2",
@@ -2137,7 +2040,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_105",
+      "id": "poi_099",
       "name": "武汉大学枫园3舍",
       "aliases": [
         "枫园3舍"
@@ -2156,7 +2059,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_106",
+      "id": "poi_100",
       "name": "武汉大学枫园4舍",
       "aliases": [
         "枫4",
@@ -2180,7 +2083,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_107",
+      "id": "poi_101",
       "name": "武汉大学枫园5舍",
       "aliases": [
         "枫5",
@@ -2204,7 +2107,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_108",
+      "id": "poi_102",
       "name": "武汉大学枫园8舍",
       "aliases": [
         "枫8",
@@ -2228,7 +2131,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_109",
+      "id": "poi_103",
       "name": "武汉大学枫园9舍",
       "aliases": [
         "枫9",
@@ -2252,7 +2155,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_110",
+      "id": "poi_104",
       "name": "武汉大学枫园留学生宿舍",
       "aliases": [
         "工学部三、四",
@@ -2274,7 +2177,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_111",
+      "id": "poi_105",
       "name": "武汉大学枫园留学生宿舍三号楼D区",
       "aliases": [
         "枫园留学生宿舍三号楼D区"
@@ -2293,7 +2196,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_112",
+      "id": "poi_106",
       "name": "武汉大学桂园2舍",
       "aliases": [
         "桂2",
@@ -2317,7 +2220,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_113",
+      "id": "poi_107",
       "name": "武汉大学桂园3舍",
       "aliases": [
         "桂3",
@@ -2341,7 +2244,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_114",
+      "id": "poi_108",
       "name": "武汉大学桂园4舍",
       "aliases": [
         "桂4",
@@ -2365,7 +2268,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_115",
+      "id": "poi_109",
       "name": "武汉大学桂园5舍",
       "aliases": [
         "桂5",
@@ -2389,7 +2292,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_116",
+      "id": "poi_110",
       "name": "武汉大学桂园6舍",
       "aliases": [
         "桂6",
@@ -2398,10 +2301,12 @@
         "桂六舍",
         "桂园6舍",
         "桂园六舍",
+        "桂园学生宿舍",
         "桂园宿舍区",
         "桂园路",
         "桂园风雨操场",
-        "桂操"
+        "桂操",
+        "武汉大学桂园学生宿舍"
       ],
       "coordinates": {
         "lng": 114.359301,
@@ -2417,7 +2322,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_117",
+      "id": "poi_111",
       "name": "武汉大学桂园7舍",
       "aliases": [
         "桂7",
@@ -2441,10 +2346,9 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_118",
+      "id": "poi_112",
       "name": "武汉大学桂园8舍",
       "aliases": [
-        "文理学部第三教学楼",
         "桂8",
         "桂8舍",
         "桂八",
@@ -2466,7 +2370,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_119",
+      "id": "poi_113",
       "name": "武汉大学桂园9舍",
       "aliases": [
         "桂9",
@@ -2490,26 +2394,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_120",
-      "name": "武汉大学桂园学生宿舍",
-      "aliases": [
-        "桂园学生宿舍"
-      ],
-      "coordinates": {
-        "lng": 114.359206,
-        "lat": 30.539399
-      },
-      "type": "dorm",
-      "campus": "文理学部",
-      "category": "dorm",
-      "description": "文理学部校内地点。桂园路与桂园二路交叉口西北60米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_121",
+      "id": "poi_114",
       "name": "武汉大学梅园2舍",
       "aliases": [
         "梅2",
@@ -2533,7 +2418,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_122",
+      "id": "poi_115",
       "name": "武汉大学梅园3舍",
       "aliases": [
         "梅3",
@@ -2557,7 +2442,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_123",
+      "id": "poi_116",
       "name": "武汉大学梅园6舍",
       "aliases": [
         "梅6",
@@ -2581,7 +2466,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_124",
+      "id": "poi_117",
       "name": "武汉大学梅园一舍",
       "aliases": [
         "梅1",
@@ -2605,7 +2490,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_125",
+      "id": "poi_118",
       "name": "武汉大学樱园学生1宿舍",
       "aliases": [
         "樱1",
@@ -2630,7 +2515,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_126",
+      "id": "poi_119",
       "name": "武汉大学樱园学生3宿舍",
       "aliases": [
         "樱3",
@@ -2655,7 +2540,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_127",
+      "id": "poi_120",
       "name": "武汉大学樱园学生4宿舍",
       "aliases": [
         "樱4",
@@ -2680,7 +2565,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_128",
+      "id": "poi_121",
       "name": "武汉大学湖滨15舍",
       "aliases": [
         "湖滨15舍",
@@ -2700,30 +2585,13 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_129",
-      "name": "武汉大学湖滨学生宿舍",
-      "aliases": [
-        "湖滨学生宿舍"
-      ],
-      "coordinates": {
-        "lng": 114.37001,
-        "lat": 30.542452
-      },
-      "type": "dorm",
-      "campus": "文理学部",
-      "category": "dorm",
-      "description": "文理学部校内地点。凌波路与东湖南路交叉口西南120米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_130",
+      "id": "poi_122",
       "name": "武汉大学湖滨学生宿舍10舍",
       "aliases": [
+        "武汉大学湖滨学生宿舍",
         "湖滨10舍",
         "湖滨十舍",
+        "湖滨学生宿舍",
         "湖滨学生宿舍10舍"
       ],
       "coordinates": {
@@ -2740,7 +2608,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_131",
+      "id": "poi_123",
       "name": "武汉大学湖滨学生宿舍11舍",
       "aliases": [
         "湖滨11舍",
@@ -2762,7 +2630,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_132",
+      "id": "poi_124",
       "name": "武汉大学湖滨学生宿舍1舍",
       "aliases": [
         "湖滨1舍",
@@ -2783,7 +2651,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_133",
+      "id": "poi_125",
       "name": "武汉大学湖滨学生宿舍3舍",
       "aliases": [
         "湖滨3舍",
@@ -2804,7 +2672,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_134",
+      "id": "poi_126",
       "name": "武汉大学湖滨学生宿舍4舍",
       "aliases": [
         "湖滨4舍",
@@ -2825,7 +2693,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_135",
+      "id": "poi_127",
       "name": "武汉大学湖滨学生宿舍5舍",
       "aliases": [
         "湖滨5舍",
@@ -2846,7 +2714,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_136",
+      "id": "poi_128",
       "name": "武汉大学湖滨学生宿舍7舍",
       "aliases": [
         "湖滨7舍",
@@ -2867,7 +2735,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_137",
+      "id": "poi_129",
       "name": "武汉大学湖滨学生宿舍8舍",
       "aliases": [
         "湖滨8舍",
@@ -2888,7 +2756,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_138",
+      "id": "poi_130",
       "name": "武汉大学湖滨学生宿舍9舍",
       "aliases": [
         "湖滨9舍",
@@ -2909,7 +2777,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_139",
+      "id": "poi_131",
       "name": "武汉大学珞珈山公寓(东湖宿舍区)",
       "aliases": [
         "珞珈山公寓(东湖宿舍区)"
@@ -2928,7 +2796,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_140",
+      "id": "poi_132",
       "name": "湖滨14舍",
       "aliases": [
         "湖滨十四舍"
@@ -2947,7 +2815,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_141",
+      "id": "poi_133",
       "name": "湖滨二舍",
       "aliases": [
         "湖滨2舍"
@@ -2966,7 +2834,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_142",
+      "id": "poi_134",
       "name": "湖滨十七舍",
       "aliases": [
         "湖滨17舍"
@@ -2985,7 +2853,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_143",
+      "id": "poi_135",
       "name": "湖滨十三舍",
       "aliases": [
         "湖滨13舍"
@@ -3004,7 +2872,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_144",
+      "id": "poi_136",
       "name": "湖滨十六舍",
       "aliases": [
         "湖滨16舍"
@@ -3023,7 +2891,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_145",
+      "id": "poi_137",
       "name": "凌波门",
       "aliases": [
         "东湖凌波门",
@@ -3045,7 +2913,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_146",
+      "id": "poi_138",
       "name": "武汉大学南门",
       "aliases": [
         "南门"
@@ -3064,7 +2932,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_147",
+      "id": "poi_139",
       "name": "武汉大学科技门",
       "aliases": [
         "科技门"
@@ -3083,7 +2951,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_148",
+      "id": "poi_140",
       "name": "牌坊",
       "aliases": [
         "主入口",
@@ -3108,7 +2976,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_149",
+      "id": "poi_141",
       "name": "凌波门东湖观景点",
       "aliases": [
         "凌波门东湖观景点-湖面栈道"
@@ -3127,7 +2995,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_150",
+      "id": "poi_142",
       "name": "凌波门栈桥",
       "aliases": [
         "凌波门栈桥-拍栈桥朝霞",
@@ -3147,7 +3015,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_151",
+      "id": "poi_143",
       "name": "凌波门码头",
       "aliases": [
         "为你写诗东湖文创店",
@@ -3167,7 +3035,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_152",
+      "id": "poi_144",
       "name": "国立武汉大学日字斋",
       "aliases": [
         "国立日字斋"
@@ -3186,7 +3054,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_153",
+      "id": "poi_145",
       "name": "武汉大学六一纪念亭",
       "aliases": [
         "六一纪念亭"
@@ -3205,7 +3073,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_154",
+      "id": "poi_146",
       "name": "武汉大学半山庐",
       "aliases": [
         "半山庐"
@@ -3224,7 +3092,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_155",
+      "id": "poi_147",
       "name": "武汉大学早期建筑",
       "aliases": [
         "早期建筑"
@@ -3243,7 +3111,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_156",
+      "id": "poi_148",
       "name": "武汉大学李四光塑像",
       "aliases": [
         "学生新4栋",
@@ -3265,7 +3133,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_157",
+      "id": "poi_149",
       "name": "武汉大学李达故居",
       "aliases": [
         "李达故居"
@@ -3284,7 +3152,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_158",
+      "id": "poi_150",
       "name": "武汉大学枫园",
       "aliases": [],
       "coordinates": {
@@ -3301,7 +3169,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_159",
+      "id": "poi_151",
       "name": "武汉大学梅园",
       "aliases": [
         "梅园CBD",
@@ -3323,7 +3191,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_160",
+      "id": "poi_152",
       "name": "武汉大学樱园",
       "aliases": [
         "情人坡",
@@ -3343,7 +3211,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_161",
+      "id": "poi_153",
       "name": "武汉大学樱花大道",
       "aliases": [
         "樱园路",
@@ -3367,7 +3235,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_162",
+      "id": "poi_154",
       "name": "武汉大学法治文化公园(珞珈山路)",
       "aliases": [
         "法治文化公园(珞珈山路)"
@@ -3386,7 +3254,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_163",
+      "id": "poi_155",
       "name": "武汉大学火石山",
       "aliases": [
         "火石山"
@@ -3405,7 +3273,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_164",
+      "id": "poi_156",
       "name": "武汉大学狮子山(樱园西路)",
       "aliases": [
         "狮子山(樱园西路)"
@@ -3424,7 +3292,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_165",
+      "id": "poi_157",
       "name": "武汉大学珞珈山",
       "aliases": [
         "十八栋",
@@ -3448,7 +3316,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_166",
+      "id": "poi_158",
       "name": "武汉大学珞珈山水塔",
       "aliases": [
         "珞珈山水塔"
@@ -3467,7 +3335,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_167",
+      "id": "poi_159",
       "name": "武汉大学珞珈广场",
       "aliases": [
         "珞珈广场"
@@ -3486,7 +3354,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_168",
+      "id": "poi_160",
       "name": "武汉大学电力广场",
       "aliases": [
         "电力广场"
@@ -3505,7 +3373,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_169",
+      "id": "poi_161",
       "name": "武汉大学老斋舍",
       "aliases": [
         "斋舍",
@@ -3539,7 +3407,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_170",
+      "id": "poi_162",
       "name": "武汉大学落英湖",
       "aliases": [
         "落英湖"
@@ -3558,7 +3426,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_171",
+      "id": "poi_163",
       "name": "武汉大学闻一多",
       "aliases": [
         "学生新1栋",
@@ -3578,7 +3446,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_172",
+      "id": "poi_164",
       "name": "武汉大学鲲鹏广场",
       "aliases": [
         "鲲鹏广场"
@@ -3597,7 +3465,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_173",
+      "id": "poi_165",
       "name": "珞珈山庄",
       "aliases": [],
       "coordinates": {
@@ -3614,7 +3482,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_174",
+      "id": "poi_166",
       "name": "中国工商银行(武汉珞珈山支行)",
       "aliases": [
         "银行"
@@ -3633,7 +3501,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_175",
+      "id": "poi_167",
       "name": "中国邮政(武汉大学樱花邮政所)",
       "aliases": [
         "中国邮政(樱花邮政所)",
@@ -3656,7 +3524,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_176",
+      "id": "poi_168",
       "name": "武汉大学医院",
       "aliases": [
         "医院",
@@ -3677,7 +3545,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_177",
+      "id": "poi_169",
       "name": "武汉大学教职工活动中心",
       "aliases": [
         "教职工活动中心"
@@ -3696,7 +3564,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_178",
+      "id": "poi_170",
       "name": "武汉大学老干部活动中心",
       "aliases": [
         "老干部活动中心"
@@ -3715,7 +3583,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_179",
+      "id": "poi_171",
       "name": "前沿交叉学科研究院",
       "aliases": [],
       "coordinates": {
@@ -3732,7 +3600,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_180",
+      "id": "poi_172",
       "name": "工学部7号教学楼",
       "aliases": [
         "工7教",
@@ -3758,7 +3626,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_181",
+      "id": "poi_173",
       "name": "武汉大学中国边界与海洋研究院",
       "aliases": [
         "中国边界与海洋研究院",
@@ -3778,7 +3646,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_182",
+      "id": "poi_174",
       "name": "武汉大学信息管理学院",
       "aliases": [
         "信息管理学院",
@@ -3800,7 +3668,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_183",
+      "id": "poi_175",
       "name": "武汉大学先进制造与人工智能实验室",
       "aliases": [
         "先进制造与人工智能实验室"
@@ -3819,7 +3687,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_184",
+      "id": "poi_176",
       "name": "武汉大学区域经济研究中心",
       "aliases": [
         "区域经济研究中心",
@@ -3839,7 +3707,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_185",
+      "id": "poi_177",
       "name": "武汉大学发展研究院",
       "aliases": [
         "发展研究院"
@@ -3858,7 +3726,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_186",
+      "id": "poi_178",
       "name": "武汉大学商学院EMBA中心",
       "aliases": [
         "商学院EMBA中心",
@@ -3879,7 +3747,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_187",
+      "id": "poi_179",
       "name": "武汉大学国家文化发展研究院",
       "aliases": [
         "国家文化发展研究院"
@@ -3898,7 +3766,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_188",
+      "id": "poi_180",
       "name": "武汉大学外国语言文学学院",
       "aliases": [
         "外国语言文学学院",
@@ -3918,7 +3786,26 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_189",
+      "id": "poi_181",
+      "name": "武汉大学工学部10教学楼",
+      "aliases": [
+        "网络教育学院"
+      ],
+      "coordinates": {
+        "lng": 114.361007,
+        "lat": 30.544295
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "工学部校内地点。八一路299号武汉大学工学部内",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_182",
       "name": "武汉大学工学部11教学楼",
       "aliases": [
         "工11教",
@@ -3946,7 +3833,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_190",
+      "id": "poi_183",
       "name": "武汉大学工学部3教学楼",
       "aliases": [
         "工3教",
@@ -3975,7 +3862,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_191",
+      "id": "poi_184",
       "name": "武汉大学工学部5教楼",
       "aliases": [
         "工5教",
@@ -4003,7 +3890,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_192",
+      "id": "poi_185",
       "name": "武汉大学工学部6教学楼",
       "aliases": [
         "工6教",
@@ -4030,7 +3917,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_193",
+      "id": "poi_186",
       "name": "武汉大学工学部A教学楼",
       "aliases": [
         "工学部A教学楼"
@@ -4049,7 +3936,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_194",
+      "id": "poi_187",
       "name": "武汉大学工学部一教",
       "aliases": [
         "一教（工学部）",
@@ -4080,7 +3967,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_195",
+      "id": "poi_188",
       "name": "武汉大学工学部四教学楼",
       "aliases": [
         "工4教",
@@ -4107,7 +3994,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_196",
+      "id": "poi_189",
       "name": "武汉大学工学部水资源与水电工程科学国家重点实验室",
       "aliases": [
         "农田水利楼"
@@ -4126,7 +4013,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_197",
+      "id": "poi_190",
       "name": "武汉大学工学部高电压绝缘监测实验室",
       "aliases": [
         "高电压绝缘监测实验室"
@@ -4145,7 +4032,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_198",
+      "id": "poi_191",
       "name": "武汉大学新闻与传播学院",
       "aliases": [
         "佩松楼",
@@ -4165,7 +4052,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_199",
+      "id": "poi_192",
       "name": "武汉大学机械工程实验教学中心现代加工部",
       "aliases": [],
       "coordinates": {
@@ -4182,7 +4069,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_200",
+      "id": "poi_193",
       "name": "武汉大学机械工程实验教学中心车削加工部",
       "aliases": [],
       "coordinates": {
@@ -4199,7 +4086,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_201",
+      "id": "poi_194",
       "name": "武汉大学法学图书馆",
       "aliases": [
         "法学图书馆",
@@ -4220,7 +4107,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_202",
+      "id": "poi_195",
       "name": "武汉大学法学院",
       "aliases": [
         "法学院",
@@ -4240,7 +4127,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_203",
+      "id": "poi_196",
       "name": "武汉大学爱平音乐厅",
       "aliases": [
         "爱平音乐厅"
@@ -4259,7 +4146,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_204",
+      "id": "poi_197",
       "name": "武汉大学留学生教育学院",
       "aliases": [
         "留学生教育学院"
@@ -4278,7 +4165,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_205",
+      "id": "poi_198",
       "name": "武汉大学社会学院",
       "aliases": [
         "社会学院",
@@ -4298,7 +4185,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_206",
+      "id": "poi_199",
       "name": "武汉大学经济与管理学院",
       "aliases": [
         "亮胜楼",
@@ -4320,7 +4207,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_207",
+      "id": "poi_200",
       "name": "武汉大学艺术学院",
       "aliases": [
         "人文馆",
@@ -4340,7 +4227,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_208",
+      "id": "poi_201",
       "name": "工学部三食堂",
       "aliases": [
         "工学部3食堂",
@@ -4361,7 +4248,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_209",
+      "id": "poi_202",
       "name": "工学部清真食堂",
       "aliases": [
         "工学部清真"
@@ -4380,7 +4267,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_210",
+      "id": "poi_203",
       "name": "武汉大学工学部学生一食堂",
       "aliases": [
         "工学部1食堂",
@@ -4405,7 +4292,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_211",
+      "id": "poi_204",
       "name": "工学部体育馆",
       "aliases": [
         "工学部体育馆健身房"
@@ -4424,7 +4311,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_212",
+      "id": "poi_205",
       "name": "工学部操场",
       "aliases": [],
       "coordinates": {
@@ -4441,7 +4328,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_213",
+      "id": "poi_206",
       "name": "工学部篮球场",
       "aliases": [],
       "coordinates": {
@@ -4458,7 +4345,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_214",
+      "id": "poi_207",
       "name": "工学部15舍",
       "aliases": [
         "工15",
@@ -4481,7 +4368,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_215",
+      "id": "poi_208",
       "name": "工学部3舍",
       "aliases": [
         "工3",
@@ -4504,7 +4391,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_216",
+      "id": "poi_209",
       "name": "工学部5舍",
       "aliases": [
         "工5",
@@ -4527,7 +4414,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_217",
+      "id": "poi_210",
       "name": "工学部8舍",
       "aliases": [
         "工8",
@@ -4550,7 +4437,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_218",
+      "id": "poi_211",
       "name": "工学部9舍",
       "aliases": [
         "工9",
@@ -4573,7 +4460,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_219",
+      "id": "poi_212",
       "name": "武汉大学工学部10舍",
       "aliases": [
         "工10",
@@ -4597,7 +4484,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_220",
+      "id": "poi_213",
       "name": "武汉大学工学部11舍",
       "aliases": [
         "工11",
@@ -4621,7 +4508,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_221",
+      "id": "poi_214",
       "name": "武汉大学工学部12舍",
       "aliases": [
         "工12",
@@ -4645,7 +4532,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_222",
+      "id": "poi_215",
       "name": "武汉大学工学部16舍",
       "aliases": [
         "工16",
@@ -4669,7 +4556,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_223",
+      "id": "poi_216",
       "name": "武汉大学工学部17舍",
       "aliases": [
         "工17",
@@ -4693,7 +4580,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_224",
+      "id": "poi_217",
       "name": "武汉大学工学部1舍",
       "aliases": [
         "工1",
@@ -4717,7 +4604,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_225",
+      "id": "poi_218",
       "name": "武汉大学工学部2舍",
       "aliases": [
         "工学部2舍"
@@ -4736,7 +4623,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_226",
+      "id": "poi_219",
       "name": "武汉大学工学部4舍",
       "aliases": [
         "工4",
@@ -4760,7 +4647,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_227",
+      "id": "poi_220",
       "name": "武汉大学工学部6舍",
       "aliases": [
         "工6",
@@ -4784,7 +4671,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_228",
+      "id": "poi_221",
       "name": "武汉大学工学部学生7舍",
       "aliases": [
         "工7",
@@ -4809,7 +4696,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_229",
+      "id": "poi_222",
       "name": "武汉大学工学部学生宿舍新2舍",
       "aliases": [
         "工学部学生宿舍新2舍"
@@ -4828,7 +4715,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_230",
+      "id": "poi_223",
       "name": "武汉大学留学生宿舍1号楼",
       "aliases": [
         "1栋",
@@ -4852,7 +4739,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_231",
+      "id": "poi_224",
       "name": "武汉大学留学生宿舍2号楼",
       "aliases": [
         "2栋",
@@ -4876,7 +4763,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_232",
+      "id": "poi_225",
       "name": "留学生宿舍3号楼",
       "aliases": [
         "留3号楼"
@@ -4895,7 +4782,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_233",
+      "id": "poi_226",
       "name": "洪波门",
       "aliases": [
         "东湖南路洪波门",
@@ -4917,7 +4804,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_234",
+      "id": "poi_227",
       "name": "武汉大学周恩来故居",
       "aliases": [
         "周恩来故居"
@@ -4936,7 +4823,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_235",
+      "id": "poi_228",
       "name": "闻一多纪念馆",
       "aliases": [],
       "coordinates": {
@@ -4953,7 +4840,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_236",
+      "id": "poi_229",
       "name": "武汉大学工学部大学生活动中心",
       "aliases": [
         "工学部大学生活动中心"
@@ -4972,7 +4859,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_237",
+      "id": "poi_230",
       "name": "珞珈自强超市",
       "aliases": [
         "枫园雯雯超市",
@@ -4995,58 +4882,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_238",
-      "name": "一号教学楼",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.358282,
-        "lat": 30.518863
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_239",
-      "name": "三号教学楼",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.359149,
-        "lat": 30.519547
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_240",
-      "name": "东教学楼",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.380081,
-        "lat": 30.520793
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。武汉大学信息学部教学楼，位于信息学部核心教学区。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_241",
+      "id": "poi_231",
       "name": "中国龙狮运动学院",
       "aliases": [],
       "coordinates": {
@@ -5063,7 +4899,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_242",
+      "id": "poi_232",
       "name": "二号教学楼",
       "aliases": [],
       "coordinates": {
@@ -5080,7 +4916,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_243",
+      "id": "poi_233",
       "name": "信息学部西区综合楼",
       "aliases": [],
       "coordinates": {
@@ -5097,43 +4933,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_244",
-      "name": "八号教学楼",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.359161,
-        "lat": 30.520228
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_245",
-      "name": "国家体育总局体育工程重点实验室检测研究中心",
-      "aliases": [
-        "科技楼"
-      ],
-      "coordinates": {
-        "lng": 114.379703,
-        "lat": 30.521412
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。汇志大道与明志路交叉口西北240米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_246",
+      "id": "poi_234",
       "name": "国际园区2号教学楼",
       "aliases": [],
       "coordinates": {
@@ -5150,7 +4950,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_247",
+      "id": "poi_235",
       "name": "国际园区3号教学楼",
       "aliases": [],
       "coordinates": {
@@ -5167,7 +4967,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_248",
+      "id": "poi_236",
       "name": "星湖综合实验大楼",
       "aliases": [],
       "coordinates": {
@@ -5184,26 +4984,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_249",
-      "name": "武汉大学(信息学部)-现代大地测量与地球动力学教育部重点实验室",
-      "aliases": [
-        "地球空间环境与大地测量研究室"
-      ],
-      "coordinates": {
-        "lng": 114.362575,
-        "lat": 30.529325
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。求是大道与汉林东路交叉口西南40米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_250",
+      "id": "poi_237",
       "name": "武汉大学信息学部1号教学楼",
       "aliases": [
         "1号教学楼",
@@ -5236,7 +5017,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_251",
+      "id": "poi_238",
       "name": "武汉大学信息学部2教学楼",
       "aliases": [
         "信2教",
@@ -5265,7 +5046,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_252",
+      "id": "poi_239",
       "name": "武汉大学信息学部图书馆",
       "aliases": [
         "信图",
@@ -5287,7 +5068,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_253",
+      "id": "poi_240",
       "name": "武汉大学信息学部星湖教3楼",
       "aliases": [
         "信三教",
@@ -5311,7 +5092,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_254",
+      "id": "poi_241",
       "name": "武汉大学信息学部测绘学院",
       "aliases": [
         "4号教学楼",
@@ -5331,7 +5112,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_255",
+      "id": "poi_242",
       "name": "武汉大学信息学部测绘遥感信息工程全国重点实验室",
       "aliases": [
         "测绘遥感信息工程国家重点实验室大楼"
@@ -5350,7 +5131,26 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_256",
+      "id": "poi_243",
+      "name": "武汉大学信息学部现代大地测量与地球动力学教育部重点实验室",
+      "aliases": [
+        "地球空间环境与大地测量研究室"
+      ],
+      "coordinates": {
+        "lng": 114.362575,
+        "lat": 30.529325
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "信息学部校内地点。求是大道与汉林东路交叉口西南40米",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_244",
       "name": "武汉大学信息学部西区B4教学楼",
       "aliases": [
         "信4教",
@@ -5379,7 +5179,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_257",
+      "id": "poi_245",
       "name": "武汉大学信息学部资源与环境科学学院",
       "aliases": [
         "信七教",
@@ -5402,7 +5202,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_258",
+      "id": "poi_246",
       "name": "武汉大学信息学部遥感信息工程学院(5号教学楼)",
       "aliases": [
         "5号教学楼",
@@ -5431,7 +5231,26 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_259",
+      "id": "poi_247",
+      "name": "武汉大学宇航科学与技术研究院",
+      "aliases": [
+        "宇航科学与技术研究院"
+      ],
+      "coordinates": {
+        "lng": 114.357518,
+        "lat": 30.527134
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "信息学部校内地点。珞喻路129号武汉大学信息学部",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_248",
       "name": "武汉大学文理学院珞涵屯",
       "aliases": [
         "文理学院珞涵屯"
@@ -5450,7 +5269,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_260",
+      "id": "poi_249",
       "name": "武汉大学遥感信息工程学院",
       "aliases": [
         "教学实验大楼",
@@ -5470,27 +5289,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_261",
-      "name": "武汉天健专修学院",
-      "aliases": [
-        "弘博公寓",
-        "弘博公寓食堂"
-      ],
-      "coordinates": {
-        "lng": 114.3679,
-        "lat": 30.525827
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。武汉大学弘博公寓C座101",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_262",
+      "id": "poi_250",
       "name": "法学院楼",
       "aliases": [],
       "coordinates": {
@@ -5507,60 +5306,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_263",
-      "name": "湖北省教育科学研究院",
-      "aliases": [
-        "湖北省教育科学研究院A座"
-      ],
-      "coordinates": {
-        "lng": 114.358236,
-        "lat": 30.522496
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。桂元路67号",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_264",
-      "name": "湖北省环境科学研究院湖北省环境监测中心站",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.366909,
-        "lat": 30.529712
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。八一路338号",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_265",
-      "name": "湖北省生态环境科学研究院",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.367043,
-        "lat": 30.529097
-      },
-      "type": "study",
-      "campus": "信息学部",
-      "category": "study",
-      "description": "信息学部校内地点。八一路338号",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_266",
+      "id": "poi_251",
       "name": "西教学楼",
       "aliases": [],
       "coordinates": {
@@ -5577,7 +5323,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_267",
+      "id": "poi_252",
       "name": "信息学部清真食堂",
       "aliases": [
         "信息学部清真"
@@ -5596,7 +5342,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_268",
+      "id": "poi_253",
       "name": "武汉大学信息学部学生一食堂",
       "aliases": [
         "信息学部1食堂",
@@ -5620,7 +5366,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_269",
+      "id": "poi_254",
       "name": "武汉大学信息学部学生三食堂",
       "aliases": [
         "信息学部3食堂",
@@ -5644,7 +5390,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_270",
+      "id": "poi_255",
       "name": "武汉大学信息学部学生四食堂",
       "aliases": [
         "信息学部4食堂",
@@ -5668,7 +5414,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_271",
+      "id": "poi_256",
       "name": "星湖体育馆",
       "aliases": [],
       "coordinates": {
@@ -5685,7 +5431,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_272",
+      "id": "poi_257",
       "name": "武汉大学信息学部体育场",
       "aliases": [
         "信息学部体育场"
@@ -5704,7 +5450,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_273",
+      "id": "poi_258",
       "name": "武汉大学信息学部体育馆",
       "aliases": [
         "信息学部体育馆",
@@ -5724,7 +5470,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_274",
+      "id": "poi_259",
       "name": "武汉大学信息学部操场",
       "aliases": [
         "信息学部操场"
@@ -5743,7 +5489,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_275",
+      "id": "poi_260",
       "name": "武汉大学信息学部游泳池",
       "aliases": [
         "信息学部游泳池"
@@ -5762,7 +5508,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_276",
+      "id": "poi_261",
       "name": "武汉大学信息学部篮球场",
       "aliases": [
         "信息学部篮球场"
@@ -5781,7 +5527,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_277",
+      "id": "poi_262",
       "name": "信息学部17舍",
       "aliases": [
         "信17",
@@ -5806,7 +5552,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_278",
+      "id": "poi_263",
       "name": "国际园区5栋学生宿舍",
       "aliases": [
         "国际园区5栋"
@@ -5825,7 +5571,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_279",
+      "id": "poi_264",
       "name": "国际园区6栋学生宿舍",
       "aliases": [
         "国际园区6栋"
@@ -5844,7 +5590,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_280",
+      "id": "poi_265",
       "name": "国际园区学生宿舍3栋",
       "aliases": [
         "国际园区3栋"
@@ -5863,7 +5609,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_281",
+      "id": "poi_266",
       "name": "国际园区学生宿舍4栋",
       "aliases": [
         "国际园区4栋"
@@ -5882,7 +5628,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_282",
+      "id": "poi_267",
       "name": "国际园区学生宿舍8栋",
       "aliases": [
         "国际园区8栋"
@@ -5901,7 +5647,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_283",
+      "id": "poi_268",
       "name": "国际园区学生宿舍9栋",
       "aliases": [
         "国际园区9栋"
@@ -5920,7 +5666,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_284",
+      "id": "poi_269",
       "name": "武汉大学信息学部6舍",
       "aliases": [
         "信6",
@@ -5947,7 +5693,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_285",
+      "id": "poi_270",
       "name": "武汉大学信息学部国软C4舍",
       "aliases": [
         "信息学部20舍",
@@ -5967,7 +5713,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_286",
+      "id": "poi_271",
       "name": "武汉大学信息学部学生21舍",
       "aliases": [
         "信21",
@@ -5994,7 +5740,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_287",
+      "id": "poi_272",
       "name": "武汉大学信息学部学生宿舍10舍",
       "aliases": [
         "信10",
@@ -6021,7 +5767,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_288",
+      "id": "poi_273",
       "name": "武汉大学信息学部学生宿舍11舍",
       "aliases": [
         "信11",
@@ -6048,7 +5794,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_289",
+      "id": "poi_274",
       "name": "武汉大学信息学部学生宿舍12舍",
       "aliases": [
         "信12",
@@ -6075,7 +5821,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_290",
+      "id": "poi_275",
       "name": "武汉大学信息学部学生宿舍13舍",
       "aliases": [
         "信13",
@@ -6102,7 +5848,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_291",
+      "id": "poi_276",
       "name": "武汉大学信息学部学生宿舍14舍",
       "aliases": [
         "信14",
@@ -6129,7 +5875,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_292",
+      "id": "poi_277",
       "name": "武汉大学信息学部学生宿舍15舍",
       "aliases": [
         "信15",
@@ -6157,7 +5903,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_293",
+      "id": "poi_278",
       "name": "武汉大学信息学部学生宿舍16舍",
       "aliases": [
         "信16",
@@ -6184,7 +5930,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_294",
+      "id": "poi_279",
       "name": "武汉大学信息学部学生宿舍18舍",
       "aliases": [
         "信18",
@@ -6211,7 +5957,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_295",
+      "id": "poi_280",
       "name": "武汉大学信息学部学生宿舍19舍",
       "aliases": [
         "信19",
@@ -6240,7 +5986,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_296",
+      "id": "poi_281",
       "name": "武汉大学信息学部学生宿舍3舍",
       "aliases": [
         "信息学部学生宿舍3舍"
@@ -6259,7 +6005,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_297",
+      "id": "poi_282",
       "name": "武汉大学信息学部学生宿舍4舍",
       "aliases": [
         "信息学部学生宿舍4舍"
@@ -6278,7 +6024,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_298",
+      "id": "poi_283",
       "name": "武汉大学信息学部学生宿舍5舍",
       "aliases": [
         "信息学部学生宿舍5舍"
@@ -6297,7 +6043,34 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_299",
+      "id": "poi_284",
+      "name": "武汉大学信息学部学生宿舍7舍",
+      "aliases": [
+        "信7",
+        "信7舍",
+        "信七",
+        "信七舍",
+        "信息学部7舍",
+        "信息学部七舍",
+        "信息学部学生宿舍7舍",
+        "信部7舍",
+        "信部七舍"
+      ],
+      "coordinates": {
+        "lng": 114.358989,
+        "lat": 30.526514
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "信息学部校内地点。珞喻路129号",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_285",
       "name": "武汉大学信息学部学生宿舍8舍",
       "aliases": [
         "信8",
@@ -6324,7 +6097,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_300",
+      "id": "poi_286",
       "name": "武汉大学信息学部学生宿舍9舍",
       "aliases": [
         "信9",
@@ -6351,34 +6124,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_301",
-      "name": "武汉大学信息学部学生宿舍学生7舍",
-      "aliases": [
-        "信7",
-        "信7舍",
-        "信七",
-        "信七舍",
-        "信息学部7舍",
-        "信息学部七舍",
-        "信息学部学生宿舍学生7舍",
-        "信部7舍",
-        "信部七舍"
-      ],
-      "coordinates": {
-        "lng": 114.358989,
-        "lat": 30.526514
-      },
-      "type": "dorm",
-      "campus": "信息学部",
-      "category": "dorm",
-      "description": "信息学部校内地点。珞喻路129号",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_302",
+      "id": "poi_287",
       "name": "武汉大学信息学部青年楼宿舍1栋",
       "aliases": [
         "信1",
@@ -6405,18 +6151,10 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_303",
+      "id": "poi_288",
       "name": "武汉大学信息学部青年楼宿舍23栋",
       "aliases": [
-        "信23",
-        "信23舍",
-        "信二十三",
-        "信二十三舍",
-        "信息学部23舍",
-        "信息学部二十三舍",
-        "信息学部青年楼宿舍23栋",
-        "信部23舍",
-        "信部二十三舍"
+        "信息学部青年楼宿舍23栋"
       ],
       "coordinates": {
         "lng": 114.357068,
@@ -6432,7 +6170,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_304",
+      "id": "poi_289",
       "name": "武汉大学信息学部青年楼宿舍2栋",
       "aliases": [
         "信2",
@@ -6459,7 +6197,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_305",
+      "id": "poi_290",
       "name": "武汉大学信息学部青年楼宿舍3栋",
       "aliases": [
         "信息学部青年楼宿舍3栋"
@@ -6478,7 +6216,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_306",
+      "id": "poi_291",
       "name": "武汉大学信息学部青年楼宿舍4栋",
       "aliases": [
         "信息学部青年楼宿舍4栋"
@@ -6497,7 +6235,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_307",
+      "id": "poi_292",
       "name": "武汉大学信息学部青年楼宿舍5栋",
       "aliases": [
         "信息学部青年楼宿舍5栋"
@@ -6516,7 +6254,28 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_308",
+      "id": "poi_293",
+      "name": "武汉大学国际软件学院C7舍",
+      "aliases": [
+        "7栋",
+        "国际软件学院C7舍",
+        "学生公寓7栋"
+      ],
+      "coordinates": {
+        "lng": 114.35728,
+        "lat": 30.528169
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "信息学部校内地点。珞喻路129号武汉大学信息学部",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_294",
       "name": "珞瑜二门",
       "aliases": [
         "信息学部南二门",
@@ -6538,7 +6297,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_309",
+      "id": "poi_295",
       "name": "珞瑜门",
       "aliases": [
         "信息学部南门",
@@ -6561,7 +6320,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_310",
+      "id": "poi_296",
       "name": "星湖",
       "aliases": [
         "星湖体育馆附近",
@@ -6582,7 +6341,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_311",
+      "id": "poi_297",
       "name": "武汉大学信息学部学生活动中心",
       "aliases": [
         "信息学部学生活动中心"
@@ -6601,10 +6360,12 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_312",
+      "id": "poi_298",
       "name": "武汉大学口腔医院",
       "aliases": [
-        "口腔医院"
+        "口腔医院",
+        "口腔医院门诊大楼",
+        "武汉大学口腔医院门诊大楼"
       ],
       "coordinates": {
         "lng": 114.366349,
@@ -6614,25 +6375,6 @@
       "campus": "信息学部",
       "category": "service",
       "description": "信息学部校内地点。珞喻路237号(广埠屯地铁站H口步行120米)",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_313",
-      "name": "武汉大学口腔医院门诊大楼",
-      "aliases": [
-        "口腔医院门诊大楼"
-      ],
-      "coordinates": {
-        "lng": 114.365428,
-        "lat": 30.522449
-      },
-      "type": "service",
-      "campus": "信息学部",
-      "category": "service",
-      "description": "信息学部校内地点。珞喻路237号武汉大学口腔医院",
       "season_tags": [
         "all"
       ],

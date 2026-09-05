@@ -44,7 +44,7 @@ class TestPoiDataIntegrity:
 
     def test_poi_count_expanded(self, pois_data):
         """V2 合并后 POI 数量应显著超过原 24 条。"""
-        assert pois_data["count"] >= 300
+        assert pois_data["count"] >= 290
         assert len(pois_data["pois"]) == pois_data["count"]
 
     def test_poi_required_fields(self, pois_data):
@@ -149,7 +149,7 @@ class TestPromptSlim:
 class TestRuleFallbackWithExpandedPois:
     def test_name_index_built(self):
         names_set, names_lower = _build_poi_name_index()
-        assert len(names_set) >= 300
+        assert len(names_set) >= 290
         assert "总图书馆" in names_set
 
     def test_index_contains_aliases(self):
@@ -208,7 +208,7 @@ class TestCampusBoundary:
             return inside
 
         pois = load_pois()
-        assert len(pois) >= 300
+        assert len(pois) >= 290
         for p in pois:
             lng, lat = p["coordinates"]["lng"], p["coordinates"]["lat"]
             assert any(pip(lng, lat, poly) for poly in CAMPUS_POLYS_GCJ.values()), \

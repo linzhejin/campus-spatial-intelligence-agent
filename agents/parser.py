@@ -143,7 +143,7 @@ def _fallback_task_intent(query: str) -> TaskIntent:
 
 def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
     if not DEEPSEEK_API_KEY:
-        logger.error("DEEPSEEK_API_KEY 未配置，使用规则兜底解析")
+        logger.warning("DEEPSEEK_API_KEY 未配置，使用规则兜底解析")
         return _t011_post_process(
             _annotate_weight_source(_fallback_task_intent(query)), query, context
         )
@@ -151,7 +151,7 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
     try:
         from openai import OpenAI
     except ImportError:
-        logger.error("openai SDK 未安装，使用规则兜底解析")
+        logger.warning("openai SDK 未安装，使用规则兜底解析")
         return _t011_post_process(
             _annotate_weight_source(_fallback_task_intent(query)), query, context
         )
@@ -560,12 +560,13 @@ def _normalize_poi_refs(intent: TaskIntent) -> TaskIntent:
     if intent.task_type not in ("path_planning", "poi_query"):
         return intent
 
-    from spatial.poi import find_poi
+    from spatial.poi import find_poi_ambiguous
 
     for ref in (intent.start, intent.end):
         if ref is None or ref.type != "poi" or not ref.name:
             continue
-        matched = find_poi(ref.name)
+        # 同分歧义（如「三教」三个学部各有一个）时保留原名，交由对话层请用户消歧，不静默错配
+        matched, _alternatives = find_poi_ambiguous(ref.name)
         if matched and matched.get("name"):
             ref.name = matched["name"]
     return intent

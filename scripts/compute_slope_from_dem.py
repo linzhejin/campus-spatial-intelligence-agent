@@ -183,7 +183,9 @@ def main(dry_run=False):
         # 保留 note 中「; 临近 XX」这类人工信息，只替换坡度占位部分
         orig_note = e.get("note") or ""
         tail = orig_note.split(";", 1)[1].strip() if ";" in orig_note else ""
-        new_note = f"DEM实测 坡度{grad * 100:.1f}%（Δelev={de:.0f}m）"
+        # ≥60% 的梯度在 ≥50m 的边上物理上只可能是台阶或 DEM 30m 单元格跳变噪声，标注出来便于人工核查
+        flag = "，≥60%疑为台阶/DEM跳变，按最陡处理" if grad > 0.60 else ""
+        new_note = f"DEM实测 坡度{grad * 100:.1f}%（Δelev={de:.0f}m{flag}）"
         if tail:
             new_note += f"; {tail}"
         e["note"] = new_note

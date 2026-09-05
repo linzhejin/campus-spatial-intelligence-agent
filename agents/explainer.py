@@ -359,22 +359,76 @@ def _load_poi_guide_prompt() -> str:
     return _poi_guide_prompt_cache
 
 
-def generate_poi_guidance(query: str, unknown_name: str) -> str:
-    """当 POI 找不到时，用 LLM 生成友好引导，把用户引到已知地点。
+def _format_ambiguity_message(unknown_name: str, alternatives: list) -> str:
+    """同分歧义：直接请用户确认是哪一个（不走 LLM，确定性文案）。"""
+    lines = [f"「{unknown_name}」在武大好几个学部都有哦，你指的是哪一个呀？"]
+    for i, p in enumerate(alternatives[:5], 1):
+        campus = p.get("campus") or "武大"
+        lines.append(f"{i}. {p['name']}（{campus}）")
+    lines.append("回复序号或完整名称就行～")
+    return "\n".join(lines)
 
-    返回引导话术；LLM 不可用或失败时返回通用兜底文案。
+
+def generate_poi_guidance(query: str, unknown_name: str, alternatives: list = None) -> str:
+    """当 POI 找不到时，生成友好引导，把用户引到已知地点。
+
+    - alternatives 非空：同分歧义 → 直接给出候选清单请用户确认（不调用 LLM）
+    - 校外单位查询（华师/华科等）→ 明确说明服务范围（不调用 LLM）
+    - 其余：LLM 基于预筛候选 POI 生成引导；LLM 不可用或失败时返回通用兜底
     """
+    if alternatives:
+        return _format_ambiguity_message(unknown_name, alternatives)
+
+    # 校外单位：明确边界，避免 LLM 胡乱建议
+    try:
+        from spatial.poi import _is_external_query
+        if unknown_name and _is_external_query(unknown_name):
+            return (
+                f"「{unknown_name}」不在武汉大学校园内哦～我只熟悉武大文理学部、"
+                f"工学部、信息学部三个学部的道路和地点，换个校内目的地试试吧？"
+                f"比如「从牌坊到樱花大道」😊"
+            )
+    except Exception:
+        pass
+
     if not DEEPSEEK_API_KEY:
         return f"「{unknown_name}」我暂时没找到😅 试试换个说法，比如它的正式名称？"
 
     try:
         from openai import OpenAI
-        from config import WHU_POIS
     except ImportError:
         return f"「{unknown_name}」我暂时没找到😅 试试换个说法？"
 
+    # prompt 瘦身：只发与输入最相关的候选 + 少量招牌地标（name+type+短描述），
+    # 避免把全量 300 个 POI 的长描述塞进上下文（≈1.2 万 token）。
+    relevant = []
+    try:
+        from spatial.poi import find_poi_candidates, load_pois
+        scored = find_poi_candidates(unknown_name or query or "", limit=10, min_score=0.2)
+        relevant = [p for p, _ in scored]
+        iconic = [
+            p for p in load_pois()
+            if p.get("scenery_score", 3) >= 5
+            and p.get("type") == "scenery"
+            and p not in relevant
+        ][:6]
+        guide_pois = relevant + iconic
+    except Exception:
+        from config import WHU_POIS
+        guide_pois = [
+            {"name": k, "type": v.get("type", ""), "description": v.get("desc", "")}
+            for k, v in list(WHU_POIS.items())[:16]
+        ]
+
     poi_list = json.dumps(
-        [{"name": k, "type": v.get("type", ""), "desc": v.get("desc", "")} for k, v in WHU_POIS.items()],
+        [
+            {
+                "name": p.get("name", ""),
+                "type": p.get("type", ""),
+                "desc": (p.get("description") or "")[:40],
+            }
+            for p in guide_pois[:16]
+        ],
         ensure_ascii=False,
     )
 

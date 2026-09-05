@@ -19,7 +19,7 @@ from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
-from spatial.poi import get_poi, search_pois, list_all_pois, load_pois
+from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import compute_route, resolve_weights, _path_length
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
@@ -461,7 +461,7 @@ def chat():
         start = intent_data.get("start")
         poi_name = start.get("name") if start else None
         if poi_name:
-            poi = get_poi(poi_name, fuzzy=True)
+            poi, alts = find_poi_ambiguous(poi_name)
             if poi:
                 desc = (poi.get("description") or "").strip()
                 message = desc if desc else f"这是 {poi['name']} 的信息～"
@@ -472,7 +472,9 @@ def chat():
                     # 供前端多轮上下文保存：问「X在哪」后，下一轮「从A怎么去」可把 X 当作终点承接
                     "start": start,
                 })
-        guidance = generate_poi_guidance(query, poi_name)
+            guidance = generate_poi_guidance(query, poi_name, alternatives=alts)
+        else:
+            guidance = generate_poi_guidance(query, poi_name)
         return _ok({
             "task_type": "unknown",
             "message": guidance,
@@ -540,9 +542,9 @@ def chat():
     if err:
         return err
 
-    start_poi = get_poi(start_name)
+    start_poi, start_alts = find_poi_ambiguous(start_name)
     if start_poi is None:
-        guidance = generate_poi_guidance(query, start_name)
+        guidance = generate_poi_guidance(query, start_name, alternatives=start_alts)
         return _ok({
             "task_type": "unknown",
             "message": guidance,
@@ -552,9 +554,9 @@ def chat():
             "example_queries": ["从牌坊出发"],
         })
 
-    end_poi = get_poi(end_name)
+    end_poi, end_alts = find_poi_ambiguous(end_name)
     if end_poi is None:
-        guidance = generate_poi_guidance(query, end_name)
+        guidance = generate_poi_guidance(query, end_name, alternatives=end_alts)
         return _ok({
             "task_type": "unknown",
             "message": guidance,

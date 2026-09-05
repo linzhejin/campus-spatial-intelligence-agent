@@ -14,6 +14,7 @@
   - 路段坡度/景观标注：通过 edge 属性 slope_level / scenery_level
 """
 
+import ast
 import logging
 import os
 from typing import Optional
@@ -36,11 +37,39 @@ _EDGE_ATTR_DEFAULTS = {
 # 校外市政道路（武大校园周边的马路）：推荐路径应尽量避开，
 # 只在起终点本身就在这些路边时（凌波门/牌坊/珞瑜门等）才必要地经过。
 # 这些路的 scenery 标注可能很高（如东湖南路沿湖），若不惩罚会导致推荐路线绕出校园。
+# 与 scripts/clip_to_campus.py 的 OUTSIDE_ROAD_NAMES 保持同步。
 _OUTSIDE_ROAD_NAMES = {
-    "八一路", "东湖南路", "卓刀泉北路", "广八路", "茶港路", "广卓路",
-    "珞狮路", "珞狮北路", "珞瑜路", "珞喻路",
+    "八一路", "东湖南路", "卓刀泉北路", "卓刀泉南路", "卓刀泉路",
+    "广八路", "茶港路", "广卓路", "珞狮路", "珞狮北路", "珞狮路辅路",
+    "珞瑜路", "珞喻路", "珞喻路辅路", "珞瑜路辅路",
+    "武珞路", "武珞路辅路", "群光南路", "洪福巷",
+    "武工路", "机电路", "科技小路", "明志路", "汇志大道", "神龙园路",
 }
 _OUTSIDE_ROAD_PENALTY = 10.0  # 校外道路的距离成本放大倍数（从3.0调至10.0，强避免穿城）
+
+
+def _road_name_list(raw) -> list:
+    """路名可能是 str / list / 被str()序列化的list（"['珞喻路辅路', ...]"），统一拆成字符串列表。"""
+    if not raw:
+        return []
+    if isinstance(raw, (list, tuple)):
+        return [str(x) for x in raw]
+    s = str(raw)
+    if s.startswith("["):
+        try:
+            parsed = ast.literal_eval(s)
+            if isinstance(parsed, (list, tuple)):
+                return [str(x) for x in parsed]
+        except (ValueError, SyntaxError):
+            pass
+    return [s]
+
+
+def _is_outside_road(raw_name) -> bool:
+    for n in _road_name_list(raw_name):
+        if any(bad in n for bad in _OUTSIDE_ROAD_NAMES):
+            return True
+    return False
 
 
 def resolve_weights(llm_weights: Optional[dict]) -> dict:
@@ -247,7 +276,7 @@ def _edge_cost_factory(
             cost, _ = _compute_edge_cost(edge_data, norm, weights)
 
         # 校外道路惩罚：尽量避免推荐路线绕出校园（东湖南路/八一路等市政路）
-        if edge_data.get("name") in _OUTSIDE_ROAD_NAMES:
+        if _is_outside_road(edge_data.get("name")):
             cost *= _OUTSIDE_ROAD_PENALTY
 
         penalty = penalty_map.get(key, 1.0)
@@ -301,6 +330,26 @@ def _path_length(G: nx.MultiDiGraph, path: list) -> float:
             min_len = min(d.get("length", 0) for d in edge_data.values())
             total += min_len
     return total
+
+
+def _raise_no_path(G, start_node, end_node, filter_status, G_filtered):
+    """不可达诊断：记录日志并抛出带友好提示的 ValueError。"""
+    from spatial.network import get_node_coords
+    try:
+        sn_coords = get_node_coords(G, start_node)
+        en_coords = get_node_coords(G, end_node)
+    except Exception:
+        sn_coords, en_coords = None, None
+    logger.warning(
+        "路径不可达: start=%s (%s) end=%s (%s) filter=%s edges=%d/%d",
+        start_node, sn_coords, end_node, en_coords,
+        filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
+    )
+    raise ValueError(
+        f"起点 {start_node} 到终点 {end_node} 不可达。"
+        f"附近可能仅有台阶或陡坡路段，或路网数据不足；"
+        f"可试试切换到普通模式，或选择附近的其他校门/道路入口。"
+    )
 
 
 def compute_route(
@@ -373,22 +422,34 @@ def compute_route(
             G_filtered, start_node, end_node, weight=edge_weight
         )
     except nx.NetworkXNoPath:
-        # 诊断信息：记录过滤状态、起终点坐标、连通分量
-        from spatial.network import get_node_coords
-        try:
-            sn_coords = get_node_coords(G, start_node)
-            en_coords = get_node_coords(G, end_node)
-        except Exception:
-            sn_coords, en_coords = None, None
-        logger.warning(
-            "路径不可达: start=%s (%s) end=%s (%s) filter=%s edges=%d/%d",
-            start_node, sn_coords, end_node, en_coords,
-            filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
-        )
-        raise ValueError(
-            f"起点 {start_node} 到终点 {end_node} 不可达。"
-            f"可能原因：硬约束过严导致无可行路径，或路网数据不足。"
-        )
+        # 避坡硬过滤（删除 slope_level=5 边）可能割裂路网（湖滨/凌波门等台阶密集区域）。
+        # 软降级重试：不删边，level5 边 3× 成本、level4 边 2× 成本，保证可达、仍尽量少走陡坡。
+        if constraints.get("slope") == "avoid":
+            penalty_map = {}
+            for u, v, k, data in G.edges(keys=True, data=True):
+                lvl = data.get("slope_level")
+                if lvl == 5:
+                    penalty_map[(u, v, k)] = 3.0
+                elif lvl == 4:
+                    penalty_map[(u, v, k)] = 2.0
+            edge_weight = _edge_cost_factory(
+                G, norm_lengths, resolved_weights, penalty_map, annotation_degraded
+            )
+            try:
+                recommended = nx.dijkstra_path(
+                    G, start_node, end_node, weight=edge_weight
+                )
+                filter_status = "degraded_slope"
+                if annotation_degraded is not None:
+                    filter_status = f"degraded_slope+{annotation_degraded}"
+                logger.info(
+                    "避坡硬过滤导致 start=%s end=%s 不可达，软降级（陡坡3×成本）后重算成功",
+                    start_node, end_node,
+                )
+            except nx.NetworkXNoPath:
+                _raise_no_path(G, start_node, end_node, filter_status, G_filtered)
+        else:
+            _raise_no_path(G, start_node, end_node, filter_status, G_filtered)
 
     try:
         shortest = nx.dijkstra_path(G, start_node, end_node, weight="length")

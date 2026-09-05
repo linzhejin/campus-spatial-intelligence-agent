@@ -103,7 +103,29 @@ def get_pois_by_type(poi_type: str) -> list:
     return [p for p in pois if p.get("type") == poi_type]
 
 
-_CN_NUM = str.maketrans("零一二三四五六七八九十", "01234567890")
+_CN_DIGITS = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
+              "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_CN_NUM_RUN_RE = re.compile(r"[零一二两三四五六七八九十]+")
+
+
+def _cn_run_to_int(tok: str):
+    """中文数字串转整数：'七'->7、'十四'->14、'二十三'->23、'十'->10。"""
+    if "十" in tok:
+        left, _, right = tok.partition("十")
+        tens = _CN_DIGITS[left] if left in _CN_DIGITS else 1
+        ones = _CN_DIGITS[right] if right in _CN_DIGITS else 0
+        return tens * 10 + ones
+    if len(tok) == 1:
+        return _CN_DIGITS.get(tok)
+    return None
+
+
+def _normalize_num(s: str) -> str:
+    """中文数字→阿拉伯数字归一化（组合数词正确处理），让「十四舍」和「14舍」能匹配上。"""
+    def repl(m):
+        v = _cn_run_to_int(m.group(0))
+        return str(v) if v is not None else m.group(0)
+    return _CN_NUM_RUN_RE.sub(repl, s)
 
 # 宽泛区域词：这些词是学部/园区名，不应作为子串匹配到具体教学楼/食堂
 # 例如"信息学部"不应匹配到"信息学部第一教学楼"
@@ -121,7 +143,8 @@ def _is_broad_area_term(name: str) -> bool:
 
 # 外校/外部单位标志词：用户查询指向校外单位时，不应匹配任何武大POI
 _EXTERNAL_TERMS_RE = re.compile(
-    r"华中师范|华师|师范大学|理工大学|理工大|武汉体育学院|体育学院|武体|"
+    r"华中师范|华师|师范大学|理工大学|理工大|华中科技|华科|"
+    r"武汉体育学院|体育学院|武体|"
     r"职业技术|电力职|中国科学院|中科院|卓刀泉中学|附属中学|附属小学"
 )
 
@@ -131,11 +154,6 @@ def _is_external_query(name: str) -> bool:
     if _EXTERNAL_TERMS_RE.search(name):
         return "武汉大学" not in name and "武大" not in name
     return False
-
-
-def _normalize_num(s: str) -> str:
-    """中文数字→阿拉伯数字归一化，让「七舍」和「7舍」能匹配上。"""
-    return s.translate(_CN_NUM)
 
 
 def _digits_aligned(short: str, long: str) -> bool:
@@ -200,6 +218,8 @@ def find_poi(name: str, min_score: float = 0.6) -> Optional[dict]:
     pois = load_pois()
     if _is_external_query(name) or not name.strip():
         return None
+    # 过短输入（≤2字）提高阈值：精确名/别名命中为1.0不受影响，模糊近似（如"扬波门"误中"凌波门"）被拦
+    threshold = max(min_score, 0.75) if len(name.strip()) <= 2 else min_score
     best_poi = None
     best_score = 0.0
 
@@ -215,7 +235,7 @@ def find_poi(name: str, min_score: float = 0.6) -> Optional[dict]:
                 best_score = alias_score
                 best_poi = poi
 
-    if best_score >= min_score:
+    if best_score >= threshold:
         return best_poi
     return None
 
@@ -255,8 +275,10 @@ def _flatten_poi(poi: dict) -> dict:
         "id": poi.get("id", ""),
         "name": poi.get("name", ""),
         "type": poi.get("type", "landmark"),
+        "campus": poi.get("campus", ""),
         "lat": coords.get("lat", 0),
         "lon": coords.get("lng", 0),
+        "coordinates": {"lat": coords.get("lat", 0), "lng": coords.get("lng", 0)},
         "description": poi.get("description", ""),
         "aliases": poi.get("aliases", []),
         "season_tags": poi.get("season_tags", []),
@@ -280,6 +302,33 @@ def get_poi(name: str, fuzzy: bool = True) -> Optional[dict]:
     return _flatten_poi(poi)
 
 
+def find_poi_ambiguous(name: str, min_score: float = 0.6):
+    """歧义感知的 POI 匹配（对话入口用）。
+
+    返回 (poi_or_None, alternatives)：
+      - 精确/唯一最高命中 → (poi, [])
+      - 多个不同 POI 模糊同分（如「三教」在文理学部/工学部/信息学部各有一个）
+        → (None, [poi, ...])，供对话层请用户消歧，避免静默错配
+      - 无命中 / 校外查询 → (None, [])
+    返回的 POI 均为 _flatten_poi 后的对外结构。
+    """
+    if _is_external_query(name) or not name.strip():
+        return None, []
+    threshold = max(min_score, 0.75) if len(name.strip()) <= 2 else min_score
+    scored = find_poi_candidates(name, limit=20, min_score=min(0.3, threshold))
+    if not scored:
+        return None, []
+    top_score = scored[0][1]
+    if top_score < threshold:
+        return None, []
+    if top_score >= 0.99:
+        return _flatten_poi(scored[0][0]), []
+    ties = [p for p, s in scored if s >= top_score - 0.005]
+    if len(ties) > 1:
+        return None, [_flatten_poi(p) for p in ties]
+    return _flatten_poi(scored[0][0]), []
+
+
 def search_pois(keyword: str, poi_type: str = None, season: str = None) -> list:
     candidates = find_poi_candidates(keyword, limit=50, min_score=0.3)
     results = []
@@ -289,7 +338,6 @@ def search_pois(keyword: str, poi_type: str = None, season: str = None) -> list:
             continue
         if season and season not in flat.get("season_tags", []):
             continue
-        flat["_match_score"] = round(score, 3)
         results.append(flat)
     return results
 

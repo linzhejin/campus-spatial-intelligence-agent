@@ -28,6 +28,10 @@ SCENERY_KEYWORDS = (
     "樱花", "环山", "月湖", "星湖", "枫", "桂", "梅", "樱",
     "珞珈", "凌波", "栈桥", "绿道", "湖",
 )
+# 标志性景观道：直接顶格 5 级（樱花季主轴 / 校内临湖步道）
+SCENERY_TOP_ROADS = {"樱花大道", "湖滨路", "珞滨路", "望湖路"}
+# 环山景观道：至少 4 级
+SCENERY_HIGH_ROADS = ("环山北路", "环山南路", "环山东路", "珞珈山路")
 STEEP_KEYWORDS = ("环山", "珞珈山", "樱顶", "老斋舍", "石阶", "陡")
 FLAT_KEYWORDS = (
     "凌波", "东湖南路", "信息学部", "珞瑜", "自强", "主干道", "操场", "广场",
@@ -78,6 +82,11 @@ def _scenery_level(name, nearest, dist_m):
             level = 4
         elif dist_m <= 500 and score >= 5:
             level = 4
+    if name:
+        if name in SCENERY_TOP_ROADS:
+            return 5
+        if any(kw in name for kw in SCENERY_HIGH_ROADS):
+            level = max(level, 4)
     if name and any(kw in name for kw in SCENERY_KEYWORDS):
         level = min(5, level + 1)
     return level
@@ -149,9 +158,9 @@ def main():
     coverage = round(len(annotated) / len(edges), 4) if edges else 0.0
     output = {
         "version": "2.0",
-        "annotator": "程序化生成：真实 OSM 路网边 + POI 邻近启发式；坡度占位待实测",
+        "annotator": "程序化生成：真实 OSM 路网边 + POI 邻近启发式；长边(≥50m)坡度由 DEM 实测覆盖，短边为占位",
         "annotated_at": datetime.now().strftime("%Y-%m-%d"),
-        "coverage": "覆盖当前路网全部边；坡度值为占位，风景值按 POI 距离/路名启发式",
+        "coverage": "覆盖当前路网全部边；长边(≥50m)坡度DEM实测、短边坡度为占位；风景值按POI距离/路名启发式（樱花/临湖/环山道已提级）",
         "coverage_rate": coverage,
         "edges": edges,
     }

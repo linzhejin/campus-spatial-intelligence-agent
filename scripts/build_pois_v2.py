@@ -94,6 +94,12 @@ HARD_EXCLUDE = [
     r'^东湖南路武大', r'书香道', r'风光', r'北坡',
     r'7-ELEVEn|7-11|便利店|罗森', r'园\d+栋',
     r'^\S{0,6}路武大',
+    # 高德核实的校外单位/幽灵点（2026-09 交叉审计）
+    r'体育工程重点', r'环境科学研究院', r'天健', r'教育科学研究院',
+    r'博海国济', r'高尔夫', r'EDP', r'经济学院宿舍',
+    r'^梅园食堂$', r'^一号教学楼$', r'^三号教学楼$', r'^八号教学楼$', r'^东教学楼$',
+    # 高德复核："附3教学楼"无此地点，坐标实为信息学部星湖教3楼（44m），属噪声点
+    r'^附3教学楼$',
 ]
 
 # 2. 地址含校外标志 -> 剔除
@@ -101,7 +107,7 @@ ADDR_EXCLUDE = ['华中师范', '华师', '卓刀泉', '体育学院', '职业�
                 '伏泉', '虎泉', '融智', '广卓', '卓刀泉南路', '卓刀泉北路',
                 '珞瑜路152', '珞喻路152', '珞瑜路189', '珞喻路189',  # 华师/武体/电力职院门牌
                 '珞瑜路20号', '珞喻路20', '群光', '阜华', '维多利',
-                '桂子山']
+                '桂子山', '汇志大道', '明志路']
 
 # 3. 学生宿舍判定：必须明确是学生宿舍/学生公寓
 STUDENT_DORM = [
@@ -179,6 +185,17 @@ def keep_poi(name, address):
 # ---------- 别名规则 ----------
 BROAD = {'工学部','文理学部','信息学部','湖滨','枫园','梅园','桂园','樱园','星湖',
          '国际园区','图书馆','食堂','教学楼','宿舍'}
+
+# ---------- 人工核实补点（高德API逐个核实坐标，2026-09 交叉审计补入） ----------
+# 旧手工数据中教一/教三/教八坐标整体错位2km已剔除，此处按高德实测坐标补回
+SUPPLEMENT_POIS = [
+    {'name': '武汉大学教1楼', 'lng': 114.365366, 'lat': 30.537207,
+     'address': '文理学部教一楼（高德核实）', 'aliases': ['教一楼', '教一', '文理学部教一', '文理学部教1楼']},
+    {'name': '武汉大学文理学部教3楼', 'lng': 114.360183, 'lat': 30.539400,
+     'address': '文理学部教三楼（高德核实）', 'aliases': ['教三楼', '教三', '文理学部教三', '文理学部教3楼']},
+    {'name': '武汉大学桃园教8楼', 'lng': 114.362456, 'lat': 30.542581,
+     'address': '桃园教八楼（高德核实）', 'aliases': ['教八楼', '教八', '桃园教八', '桃园教8楼', '第八教学楼']},
+]
 _CN = '零一二三四五六七八九'
 
 def num_to_cn(n):
@@ -439,6 +456,15 @@ def main():
                      'address': p.get('description',''), 'why': why,
                      'source': p.get('source',''), 'aliases_old': list(p.get('aliases', []))})
 
+    # 人工核实补点（绕过keep_poi硬过滤，但仍走校园多边形校验）
+    for sp in SUPPLEMENT_POIS:
+        if sp['name'] in seen:
+            continue
+        seen.add(sp['name'])
+        kept.append({'name': sp['name'], 'lng': sp['lng'], 'lat': sp['lat'],
+                     'address': sp['address'], 'why': '人工补点',
+                     'source': 'supplement', 'aliases_old': list(sp['aliases'])})
+
     # 新高德点语义键索引（园区+类型+编号）
     def sem_key_of(k):
         pk, tp, nums = name_key(k['name'])
@@ -499,11 +525,34 @@ def main():
     kept = [k for k in kept if in_campus(k['lng'], k['lat'])]
     print(f'校园多边形过滤: {before} -> {len(kept)}')
 
+    # 人工核实修正（2026-09 交叉审计）：重命名/学部归属/类型修正，在别名生成前生效
+    RENAME_FIX = {
+        '武汉大学网络教育学院': ('武汉大学工学部10教学楼', '网络教育学院'),
+        '武汉大学信息学部学生宿舍学生7舍': ('武汉大学信息学部学生宿舍7舍', None),
+        '稻国家重点实验室当代楼': ('武汉大学当代楼', '当代楼'),
+        '武汉大学(信息学部)-现代大地测量与地球动力学教育部重点实验室':
+            ('武汉大学信息学部现代大地测量与地球动力学教育部重点实验室', None),
+    }
+    CAMPUS_FIX = {
+        '武汉大学国际软件学院C7舍': '信息学部',
+        '武汉大学宇航科学与技术研究院': '信息学部',
+        '武汉大学工学部10教学楼': '工学部',
+    }
+    CATEGORY_FIX = {
+        '武汉大学国际软件学院C7舍': 'dorm',
+    }
+    for k in kept:
+        if k['name'] in RENAME_FIX:
+            new_name, old_alias = RENAME_FIX[k['name']]
+            if old_alias:
+                k['aliases_old'].append(old_alias)
+            k['name'] = new_name
+
     # 生成别名；冲突时按语义相关度选唯一主点
     alias_owners = {}
     for i, k in enumerate(kept):
-        k['campus'] = assign_campus(k['name'], k['lng'], k['lat'])
-        k['category'] = category_of(k['name'], k['why'])
+        k['campus'] = CAMPUS_FIX.get(k['name']) or assign_campus(k['name'], k['lng'], k['lat'])
+        k['category'] = CATEGORY_FIX.get(k['name']) or category_of(k['name'], k['why'])
         for a in gen_aliases(k['name'], k['category']) | set(k['aliases_old']):
             if a and a not in BROAD and a != k['name']:
                 alias_owners.setdefault(a, []).append(i)
@@ -617,7 +666,66 @@ def main():
                 exist.add(a)
         kept = [k for j, k in enumerate(kept) if j != si]
         print(f'人工合并: {src_name} -> {target_name}（相距{haversine(t["lng"],t["lat"],s["lng"],s["lat"]):.0f}m）')
+    def _merge_into_nearest(src_name, max_dist=120):
+        """泛化点（无编号）并入最近的同类型编号点，泛化名作为别名保留"""
+        nonlocal kept
+        si = next((i for i, k in enumerate(kept) if k['name'] == src_name), None)
+        if si is None:
+            return
+        s = kept[si]
+        cands = [(haversine(s['lng'], s['lat'], k['lng'], k['lat']), i, k)
+                 for i, k in enumerate(kept) if i != si and k['category'] == s['category']]
+        cands = [c for c in cands if c[0] <= max_dist]
+        if not cands:
+            return
+        d, ti, t = min(cands, key=lambda c: c[0])
+        exist = set(t.get('aliases', []))
+        for a in [s['name']] + s.get('aliases', []) + s.get('aliases_old', []):
+            if a and a != t['name'] and a not in BROAD and a not in exist:
+                t.setdefault('aliases', []).append(a)
+                exist.add(a)
+        kept = [k for j, k in enumerate(kept) if j != si]
+        print(f'人工合并(就近): {src_name} -> {t["name"]}（{d:.0f}m）')
     _manual_merge('珞珈门', '牌坊')
+    # 2026-09 交叉审计：同址附属点并入主点
+    _manual_merge('武汉大学口腔医院门诊大楼', '武汉大学口腔医院')
+    _manual_merge('武汉大学大学生工程训练与创新实践中心(东2门)',
+                  '武汉大学大学生工程训练与创新实践中心')
+    # 泛化宿舍点并入最近编号楼栋（泛化名保留为别名）
+    _merge_into_nearest('武汉大学湖滨学生宿舍')
+    _merge_into_nearest('武汉大学桂园学生宿舍')
+
+    # 人工别名修复（审计核实）
+    ALIAS_DROP = {
+        # 旧二食堂已不存在，别名误挂在创业俱乐部
+        '武汉大学大学生创业俱乐部': ['信息学部二', '二食堂'],
+        # 青年楼23栋编号≠学生23舍，"信23"系列简称摘除
+        '武汉大学信息学部青年楼宿舍23栋':
+            ['信23', '信二十三', '信息学部23舍', '信息学部二十三舍', '信部23舍', '信部二十三舍'],
+        # 高德复核："文理学部第三教学楼"实为文理学部教3楼（别名错挂在桂园8舍）
+        '武汉大学桂园8舍': ['文理学部第三教学楼'],
+        # 噪声别名："西北门博物馆"导致"北门"误中万林
+        '武汉大学万林艺术博物馆': ['西北门博物馆'],
+    }
+    ALIAS_ADD = {
+        '枫园六舍': ['枫7', '枫7舍', '枫七', '枫七舍', '枫园7舍', '枫园七舍'],
+        # 裸「图书馆」默认指总馆（五个图书馆同名子串同分，给总馆精确别名消歧）
+        '武汉大学图书馆(总馆)': ['图书馆'],
+        # 裸「三教/第三教学楼」按老编号惯例指文理学部教3楼（工三教/信三教另有专属别名）
+        '武汉大学文理学部教3楼': ['三教', '第三教学楼', '文理学部第三教学楼'],
+    }
+    for k in kept:
+        for key, drops in ALIAS_DROP.items():
+            if k['name'] == key:
+                k['aliases'] = [a for a in k.get('aliases', [])
+                                if not any(d in a for d in drops)]
+        for prefix, adds in ALIAS_ADD.items():
+            if k['name'].startswith(prefix):
+                exist = set(k.get('aliases', []))
+                for a in adds:
+                    if a not in exist and a != k['name']:
+                        k.setdefault('aliases', []).append(a)
+                        exist.add(a)
 
     # 别名冲突清洗：别名若是另一个现存POI的名称核心（如旧手工点误挂的"国际教育学院"），删除
     all_names = [k['name'] for k in kept]
