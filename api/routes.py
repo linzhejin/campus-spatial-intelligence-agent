@@ -19,7 +19,7 @@ from flask import Blueprint, request, jsonify
 
 from agents.parser import parse_query
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
-from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous
+from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import compute_route, resolve_weights, _path_length
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
@@ -179,7 +179,7 @@ def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
     }
 
 
-def _find_pois_along_route(G, route_nodes, threshold_m=100.0):
+def _find_pois_along_route(G, route_nodes, threshold_m=100.0, limit=8):
     all_pois = load_pois()
     route_coords = []
     for nid in route_nodes:
@@ -211,10 +211,12 @@ def _find_pois_along_route(G, route_nodes, threshold_m=100.0):
             from spatial.poi import _flatten_poi
             flat = _flatten_poi(poi)
             flat["distance_to_route_m"] = round(min_dist, 1)
+            flat["importance"] = round(importance_score(poi), 2)
             along.append(flat)
 
-    along.sort(key=lambda p: p["distance_to_route_m"])
-    return along
+    # 按重要度降序（搜索频率 + 景观分 + 类型加权），只返回最重要的前 limit 个
+    along.sort(key=lambda p: (-p["importance"], p["distance_to_route_m"]))
+    return along[:limit]
 
 
 def _ensure_network():

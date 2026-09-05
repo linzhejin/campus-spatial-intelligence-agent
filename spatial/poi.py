@@ -14,6 +14,69 @@ from typing import Optional
 _POIS_CACHE: list = []
 _LOADED = False
 
+# 搜索频率统计（用于途经点重要度排序）：{poi_id: count}
+# 冷启动时无真实数据，重要度靠景观分 + 类型加权兜底
+_SEARCH_STATS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "data", "poi_search_stats.json"
+)
+_search_stats: dict = {}
+_stats_dirty = False
+
+
+def _load_search_stats() -> dict:
+    global _search_stats
+    if _search_stats:
+        return _search_stats
+    try:
+        if os.path.exists(_SEARCH_STATS_PATH):
+            with open(_SEARCH_STATS_PATH, "r", encoding="utf-8") as f:
+                _search_stats = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        _search_stats = {}
+    return _search_stats
+
+
+def _record_search(poi_id: str):
+    """命中 POI 时累加搜索次数，服务重启不丢失（落盘到 poi_search_stats.json）。"""
+    global _stats_dirty
+    if not poi_id:
+        return
+    stats = _load_search_stats()
+    stats[poi_id] = stats.get(poi_id, 0) + 1
+    _stats_dirty = True
+    # 直接落盘，简单可靠；多 worker 偶发竞争不影响精度
+    try:
+        with open(_SEARCH_STATS_PATH, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False)
+        _stats_dirty = False
+    except IOError:
+        pass
+
+
+# 类型加权：景观/校门 > 教学楼/食堂/体育 > 服务 > 宿舍
+_TYPE_BONUS = {
+    "scenery": 5.0,
+    "gate": 4.0,
+    "study": 2.0,
+    "dining": 2.0,
+    "sports": 2.0,
+    "service": 1.0,
+    "dorm": 0.0,
+}
+
+
+def importance_score(poi: dict) -> float:
+    """POI 重要度 = 搜索次数×1 + 景观分×2 + 类型加权。
+
+    用于路线途经点筛选：重要的 POI（樱花大道/樱顶/牌坊）优先显示，
+    普通宿舍即使离路线近也不抢镜。
+    """
+    poi_id = poi.get("id", "")
+    count = _load_search_stats().get(poi_id, 0)
+    scenery = float(poi.get("scenery_score", 3))
+    type_bonus = _TYPE_BONUS.get(poi.get("type", ""), 1.0)
+    return count * 1.0 + scenery * 2.0 + type_bonus
+
 
 def _pois_file_path() -> str:
     return os.path.join(os.path.dirname(__file__), "..", "data", "pois.json")
@@ -236,6 +299,7 @@ def find_poi(name: str, min_score: float = 0.6) -> Optional[dict]:
                 best_poi = poi
 
     if best_score >= threshold:
+        _record_search(best_poi.get("id", ""))
         return best_poi
     return None
 
