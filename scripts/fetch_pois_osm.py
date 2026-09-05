@@ -38,26 +38,9 @@ CAMPUSES = [
     ("信息学部", 114.3755, 30.5240),
 ]
 
-# 三学部粗略多边形（GCJ-02 坐标，与高德脚本一致；用时转 WGS-84）
-_CAMPUS_POLYS_GCJ = {
-    "文理学部": [
-        (114.3520, 30.5450), (114.3600, 30.5465), (114.3690, 30.5440),
-        (114.3710, 30.5360), (114.3670, 30.5300), (114.3570, 30.5285),
-        (114.3530, 30.5340),
-    ],
-    "工学部": [
-        (114.3650, 30.5490), (114.3770, 30.5490), (114.3800, 30.5420),
-        (114.3780, 30.5370), (114.3690, 30.5370), (114.3660, 30.5430),
-    ],
-    "信息学部": [
-        (114.3580, 30.5300), (114.3860, 30.5295), (114.3870, 30.5200),
-        (114.3630, 30.5185), (114.3580, 30.5240),
-    ],
-}
-CAMPUS_POLYS_WGS = {
-    name: [gcj02_to_wgs84(lng, lat) for lng, lat in poly]
-    for name, poly in _CAMPUS_POLYS_GCJ.items()
-}
+# 校园多边形统一以 config.CAMPUS_POLYS_GCJ 为准（GCJ-02），
+# 与 scripts/clip_to_campus.py 的路网/POI 裁剪共用同一边界
+from config import CAMPUS_POLYS_GCJ as _CAMPUS_POLYS_GCJ  # noqa: E402
 
 # 查询范围（WGS-84 bbox：south, west, north, east）
 BBOX = (30.5150, 114.3460, 30.5510, 114.3900)
@@ -243,6 +226,12 @@ def main():
             continue
 
         glng, glat = wgs84_to_gcj02(wlng, wlat)
+        # 硬过滤：点必须落在三学部校园多边形内（GCJ-02），杜绝街道口/广埠屯等校外点
+        if not any(point_in_polygon(glng, glat, poly) for poly in _CAMPUS_POLYS_GCJ.values()):
+            continue
+        # 名称黑名单（OSM 误 tag，如其他校区建筑）
+        if any(b in name for b in getattr(__import__("config"), "POI_NAME_BLACKLIST", ())):
+            continue
         # 同名点 200m 内视为同一 POI（重复校门/食堂节点聚合）
         duplicate = None
         for r in records:

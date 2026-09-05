@@ -186,6 +186,73 @@ class TestRuleFallbackWithExpandedPois:
         assert r["task_type"] == "poi_query"
 
 
+# ===== 6. 校园边界（V2.1：修复校外 POI/穿城路线）=====
+
+class TestCampusBoundary:
+    def test_all_pois_inside_campus_polys(self):
+        """所有 POI 必须落在三学部校园多边形内。"""
+        import networkx as nx  # noqa: F401
+        from config import CAMPUS_POLYS_GCJ
+
+        def pip(lng, lat, poly):
+            inside = False
+            j = len(poly) - 1
+            for i in range(len(poly)):
+                xi, yi = poly[i]
+                xj, yj = poly[j]
+                if ((yi > lat) != (yj > lat)) and \
+                        (lng < (xj - xi) * (lat - yi) / ((yj - yi) or 1e-12) + xi):
+                    inside = not inside
+                j = i
+            return inside
+
+        pois = load_pois()
+        assert len(pois) >= 300
+        for p in pois:
+            lng, lat = p["coordinates"]["lng"], p["coordinates"]["lat"]
+            assert any(pip(lng, lat, poly) for poly in CAMPUS_POLYS_GCJ.values()), \
+                f"校外 POI 未清理: {p['name']} ({lng}, {lat})"
+
+    def test_blacklist_pois_absent(self):
+        from config import POI_NAME_BLACKLIST
+        names = [p["name"] for p in load_pois()]
+        for bad in POI_NAME_BLACKLIST:
+            assert not any(bad in n for n in names), f"黑名单 POI 仍存在: {bad}"
+
+    def test_known_offcampus_pois_removed(self):
+        """已确认的校外点必须不存在。"""
+        names = {p["name"] for p in load_pois()}
+        for bad in ("珞珈山剧院", "武汉工学院", "东湖食堂", "国家网络安全学院大楼"):
+            assert bad not in names, f"校外 POI 未删除: {bad}"
+
+    def test_network_clipped_to_campus(self):
+        """路网节点应全部在校园多边形（WGS-84）缓冲带内，且三校区连通。"""
+        import networkx as nx
+        from shapely.geometry import Point, Polygon
+        from shapely.ops import unary_union
+        from config import CAMPUS_POLYS_GCJ
+        from spatial.coord_transform import gcj02_to_wgs84
+
+        G = nx.read_graphml(
+            os.path.join(PROJECT_ROOT, "data", "whu_road_network.graphml"),
+            node_type=int,
+        )
+        polys = [
+            Polygon([gcj02_to_wgs84(lng, lat) for lng, lat in poly])
+            for poly in CAMPUS_POLYS_GCJ.values()
+        ]
+        clip = unary_union(polys).buffer(0.0011)
+        outside = [
+            n for n, d in G.nodes(data=True)
+            if not clip.covers(Point(float(d["x"]), float(d["y"])))
+        ]
+        assert len(outside) == 0, f"{len(outside)} 个路网节点在校园缓冲带外"
+
+        # 三校区同属一个大连通分量（跨学部过街连接未被裁断）
+        largest = max(nx.weakly_connected_components(G), key=len)
+        assert len(largest) / G.number_of_nodes() > 0.95
+
+
 # ===== 5. 匹配质量（别名/消歧） =====
 
 class TestMatchingQuality:
