@@ -179,7 +179,7 @@ def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
     }
 
 
-def _find_pois_along_route(G, route_nodes, threshold_m=100.0, limit=8):
+def _find_pois_along_route(G, route_nodes, threshold_m=100.0, limit=8, min_importance=8.0):
     all_pois = load_pois()
     route_coords = []
     for nid in route_nodes:
@@ -209,9 +209,12 @@ def _find_pois_along_route(G, route_nodes, threshold_m=100.0, limit=8):
 
         if min_dist <= threshold_m:
             from spatial.poi import _flatten_poi
+            imp = importance_score(poi)
+            if imp < min_importance:
+                continue  # 不重要的点（如普通宿舍）不标
             flat = _flatten_poi(poi)
             flat["distance_to_route_m"] = round(min_dist, 1)
-            flat["importance"] = round(importance_score(poi), 2)
+            flat["importance"] = round(imp, 2)
             along.append(flat)
 
     # 按重要度降序（搜索频率 + 景观分 + 类型加权），只返回最重要的前 limit 个
