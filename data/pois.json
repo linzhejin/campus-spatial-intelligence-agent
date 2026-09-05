@@ -1,6 +1,6 @@
 {
-  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/景点/校内服务（298条）",
-  "count": 298,
+  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/景点/校内服务（300条）",
+  "count": 300,
   "pois": [
     {
       "id": "poi_001",
@@ -4783,6 +4783,27 @@
     },
     {
       "id": "poi_226",
+      "name": "武汉大学茶港门",
+      "aliases": [
+        "工学部茶港门",
+        "武大茶港门",
+        "茶港门"
+      ],
+      "coordinates": {
+        "lng": 114.354475,
+        "lat": 30.539325
+      },
+      "type": "gate",
+      "campus": "工学部",
+      "category": "gate",
+      "description": "工学部校内地点。工学部茶港门（茶港路与天鹅路交叉口，高德核实）",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_227",
       "name": "洪波门",
       "aliases": [
         "东湖南路洪波门",
@@ -4804,7 +4825,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_227",
+      "id": "poi_228",
       "name": "武汉大学周恩来故居",
       "aliases": [
         "周恩来故居"
@@ -4823,7 +4844,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_228",
+      "id": "poi_229",
       "name": "闻一多纪念馆",
       "aliases": [],
       "coordinates": {
@@ -4840,7 +4861,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_229",
+      "id": "poi_230",
       "name": "武汉大学工学部大学生活动中心",
       "aliases": [
         "工学部大学生活动中心"
@@ -4859,7 +4880,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_230",
+      "id": "poi_231",
       "name": "珞珈自强超市",
       "aliases": [
         "枫园雯雯超市",
@@ -4882,7 +4903,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_231",
+      "id": "poi_232",
       "name": "中国龙狮运动学院",
       "aliases": [],
       "coordinates": {
@@ -4899,7 +4920,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_232",
+      "id": "poi_233",
       "name": "二号教学楼",
       "aliases": [],
       "coordinates": {
@@ -4916,7 +4937,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_233",
+      "id": "poi_234",
       "name": "信息学部西区综合楼",
       "aliases": [],
       "coordinates": {
@@ -4933,7 +4954,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_234",
+      "id": "poi_235",
       "name": "国际园区2号教学楼",
       "aliases": [],
       "coordinates": {
@@ -4950,7 +4971,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_235",
+      "id": "poi_236",
       "name": "国际园区3号教学楼",
       "aliases": [],
       "coordinates": {
@@ -4967,7 +4988,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_236",
+      "id": "poi_237",
       "name": "星湖综合实验大楼",
       "aliases": [],
       "coordinates": {
@@ -4984,7 +5005,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_237",
+      "id": "poi_238",
       "name": "武汉大学信息学部1号教学楼",
       "aliases": [
         "1号教学楼",
@@ -5017,7 +5038,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_238",
+      "id": "poi_239",
       "name": "武汉大学信息学部2教学楼",
       "aliases": [
         "信2教",
@@ -5046,7 +5067,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_239",
+      "id": "poi_240",
       "name": "武汉大学信息学部图书馆",
       "aliases": [
         "信图",
@@ -5068,7 +5089,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_240",
+      "id": "poi_241",
       "name": "武汉大学信息学部星湖教3楼",
       "aliases": [
         "信三教",
@@ -5092,7 +5113,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_241",
+      "id": "poi_242",
       "name": "武汉大学信息学部测绘学院",
       "aliases": [
         "4号教学楼",
@@ -5112,7 +5133,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_242",
+      "id": "poi_243",
       "name": "武汉大学信息学部测绘遥感信息工程全国重点实验室",
       "aliases": [
         "测绘遥感信息工程国家重点实验室大楼"
@@ -5131,7 +5152,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_243",
+      "id": "poi_244",
       "name": "武汉大学信息学部现代大地测量与地球动力学教育部重点实验室",
       "aliases": [
         "地球空间环境与大地测量研究室"
@@ -5150,7 +5171,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_244",
+      "id": "poi_245",
       "name": "武汉大学信息学部西区B4教学楼",
       "aliases": [
         "信4教",
@@ -5179,7 +5200,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_245",
+      "id": "poi_246",
       "name": "武汉大学信息学部资源与环境科学学院",
       "aliases": [
         "信七教",
@@ -5202,7 +5223,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_246",
+      "id": "poi_247",
       "name": "武汉大学信息学部遥感信息工程学院(5号教学楼)",
       "aliases": [
         "5号教学楼",
@@ -5231,7 +5252,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_247",
+      "id": "poi_248",
       "name": "武汉大学宇航科学与技术研究院",
       "aliases": [
         "宇航科学与技术研究院"
@@ -5250,7 +5271,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_248",
+      "id": "poi_249",
       "name": "武汉大学文理学院珞涵屯",
       "aliases": [
         "文理学院珞涵屯"
@@ -5269,7 +5290,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_249",
+      "id": "poi_250",
       "name": "武汉大学遥感信息工程学院",
       "aliases": [
         "教学实验大楼",
@@ -5289,7 +5310,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_250",
+      "id": "poi_251",
       "name": "法学院楼",
       "aliases": [],
       "coordinates": {
@@ -5306,7 +5327,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_251",
+      "id": "poi_252",
       "name": "西教学楼",
       "aliases": [],
       "coordinates": {
@@ -5323,7 +5344,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_252",
+      "id": "poi_253",
       "name": "信息学部清真食堂",
       "aliases": [
         "信息学部清真"
@@ -5342,7 +5363,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_253",
+      "id": "poi_254",
       "name": "武汉大学信息学部学生一食堂",
       "aliases": [
         "信息学部1食堂",
@@ -5366,7 +5387,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_254",
+      "id": "poi_255",
       "name": "武汉大学信息学部学生三食堂",
       "aliases": [
         "信息学部3食堂",
@@ -5390,7 +5411,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_255",
+      "id": "poi_256",
       "name": "武汉大学信息学部学生四食堂",
       "aliases": [
         "信息学部4食堂",
@@ -5414,7 +5435,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_256",
+      "id": "poi_257",
       "name": "星湖体育馆",
       "aliases": [],
       "coordinates": {
@@ -5431,7 +5452,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_257",
+      "id": "poi_258",
       "name": "武汉大学信息学部体育场",
       "aliases": [
         "信息学部体育场"
@@ -5450,7 +5471,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_258",
+      "id": "poi_259",
       "name": "武汉大学信息学部体育馆",
       "aliases": [
         "信息学部体育馆",
@@ -5470,7 +5491,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_259",
+      "id": "poi_260",
       "name": "武汉大学信息学部操场",
       "aliases": [
         "信息学部操场"
@@ -5489,7 +5510,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_260",
+      "id": "poi_261",
       "name": "武汉大学信息学部游泳池",
       "aliases": [
         "信息学部游泳池"
@@ -5508,7 +5529,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_261",
+      "id": "poi_262",
       "name": "武汉大学信息学部篮球场",
       "aliases": [
         "信息学部篮球场"
@@ -5527,7 +5548,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_262",
+      "id": "poi_263",
       "name": "信息学部17舍",
       "aliases": [
         "信17",
@@ -5552,7 +5573,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_263",
+      "id": "poi_264",
       "name": "国际园区5栋学生宿舍",
       "aliases": [
         "国际园区5栋"
@@ -5571,7 +5592,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_264",
+      "id": "poi_265",
       "name": "国际园区6栋学生宿舍",
       "aliases": [
         "国际园区6栋"
@@ -5590,7 +5611,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_265",
+      "id": "poi_266",
       "name": "国际园区学生宿舍3栋",
       "aliases": [
         "国际园区3栋"
@@ -5609,7 +5630,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_266",
+      "id": "poi_267",
       "name": "国际园区学生宿舍4栋",
       "aliases": [
         "国际园区4栋"
@@ -5628,7 +5649,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_267",
+      "id": "poi_268",
       "name": "国际园区学生宿舍8栋",
       "aliases": [
         "国际园区8栋"
@@ -5647,7 +5668,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_268",
+      "id": "poi_269",
       "name": "国际园区学生宿舍9栋",
       "aliases": [
         "国际园区9栋"
@@ -5666,7 +5687,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_269",
+      "id": "poi_270",
       "name": "武汉大学信息学部6舍",
       "aliases": [
         "信6",
@@ -5693,7 +5714,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_270",
+      "id": "poi_271",
       "name": "武汉大学信息学部国软C4舍",
       "aliases": [
         "信息学部20舍",
@@ -5713,7 +5734,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_271",
+      "id": "poi_272",
       "name": "武汉大学信息学部学生21舍",
       "aliases": [
         "信21",
@@ -5740,7 +5761,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_272",
+      "id": "poi_273",
       "name": "武汉大学信息学部学生宿舍10舍",
       "aliases": [
         "信10",
@@ -5767,7 +5788,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_273",
+      "id": "poi_274",
       "name": "武汉大学信息学部学生宿舍11舍",
       "aliases": [
         "信11",
@@ -5794,7 +5815,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_274",
+      "id": "poi_275",
       "name": "武汉大学信息学部学生宿舍12舍",
       "aliases": [
         "信12",
@@ -5821,7 +5842,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_275",
+      "id": "poi_276",
       "name": "武汉大学信息学部学生宿舍13舍",
       "aliases": [
         "信13",
@@ -5848,7 +5869,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_276",
+      "id": "poi_277",
       "name": "武汉大学信息学部学生宿舍14舍",
       "aliases": [
         "信14",
@@ -5875,7 +5896,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_277",
+      "id": "poi_278",
       "name": "武汉大学信息学部学生宿舍15舍",
       "aliases": [
         "信15",
@@ -5903,7 +5924,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_278",
+      "id": "poi_279",
       "name": "武汉大学信息学部学生宿舍16舍",
       "aliases": [
         "信16",
@@ -5930,7 +5951,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_279",
+      "id": "poi_280",
       "name": "武汉大学信息学部学生宿舍18舍",
       "aliases": [
         "信18",
@@ -5957,7 +5978,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_280",
+      "id": "poi_281",
       "name": "武汉大学信息学部学生宿舍19舍",
       "aliases": [
         "信19",
@@ -5986,7 +6007,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_281",
+      "id": "poi_282",
       "name": "武汉大学信息学部学生宿舍3舍",
       "aliases": [
         "信息学部学生宿舍3舍"
@@ -6005,7 +6026,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_282",
+      "id": "poi_283",
       "name": "武汉大学信息学部学生宿舍4舍",
       "aliases": [
         "信息学部学生宿舍4舍"
@@ -6024,7 +6045,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_283",
+      "id": "poi_284",
       "name": "武汉大学信息学部学生宿舍5舍",
       "aliases": [
         "信息学部学生宿舍5舍"
@@ -6043,7 +6064,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_284",
+      "id": "poi_285",
       "name": "武汉大学信息学部学生宿舍7舍",
       "aliases": [
         "信7",
@@ -6070,7 +6091,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_285",
+      "id": "poi_286",
       "name": "武汉大学信息学部学生宿舍8舍",
       "aliases": [
         "信8",
@@ -6097,7 +6118,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_286",
+      "id": "poi_287",
       "name": "武汉大学信息学部学生宿舍9舍",
       "aliases": [
         "信9",
@@ -6124,7 +6145,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_287",
+      "id": "poi_288",
       "name": "武汉大学信息学部青年楼宿舍1栋",
       "aliases": [
         "信1",
@@ -6151,7 +6172,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_288",
+      "id": "poi_289",
       "name": "武汉大学信息学部青年楼宿舍23栋",
       "aliases": [
         "信息学部青年楼宿舍23栋"
@@ -6170,7 +6191,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_289",
+      "id": "poi_290",
       "name": "武汉大学信息学部青年楼宿舍2栋",
       "aliases": [
         "信2",
@@ -6197,7 +6218,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_290",
+      "id": "poi_291",
       "name": "武汉大学信息学部青年楼宿舍3栋",
       "aliases": [
         "信息学部青年楼宿舍3栋"
@@ -6216,7 +6237,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_291",
+      "id": "poi_292",
       "name": "武汉大学信息学部青年楼宿舍4栋",
       "aliases": [
         "信息学部青年楼宿舍4栋"
@@ -6235,7 +6256,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_292",
+      "id": "poi_293",
       "name": "武汉大学信息学部青年楼宿舍5栋",
       "aliases": [
         "信息学部青年楼宿舍5栋"
@@ -6254,7 +6275,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_293",
+      "id": "poi_294",
       "name": "武汉大学国际软件学院C7舍",
       "aliases": [
         "7栋",
@@ -6275,7 +6296,28 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_294",
+      "id": "poi_295",
+      "name": "武汉大学文澜门",
+      "aliases": [
+        "信息学部文澜门",
+        "文澜门",
+        "武大文澜门"
+      ],
+      "coordinates": {
+        "lng": 114.36045,
+        "lat": 30.545254
+      },
+      "type": "gate",
+      "campus": "信息学部",
+      "category": "gate",
+      "description": "信息学部校内地点。信息学部文澜门（广埠屯，高德核实）",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_296",
       "name": "珞瑜二门",
       "aliases": [
         "信息学部南二门",
@@ -6297,7 +6339,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_295",
+      "id": "poi_297",
       "name": "珞瑜门",
       "aliases": [
         "信息学部南门",
@@ -6320,7 +6362,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_296",
+      "id": "poi_298",
       "name": "星湖",
       "aliases": [
         "星湖体育馆附近",
@@ -6341,7 +6383,7 @@
       "scenery_score": 3
     },
     {
-      "id": "poi_297",
+      "id": "poi_299",
       "name": "武汉大学信息学部学生活动中心",
       "aliases": [
         "信息学部学生活动中心"
@@ -6360,7 +6402,7 @@
       "scenery_score": 1
     },
     {
-      "id": "poi_298",
+      "id": "poi_300",
       "name": "武汉大学口腔医院",
       "aliases": [
         "口腔医院",
