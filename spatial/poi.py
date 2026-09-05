@@ -7,6 +7,7 @@ POI 加载与匹配模块
 
 import json
 import os
+import re
 from difflib import SequenceMatcher
 from typing import Optional
 
@@ -102,6 +103,55 @@ def get_pois_by_type(poi_type: str) -> list:
     return [p for p in pois if p.get("type") == poi_type]
 
 
+_CN_NUM = str.maketrans("零一二三四五六七八九十", "01234567890")
+
+# 宽泛区域词：这些词是学部/园区名，不应作为子串匹配到具体教学楼/食堂
+# 例如"信息学部"不应匹配到"信息学部第一教学楼"
+_BROAD_AREA_TERMS = {
+    "工学部", "文理学部", "信息学部", "医学部",
+    "湖滨", "枫园", "梅园", "桂园", "樱园", "星湖",
+    "国际园区", "西区", "东区", "南区", "北区",
+}
+
+
+def _is_broad_area_term(name: str) -> bool:
+    """判断输入是否是宽泛区域词（学部名/园区名）。"""
+    return name.strip() in _BROAD_AREA_TERMS
+
+
+# 外校/外部单位标志词：用户查询指向校外单位时，不应匹配任何武大POI
+_EXTERNAL_TERMS_RE = re.compile(
+    r"华中师范|华师|师范大学|理工大学|理工大|武汉体育学院|体育学院|武体|"
+    r"职业技术|电力职|中国科学院|中科院|卓刀泉中学|附属中学|附属小学"
+)
+
+
+def _is_external_query(name: str) -> bool:
+    """查询是否指向校外单位（含外校标志且不是在问武大）。"""
+    if _EXTERNAL_TERMS_RE.search(name):
+        return "武汉大学" not in name and "武大" not in name
+    return False
+
+
+def _normalize_num(s: str) -> str:
+    """中文数字→阿拉伯数字归一化，让「七舍」和「7舍」能匹配上。"""
+    return s.translate(_CN_NUM)
+
+
+def _digits_aligned(short: str, long: str) -> bool:
+    """short 是 long 的子串时，检查数字边界：
+    若 short 首/尾为数字，long 中对应位置的前/后字符不能也是数字
+    （防止"1教"误匹配"11教学楼"、"7舍"误匹配"17舍"）。"""
+    idx = long.find(short)
+    if idx < 0:
+        return False
+    if short[0].isdigit() and idx > 0 and long[idx - 1].isdigit():
+        return False
+    if short[-1].isdigit() and idx + len(short) < len(long) and long[idx + len(short)].isdigit():
+        return False
+    return True
+
+
 def _similarity(a: str, b: str) -> float:
     if not a or not b:
         return 0.0
@@ -109,10 +159,27 @@ def _similarity(a: str, b: str) -> float:
     b_lower = b.lower().strip()
     if a_lower == b_lower:
         return 1.0
-    if b_lower in a_lower:
+    # 宽泛词保护：输入是学部/园区名时，不允许通过子串匹配到更长的POI名
+    # 例如"信息学部"不应子串匹配到"信息学部第一教学楼"
+    if _is_broad_area_term(a_lower) and len(b_lower) > len(a_lower):
+        return 0.0
+    if b_lower in a_lower and _digits_aligned(b_lower, a_lower):
         return 0.9
-    if a_lower in b_lower:
+    if a_lower in b_lower and _digits_aligned(a_lower, b_lower):
         return 0.85
+    # 数字归一化后再比一次（中文数字 vs 阿拉伯数字）
+    a_n = _normalize_num(a_lower)
+    b_n = _normalize_num(b_lower)
+    if a_n != a_lower or b_n != b_lower:
+        if a_n == b_n:
+            return 1.0
+        if b_n in a_n and _digits_aligned(b_n, a_n):
+            return 0.9
+        if a_n in b_n and _digits_aligned(a_n, b_n):
+            return 0.85
+        r = SequenceMatcher(None, a_n, b_n).ratio()
+        if r > 0:
+            return r
     return SequenceMatcher(None, a_lower, b_lower).ratio()
 
 
@@ -131,6 +198,8 @@ def find_poi(name: str, min_score: float = 0.6) -> Optional[dict]:
         匹配到的 POI 对象，未匹配返回 None
     """
     pois = load_pois()
+    if _is_external_query(name) or not name.strip():
+        return None
     best_poi = None
     best_score = 0.0
 
@@ -164,6 +233,8 @@ def find_poi_candidates(name: str, limit: int = 5, min_score: float = 0.3) -> li
         [(poi, score), ...] 按相似度降序排列
     """
     pois = load_pois()
+    if _is_external_query(name) or not name.strip():
+        return []
     scored = []
 
     for poi in pois:

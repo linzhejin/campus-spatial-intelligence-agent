@@ -34,6 +34,7 @@
         lastIntent: null,  // 最近一轮完整意图快照（多轮对话承接用）
         activeMode: null,
         loadingTimer: null,  // 轮播加载语定时器
+        requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
     };
 
     // ========== 轮播加载语（有人味儿） ==========
@@ -291,6 +292,13 @@
         }
         state.poiMarkers.forEach(function (m) { m.setMap(null); });
         state.poiMarkers = [];
+    }
+
+    // 清除路线结果区 + 地图覆盖物（非路径规划响应时调用，避免旧路线残留）
+    function clearRouteResult() {
+        clearMap();
+        var section = document.getElementById('results-section');
+        if (section) section.hidden = true;
     }
 
     // 定位单个 POI：清空现有覆盖物，移动地图中心到该 POI 并高亮标记
@@ -553,6 +561,10 @@
         hideWelcomeElements();
         showUserBubble(query);
 
+        // 请求序号竞态防护：只有最后一个请求的结果才会渲染
+        state.requestSeq += 1;
+        var mySeq = state.requestSeq;
+
         try {
             // 传最近一轮完整意图快照，供后端多轮承接（补起点/终点）
             var context = state.lastIntent ? {
@@ -569,11 +581,15 @@
                 context: context,
             });
 
+            // 竞态检查：如果用户在等待期间又发了新请求，丢弃本次结果
+            if (mySeq !== state.requestSeq) return;
+
             var taskType = result.task_type;
 
             // chat → 在对话流中显示闲聊回复
             if (taskType === 'chat') {
                 hideWelcomeElements();
+                clearRouteResult();
                 showChatBubble(query, result.reply || result.message || '嗯…这个问题有点难，换个问法试试？');
                 addConversationTurn(query, result);
                 stopLoadingMessages();
@@ -584,6 +600,7 @@
             // help / unknown → 显示引导消息
             if (taskType === 'help' || taskType === 'unknown') {
                 hideWelcomeElements();
+                clearRouteResult();
                 showChatBubble(query, result.message || '有什么可以帮你的？');
                 addConversationTurn(query, result);
                 stopLoadingMessages();
@@ -594,6 +611,7 @@
             // poi_query → 显示景点信息 + 地图定位
             if (taskType === 'poi_query') {
                 hideWelcomeElements();
+                clearRouteResult();
                 var poi = result.poi;
                 showChatBubble(query, result.message || (poi ? poi.description : '找到相关信息了～'));
                 if (poi && state.map) {
@@ -611,18 +629,23 @@
                 showResults(result);
                 addConversationTurn(query, result);
             } else {
+                clearRouteResult();
                 showError('路线规划失败', '未能生成有效的路线，请尝试更明确的需求描述');
             }
         } catch (err) {
+            if (mySeq !== state.requestSeq) return;
             if (err.code && isGuideableError(err.code)) {
                 // 信息不完整 / 输入无法理解 → 对话式引导，不弹错误窗
                 hideWelcomeElements();
+                clearRouteResult();
                 showChatBubble(query, err.message);
             } else {
                 showError('规划出错', err.message);
             }
         } finally {
-            hideLoading();
+            if (mySeq === state.requestSeq) {
+                hideLoading();
+            }
         }
     }
 

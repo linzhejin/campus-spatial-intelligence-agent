@@ -79,7 +79,7 @@ class TestFourTaskTypes:
         processed = _t011_post_process(base_intent, "樱顶在哪里", None)
         assert processed.task_type == "poi_query"
         assert processed.start is not None
-        assert processed.start.name == "樱顶"
+        assert processed.start.name == "武汉大学老斋舍"
         assert processed.end is None
 
     def test_post_process_help(self):
@@ -214,7 +214,7 @@ class TestAmbiguityCompletion:
         assert completed.start is not None
         assert completed.start.name == "牌坊"
         assert completed.end is not None
-        assert completed.end.name == "樱顶"
+        assert completed.end.name == "武汉大学老斋舍"
         assert completed.task_type == "path_planning"
         assert completed.ambiguity is None
 
@@ -228,7 +228,7 @@ class TestParseQueryOfflineMock:
             assert isinstance(result, TaskIntent)
             assert result.task_type == "path_planning"
             assert result.start is not None and result.start.name == "牌坊"
-            assert result.end is not None and result.end.name == "樱顶"
+            assert result.end is not None and result.end.name == "武汉大学老斋舍"
             assert result.ambiguity is None
 
     def test_parse_query_no_api_key_unparseable(self):

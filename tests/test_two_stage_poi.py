@@ -85,10 +85,10 @@ class TestNormalizePoiRefs:
         )
 
     def test_alias_normalized(self):
-        """「图书馆」应归一化为「总图书馆」。"""
+        """「图书馆」应归一化为总馆规范名。"""
         intent = self._intent(start="教五", end="图书馆")
         result = _normalize_poi_refs(intent)
-        assert result.end.name == "总图书馆"
+        assert result.end.name == "武汉大学图书馆(总馆)"
 
     def test_fuzzy_prefix_normalized(self):
         """「武大牌坊」应归一化为「牌坊」。"""
@@ -96,8 +96,9 @@ class TestNormalizePoiRefs:
         assert result.start.name == "牌坊"
 
     def test_exact_name_unchanged(self):
-        result = _normalize_poi_refs(self._intent(start="樱顶"))
-        assert result.start.name == "樱顶"
+        """规范名精确命中时保持不变。"""
+        result = _normalize_poi_refs(self._intent(start="牌坊"))
+        assert result.start.name == "牌坊"
 
     def test_unmatched_keeps_raw(self):
         """匹配不到的地名保留原样（由 route 层引导用户）。"""
@@ -121,8 +122,8 @@ class TestNormalizePoiRefs:
 
     def test_both_ends_normalized(self):
         result = _normalize_poi_refs(self._intent(start="图书馆", end="樱顶"))
-        assert result.start.name == "总图书馆"
-        assert result.end.name == "樱顶"
+        assert result.start.name == "武汉大学图书馆(总馆)"
+        assert result.end.name == "武汉大学老斋舍"
 
 
 # ===== 3. prompt 瘦身（两阶段·第一阶段） =====
@@ -160,13 +161,13 @@ class TestRuleFallbackWithExpandedPois:
         r = _rule_based_classify("从牌坊到樱顶")
         assert r["task_type"] == "path_planning"
         assert r["start_name"] == "牌坊"
-        assert r["end_name"] == "樱顶"
+        assert r["end_name"] == "武汉大学老斋舍"
 
     def test_classify_poi_query(self):
-        """规则层返回原文名（两阶段：归一化由 _normalize_poi_refs 完成）。"""
+        """规则层返回规范名（两阶段：归一化由 fuzzy 统一映射完成）。"""
         r = _rule_based_classify("图书馆怎么走")
         assert r["task_type"] == "poi_query"
-        assert r["start_name"] == "图书馆"
+        assert "图书馆" in r["start_name"]
 
     def test_pipeline_rule_then_normalize(self):
         """管线级：规则提取原文名 → 归一化得规范名。"""
@@ -178,7 +179,7 @@ class TestRuleFallbackWithExpandedPois:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         intent = _normalize_poi_refs(intent)
-        assert intent.start.name == "总图书馆"
+        assert intent.start.name == "武汉大学图书馆(总馆)"
 
     def test_classify_new_campus_poi(self):
         """三学部扩展后的新 POI 应能被规则兜底匹配。"""
@@ -259,7 +260,7 @@ class TestMatchingQuality:
     def test_find_poi_candidates_returns_scored(self):
         cands = find_poi_candidates("图书馆", limit=5)
         assert cands, "「图书馆」应有候选"
-        assert cands[0][0]["name"] == "总图书馆"
+        assert cands[0][0]["name"] == "武汉大学图书馆(总馆)"
         scores = [s for _, s in cands]
         assert scores == sorted(scores, reverse=True)
 

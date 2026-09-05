@@ -16,9 +16,9 @@
    "name": "东湖南路",
    "length_m": 76.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (267m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (267m)"
   },
   {
    "edge_id": [
@@ -31,9 +31,9 @@
    "name": "卓刀泉北路",
    "length_m": 199.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.0%（Δelev=2m）; 临近 历史文化教育基地 (316m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (316m)"
   },
   {
    "edge_id": [
@@ -121,9 +121,9 @@
    "name": "八一路",
    "length_m": 124.8,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.0%（Δelev=5m）; 临近 国际学术交流中心 (662m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (662m)"
   },
   {
    "edge_id": [
@@ -136,9 +136,9 @@
    "name": "卓刀泉北路",
    "length_m": 249.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.2%（Δelev=8m）; 临近 历史文化教育基地 (645m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (645m)"
   },
   {
    "edge_id": [
@@ -873,7 +873,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.8%（Δelev=9m）; 临近 学生公寓8栋 (269m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (269m)"
   },
   {
    "edge_id": [
@@ -886,9 +886,9 @@
    "name": "未命名路 1146771949-1159496450",
    "length_m": 504.3,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=13m）; 临近 学生公寓5栋 (256m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (256m)"
   },
   {
    "edge_id": [
@@ -903,7 +903,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.9%（Δelev=7m）; 临近 学生公寓8栋 (293m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (293m)"
   },
   {
    "edge_id": [
@@ -976,9 +976,9 @@
    "name": "珞喻路",
    "length_m": 149.5,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.7%（Δelev=4m）; 临近 学生公寓4栋 (97m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (97m)"
   },
   {
    "edge_id": [
@@ -993,7 +993,7 @@
    "highway": "trunk",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.9%（Δelev=13m）; 临近 学生公寓6栋 (186m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (186m)"
   },
   {
    "edge_id": [
@@ -1006,9 +1006,9 @@
    "name": "卓刀泉南路",
    "length_m": 59.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (264m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (264m)"
   },
   {
    "edge_id": [
@@ -1038,7 +1038,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.3%（Δelev=15m）; 临近 沁园春食堂 (302m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (302m)"
   },
   {
    "edge_id": [
@@ -1096,9 +1096,9 @@
    "name": "珞喻路",
    "length_m": 521.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=4m）; 临近 科学会堂 (440m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (440m)"
   },
   {
    "edge_id": [
@@ -1111,9 +1111,9 @@
    "name": "珞喻路",
    "length_m": 205.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.7%（Δelev=4m）; 临近 实习楼 (361m)"
+   "note": "坡度占位，待实测; 临近 实习楼 (361m)"
   },
   {
    "edge_id": [
@@ -1201,9 +1201,9 @@
    "name": "机电路",
    "length_m": 77.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 一号教学楼 (420m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (420m)"
   },
   {
    "edge_id": [
@@ -1216,9 +1216,9 @@
    "name": "机电路",
    "length_m": 218.6,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.1%（Δelev=9m）; 临近 一号教学楼 (376m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (376m)"
   },
   {
    "edge_id": [
@@ -1231,9 +1231,9 @@
    "name": "机电路",
    "length_m": 218.6,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.1%（Δelev=9m）; 临近 一号教学楼 (376m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (376m)"
   },
   {
    "edge_id": [
@@ -1351,9 +1351,9 @@
    "name": "未命名路 1159482845-1199771757",
    "length_m": 88.4,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部20舍 (142m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (142m)"
   },
   {
    "edge_id": [
@@ -1366,9 +1366,9 @@
    "name": "未命名路 1159482845-1907856818",
    "length_m": 52.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=1m）; 临近 信息学部19舍 (164m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (164m)"
   },
   {
    "edge_id": [
@@ -1396,9 +1396,9 @@
    "name": "珞狮路",
    "length_m": 285.9,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.1%（Δelev=9m）; 临近 信息学部20舍 (140m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (140m)"
   },
   {
    "edge_id": [
@@ -1411,9 +1411,9 @@
    "name": "未命名路 1159482853-1159482855",
    "length_m": 62.8,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 信息学部19舍 (127m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (127m)"
   },
   {
    "edge_id": [
@@ -1456,9 +1456,9 @@
    "name": "未命名路 1159482855-1159482853",
    "length_m": 62.8,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 信息学部19舍 (127m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (127m)"
   },
   {
    "edge_id": [
@@ -1501,9 +1501,9 @@
    "name": "珞狮路",
    "length_m": 72.0,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (177m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (177m)"
   },
   {
    "edge_id": [
@@ -1516,9 +1516,9 @@
    "name": "珞喻路",
    "length_m": 521.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=4m）; 临近 科学会堂 (440m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (440m)"
   },
   {
    "edge_id": [
@@ -1531,9 +1531,9 @@
    "name": "未命名路 1159496450-1146771949",
    "length_m": 504.3,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=13m）; 临近 学生公寓5栋 (256m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (256m)"
   },
   {
    "edge_id": [
@@ -1548,7 +1548,7 @@
    "highway": "trunk",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.9%（Δelev=13m）; 临近 学生公寓6栋 (186m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (186m)"
   },
   {
    "edge_id": [
@@ -1606,9 +1606,9 @@
    "name": "珞喻路",
    "length_m": 441.2,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=15m）; 临近 学生公寓6栋 (287m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (287m)"
   },
   {
    "edge_id": [
@@ -1621,9 +1621,9 @@
    "name": "未命名路 1180187253-1272848052",
    "length_m": 329.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.2%（Δelev=4m）; 临近 科学会堂 (388m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (388m)"
   },
   {
    "edge_id": [
@@ -1636,9 +1636,9 @@
    "name": "珞喻路",
    "length_m": 201.0,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=9m）; 临近 科学会堂 (389m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (389m)"
   },
   {
    "edge_id": [
@@ -1741,9 +1741,9 @@
    "name": "珞喻路",
    "length_m": 119.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.8%（Δelev=1m）; 临近 信息学部9舍 (127m)"
+   "note": "坡度占位，待实测; 临近 信息学部9舍 (127m)"
   },
   {
    "edge_id": [
@@ -1966,9 +1966,9 @@
    "name": "八一路",
    "length_m": 56.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (455m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (455m)"
   },
   {
    "edge_id": [
@@ -1983,7 +1983,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.1%（Δelev=5m）; 临近 弘博公寓食堂 (483m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (483m)"
   },
   {
    "edge_id": [
@@ -2986,9 +2986,9 @@
    "name": "八一路",
    "length_m": 74.9,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (172m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (172m)"
   },
   {
    "edge_id": [
@@ -3586,9 +3586,9 @@
    "name": "八一路",
    "length_m": 112.1,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=5m）; 临近 弘博公寓食堂 (560m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (560m)"
   },
   {
    "edge_id": [
@@ -3676,9 +3676,9 @@
    "name": "八一路",
    "length_m": 643.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=7m）; 临近 国际学术交流中心 (643m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (643m)"
   },
   {
    "edge_id": [
@@ -3721,9 +3721,9 @@
    "name": "八一路",
    "length_m": 124.8,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.0%（Δelev=5m）; 临近 国际学术交流中心 (662m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (662m)"
   },
   {
    "edge_id": [
@@ -3781,9 +3781,9 @@
    "name": "八一路",
    "length_m": 646.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=7m）; 临近 国际学术交流中心 (652m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (652m)"
   },
   {
    "edge_id": [
@@ -4726,9 +4726,9 @@
    "name": "八一路",
    "length_m": 86.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (92m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (92m)"
   },
   {
    "edge_id": [
@@ -4741,9 +4741,9 @@
    "name": "八一路",
    "length_m": 74.9,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (172m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (172m)"
   },
   {
    "edge_id": [
@@ -5431,9 +5431,9 @@
    "name": "卓刀泉北路",
    "length_m": 74.7,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.0%（Δelev=6m）; 临近 学生公寓5栋 (309m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (309m)"
   },
   {
    "edge_id": [
@@ -5461,9 +5461,9 @@
    "name": "卓刀泉北路",
    "length_m": 59.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=2m）; 临近 学生公寓6栋 (378m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (378m)"
   },
   {
    "edge_id": [
@@ -6226,9 +6226,9 @@
    "name": "东湖南路",
    "length_m": 321.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度1.6%（Δelev=5m）; 临近 湖滨七舍 (109m)"
+   "note": "坡度占位，待实测; 临近 湖滨七舍 (109m)"
   },
   {
    "edge_id": [
@@ -6886,9 +6886,9 @@
    "name": "茶港路",
    "length_m": 59.4,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=2m）; 临近 桂园四舍 (109m)"
+   "note": "坡度占位，待实测; 临近 桂园四舍 (109m)"
   },
   {
    "edge_id": [
@@ -8836,9 +8836,9 @@
    "name": "未命名路 1197879673-1907856815",
    "length_m": 55.7,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (212m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (212m)"
   },
   {
    "edge_id": [
@@ -9901,9 +9901,9 @@
    "name": "珞狮北路",
    "length_m": 113.1,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=2m）; 临近 卓尔体育馆 (170m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (170m)"
   },
   {
    "edge_id": [
@@ -9931,9 +9931,9 @@
    "name": "未命名路 1199764889-1199766388",
    "length_m": 159.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (246m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (246m)"
   },
   {
    "edge_id": [
@@ -9961,9 +9961,9 @@
    "name": "珞狮北路",
    "length_m": 100.8,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (248m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (248m)"
   },
   {
    "edge_id": [
@@ -9991,9 +9991,9 @@
    "name": "未命名路 1199764912-1406794580",
    "length_m": 306.3,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.9%（Δelev=9m）; 临近 珞珈门 (196m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (196m)"
   },
   {
    "edge_id": [
@@ -10006,9 +10006,9 @@
    "name": "二环线",
    "length_m": 117.6,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=3m）; 临近 雷军科技楼 (78m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (78m)"
   },
   {
    "edge_id": [
@@ -10021,9 +10021,9 @@
    "name": "二环线",
    "length_m": 651.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=12m）; 临近 青年宿舍楼 (216m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (216m)"
   },
   {
    "edge_id": [
@@ -10036,9 +10036,9 @@
    "name": "二环线",
    "length_m": 117.6,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=3m）; 临近 雷军科技楼 (78m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (78m)"
   },
   {
    "edge_id": [
@@ -10051,9 +10051,9 @@
    "name": "未命名路 1199764915-1199766382",
    "length_m": 265.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.8%（Δelev=2m）; 临近 卓尔体育馆 (149m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (149m)"
   },
   {
    "edge_id": [
@@ -10081,9 +10081,9 @@
    "name": "洪山侧路",
    "length_m": 56.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (323m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (323m)"
   },
   {
    "edge_id": [
@@ -10126,9 +10126,9 @@
    "name": "未命名路 1199766382-1199764915",
    "length_m": 265.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.8%（Δelev=2m）; 临近 卓尔体育馆 (149m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (149m)"
   },
   {
    "edge_id": [
@@ -10141,9 +10141,9 @@
    "name": "珞狮北路",
    "length_m": 192.2,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (253m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (253m)"
   },
   {
    "edge_id": [
@@ -10156,9 +10156,9 @@
    "name": "珞狮北路",
    "length_m": 138.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=2m）; 临近 卓尔体育馆 (155m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (155m)"
   },
   {
    "edge_id": [
@@ -10171,9 +10171,9 @@
    "name": "二环线",
    "length_m": 905.5,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.2%（Δelev=2m）; 临近 雷军科技楼 (237m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (237m)"
   },
   {
    "edge_id": [
@@ -10186,9 +10186,9 @@
    "name": "未命名路 1199766388-1199764889",
    "length_m": 159.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (246m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (246m)"
   },
   {
    "edge_id": [
@@ -10201,9 +10201,9 @@
    "name": "珞狮路",
    "length_m": 51.4,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.7%（Δelev=6m）; 临近 珞珈门 (191m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (191m)"
   },
   {
    "edge_id": [
@@ -10216,9 +10216,9 @@
    "name": "珞狮路",
    "length_m": 156.5,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=3m）; 临近 珞珈门 (216m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (216m)"
   },
   {
    "edge_id": [
@@ -10246,9 +10246,9 @@
    "name": "珞狮路",
    "length_m": 108.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (240m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (240m)"
   },
   {
    "edge_id": [
@@ -10261,9 +10261,9 @@
    "name": "珞狮路",
    "length_m": 66.5,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.0%（Δelev=6m）; 临近 青年宿舍楼 (206m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (206m)"
   },
   {
    "edge_id": [
@@ -10306,9 +10306,9 @@
    "name": "珞狮路",
    "length_m": 109.4,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (193m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (193m)"
   },
   {
    "edge_id": [
@@ -10321,9 +10321,9 @@
    "name": "珞狮路",
    "length_m": 285.9,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.1%（Δelev=9m）; 临近 信息学部20舍 (140m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (140m)"
   },
   {
    "edge_id": [
@@ -10336,9 +10336,9 @@
    "name": "未命名路 1199771744-1199771771",
    "length_m": 101.7,
    "highway": "trunk_link",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.8%（Δelev=9m）; 临近 信息学部20舍 (205m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (205m)"
   },
   {
    "edge_id": [
@@ -10351,9 +10351,9 @@
    "name": "未命名路 1199771756-1199771757",
    "length_m": 255.8,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=9m）; 临近 信息学部20舍 (207m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (207m)"
   },
   {
    "edge_id": [
@@ -10366,9 +10366,9 @@
    "name": "二环线",
    "length_m": 83.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (199m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (199m)"
   },
   {
    "edge_id": [
@@ -10381,9 +10381,9 @@
    "name": "未命名路 1199771757-1159482845",
    "length_m": 88.4,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部20舍 (142m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (142m)"
   },
   {
    "edge_id": [
@@ -10411,9 +10411,9 @@
    "name": "未命名路 1199771757-1199771756",
    "length_m": 255.8,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=9m）; 临近 信息学部20舍 (207m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (207m)"
   },
   {
    "edge_id": [
@@ -10426,9 +10426,9 @@
    "name": "珞狮路",
    "length_m": 317.2,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=9m）; 临近 信息学部20舍 (232m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (232m)"
   },
   {
    "edge_id": [
@@ -10441,9 +10441,9 @@
    "name": "二环线",
    "length_m": 905.5,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.2%（Δelev=2m）; 临近 雷军科技楼 (237m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (237m)"
   },
   {
    "edge_id": [
@@ -10456,9 +10456,9 @@
    "name": "未命名路 1199771758-1406794579",
    "length_m": 236.7,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=3m）; 临近 青年宿舍楼 (249m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (249m)"
   },
   {
    "edge_id": [
@@ -10471,9 +10471,9 @@
    "name": "二环线",
    "length_m": 83.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (199m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (199m)"
   },
   {
    "edge_id": [
@@ -10486,9 +10486,9 @@
    "name": "未命名路 1199771771-1199771744",
    "length_m": 101.7,
    "highway": "trunk_link",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.8%（Δelev=9m）; 临近 信息学部20舍 (205m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (205m)"
   },
   {
    "edge_id": [
@@ -10501,9 +10501,9 @@
    "name": "二环线",
    "length_m": 651.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=12m）; 临近 青年宿舍楼 (216m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (216m)"
   },
   {
    "edge_id": [
@@ -10516,9 +10516,9 @@
    "name": "珞狮路",
    "length_m": 71.2,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.2%（Δelev=3m）; 临近 青年宿舍楼 (184m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (184m)"
   },
   {
    "edge_id": [
@@ -10531,9 +10531,9 @@
    "name": "珞狮路",
    "length_m": 109.4,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (193m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (193m)"
   },
   {
    "edge_id": [
@@ -12226,9 +12226,9 @@
    "name": "珞狮路",
    "length_m": 71.2,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.2%（Δelev=3m）; 临近 青年宿舍楼 (184m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (184m)"
   },
   {
    "edge_id": [
@@ -12243,7 +12243,7 @@
    "highway": "primary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.6%（Δelev=3m）; 临近 青年宿舍楼 (202m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (202m)"
   },
   {
    "edge_id": [
@@ -13081,9 +13081,9 @@
    "name": "未命名路 1202520980-1205470748",
    "length_m": 83.2,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.4%（Δelev=10m）; 临近 弘博公寓食堂 (279m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (279m)"
   },
   {
    "edge_id": [
@@ -13096,9 +13096,9 @@
    "name": "广卓路",
    "length_m": 335.4,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.6%（Δelev=12m）; 临近 弘博公寓食堂 (286m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (286m)"
   },
   {
    "edge_id": [
@@ -13171,9 +13171,9 @@
    "name": "广卓路",
    "length_m": 73.9,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度10.1%（Δelev=8m）; 临近 男生公寓 (489m)"
+   "note": "坡度占位，待实测; 临近 男生公寓 (489m)"
   },
   {
    "edge_id": [
@@ -13201,9 +13201,9 @@
    "name": "卓刀泉北路",
    "length_m": 125.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.4%（Δelev=0m）; 临近 国际学术交流中心 (519m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (519m)"
   },
   {
    "edge_id": [
@@ -13831,9 +13831,9 @@
    "name": "广八路",
    "length_m": 65.4,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 测量仪器陈列馆 (193m)"
+   "note": "坡度占位，待实测; 临近 测量仪器陈列馆 (193m)"
   },
   {
    "edge_id": [
@@ -13876,9 +13876,9 @@
    "name": "未命名路 1205470748-1202520980",
    "length_m": 83.2,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.4%（Δelev=10m）; 临近 弘博公寓食堂 (279m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (279m)"
   },
   {
    "edge_id": [
@@ -13891,9 +13891,9 @@
    "name": "未命名路 1205470748-1205483928",
    "length_m": 151.4,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.0%（Δelev=4m）; 临近 弘博公寓食堂 (170m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (170m)"
   },
   {
    "edge_id": [
@@ -14206,9 +14206,9 @@
    "name": "未命名路 1205483891-13588557776",
    "length_m": 58.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (348m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (348m)"
   },
   {
    "edge_id": [
@@ -14221,9 +14221,9 @@
    "name": "未命名路 1205483895-13704616303",
    "length_m": 73.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (428m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (428m)"
   },
   {
    "edge_id": [
@@ -14253,7 +14253,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.4%（Δelev=5m）; 临近 弘博公寓食堂 (457m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (457m)"
   },
   {
    "edge_id": [
@@ -14281,9 +14281,9 @@
    "name": "未命名路 1205483928-1205470748",
    "length_m": 151.4,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.0%（Δelev=4m）; 临近 弘博公寓食堂 (170m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (170m)"
   },
   {
    "edge_id": [
@@ -14326,9 +14326,9 @@
    "name": "卓刀泉北路",
    "length_m": 66.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (303m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (303m)"
   },
   {
    "edge_id": [
@@ -14371,9 +14371,9 @@
    "name": "未命名路 1207057941-13685644400",
    "length_m": 97.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (361m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (361m)"
   },
   {
    "edge_id": [
@@ -14536,9 +14536,9 @@
    "name": "珞喻路",
    "length_m": 67.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部9舍 (115m)"
+   "note": "坡度占位，待实测; 临近 信息学部9舍 (115m)"
   },
   {
    "edge_id": [
@@ -14551,9 +14551,9 @@
    "name": "珞喻路",
    "length_m": 61.1,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 珞瑜二门 (66m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (66m)"
   },
   {
    "edge_id": [
@@ -14566,9 +14566,9 @@
    "name": "珞喻路辅路",
    "length_m": 111.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (145m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (145m)"
   },
   {
    "edge_id": [
@@ -14581,9 +14581,9 @@
    "name": "珞喻路辅路",
    "length_m": 68.6,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (114m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (114m)"
   },
   {
    "edge_id": [
@@ -14701,9 +14701,9 @@
    "name": "珞喻路",
    "length_m": 119.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.8%（Δelev=1m）; 临近 信息学部9舍 (127m)"
+   "note": "坡度占位，待实测; 临近 信息学部9舍 (127m)"
   },
   {
    "edge_id": [
@@ -14731,9 +14731,9 @@
    "name": "珞喻路",
    "length_m": 352.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=7m）; 临近 信息学部7号教学楼 (155m)"
+   "note": "坡度占位，待实测; 临近 信息学部7号教学楼 (155m)"
   },
   {
    "edge_id": [
@@ -14746,9 +14746,9 @@
    "name": "珞喻路",
    "length_m": 67.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部9舍 (115m)"
+   "note": "坡度占位，待实测; 临近 信息学部9舍 (115m)"
   },
   {
    "edge_id": [
@@ -14776,9 +14776,9 @@
    "name": "珞喻路",
    "length_m": 465.3,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.5%（Δelev=7m）; 临近 珞瑜门 (168m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (168m)"
   },
   {
    "edge_id": [
@@ -14806,9 +14806,9 @@
    "name": "珞喻路",
    "length_m": 201.0,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=9m）; 临近 科学会堂 (389m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (389m)"
   },
   {
    "edge_id": [
@@ -14821,9 +14821,9 @@
    "name": "珞喻路",
    "length_m": 180.8,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=6m）; 临近 科学会堂 (371m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (371m)"
   },
   {
    "edge_id": [
@@ -14851,9 +14851,9 @@
    "name": "珞喻路",
    "length_m": 322.1,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.3%（Δelev=14m）; 临近 珞瑜门 (285m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (285m)"
   },
   {
    "edge_id": [
@@ -14866,9 +14866,9 @@
    "name": "珞喻路",
    "length_m": 180.8,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=6m）; 临近 科学会堂 (371m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (371m)"
   },
   {
    "edge_id": [
@@ -15061,9 +15061,9 @@
    "name": "卓刀泉北路",
    "length_m": 74.7,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.0%（Δelev=6m）; 临近 学生公寓5栋 (309m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (309m)"
   },
   {
    "edge_id": [
@@ -15183,7 +15183,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.8%（Δelev=9m）; 临近 学生公寓8栋 (269m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (269m)"
   },
   {
    "edge_id": [
@@ -15196,9 +15196,9 @@
    "name": "卓刀泉北路",
    "length_m": 266.8,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.0%（Δelev=8m）; 临近 学生公寓8栋 (332m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (332m)"
   },
   {
    "edge_id": [
@@ -16156,9 +16156,9 @@
    "name": "珞喻路",
    "length_m": 219.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=4m）; 临近 学生公寓4栋 (78m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (78m)"
   },
   {
    "edge_id": [
@@ -16171,9 +16171,9 @@
    "name": "珞喻路",
    "length_m": 441.2,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=15m）; 临近 学生公寓6栋 (287m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (287m)"
   },
   {
    "edge_id": [
@@ -16186,9 +16186,9 @@
    "name": "卓刀泉北路",
    "length_m": 76.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=1m）; 临近 学生公寓6栋 (363m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (363m)"
   },
   {
    "edge_id": [
@@ -16216,9 +16216,9 @@
    "name": "卓刀泉北路",
    "length_m": 808.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=11m）; 临近 学生公寓8栋 (296m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (296m)"
   },
   {
    "edge_id": [
@@ -16291,9 +16291,9 @@
    "name": "珞喻路",
    "length_m": 352.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=7m）; 临近 信息学部7号教学楼 (155m)"
+   "note": "坡度占位，待实测; 临近 信息学部7号教学楼 (155m)"
   },
   {
    "edge_id": [
@@ -16336,9 +16336,9 @@
    "name": "八一路",
    "length_m": 401.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (558m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (558m)"
   },
   {
    "edge_id": [
@@ -16351,9 +16351,9 @@
    "name": "八一路",
    "length_m": 104.3,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度13.4%（Δelev=14m）; 临近 雷军科技楼 (184m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (184m)"
   },
   {
    "edge_id": [
@@ -16368,7 +16368,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.1%（Δelev=14m）; 临近 雷军科技楼 (315m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (315m)"
   },
   {
    "edge_id": [
@@ -16426,9 +16426,9 @@
    "name": "八一路",
    "length_m": 221.4,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.1%（Δelev=18m）; 临近 雷军科技楼 (519m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (519m)"
   },
   {
    "edge_id": [
@@ -16456,9 +16456,9 @@
    "name": "八一路",
    "length_m": 73.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (164m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (164m)"
   },
   {
    "edge_id": [
@@ -16531,9 +16531,9 @@
    "name": "八一路",
    "length_m": 134.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (473m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (473m)"
   },
   {
    "edge_id": [
@@ -16548,7 +16548,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.1%（Δelev=14m）; 临近 雷军科技楼 (315m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (315m)"
   },
   {
    "edge_id": [
@@ -16576,9 +16576,9 @@
    "name": "八一路",
    "length_m": 104.3,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度13.4%（Δelev=14m）; 临近 雷军科技楼 (184m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (184m)"
   },
   {
    "edge_id": [
@@ -16621,9 +16621,9 @@
    "name": "八一路",
    "length_m": 73.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (164m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (164m)"
   },
   {
    "edge_id": [
@@ -16681,9 +16681,9 @@
    "name": "珞狮路",
    "length_m": 51.7,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.6%（Δelev=6m）; 临近 雷军科技楼 (201m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (201m)"
   },
   {
    "edge_id": [
@@ -16773,7 +16773,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.4%（Δelev=14m）; 临近 雷军科技楼 (302m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (302m)"
   },
   {
    "edge_id": [
@@ -16786,9 +16786,9 @@
    "name": "未命名路 1224858070-13694252533",
    "length_m": 218.1,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.3%（Δelev=5m）; 临近 雷军科技楼 (300m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (300m)"
   },
   {
    "edge_id": [
@@ -16878,7 +16878,7 @@
    "highway": "primary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.6%（Δelev=3m）; 临近 青年宿舍楼 (202m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (202m)"
   },
   {
    "edge_id": [
@@ -16891,9 +16891,9 @@
    "name": "珞狮路",
    "length_m": 51.7,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.6%（Δelev=6m）; 临近 雷军科技楼 (201m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (201m)"
   },
   {
    "edge_id": [
@@ -16951,9 +16951,9 @@
    "name": "珞狮路",
    "length_m": 51.4,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度11.7%（Δelev=6m）; 临近 珞珈门 (191m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (191m)"
   },
   {
    "edge_id": [
@@ -16981,9 +16981,9 @@
    "name": "卓刀泉南路",
    "length_m": 51.7,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (448m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (448m)"
   },
   {
    "edge_id": [
@@ -17013,7 +17013,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.6%（Δelev=4m）; 临近 学生公寓6栋 (426m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (426m)"
   },
   {
    "edge_id": [
@@ -17041,9 +17041,9 @@
    "name": "未命名路 1272848052-1180187253",
    "length_m": 329.6,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.2%（Δelev=4m）; 临近 科学会堂 (388m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (388m)"
   },
   {
    "edge_id": [
@@ -17056,9 +17056,9 @@
    "name": "卓刀泉南路",
    "length_m": 76.7,
    "highway": "secondary",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度19.6%（Δelev=15m）; 临近 沁园春食堂 (333m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (333m)"
   },
   {
    "edge_id": [
@@ -17131,9 +17131,9 @@
    "name": "卓刀泉南路",
    "length_m": 30.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (395m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (395m)"
   },
   {
    "edge_id": [
@@ -17146,9 +17146,9 @@
    "name": "未命名路 1272848082-13672818568",
    "length_m": 102.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (395m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (395m)"
   },
   {
    "edge_id": [
@@ -17266,9 +17266,9 @@
    "name": "明志路",
    "length_m": 100.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=2m）; 临近 行政办公楼 (374m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (374m)"
   },
   {
    "edge_id": [
@@ -17326,9 +17326,9 @@
    "name": "珞喻路",
    "length_m": 225.3,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=2m）; 临近 学生公寓4栋 (221m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (221m)"
   },
   {
    "edge_id": [
@@ -17341,9 +17341,9 @@
    "name": "珞喻路",
    "length_m": 243.1,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=8m）; 临近 行政办公楼 (367m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (367m)"
   },
   {
    "edge_id": [
@@ -17371,9 +17371,9 @@
    "name": "珞喻路",
    "length_m": 294.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.7%（Δelev=2m）; 临近 学生公寓4栋 (200m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (200m)"
   },
   {
    "edge_id": [
@@ -17401,9 +17401,9 @@
    "name": "珞喻路",
    "length_m": 259.0,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.1%（Δelev=8m）; 临近 行政办公楼 (383m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (383m)"
   },
   {
    "edge_id": [
@@ -17643,7 +17643,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度6.4%（Δelev=5m）; 临近 珞瑜二门 (156m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (156m)"
   },
   {
    "edge_id": [
@@ -18001,9 +18001,9 @@
    "name": "桂元路",
    "length_m": 81.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 文科教学科研楼 (99m)"
+   "note": "坡度占位，待实测; 临近 文科教学科研楼 (99m)"
   },
   {
    "edge_id": [
@@ -18031,9 +18031,9 @@
    "name": "桂元路",
    "length_m": 69.1,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度8.7%（Δelev=6m）; 临近 文科教学科研楼 (45m)"
+   "note": "坡度占位，待实测; 临近 文科教学科研楼 (45m)"
   },
   {
    "edge_id": [
@@ -18151,9 +18151,9 @@
    "name": "桂元路",
    "length_m": 81.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 文科教学科研楼 (99m)"
+   "note": "坡度占位，待实测; 临近 文科教学科研楼 (99m)"
   },
   {
    "edge_id": [
@@ -18826,9 +18826,9 @@
    "name": "桂元路",
    "length_m": 75.4,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 西区学生宿舍2栋 (423m)"
+   "note": "坡度占位，待实测; 临近 西区学生宿舍2栋 (423m)"
   },
   {
    "edge_id": [
@@ -19531,9 +19531,9 @@
    "name": "桂元路",
    "length_m": 69.1,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度8.7%（Δelev=6m）; 临近 文科教学科研楼 (45m)"
+   "note": "坡度占位，待实测; 临近 文科教学科研楼 (45m)"
   },
   {
    "edge_id": [
@@ -20761,9 +20761,9 @@
    "name": "东湖南路",
    "length_m": 76.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (267m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (267m)"
   },
   {
    "edge_id": [
@@ -20776,9 +20776,9 @@
    "name": "东湖南路",
    "length_m": 253.8,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度8.7%（Δelev=22m）; 临近 信息管理学院大楼 (157m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (157m)"
   },
   {
    "edge_id": [
@@ -20836,9 +20836,9 @@
    "name": "扬波路",
    "length_m": 69.4,
    "highway": "residential",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度28.8%（Δelev=20m）; 临近 枫园教学楼 (61m)"
+   "note": "坡度占位，待实测; 临近 枫园教学楼 (61m)"
   },
   {
    "edge_id": [
@@ -21256,9 +21256,9 @@
    "name": "珞喻路",
    "length_m": 61.1,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 珞瑜二门 (66m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (66m)"
   },
   {
    "edge_id": [
@@ -21346,9 +21346,9 @@
    "name": "东湖南路",
    "length_m": 103.7,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 2,
    "scenery_level": 5,
-   "note": "DEM实测 坡度8.7%（Δelev=9m）; 临近 平湖珞樱观湖平台 (42m)"
+   "note": "坡度占位，待实测; 临近 平湖珞樱观湖平台 (42m)"
   },
   {
    "edge_id": [
@@ -21361,9 +21361,9 @@
    "name": "东湖南路",
    "length_m": 321.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度1.6%（Δelev=5m）; 临近 湖滨七舍 (109m)"
+   "note": "坡度占位，待实测; 临近 湖滨七舍 (109m)"
   },
   {
    "edge_id": [
@@ -21406,9 +21406,9 @@
    "name": "东湖南路",
    "length_m": 323.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 水工大厅 (100m)"
+   "note": "坡度占位，待实测; 临近 水工大厅 (100m)"
   },
   {
    "edge_id": [
@@ -21436,9 +21436,9 @@
    "name": "东湖南路",
    "length_m": 209.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度1.0%（Δelev=2m）; 临近 力学实验楼 (212m)"
+   "note": "坡度占位，待实测; 临近 力学实验楼 (212m)"
   },
   {
    "edge_id": [
@@ -21451,9 +21451,9 @@
    "name": "东湖南路",
    "length_m": 170.3,
    "highway": "tertiary",
-   "slope_level": 3,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度7.6%（Δelev=13m）; 临近 青年教师公寓55栋 (344m)"
+   "note": "坡度占位，待实测; 临近 青年教师公寓55栋 (344m)"
   },
   {
    "edge_id": [
@@ -21481,9 +21481,9 @@
    "name": "东湖南路",
    "length_m": 118.4,
    "highway": "tertiary",
-   "slope_level": 5,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度15.2%（Δelev=18m）; 临近 信息管理学院大楼 (87m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (87m)"
   },
   {
    "edge_id": [
@@ -21661,9 +21661,9 @@
    "name": "东湖南路",
    "length_m": 476.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.1%（Δelev=0m）; 临近 工学部操场 (101m)"
+   "note": "坡度占位，待实测; 临近 工学部操场 (101m)"
   },
   {
    "edge_id": [
@@ -21841,9 +21841,9 @@
    "name": "未命名路 1406761421-13683465385",
    "length_m": 159.1,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 弘博公寓食堂 (152m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (152m)"
   },
   {
    "edge_id": [
@@ -21946,9 +21946,9 @@
    "name": "珞狮北路",
    "length_m": 89.7,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=3m）; 临近 雷军科技楼 (93m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (93m)"
   },
   {
    "edge_id": [
@@ -22036,9 +22036,9 @@
    "name": "珞狮路",
    "length_m": 80.0,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.8%（Δelev=3m）; 临近 珞珈门 (224m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (224m)"
   },
   {
    "edge_id": [
@@ -22051,9 +22051,9 @@
    "name": "未命名路 1406794579-1199771758",
    "length_m": 236.7,
    "highway": "trunk_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=3m）; 临近 青年宿舍楼 (249m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (249m)"
   },
   {
    "edge_id": [
@@ -22081,9 +22081,9 @@
    "name": "未命名路 1406794580-1199764912",
    "length_m": 306.3,
    "highway": "trunk_link",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.9%（Δelev=9m）; 临近 珞珈门 (196m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (196m)"
   },
   {
    "edge_id": [
@@ -22096,9 +22096,9 @@
    "name": "珞狮路",
    "length_m": 156.5,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=3m）; 临近 珞珈门 (216m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (216m)"
   },
   {
    "edge_id": [
@@ -22171,9 +22171,9 @@
    "name": "科技小路",
    "length_m": 71.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (583m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (583m)"
   },
   {
    "edge_id": [
@@ -22201,9 +22201,9 @@
    "name": "未命名路 1408367590-13692380675",
    "length_m": 76.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (544m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (544m)"
   },
   {
    "edge_id": [
@@ -22216,9 +22216,9 @@
    "name": "洪山侧路",
    "length_m": 54.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 教工新3栋 (512m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (512m)"
   },
   {
    "edge_id": [
@@ -22291,9 +22291,9 @@
    "name": "洪山侧路",
    "length_m": 56.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (323m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (323m)"
   },
   {
    "edge_id": [
@@ -22321,9 +22321,9 @@
    "name": "洪山侧路",
    "length_m": 60.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (327m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (327m)"
   },
   {
    "edge_id": [
@@ -22336,9 +22336,9 @@
    "name": "洪山侧路",
    "length_m": 135.0,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.7%（Δelev=5m）; 临近 教工新3栋 (409m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (409m)"
   },
   {
    "edge_id": [
@@ -22396,9 +22396,9 @@
    "name": "珞狮北路",
    "length_m": 100.5,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (132m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (132m)"
   },
   {
    "edge_id": [
@@ -22426,9 +22426,9 @@
    "name": "未命名路 1408398391-13694127541",
    "length_m": 53.1,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (246m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (246m)"
   },
   {
    "edge_id": [
@@ -22456,9 +22456,9 @@
    "name": "未命名路 1408398391-1408398437",
    "length_m": 51.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (282m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (282m)"
   },
   {
    "edge_id": [
@@ -22471,9 +22471,9 @@
    "name": "未命名路 1408398391-13694043016",
    "length_m": 93.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (251m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (251m)"
   },
   {
    "edge_id": [
@@ -22516,9 +22516,9 @@
    "name": "未命名路 1408398395-13694043010",
    "length_m": 54.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=1m）; 临近 雷军科技楼 (199m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (199m)"
   },
   {
    "edge_id": [
@@ -22561,9 +22561,9 @@
    "name": "未命名路 1408398437-1408398391",
    "length_m": 51.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (282m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (282m)"
   },
   {
    "edge_id": [
@@ -22951,9 +22951,9 @@
    "name": "武工路",
    "length_m": 159.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=3m）; 临近 国际园区6栋学生宿舍 (269m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (269m)"
   },
   {
    "edge_id": [
@@ -22966,9 +22966,9 @@
    "name": "未命名路 1615503839-13685384933",
    "length_m": 55.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (589m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (589m)"
   },
   {
    "edge_id": [
@@ -23011,9 +23011,9 @@
    "name": "未命名路 1615503840-13674763813",
    "length_m": 55.7,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.6%（Δelev=2m）; 临近 弘博公寓食堂 (655m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (655m)"
   },
   {
    "edge_id": [
@@ -23056,9 +23056,9 @@
    "name": "未命名路 1615503841-13685384931",
    "length_m": 61.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 珞珈山 (659m)"
+   "note": "坡度占位，待实测; 临近 珞珈山 (659m)"
   },
   {
    "edge_id": [
@@ -25051,9 +25051,9 @@
    "name": "未命名路 1907856815-1197879673",
    "length_m": 55.7,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (212m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (212m)"
   },
   {
    "edge_id": [
@@ -25096,9 +25096,9 @@
    "name": "未命名路 1907856818-1159482845",
    "length_m": 52.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=1m）; 临近 信息学部19舍 (164m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (164m)"
   },
   {
    "edge_id": [
@@ -26626,9 +26626,9 @@
    "name": "珞狮北路",
    "length_m": 113.1,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=2m）; 临近 卓尔体育馆 (170m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (170m)"
   },
   {
    "edge_id": [
@@ -26686,9 +26686,9 @@
    "name": "珞狮北路",
    "length_m": 138.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=2m）; 临近 卓尔体育馆 (155m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (155m)"
   },
   {
    "edge_id": [
@@ -26701,9 +26701,9 @@
    "name": "珞狮北路",
    "length_m": 100.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (151m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (151m)"
   },
   {
    "edge_id": [
@@ -26716,9 +26716,9 @@
    "name": "珞狮北路",
    "length_m": 56.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (293m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (293m)"
   },
   {
    "edge_id": [
@@ -26746,9 +26746,9 @@
    "name": "洪山侧路",
    "length_m": 60.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (327m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (327m)"
   },
   {
    "edge_id": [
@@ -26791,9 +26791,9 @@
    "name": "珞狮北路",
    "length_m": 192.2,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (253m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (253m)"
   },
   {
    "edge_id": [
@@ -26851,9 +26851,9 @@
    "name": "虎泉街",
    "length_m": 87.5,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度13.7%（Δelev=12m）; 临近 沁园春食堂 (337m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (337m)"
   },
   {
    "edge_id": [
@@ -27048,7 +27048,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.4%（Δelev=5m）; 临近 弘博公寓食堂 (457m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (457m)"
   },
   {
    "edge_id": [
@@ -27121,9 +27121,9 @@
    "name": "八一路",
    "length_m": 89.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (162m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (162m)"
   },
   {
    "edge_id": [
@@ -27136,9 +27136,9 @@
    "name": "武工路",
    "length_m": 93.7,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际园区6栋学生宿舍 (342m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (342m)"
   },
   {
    "edge_id": [
@@ -27151,9 +27151,9 @@
    "name": "武工路",
    "length_m": 159.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.9%（Δelev=3m）; 临近 国际园区6栋学生宿舍 (269m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (269m)"
   },
   {
    "edge_id": [
@@ -27181,9 +27181,9 @@
    "name": "武工路",
    "length_m": 97.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际园区6栋学生宿舍 (414m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (414m)"
   },
   {
    "edge_id": [
@@ -27318,7 +27318,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度6.8%（Δelev=6m）; 临近 牌坊 (116m)"
+   "note": "坡度占位，待实测; 临近 牌坊 (116m)"
   },
   {
    "edge_id": [
@@ -27361,9 +27361,9 @@
    "name": "八一路",
    "length_m": 163.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (177m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (177m)"
   },
   {
    "edge_id": [
@@ -27376,9 +27376,9 @@
    "name": "八一路",
    "length_m": 163.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (177m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (177m)"
   },
   {
    "edge_id": [
@@ -27421,9 +27421,9 @@
    "name": "八一路",
    "length_m": 163.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (175m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (175m)"
   },
   {
    "edge_id": [
@@ -27438,7 +27438,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度7.5%（Δelev=5m）; 临近 牌坊 (106m)"
+   "note": "坡度占位，待实测; 临近 牌坊 (106m)"
   },
   {
    "edge_id": [
@@ -27451,9 +27451,9 @@
    "name": "八一路",
    "length_m": 163.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (175m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (175m)"
   },
   {
    "edge_id": [
@@ -27498,7 +27498,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度6.8%（Δelev=6m）; 临近 牌坊 (116m)"
+   "note": "坡度占位，待实测; 临近 牌坊 (116m)"
   },
   {
    "edge_id": [
@@ -27601,9 +27601,9 @@
    "name": "武工路",
    "length_m": 97.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际园区6栋学生宿舍 (414m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (414m)"
   },
   {
    "edge_id": [
@@ -27616,9 +27616,9 @@
    "name": "武工路",
    "length_m": 93.7,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际园区6栋学生宿舍 (342m)"
+   "note": "坡度占位，待实测; 临近 国际园区6栋学生宿舍 (342m)"
   },
   {
    "edge_id": [
@@ -27976,9 +27976,9 @@
    "name": "汇志大道",
    "length_m": 91.6,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=1m）; 临近 学思楼 (97m)"
+   "note": "坡度占位，待实测; 临近 学思楼 (97m)"
   },
   {
    "edge_id": [
@@ -28291,9 +28291,9 @@
    "name": "汇志大道",
    "length_m": 99.5,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=2m）; 临近 行政办公楼 (113m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (113m)"
   },
   {
    "edge_id": [
@@ -31801,9 +31801,9 @@
    "name": "卓刀泉北路",
    "length_m": 177.1,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.3%（Δelev=4m）; 临近 历史文化教育基地 (429m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (429m)"
   },
   {
    "edge_id": [
@@ -31816,9 +31816,9 @@
    "name": "卓刀泉北路",
    "length_m": 457.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (532m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (532m)"
   },
   {
    "edge_id": [
@@ -31831,9 +31831,9 @@
    "name": "卓刀泉北路",
    "length_m": 199.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.0%（Δelev=2m）; 临近 历史文化教育基地 (316m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (316m)"
   },
   {
    "edge_id": [
@@ -32356,9 +32356,9 @@
    "name": "珞狮北路",
    "length_m": 100.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (151m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (151m)"
   },
   {
    "edge_id": [
@@ -37081,9 +37081,9 @@
    "name": "珞狮路",
    "length_m": 66.5,
    "highway": "primary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.0%（Δelev=6m）; 临近 青年宿舍楼 (206m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (206m)"
   },
   {
    "edge_id": [
@@ -37111,9 +37111,9 @@
    "name": "珞狮路",
    "length_m": 317.2,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=9m）; 临近 信息学部20舍 (232m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (232m)"
   },
   {
    "edge_id": [
@@ -37126,9 +37126,9 @@
    "name": "珞喻路辅路",
    "length_m": 94.8,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (80m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (80m)"
   },
   {
    "edge_id": [
@@ -37141,9 +37141,9 @@
    "name": "珞喻路辅路",
    "length_m": 221.1,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜二门 (113m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (113m)"
   },
   {
    "edge_id": [
@@ -38686,9 +38686,9 @@
    "name": "未命名路 4265783499-4516248184",
    "length_m": 258.4,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.7%（Δelev=7m）; 临近 国际学术交流中心 (542m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (542m)"
   },
   {
    "edge_id": [
@@ -38701,9 +38701,9 @@
    "name": "八一路",
    "length_m": 401.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (558m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (558m)"
   },
   {
    "edge_id": [
@@ -38716,9 +38716,9 @@
    "name": "八一路",
    "length_m": 643.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=7m）; 临近 国际学术交流中心 (643m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (643m)"
   },
   {
    "edge_id": [
@@ -38731,9 +38731,9 @@
    "name": "未命名路 4265783518-5383145941",
    "length_m": 246.8,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=7m）; 临近 国际学术交流中心 (553m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (553m)"
   },
   {
    "edge_id": [
@@ -38746,9 +38746,9 @@
    "name": "八一路",
    "length_m": 646.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=7m）; 临近 国际学术交流中心 (652m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (652m)"
   },
   {
    "edge_id": [
@@ -39826,9 +39826,9 @@
    "name": "未命名路 4516248184-4265783499",
    "length_m": 258.4,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.7%（Δelev=7m）; 临近 国际学术交流中心 (542m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (542m)"
   },
   {
    "edge_id": [
@@ -39931,9 +39931,9 @@
    "name": "卓刀泉北路",
    "length_m": 99.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (554m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (554m)"
   },
   {
    "edge_id": [
@@ -39948,7 +39948,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.5%（Δelev=8m）; 临近 国际学术交流中心 (510m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (510m)"
   },
   {
    "edge_id": [
@@ -39991,9 +39991,9 @@
    "name": "卓刀泉北路",
    "length_m": 146.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (573m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (573m)"
   },
   {
    "edge_id": [
@@ -40006,9 +40006,9 @@
    "name": "八一路",
    "length_m": 116.1,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.3%（Δelev=5m）; 临近 国际学术交流中心 (647m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (647m)"
   },
   {
    "edge_id": [
@@ -40096,9 +40096,9 @@
    "name": "卓刀泉北路",
    "length_m": 99.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (554m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (554m)"
   },
   {
    "edge_id": [
@@ -40141,9 +40141,9 @@
    "name": "卓刀泉北路",
    "length_m": 125.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.4%（Δelev=0m）; 临近 国际学术交流中心 (519m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (519m)"
   },
   {
    "edge_id": [
@@ -40156,9 +40156,9 @@
    "name": "卓刀泉北路",
    "length_m": 146.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 国际学术交流中心 (573m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (573m)"
   },
   {
    "edge_id": [
@@ -40261,9 +40261,9 @@
    "name": "卓刀泉北路",
    "length_m": 59.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=2m）; 临近 学生公寓6栋 (378m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (378m)"
   },
   {
    "edge_id": [
@@ -40336,9 +40336,9 @@
    "name": "珞喻路",
    "length_m": 109.4,
    "highway": "trunk",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.7%（Δelev=10m）; 临近 珞瑜门 (272m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (272m)"
   },
   {
    "edge_id": [
@@ -40398,7 +40398,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.6%（Δelev=4m）; 临近 学生公寓6栋 (426m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (426m)"
   },
   {
    "edge_id": [
@@ -40411,9 +40411,9 @@
    "name": "卓刀泉北路",
    "length_m": 76.0,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=1m）; 临近 学生公寓6栋 (363m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (363m)"
   },
   {
    "edge_id": [
@@ -40486,9 +40486,9 @@
    "name": "神龙园路",
    "length_m": 112.7,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=4m）; 临近 一号教学楼 (452m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (452m)"
   },
   {
    "edge_id": [
@@ -40501,9 +40501,9 @@
    "name": "机电路",
    "length_m": 222.1,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=10m）; 临近 一号教学楼 (454m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (454m)"
   },
   {
    "edge_id": [
@@ -40516,9 +40516,9 @@
    "name": "机电路",
    "length_m": 77.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 一号教学楼 (420m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (420m)"
   },
   {
    "edge_id": [
@@ -40531,9 +40531,9 @@
    "name": "机电路",
    "length_m": 222.1,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=10m）; 临近 一号教学楼 (454m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (454m)"
   },
   {
    "edge_id": [
@@ -40696,9 +40696,9 @@
    "name": "珞喻路",
    "length_m": 294.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.7%（Δelev=2m）; 临近 学生公寓4栋 (200m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (200m)"
   },
   {
    "edge_id": [
@@ -40711,9 +40711,9 @@
    "name": "珞喻路",
    "length_m": 149.5,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.7%（Δelev=4m）; 临近 学生公寓4栋 (97m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (97m)"
   },
   {
    "edge_id": [
@@ -42826,9 +42826,9 @@
    "name": "卓刀泉北路",
    "length_m": 457.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (532m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (532m)"
   },
   {
    "edge_id": [
@@ -42871,9 +42871,9 @@
    "name": "未命名路 5383145941-4265783518",
    "length_m": 246.8,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=7m）; 临近 国际学术交流中心 (553m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (553m)"
   },
   {
    "edge_id": [
@@ -43426,9 +43426,9 @@
    "name": "珞喻路辅路",
    "length_m": 111.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (145m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (145m)"
   },
   {
    "edge_id": [
@@ -43471,9 +43471,9 @@
    "name": "珞喻路辅路",
    "length_m": 82.2,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜二门 (102m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (102m)"
   },
   {
    "edge_id": [
@@ -43531,9 +43531,9 @@
    "name": "珞喻路辅路",
    "length_m": 82.2,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜二门 (102m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (102m)"
   },
   {
    "edge_id": [
@@ -44686,9 +44686,9 @@
    "name": "珞喻路",
    "length_m": 243.1,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=8m）; 临近 行政办公楼 (367m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (367m)"
   },
   {
    "edge_id": [
@@ -45451,9 +45451,9 @@
    "name": "明志路",
    "length_m": 173.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 东教学楼 (247m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (247m)"
   },
   {
    "edge_id": [
@@ -45481,9 +45481,9 @@
    "name": "明志路",
    "length_m": 100.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=2m）; 临近 行政办公楼 (374m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (374m)"
   },
   {
    "edge_id": [
@@ -45586,9 +45586,9 @@
    "name": "神龙园路",
    "length_m": 112.7,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=4m）; 临近 一号教学楼 (452m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (452m)"
   },
   {
    "edge_id": [
@@ -45783,7 +45783,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.5%（Δelev=8m）; 临近 国际学术交流中心 (510m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (510m)"
   },
   {
    "edge_id": [
@@ -45796,9 +45796,9 @@
    "name": "卓刀泉北路",
    "length_m": 808.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=11m）; 临近 学生公寓8栋 (296m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (296m)"
   },
   {
    "edge_id": [
@@ -47266,9 +47266,9 @@
    "name": "茶港路",
    "length_m": 59.4,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.4%（Δelev=2m）; 临近 桂园四舍 (109m)"
+   "note": "坡度占位，待实测; 临近 桂园四舍 (109m)"
   },
   {
    "edge_id": [
@@ -47986,9 +47986,9 @@
    "name": "洪山侧路",
    "length_m": 135.0,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.7%（Δelev=5m）; 临近 教工新3栋 (409m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (409m)"
   },
   {
    "edge_id": [
@@ -52113,7 +52113,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度7.5%（Δelev=5m）; 临近 牌坊 (106m)"
+   "note": "坡度占位，待实测; 临近 牌坊 (106m)"
   },
   {
    "edge_id": [
@@ -52126,9 +52126,9 @@
    "name": "未命名路 9967436546-9967436550",
    "length_m": 67.7,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (105m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (105m)"
   },
   {
    "edge_id": [
@@ -52156,9 +52156,9 @@
    "name": "珞狮北路",
    "length_m": 143.8,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.1%（Δelev=3m）; 临近 雷军科技楼 (74m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (74m)"
   },
   {
    "edge_id": [
@@ -52171,9 +52171,9 @@
    "name": "未命名路 9967436550-9967436546",
    "length_m": 67.7,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (105m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (105m)"
   },
   {
    "edge_id": [
@@ -54003,7 +54003,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.5%（Δelev=21m）; 临近 一号教学楼 (189m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (189m)"
   },
   {
    "edge_id": [
@@ -57016,9 +57016,9 @@
    "name": "桂元路",
    "length_m": 75.4,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 西区学生宿舍2栋 (423m)"
+   "note": "坡度占位，待实测; 临近 西区学生宿舍2栋 (423m)"
   },
   {
    "edge_id": [
@@ -57108,7 +57108,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.5%（Δelev=21m）; 临近 一号教学楼 (189m)"
+   "note": "坡度占位，待实测; 临近 一号教学楼 (189m)"
   },
   {
    "edge_id": [
@@ -57121,9 +57121,9 @@
    "name": "卓刀泉南路",
    "length_m": 59.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (264m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (264m)"
   },
   {
    "edge_id": [
@@ -57301,9 +57301,9 @@
    "name": "广八路",
    "length_m": 50.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (43m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (43m)"
   },
   {
    "edge_id": [
@@ -57886,9 +57886,9 @@
    "name": "珞喻路",
    "length_m": 465.3,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.5%（Δelev=7m）; 临近 珞瑜门 (168m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (168m)"
   },
   {
    "edge_id": [
@@ -57901,9 +57901,9 @@
    "name": "珞喻路",
    "length_m": 322.1,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.3%（Δelev=14m）; 临近 珞瑜门 (285m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (285m)"
   },
   {
    "edge_id": [
@@ -57976,9 +57976,9 @@
    "name": "珞喻路",
    "length_m": 205.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.7%（Δelev=4m）; 临近 实习楼 (361m)"
+   "note": "坡度占位，待实测; 临近 实习楼 (361m)"
   },
   {
    "edge_id": [
@@ -58006,9 +58006,9 @@
    "name": "珞喻路辅路",
    "length_m": 51.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (129m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (129m)"
   },
   {
    "edge_id": [
@@ -58036,9 +58036,9 @@
    "name": "珞狮路",
    "length_m": 72.0,
    "highway": "primary_link",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (177m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (177m)"
   },
   {
    "edge_id": [
@@ -58216,9 +58216,9 @@
    "name": "珞狮北路",
    "length_m": 89.7,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.3%（Δelev=3m）; 临近 雷军科技楼 (93m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (93m)"
   },
   {
    "edge_id": [
@@ -58231,9 +58231,9 @@
    "name": "珞狮北路",
    "length_m": 100.5,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (132m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (132m)"
   },
   {
    "edge_id": [
@@ -58846,9 +58846,9 @@
    "name": "未命名路 12802032509-12848608569",
    "length_m": 66.6,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 枫园五舍 (16m)"
+   "note": "坡度占位，待实测; 临近 枫园五舍 (16m)"
   },
   {
    "edge_id": [
@@ -65401,9 +65401,9 @@
    "name": "茶港路",
    "length_m": 70.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (243m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (243m)"
   },
   {
    "edge_id": [
@@ -65416,9 +65416,9 @@
    "name": "茶港路",
    "length_m": 64.2,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (188m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (188m)"
   },
   {
    "edge_id": [
@@ -65446,9 +65446,9 @@
    "name": "茶港路",
    "length_m": 57.9,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (140m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (140m)"
   },
   {
    "edge_id": [
@@ -65476,9 +65476,9 @@
    "name": "茶港路",
    "length_m": 64.2,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (188m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (188m)"
   },
   {
    "edge_id": [
@@ -65581,9 +65581,9 @@
    "name": "茶港路",
    "length_m": 57.9,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (140m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (140m)"
   },
   {
    "edge_id": [
@@ -67036,9 +67036,9 @@
    "name": "茶港路",
    "length_m": 69.3,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.9%（Δelev=2m）; 临近 桂园四舍 (110m)"
+   "note": "坡度占位，待实测; 临近 桂园四舍 (110m)"
   },
   {
    "edge_id": [
@@ -70276,9 +70276,9 @@
    "name": "东湖南路",
    "length_m": 323.1,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 水工大厅 (100m)"
+   "note": "坡度占位，待实测; 临近 水工大厅 (100m)"
   },
   {
    "edge_id": [
@@ -70293,7 +70293,7 @@
    "highway": "tertiary",
    "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度4.9%（Δelev=5m）; 临近 结构楼 (116m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (116m)"
   },
   {
    "edge_id": [
@@ -70323,7 +70323,7 @@
    "highway": "tertiary",
    "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度4.9%（Δelev=5m）; 临近 结构楼 (116m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (116m)"
   },
   {
    "edge_id": [
@@ -70336,9 +70336,9 @@
    "name": "东湖南路",
    "length_m": 104.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 结构楼 (79m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (79m)"
   },
   {
    "edge_id": [
@@ -71626,9 +71626,9 @@
    "name": "扬波路",
    "length_m": 81.8,
    "highway": "residential",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度26.9%（Δelev=22m）; 临近 信息管理学院大楼 (108m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (108m)"
   },
   {
    "edge_id": [
@@ -71716,9 +71716,9 @@
    "name": "未命名路 12848608569-12802032509",
    "length_m": 66.6,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 枫园五舍 (16m)"
+   "note": "坡度占位，待实测; 临近 枫园五舍 (16m)"
   },
   {
    "edge_id": [
@@ -75256,9 +75256,9 @@
    "name": "扬波路",
    "length_m": 69.4,
    "highway": "residential",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度28.8%（Δelev=20m）; 临近 枫园教学楼 (61m)"
+   "note": "坡度占位，待实测; 临近 枫园教学楼 (61m)"
   },
   {
    "edge_id": [
@@ -84211,9 +84211,9 @@
    "name": "珞狮北路",
    "length_m": 143.8,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.1%（Δelev=3m）; 临近 雷军科技楼 (74m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (74m)"
   },
   {
    "edge_id": [
@@ -88696,9 +88696,9 @@
    "name": "茶港路",
    "length_m": 70.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (243m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (243m)"
   },
   {
    "edge_id": [
@@ -112066,9 +112066,9 @@
    "name": "洪福巷",
    "length_m": 111.7,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (436m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (436m)"
   },
   {
    "edge_id": [
@@ -112621,9 +112621,9 @@
    "name": "东湖南路",
    "length_m": 76.6,
    "highway": "tertiary",
-   "slope_level": 3,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.2%（Δelev=4m）; 临近 青年教师公寓55栋 (436m)"
+   "note": "坡度占位，待实测; 临近 青年教师公寓55栋 (436m)"
   },
   {
    "edge_id": [
@@ -112816,9 +112816,9 @@
    "name": "东湖南路",
    "length_m": 76.6,
    "highway": "tertiary",
-   "slope_level": 3,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.2%（Δelev=4m）; 临近 青年教师公寓55栋 (436m)"
+   "note": "坡度占位，待实测; 临近 青年教师公寓55栋 (436m)"
   },
   {
    "edge_id": [
@@ -113431,9 +113431,9 @@
    "name": "东湖南路",
    "length_m": 170.3,
    "highway": "tertiary",
-   "slope_level": 3,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度7.6%（Δelev=13m）; 临近 青年教师公寓55栋 (344m)"
+   "note": "坡度占位，待实测; 临近 青年教师公寓55栋 (344m)"
   },
   {
    "edge_id": [
@@ -114481,9 +114481,9 @@
    "name": "东湖南路",
    "length_m": 59.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 结构楼 (143m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (143m)"
   },
   {
    "edge_id": [
@@ -114496,9 +114496,9 @@
    "name": "东湖南路",
    "length_m": 209.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度1.0%（Δelev=2m）; 临近 力学实验楼 (212m)"
+   "note": "坡度占位，待实测; 临近 力学实验楼 (212m)"
   },
   {
    "edge_id": [
@@ -118741,9 +118741,9 @@
    "name": "茶港路",
    "length_m": 69.3,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.9%（Δelev=2m）; 临近 桂园四舍 (110m)"
+   "note": "坡度占位，待实测; 临近 桂园四舍 (110m)"
   },
   {
    "edge_id": [
@@ -125283,7 +125283,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.6%（Δelev=6m）; 临近 历史文化教育基地 (468m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (468m)"
   },
   {
    "edge_id": [
@@ -125311,9 +125311,9 @@
    "name": "卓刀泉北路",
    "length_m": 177.1,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.3%（Δelev=4m）; 临近 历史文化教育基地 (429m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (429m)"
   },
   {
    "edge_id": [
@@ -125328,7 +125328,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.6%（Δelev=6m）; 临近 历史文化教育基地 (468m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (468m)"
   },
   {
    "edge_id": [
@@ -125343,7 +125343,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.7%（Δelev=4m）; 临近 历史文化教育基地 (535m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (535m)"
   },
   {
    "edge_id": [
@@ -125358,7 +125358,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.7%（Δelev=4m）; 临近 历史文化教育基地 (535m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (535m)"
   },
   {
    "edge_id": [
@@ -125388,7 +125388,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.7%（Δelev=4m）; 临近 历史文化教育基地 (535m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (535m)"
   },
   {
    "edge_id": [
@@ -125403,7 +125403,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.7%（Δelev=4m）; 临近 历史文化教育基地 (535m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (535m)"
   },
   {
    "edge_id": [
@@ -125416,9 +125416,9 @@
    "name": "卓刀泉北路",
    "length_m": 249.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.2%（Δelev=8m）; 临近 历史文化教育基地 (645m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (645m)"
   },
   {
    "edge_id": [
@@ -126393,7 +126393,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.2%（Δelev=3m）; 临近 武汉大学南门 (32m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (32m)"
   },
   {
    "edge_id": [
@@ -126466,9 +126466,9 @@
    "name": "八一路",
    "length_m": 58.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (25m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (25m)"
   },
   {
    "edge_id": [
@@ -126661,9 +126661,9 @@
    "name": "八一路",
    "length_m": 86.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (92m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (92m)"
   },
   {
    "edge_id": [
@@ -128326,9 +128326,9 @@
    "name": "珞喻路辅路",
    "length_m": 221.1,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜二门 (113m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (113m)"
   },
   {
    "edge_id": [
@@ -128506,9 +128506,9 @@
    "name": "广八路",
    "length_m": 166.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.2%（Δelev=7m）; 临近 教学实验大楼 (79m)"
+   "note": "坡度占位，待实测; 临近 教学实验大楼 (79m)"
   },
   {
    "edge_id": [
@@ -129316,9 +129316,9 @@
    "name": "珞喻路辅路",
    "length_m": 94.8,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (80m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (80m)"
   },
   {
    "edge_id": [
@@ -129331,9 +129331,9 @@
    "name": "未命名路 13578233899-13578233900",
    "length_m": 76.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (70m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (70m)"
   },
   {
    "edge_id": [
@@ -129346,9 +129346,9 @@
    "name": "未命名路 13578233900-13578233899",
    "length_m": 76.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (70m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (70m)"
   },
   {
    "edge_id": [
@@ -129361,9 +129361,9 @@
    "name": "珞喻路辅路",
    "length_m": 68.6,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (114m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (114m)"
   },
   {
    "edge_id": [
@@ -129376,9 +129376,9 @@
    "name": "珞喻路辅路",
    "length_m": 51.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (129m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (129m)"
   },
   {
    "edge_id": [
@@ -129391,9 +129391,9 @@
    "name": "未命名路 13578233944-13578233948",
    "length_m": 207.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (168m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (168m)"
   },
   {
    "edge_id": [
@@ -129421,9 +129421,9 @@
    "name": "未命名路 13578233948-13578233944",
    "length_m": 207.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 信息学部19舍 (168m)"
+   "note": "坡度占位，待实测; 临近 信息学部19舍 (168m)"
   },
   {
    "edge_id": [
@@ -129483,7 +129483,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.9%（Δelev=5m）; 临近 国际园区学生宿舍3栋 (246m)"
+   "note": "坡度占位，待实测; 临近 国际园区学生宿舍3栋 (246m)"
   },
   {
    "edge_id": [
@@ -129528,7 +129528,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.5%（Δelev=14m）; 临近 云英阁 (42m)"
+   "note": "坡度占位，待实测; 临近 云英阁 (42m)"
   },
   {
    "edge_id": [
@@ -129543,7 +129543,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度6.4%（Δelev=5m）; 临近 珞瑜二门 (156m)"
+   "note": "坡度占位，待实测; 临近 珞瑜二门 (156m)"
   },
   {
    "edge_id": [
@@ -131791,9 +131791,9 @@
    "name": "广八路",
    "length_m": 50.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (43m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (43m)"
   },
   {
    "edge_id": [
@@ -132406,9 +132406,9 @@
    "name": "广八路",
    "length_m": 166.4,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.2%（Δelev=7m）; 临近 教学实验大楼 (79m)"
+   "note": "坡度占位，待实测; 临近 教学实验大楼 (79m)"
   },
   {
    "edge_id": [
@@ -132466,9 +132466,9 @@
    "name": "八一路",
    "length_m": 54.8,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.1%（Δelev=5m）; 临近 弘博公寓食堂 (538m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (538m)"
   },
   {
    "edge_id": [
@@ -132541,9 +132541,9 @@
    "name": "未命名路 13588534246-13588534248",
    "length_m": 95.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (456m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (456m)"
   },
   {
    "edge_id": [
@@ -132571,9 +132571,9 @@
    "name": "未命名路 13588534248-13588534246",
    "length_m": 95.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (456m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (456m)"
   },
   {
    "edge_id": [
@@ -132601,9 +132601,9 @@
    "name": "八一路",
    "length_m": 54.8,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.1%（Δelev=5m）; 临近 弘博公寓食堂 (538m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (538m)"
   },
   {
    "edge_id": [
@@ -132616,9 +132616,9 @@
    "name": "未命名路 13588534250-13588557772",
    "length_m": 50.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (559m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (559m)"
   },
   {
    "edge_id": [
@@ -132691,9 +132691,9 @@
    "name": "广卓路",
    "length_m": 73.9,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度10.1%（Δelev=8m）; 临近 男生公寓 (489m)"
+   "note": "坡度占位，待实测; 临近 男生公寓 (489m)"
   },
   {
    "edge_id": [
@@ -132706,9 +132706,9 @@
    "name": "广卓路",
    "length_m": 186.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 弘博公寓食堂 (455m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (455m)"
   },
   {
    "edge_id": [
@@ -133216,9 +133216,9 @@
    "name": "八一路",
    "length_m": 116.1,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.3%（Δelev=5m）; 临近 国际学术交流中心 (647m)"
+   "note": "坡度占位，待实测; 临近 国际学术交流中心 (647m)"
   },
   {
    "edge_id": [
@@ -133261,9 +133261,9 @@
    "name": "八一路",
    "length_m": 96.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (631m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (631m)"
   },
   {
    "edge_id": [
@@ -133336,9 +133336,9 @@
    "name": "广卓路",
    "length_m": 95.0,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.4%（Δelev=8m）; 临近 弘博公寓食堂 (344m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (344m)"
   },
   {
    "edge_id": [
@@ -133951,9 +133951,9 @@
    "name": "未命名路 13588557772-13588534250",
    "length_m": 50.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (559m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (559m)"
   },
   {
    "edge_id": [
@@ -133966,9 +133966,9 @@
    "name": "未命名路 13588557776-1205483891",
    "length_m": 58.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (348m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (348m)"
   },
   {
    "edge_id": [
@@ -134026,9 +134026,9 @@
    "name": "未命名路 13588557780-13588557782",
    "length_m": 33.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (389m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (389m)"
   },
   {
    "edge_id": [
@@ -134041,9 +134041,9 @@
    "name": "未命名路 13588557780-13588557782",
    "length_m": 242.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (389m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (389m)"
   },
   {
    "edge_id": [
@@ -134056,9 +134056,9 @@
    "name": "未命名路 13588557782-13588557780",
    "length_m": 33.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (389m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (389m)"
   },
   {
    "edge_id": [
@@ -134071,9 +134071,9 @@
    "name": "未命名路 13588557782-13588557780",
    "length_m": 242.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (389m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (389m)"
   },
   {
    "edge_id": [
@@ -134476,9 +134476,9 @@
    "name": "珞狮路",
    "length_m": 108.9,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (240m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (240m)"
   },
   {
    "edge_id": [
@@ -134491,9 +134491,9 @@
    "name": "珞狮路",
    "length_m": 80.0,
    "highway": "primary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.8%（Δelev=3m）; 临近 珞珈门 (224m)"
+   "note": "坡度占位，待实测; 临近 珞珈门 (224m)"
   },
   {
    "edge_id": [
@@ -136606,9 +136606,9 @@
    "name": "八一路",
    "length_m": 58.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (25m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (25m)"
   },
   {
    "edge_id": [
@@ -136996,9 +136996,9 @@
    "name": "八一路",
    "length_m": 230.9,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=3m）; 临近 武汉大学南门 (328m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (328m)"
   },
   {
    "edge_id": [
@@ -137131,9 +137131,9 @@
    "name": "东湖南路",
    "length_m": 476.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.1%（Δelev=0m）; 临近 工学部操场 (101m)"
+   "note": "坡度占位，待实测; 临近 工学部操场 (101m)"
   },
   {
    "edge_id": [
@@ -137326,9 +137326,9 @@
    "name": "东湖南路",
    "length_m": 104.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 结构楼 (79m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (79m)"
   },
   {
    "edge_id": [
@@ -137371,9 +137371,9 @@
    "name": "东湖南路",
    "length_m": 59.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 结构楼 (143m)"
+   "note": "坡度占位，待实测; 临近 结构楼 (143m)"
   },
   {
    "edge_id": [
@@ -138241,9 +138241,9 @@
    "name": "未命名路 13621478787-13621494094",
    "length_m": 189.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 留学生宿舍2号楼 (75m)"
+   "note": "坡度占位，待实测; 临近 留学生宿舍2号楼 (75m)"
   },
   {
    "edge_id": [
@@ -138271,9 +138271,9 @@
    "name": "东湖南路",
    "length_m": 165.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 留学生宿舍2号楼 (55m)"
+   "note": "坡度占位，待实测; 临近 留学生宿舍2号楼 (55m)"
   },
   {
    "edge_id": [
@@ -138316,9 +138316,9 @@
    "name": "东湖南路",
    "length_m": 165.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 留学生宿舍2号楼 (55m)"
+   "note": "坡度占位，待实测; 临近 留学生宿舍2号楼 (55m)"
   },
   {
    "edge_id": [
@@ -138331,9 +138331,9 @@
    "name": "东湖南路",
    "length_m": 221.6,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 亮胜楼 (158m)"
+   "note": "坡度占位，待实测; 临近 亮胜楼 (158m)"
   },
   {
    "edge_id": [
@@ -138346,9 +138346,9 @@
    "name": "未命名路 13621494094-13621478787",
    "length_m": 189.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 留学生宿舍2号楼 (75m)"
+   "note": "坡度占位，待实测; 临近 留学生宿舍2号楼 (75m)"
   },
   {
    "edge_id": [
@@ -138361,9 +138361,9 @@
    "name": "扬波路",
    "length_m": 81.8,
    "highway": "residential",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度26.9%（Δelev=22m）; 临近 信息管理学院大楼 (108m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (108m)"
   },
   {
    "edge_id": [
@@ -138406,9 +138406,9 @@
    "name": "东湖南路",
    "length_m": 253.8,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度8.7%（Δelev=22m）; 临近 信息管理学院大楼 (157m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (157m)"
   },
   {
    "edge_id": [
@@ -138421,9 +138421,9 @@
    "name": "东湖南路",
    "length_m": 118.4,
    "highway": "tertiary",
-   "slope_level": 5,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度15.2%（Δelev=18m）; 临近 信息管理学院大楼 (87m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (87m)"
   },
   {
    "edge_id": [
@@ -138526,9 +138526,9 @@
    "name": "未命名路 13621591212-13621591214",
    "length_m": 60.3,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度18.2%（Δelev=11m）; 临近 信息管理学院大楼 (139m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (139m)"
   },
   {
    "edge_id": [
@@ -138571,9 +138571,9 @@
    "name": "未命名路 13621591214-13621591212",
    "length_m": 60.3,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度18.2%（Δelev=11m）; 临近 信息管理学院大楼 (139m)"
+   "note": "坡度占位，待实测; 临近 信息管理学院大楼 (139m)"
   },
   {
    "edge_id": [
@@ -139441,9 +139441,9 @@
    "name": "珞喻路",
    "length_m": 219.6,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=4m）; 临近 学生公寓4栋 (78m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (78m)"
   },
   {
    "edge_id": [
@@ -139456,9 +139456,9 @@
    "name": "珞喻路",
    "length_m": 225.3,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=2m）; 临近 学生公寓4栋 (221m)"
+   "note": "坡度占位，待实测; 临近 学生公寓4栋 (221m)"
   },
   {
    "edge_id": [
@@ -140103,7 +140103,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.9%（Δelev=5m）; 临近 国际园区学生宿舍3栋 (246m)"
+   "note": "坡度占位，待实测; 临近 国际园区学生宿舍3栋 (246m)"
   },
   {
    "edge_id": [
@@ -143026,9 +143026,9 @@
    "name": "未命名路 13670349544-13670349547",
    "length_m": 73.8,
    "highway": "['service', 'footway']",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 行政办公楼 (51m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (51m)"
   },
   {
    "edge_id": [
@@ -143071,9 +143071,9 @@
    "name": "未命名路 13670349547-13670349544",
    "length_m": 73.8,
    "highway": "['service', 'footway']",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 行政办公楼 (51m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (51m)"
   },
   {
    "edge_id": [
@@ -143821,9 +143821,9 @@
    "name": "汇志大道",
    "length_m": 91.6,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.1%（Δelev=1m）; 临近 学思楼 (97m)"
+   "note": "坡度占位，待实测; 临近 学思楼 (97m)"
   },
   {
    "edge_id": [
@@ -143836,9 +143836,9 @@
    "name": "汇志大道",
    "length_m": 99.5,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=2m）; 临近 行政办公楼 (113m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (113m)"
   },
   {
    "edge_id": [
@@ -143911,9 +143911,9 @@
    "name": "未命名路 13670516251-13670516295",
    "length_m": 67.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 行政办公楼 (131m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (131m)"
   },
   {
    "edge_id": [
@@ -143941,9 +143941,9 @@
    "name": "汇志大道",
    "length_m": 74.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 东教学楼 (132m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (132m)"
   },
   {
    "edge_id": [
@@ -143986,9 +143986,9 @@
    "name": "汇志大道",
    "length_m": 74.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 东教学楼 (132m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (132m)"
   },
   {
    "edge_id": [
@@ -144046,9 +144046,9 @@
    "name": "未命名路 13670516295-13670516251",
    "length_m": 67.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 行政办公楼 (131m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (131m)"
   },
   {
    "edge_id": [
@@ -144106,9 +144106,9 @@
    "name": "明志路",
    "length_m": 173.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 东教学楼 (247m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (247m)"
   },
   {
    "edge_id": [
@@ -144181,9 +144181,9 @@
    "name": "未命名路 13670516297-13670516300",
    "length_m": 74.5,
    "highway": "footway",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 东教学楼 (140m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (140m)"
   },
   {
    "edge_id": [
@@ -144241,9 +144241,9 @@
    "name": "未命名路 13670516300-13670516297",
    "length_m": 74.5,
    "highway": "footway",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 东教学楼 (140m)"
+   "note": "坡度占位，待实测; 临近 东教学楼 (140m)"
   },
   {
    "edge_id": [
@@ -145201,9 +145201,9 @@
    "name": "珞喻路",
    "length_m": 259.0,
    "highway": "trunk",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.1%（Δelev=8m）; 临近 行政办公楼 (383m)"
+   "note": "坡度占位，待实测; 临近 行政办公楼 (383m)"
   },
   {
    "edge_id": [
@@ -145306,9 +145306,9 @@
    "name": "卓刀泉南路",
    "length_m": 30.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (395m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (395m)"
   },
   {
    "edge_id": [
@@ -145321,9 +145321,9 @@
    "name": "未命名路 13672818568-1272848082",
    "length_m": 102.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (395m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (395m)"
   },
   {
    "edge_id": [
@@ -145336,9 +145336,9 @@
    "name": "卓刀泉南路",
    "length_m": 83.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (420m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (420m)"
   },
   {
    "edge_id": [
@@ -145351,9 +145351,9 @@
    "name": "卓刀泉南路",
    "length_m": 76.7,
    "highway": "secondary",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度19.6%（Δelev=15m）; 临近 沁园春食堂 (333m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (333m)"
   },
   {
    "edge_id": [
@@ -145366,9 +145366,9 @@
    "name": "卓刀泉南路",
    "length_m": 66.1,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (294m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (294m)"
   },
   {
    "edge_id": [
@@ -145396,9 +145396,9 @@
    "name": "卓刀泉南路",
    "length_m": 51.7,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (448m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (448m)"
   },
   {
    "edge_id": [
@@ -145426,9 +145426,9 @@
    "name": "卓刀泉南路",
    "length_m": 122.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (408m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (408m)"
   },
   {
    "edge_id": [
@@ -146551,9 +146551,9 @@
    "name": "未命名路 13672838099-13672838100",
    "length_m": 58.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (393m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (393m)"
   },
   {
    "edge_id": [
@@ -146566,9 +146566,9 @@
    "name": "卓刀泉南路",
    "length_m": 122.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (408m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (408m)"
   },
   {
    "edge_id": [
@@ -146581,9 +146581,9 @@
    "name": "未命名路 13672838100-13672838099",
    "length_m": 58.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (393m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (393m)"
   },
   {
    "edge_id": [
@@ -146986,9 +146986,9 @@
    "name": "未命名路 13673156567-13673156572",
    "length_m": 118.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (284m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (284m)"
   },
   {
    "edge_id": [
@@ -147031,9 +147031,9 @@
    "name": "未命名路 13673156572-13673156567",
    "length_m": 118.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (284m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (284m)"
   },
   {
    "edge_id": [
@@ -147136,9 +147136,9 @@
    "name": "卓刀泉南路",
    "length_m": 66.1,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (294m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (294m)"
   },
   {
    "edge_id": [
@@ -147151,9 +147151,9 @@
    "name": "未命名路 13673156663-13673156673",
    "length_m": 86.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (299m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (299m)"
   },
   {
    "edge_id": [
@@ -147166,9 +147166,9 @@
    "name": "未命名路 13673156673-13673156663",
    "length_m": 86.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (299m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (299m)"
   },
   {
    "edge_id": [
@@ -147181,9 +147181,9 @@
    "name": "未命名路 13673238077-13673238080",
    "length_m": 85.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (375m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (375m)"
   },
   {
    "edge_id": [
@@ -147226,9 +147226,9 @@
    "name": "未命名路 13673238080-13673238077",
    "length_m": 85.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (375m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (375m)"
   },
   {
    "edge_id": [
@@ -147331,9 +147331,9 @@
    "name": "未命名路 13673238084-13673238086",
    "length_m": 69.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=1m）; 临近 学生公寓6栋 (411m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (411m)"
   },
   {
    "edge_id": [
@@ -147346,9 +147346,9 @@
    "name": "未命名路 13673238086-13673238084",
    "length_m": 69.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.4%（Δelev=1m）; 临近 学生公寓6栋 (411m)"
+   "note": "坡度占位，待实测; 临近 学生公寓6栋 (411m)"
   },
   {
    "edge_id": [
@@ -147646,9 +147646,9 @@
    "name": "未命名路 13673271610-13685684795",
    "length_m": 193.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (393m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (393m)"
   },
   {
    "edge_id": [
@@ -147661,9 +147661,9 @@
    "name": "未命名路 13673271610-13685684794",
    "length_m": 172.7,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=6m）; 临近 学生公寓5栋 (386m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (386m)"
   },
   {
    "edge_id": [
@@ -147678,7 +147678,7 @@
    "highway": "footway",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.7%（Δelev=6m）; 临近 学生公寓5栋 (425m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (425m)"
   },
   {
    "edge_id": [
@@ -147901,9 +147901,9 @@
    "name": "八一路",
    "length_m": 56.3,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (455m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (455m)"
   },
   {
    "edge_id": [
@@ -147916,9 +147916,9 @@
    "name": "八一路",
    "length_m": 230.9,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.3%（Δelev=3m）; 临近 武汉大学南门 (328m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (328m)"
   },
   {
    "edge_id": [
@@ -148321,9 +148321,9 @@
    "name": "未命名路 13674763813-1615503840",
    "length_m": 55.7,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.6%（Δelev=2m）; 临近 弘博公寓食堂 (655m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (655m)"
   },
   {
    "edge_id": [
@@ -151516,9 +151516,9 @@
    "name": "广八路",
    "length_m": 50.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=1m）; 临近 武汉大学南门 (188m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (188m)"
   },
   {
    "edge_id": [
@@ -152596,9 +152596,9 @@
    "name": "广八路",
    "length_m": 54.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=0m）; 临近 信息学部2号教学楼 (142m)"
+   "note": "坡度占位，待实测; 临近 信息学部2号教学楼 (142m)"
   },
   {
    "edge_id": [
@@ -153001,9 +153001,9 @@
    "name": "八一路",
    "length_m": 89.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (162m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (162m)"
   },
   {
    "edge_id": [
@@ -153256,9 +153256,9 @@
    "name": "八一路",
    "length_m": 52.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (74m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (74m)"
   },
   {
    "edge_id": [
@@ -153288,7 +153288,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.2%（Δelev=3m）; 临近 武汉大学南门 (32m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (32m)"
   },
   {
    "edge_id": [
@@ -153316,9 +153316,9 @@
    "name": "八一路",
    "length_m": 52.0,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (74m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (74m)"
   },
   {
    "edge_id": [
@@ -153451,9 +153451,9 @@
    "name": "广卓路",
    "length_m": 335.4,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.6%（Δelev=12m）; 临近 弘博公寓食堂 (286m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (286m)"
   },
   {
    "edge_id": [
@@ -154366,9 +154366,9 @@
    "name": "广八路",
    "length_m": 65.4,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 测量仪器陈列馆 (193m)"
+   "note": "坡度占位，待实测; 临近 测量仪器陈列馆 (193m)"
   },
   {
    "edge_id": [
@@ -155793,7 +155793,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.2%（Δelev=4m）; 临近 弘博公寓食堂 (228m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (228m)"
   },
   {
    "edge_id": [
@@ -155806,9 +155806,9 @@
    "name": "未命名路 13683465385-1406761421",
    "length_m": 159.1,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 弘博公寓食堂 (152m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (152m)"
   },
   {
    "edge_id": [
@@ -155838,7 +155838,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.2%（Δelev=4m）; 临近 弘博公寓食堂 (228m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (228m)"
   },
   {
    "edge_id": [
@@ -155956,9 +155956,9 @@
    "name": "广卓路",
    "length_m": 186.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 弘博公寓食堂 (455m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (455m)"
   },
   {
    "edge_id": [
@@ -156211,9 +156211,9 @@
    "name": "广卓路",
    "length_m": 95.0,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.4%（Δelev=8m）; 临近 弘博公寓食堂 (344m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (344m)"
   },
   {
    "edge_id": [
@@ -158071,9 +158071,9 @@
    "name": "卓刀泉北路",
    "length_m": 266.8,
    "highway": "tertiary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.0%（Δelev=8m）; 临近 学生公寓8栋 (332m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (332m)"
   },
   {
    "edge_id": [
@@ -158731,9 +158731,9 @@
    "name": "八一路",
    "length_m": 105.1,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (404m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (404m)"
   },
   {
    "edge_id": [
@@ -158896,9 +158896,9 @@
    "name": "八一路",
    "length_m": 117.6,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=3m）; 临近 武汉大学南门 (276m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (276m)"
   },
   {
    "edge_id": [
@@ -158956,9 +158956,9 @@
    "name": "广卓路",
    "length_m": 56.8,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=2m）; 临近 武汉大学南门 (215m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (215m)"
   },
   {
    "edge_id": [
@@ -159511,9 +159511,9 @@
    "name": "八一路",
    "length_m": 117.6,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.6%（Δelev=3m）; 临近 武汉大学南门 (276m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (276m)"
   },
   {
    "edge_id": [
@@ -159586,9 +159586,9 @@
    "name": "八一路",
    "length_m": 105.1,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 武汉大学南门 (404m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (404m)"
   },
   {
    "edge_id": [
@@ -160023,7 +160023,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.1%（Δelev=5m）; 临近 弘博公寓食堂 (483m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (483m)"
   },
   {
    "edge_id": [
@@ -160336,9 +160336,9 @@
    "name": "未命名路 13685384931-1615503841",
    "length_m": 61.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 珞珈山 (659m)"
+   "note": "坡度占位，待实测; 临近 珞珈山 (659m)"
   },
   {
    "edge_id": [
@@ -160396,9 +160396,9 @@
    "name": "未命名路 13685384933-1615503839",
    "length_m": 55.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 历史文化教育基地 (589m)"
+   "note": "坡度占位，待实测; 临近 历史文化教育基地 (589m)"
   },
   {
    "edge_id": [
@@ -160531,9 +160531,9 @@
    "name": "未命名路 13685644400-1207057941",
    "length_m": 97.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (361m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (361m)"
   },
   {
    "edge_id": [
@@ -160651,9 +160651,9 @@
    "name": "卓刀泉北路",
    "length_m": 66.3,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (303m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (303m)"
   },
   {
    "edge_id": [
@@ -160683,7 +160683,7 @@
    "highway": "tertiary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.9%（Δelev=7m）; 临近 学生公寓8栋 (293m)"
+   "note": "坡度占位，待实测; 临近 学生公寓8栋 (293m)"
   },
   {
    "edge_id": [
@@ -162691,9 +162691,9 @@
    "name": "未命名路 13685684747-13685684760",
    "length_m": 55.9,
    "highway": "footway",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (374m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (374m)"
   },
   {
    "edge_id": [
@@ -162708,7 +162708,7 @@
    "highway": "footway",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.7%（Δelev=6m）; 临近 学生公寓5栋 (425m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (425m)"
   },
   {
    "edge_id": [
@@ -162736,9 +162736,9 @@
    "name": "未命名路 13685684760-13685684747",
    "length_m": 55.9,
    "highway": "footway",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (374m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (374m)"
   },
   {
    "edge_id": [
@@ -162946,9 +162946,9 @@
    "name": "未命名路 13685684794-13673271610",
    "length_m": 172.7,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=6m）; 临近 学生公寓5栋 (386m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (386m)"
   },
   {
    "edge_id": [
@@ -162991,9 +162991,9 @@
    "name": "未命名路 13685684795-13673271610",
    "length_m": 193.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 学生公寓5栋 (393m)"
+   "note": "坡度占位，待实测; 临近 学生公寓5栋 (393m)"
   },
   {
    "edge_id": [
@@ -163006,9 +163006,9 @@
    "name": "珞喻路",
    "length_m": 51.7,
    "highway": "trunk",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.7%（Δelev=4m）; 临近 珞瑜门 (196m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (196m)"
   },
   {
    "edge_id": [
@@ -163021,9 +163021,9 @@
    "name": "珞喻路",
    "length_m": 110.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (130m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (130m)"
   },
   {
    "edge_id": [
@@ -163036,9 +163036,9 @@
    "name": "未命名路 13685773211-13685773212",
    "length_m": 54.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (173m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (173m)"
   },
   {
    "edge_id": [
@@ -163051,9 +163051,9 @@
    "name": "未命名路 13685773212-13685773211",
    "length_m": 54.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (173m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (173m)"
   },
   {
    "edge_id": [
@@ -163066,9 +163066,9 @@
    "name": "珞喻路",
    "length_m": 51.7,
    "highway": "trunk",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.7%（Δelev=4m）; 临近 珞瑜门 (196m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (196m)"
   },
   {
    "edge_id": [
@@ -163081,9 +163081,9 @@
    "name": "珞喻路",
    "length_m": 109.4,
    "highway": "trunk",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.7%（Δelev=10m）; 临近 珞瑜门 (272m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (272m)"
   },
   {
    "edge_id": [
@@ -163411,9 +163411,9 @@
    "name": "珞喻路",
    "length_m": 110.1,
    "highway": "trunk",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 珞瑜门 (130m)"
+   "note": "坡度占位，待实测; 临近 珞瑜门 (130m)"
   },
   {
    "edge_id": [
@@ -165873,7 +165873,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 4,
-   "note": "DEM实测 坡度5.5%（Δelev=14m）; 临近 云英阁 (42m)"
+   "note": "坡度占位，待实测; 临近 云英阁 (42m)"
   },
   {
    "edge_id": [
@@ -167791,9 +167791,9 @@
    "name": "八一路",
    "length_m": 112.1,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=5m）; 临近 弘博公寓食堂 (560m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (560m)"
   },
   {
    "edge_id": [
@@ -167881,9 +167881,9 @@
    "name": "科技小路",
    "length_m": 71.8,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (561m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (561m)"
   },
   {
    "edge_id": [
@@ -167911,9 +167911,9 @@
    "name": "未命名路 13691973030-13692380857",
    "length_m": 54.5,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.2%（Δelev=5m）; 临近 计算机学院大楼 (390m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (390m)"
   },
   {
    "edge_id": [
@@ -167956,9 +167956,9 @@
    "name": "未命名路 13692380675-13692380848",
    "length_m": 78.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (470m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (470m)"
   },
   {
    "edge_id": [
@@ -167971,9 +167971,9 @@
    "name": "未命名路 13692380675-1408367590",
    "length_m": 76.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (544m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (544m)"
   },
   {
    "edge_id": [
@@ -168001,9 +168001,9 @@
    "name": "未命名路 13692380679-13692380685",
    "length_m": 101.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (451m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (451m)"
   },
   {
    "edge_id": [
@@ -168031,9 +168031,9 @@
    "name": "未命名路 13692380679-13692380687",
    "length_m": 81.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (533m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (533m)"
   },
   {
    "edge_id": [
@@ -168061,9 +168061,9 @@
    "name": "未命名路 13692380685-13692380855",
    "length_m": 54.1,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.2%（Δelev=5m）; 临近 卓尔体育馆 (383m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (383m)"
   },
   {
    "edge_id": [
@@ -168076,9 +168076,9 @@
    "name": "未命名路 13692380685-13692380679",
    "length_m": 101.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (451m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (451m)"
   },
   {
    "edge_id": [
@@ -168121,9 +168121,9 @@
    "name": "未命名路 13692380687-13692380679",
    "length_m": 81.9,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (533m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (533m)"
   },
   {
    "edge_id": [
@@ -168151,9 +168151,9 @@
    "name": "科技小路",
    "length_m": 59.5,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度10.1%（Δelev=6m）; 临近 卓尔体育馆 (566m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (566m)"
   },
   {
    "edge_id": [
@@ -168241,9 +168241,9 @@
    "name": "珞狮北路",
    "length_m": 100.8,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (248m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (248m)"
   },
   {
    "edge_id": [
@@ -168736,9 +168736,9 @@
    "name": "八一路",
    "length_m": 134.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (473m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (473m)"
   },
   {
    "edge_id": [
@@ -169126,9 +169126,9 @@
    "name": "科技小路",
    "length_m": 59.5,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度10.1%（Δelev=6m）; 临近 卓尔体育馆 (566m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (566m)"
   },
   {
    "edge_id": [
@@ -169156,9 +169156,9 @@
    "name": "科技小路",
    "length_m": 71.8,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (561m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (561m)"
   },
   {
    "edge_id": [
@@ -169171,9 +169171,9 @@
    "name": "未命名路 13692380844-13692380855",
    "length_m": 91.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (331m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (331m)"
   },
   {
    "edge_id": [
@@ -169201,9 +169201,9 @@
    "name": "未命名路 13692380844-13692380857",
    "length_m": 63.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (332m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (332m)"
   },
   {
    "edge_id": [
@@ -169231,9 +169231,9 @@
    "name": "未命名路 13692380848-13692380675",
    "length_m": 78.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (470m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (470m)"
   },
   {
    "edge_id": [
@@ -169246,9 +169246,9 @@
    "name": "未命名路 13692380848-13692380857",
    "length_m": 111.3,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=5m）; 临近 计算机学院大楼 (398m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (398m)"
   },
   {
    "edge_id": [
@@ -169261,9 +169261,9 @@
    "name": "未命名路 13692380855-13692380685",
    "length_m": 54.1,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.2%（Δelev=5m）; 临近 卓尔体育馆 (383m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (383m)"
   },
   {
    "edge_id": [
@@ -169291,9 +169291,9 @@
    "name": "未命名路 13692380855-13692380844",
    "length_m": 91.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (331m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (331m)"
   },
   {
    "edge_id": [
@@ -169306,9 +169306,9 @@
    "name": "未命名路 13692380857-13691973030",
    "length_m": 54.5,
    "highway": "service",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.2%（Δelev=5m）; 临近 计算机学院大楼 (390m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (390m)"
   },
   {
    "edge_id": [
@@ -169336,9 +169336,9 @@
    "name": "未命名路 13692380857-13692380848",
    "length_m": 111.3,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度4.5%（Δelev=5m）; 临近 计算机学院大楼 (398m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (398m)"
   },
   {
    "edge_id": [
@@ -169351,9 +169351,9 @@
    "name": "未命名路 13692380857-13692380844",
    "length_m": 63.7,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (332m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (332m)"
   },
   {
    "edge_id": [
@@ -169366,9 +169366,9 @@
    "name": "洪山侧路",
    "length_m": 54.8,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 教工新3栋 (512m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (512m)"
   },
   {
    "edge_id": [
@@ -169396,9 +169396,9 @@
    "name": "洪山侧路",
    "length_m": 180.5,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=5m）; 临近 教工新3栋 (426m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (426m)"
   },
   {
    "edge_id": [
@@ -169456,9 +169456,9 @@
    "name": "科技小路",
    "length_m": 71.1,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (583m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (583m)"
   },
   {
    "edge_id": [
@@ -169711,9 +169711,9 @@
    "name": "未命名路 13694043002-13694043005",
    "length_m": 65.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (298m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (298m)"
   },
   {
    "edge_id": [
@@ -169771,9 +169771,9 @@
    "name": "未命名路 13694043005-13694043002",
    "length_m": 65.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (298m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (298m)"
   },
   {
    "edge_id": [
@@ -169801,9 +169801,9 @@
    "name": "未命名路 13694043010-13694043017",
    "length_m": 86.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (180m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (180m)"
   },
   {
    "edge_id": [
@@ -169816,9 +169816,9 @@
    "name": "未命名路 13694043010-1408398395",
    "length_m": 54.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.8%（Δelev=1m）; 临近 雷军科技楼 (199m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (199m)"
   },
   {
    "edge_id": [
@@ -169861,9 +169861,9 @@
    "name": "未命名路 13694043014-13694043017",
    "length_m": 167.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 卓尔体育馆 (220m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (220m)"
   },
   {
    "edge_id": [
@@ -169876,9 +169876,9 @@
    "name": "未命名路 13694043016-13694127539",
    "length_m": 62.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 雷军科技楼 (185m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (185m)"
   },
   {
    "edge_id": [
@@ -169906,9 +169906,9 @@
    "name": "未命名路 13694043016-1408398391",
    "length_m": 93.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (251m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (251m)"
   },
   {
    "edge_id": [
@@ -169921,9 +169921,9 @@
    "name": "未命名路 13694043017-13694043010",
    "length_m": 86.5,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (180m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (180m)"
   },
   {
    "edge_id": [
@@ -169951,9 +169951,9 @@
    "name": "未命名路 13694043017-13694043014",
    "length_m": 167.4,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.6%（Δelev=1m）; 临近 卓尔体育馆 (220m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (220m)"
   },
   {
    "edge_id": [
@@ -170506,9 +170506,9 @@
    "name": "洪山侧路",
    "length_m": 180.5,
    "highway": "secondary",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.8%（Δelev=5m）; 临近 教工新3栋 (426m)"
+   "note": "坡度占位，待实测; 临近 教工新3栋 (426m)"
   },
   {
    "edge_id": [
@@ -170581,9 +170581,9 @@
    "name": "珞狮北路",
    "length_m": 56.0,
    "highway": "primary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 计算机学院大楼 (293m)"
+   "note": "坡度占位，待实测; 临近 计算机学院大楼 (293m)"
   },
   {
    "edge_id": [
@@ -170746,9 +170746,9 @@
    "name": "未命名路 13694127539-13694043016",
    "length_m": 62.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=1m）; 临近 雷军科技楼 (185m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (185m)"
   },
   {
    "edge_id": [
@@ -170821,9 +170821,9 @@
    "name": "未命名路 13694127541-1408398391",
    "length_m": 53.1,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 卓尔体育馆 (246m)"
+   "note": "坡度占位，待实测; 临近 卓尔体育馆 (246m)"
   },
   {
    "edge_id": [
@@ -170851,9 +170851,9 @@
    "name": "八一路",
    "length_m": 221.4,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度8.1%（Δelev=18m）; 临近 雷军科技楼 (519m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (519m)"
   },
   {
    "edge_id": [
@@ -171003,7 +171003,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.4%（Δelev=14m）; 临近 雷军科技楼 (302m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (302m)"
   },
   {
    "edge_id": [
@@ -171018,7 +171018,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.2%（Δelev=5m）; 临近 雷军科技楼 (378m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (378m)"
   },
   {
    "edge_id": [
@@ -171061,9 +171061,9 @@
    "name": "未命名路 13694214968-13694214970",
    "length_m": 56.1,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度21.4%（Δelev=12m）; 临近 雷军科技楼 (378m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (378m)"
   },
   {
    "edge_id": [
@@ -171076,9 +171076,9 @@
    "name": "未命名路 13694214970-13694214968",
    "length_m": 56.1,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度21.4%（Δelev=12m）; 临近 雷军科技楼 (378m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (378m)"
   },
   {
    "edge_id": [
@@ -171106,9 +171106,9 @@
    "name": "未命名路 13694214971-13694214976",
    "length_m": 48.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 雷军科技楼 (408m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (408m)"
   },
   {
    "edge_id": [
@@ -171121,9 +171121,9 @@
    "name": "未命名路 13694214971-13694214976",
    "length_m": 159.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 雷军科技楼 (408m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (408m)"
   },
   {
    "edge_id": [
@@ -171138,7 +171138,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度5.2%（Δelev=5m）; 临近 雷军科技楼 (378m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (378m)"
   },
   {
    "edge_id": [
@@ -171151,9 +171151,9 @@
    "name": "未命名路 13694214976-13694214971",
    "length_m": 48.3,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 雷军科技楼 (408m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (408m)"
   },
   {
    "edge_id": [
@@ -171166,9 +171166,9 @@
    "name": "未命名路 13694214976-13694214971",
    "length_m": 159.8,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度1.6%（Δelev=2m）; 临近 雷军科技楼 (408m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (408m)"
   },
   {
    "edge_id": [
@@ -172021,9 +172021,9 @@
    "name": "洪福巷",
    "length_m": 76.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (479m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (479m)"
   },
   {
    "edge_id": [
@@ -172036,9 +172036,9 @@
    "name": "洪福巷",
    "length_m": 111.7,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (436m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (436m)"
   },
   {
    "edge_id": [
@@ -172156,9 +172156,9 @@
    "name": "未命名路 13694252533-1224858070",
    "length_m": 218.1,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.3%（Δelev=5m）; 临近 雷军科技楼 (300m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (300m)"
   },
   {
    "edge_id": [
@@ -172201,9 +172201,9 @@
    "name": "洪福巷",
    "length_m": 129.2,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.3%（Δelev=12m）; 临近 雷军科技楼 (448m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (448m)"
   },
   {
    "edge_id": [
@@ -172231,9 +172231,9 @@
    "name": "未命名路 13694252577-13694252578",
    "length_m": 51.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (466m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (466m)"
   },
   {
    "edge_id": [
@@ -172246,9 +172246,9 @@
    "name": "洪福巷",
    "length_m": 129.2,
    "highway": "residential",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度9.3%（Δelev=12m）; 临近 雷军科技楼 (448m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (448m)"
   },
   {
    "edge_id": [
@@ -172261,9 +172261,9 @@
    "name": "洪福巷",
    "length_m": 76.3,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (479m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (479m)"
   },
   {
    "edge_id": [
@@ -172276,9 +172276,9 @@
    "name": "未命名路 13694252578-13694252577",
    "length_m": 51.6,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 雷军科技楼 (466m)"
+   "note": "坡度占位，待实测; 临近 雷军科技楼 (466m)"
   },
   {
    "edge_id": [
@@ -173463,7 +173463,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.9%（Δelev=9m）; 临近 信息学部20舍 (194m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (194m)"
   },
   {
    "edge_id": [
@@ -173508,7 +173508,7 @@
    "highway": "residential",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.9%（Δelev=9m）; 临近 信息学部20舍 (194m)"
+   "note": "坡度占位，待实测; 临近 信息学部20舍 (194m)"
   },
   {
    "edge_id": [
@@ -173521,9 +173521,9 @@
    "name": "珞狮路辅路",
    "length_m": 165.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (218m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (218m)"
   },
   {
    "edge_id": [
@@ -173551,9 +173551,9 @@
    "name": "珞狮路辅路",
    "length_m": 165.5,
    "highway": "residential",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 青年宿舍楼 (218m)"
+   "note": "坡度占位，待实测; 临近 青年宿舍楼 (218m)"
   },
   {
    "edge_id": [
@@ -174511,9 +174511,9 @@
    "name": "未命名路 13697089112-13697089114",
    "length_m": 51.9,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.9%（Δelev=2m）; 临近 科学会堂 (443m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (443m)"
   },
   {
    "edge_id": [
@@ -174556,9 +174556,9 @@
    "name": "未命名路 13697089114-13697089112",
    "length_m": 51.9,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.9%（Δelev=2m）; 临近 科学会堂 (443m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (443m)"
   },
   {
    "edge_id": [
@@ -174571,9 +174571,9 @@
    "name": "未命名路 13697089115-13697089119",
    "length_m": 109.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (409m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (409m)"
   },
   {
    "edge_id": [
@@ -174601,9 +174601,9 @@
    "name": "卓刀泉南路",
    "length_m": 83.2,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (420m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (420m)"
   },
   {
    "edge_id": [
@@ -174616,9 +174616,9 @@
    "name": "未命名路 13697089119-13697089115",
    "length_m": 109.2,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 科学会堂 (409m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (409m)"
   },
   {
    "edge_id": [
@@ -174648,7 +174648,7 @@
    "highway": "secondary",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度6.3%（Δelev=15m）; 临近 沁园春食堂 (302m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (302m)"
   },
   {
    "edge_id": [
@@ -174661,9 +174661,9 @@
    "name": "未命名路 13697089185-13697089186",
    "length_m": 129.8,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度23.1%（Δelev=30m）; 临近 科学会堂 (341m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (341m)"
   },
   {
    "edge_id": [
@@ -174676,9 +174676,9 @@
    "name": "未命名路 13697089186-13697089185",
    "length_m": 129.8,
    "highway": "service",
-   "slope_level": 5,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度23.1%（Δelev=30m）; 临近 科学会堂 (341m)"
+   "note": "坡度占位，待实测; 临近 科学会堂 (341m)"
   },
   {
    "edge_id": [
@@ -175681,9 +175681,9 @@
    "name": "虎泉街",
    "length_m": 87.5,
    "highway": "secondary",
-   "slope_level": 4,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度13.7%（Δelev=12m）; 临近 沁园春食堂 (337m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (337m)"
   },
   {
    "edge_id": [
@@ -175696,9 +175696,9 @@
    "name": "未命名路 13699797289-13699797290",
    "length_m": 71.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (328m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (328m)"
   },
   {
    "edge_id": [
@@ -175711,9 +175711,9 @@
    "name": "未命名路 13699797290-13699797289",
    "length_m": 71.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 沁园春食堂 (328m)"
+   "note": "坡度占位，待实测; 临近 沁园春食堂 (328m)"
   },
   {
    "edge_id": [
@@ -182461,9 +182461,9 @@
    "name": "广八路",
    "length_m": 54.2,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.9%（Δelev=0m）; 临近 信息学部2号教学楼 (142m)"
+   "note": "坡度占位，待实测; 临近 信息学部2号教学楼 (142m)"
   },
   {
    "edge_id": [
@@ -182476,9 +182476,9 @@
    "name": "未命名路 13704359642-13704359655",
    "length_m": 118.9,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.5%（Δelev=3m）; 临近 信息学部2号教学楼 (139m)"
+   "note": "坡度占位，待实测; 临近 信息学部2号教学楼 (139m)"
   },
   {
    "edge_id": [
@@ -182538,7 +182538,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.3%（Δelev=4m）; 临近 竹园体育馆 (134m)"
+   "note": "坡度占位，待实测; 临近 竹园体育馆 (134m)"
   },
   {
    "edge_id": [
@@ -182551,9 +182551,9 @@
    "name": "未命名路 13704359655-13704359642",
    "length_m": 118.9,
    "highway": "service",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.5%（Δelev=3m）; 临近 信息学部2号教学楼 (139m)"
+   "note": "坡度占位，待实测; 临近 信息学部2号教学楼 (139m)"
   },
   {
    "edge_id": [
@@ -182583,7 +182583,7 @@
    "highway": "service",
    "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度7.3%（Δelev=4m）; 临近 竹园体育馆 (134m)"
+   "note": "坡度占位，待实测; 临近 竹园体育馆 (134m)"
   },
   {
    "edge_id": [
@@ -186151,9 +186151,9 @@
    "name": "广卓路",
    "length_m": 56.8,
    "highway": "residential",
-   "slope_level": 2,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度3.5%（Δelev=2m）; 临近 武汉大学南门 (215m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (215m)"
   },
   {
    "edge_id": [
@@ -187201,9 +187201,9 @@
    "name": "广八路",
    "length_m": 50.7,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度2.0%（Δelev=1m）; 临近 武汉大学南门 (188m)"
+   "note": "坡度占位，待实测; 临近 武汉大学南门 (188m)"
   },
   {
    "edge_id": [
@@ -187891,9 +187891,9 @@
    "name": "八一路",
    "length_m": 96.4,
    "highway": "secondary",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (631m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (631m)"
   },
   {
    "edge_id": [
@@ -188041,9 +188041,9 @@
    "name": "未命名路 13704616303-1205483895",
    "length_m": 73.0,
    "highway": "service",
-   "slope_level": 1,
+   "slope_level": 3,
    "scenery_level": 3,
-   "note": "DEM实测 坡度0.0%（Δelev=0m）; 临近 弘博公寓食堂 (428m)"
+   "note": "坡度占位，待实测; 临近 弘博公寓食堂 (428m)"
   },
   {
    "edge_id": [
@@ -189586,9 +189586,9 @@
    "name": "东湖南路",
    "length_m": 221.6,
    "highway": "tertiary",
-   "slope_level": 1,
+   "slope_level": 2,
    "scenery_level": 4,
-   "note": "DEM实测 坡度0.5%（Δelev=1m）; 临近 亮胜楼 (158m)"
+   "note": "坡度占位，待实测; 临近 亮胜楼 (158m)"
   },
   {
    "edge_id": [
@@ -189601,9 +189601,9 @@
    "name": "东湖南路",
    "length_m": 103.7,
    "highway": "tertiary",
-   "slope_level": 4,
+   "slope_level": 2,
    "scenery_level": 5,
-   "note": "DEM实测 坡度8.7%（Δelev=9m）; 临近 平湖珞樱观湖平台 (42m)"
+   "note": "坡度占位，待实测; 临近 平湖珞樱观湖平台 (42m)"
   },
   {
    "edge_id": [

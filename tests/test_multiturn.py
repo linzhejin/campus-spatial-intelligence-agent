@@ -54,7 +54,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "牌坊",
-                    "end_name": "樱顶",
+                    "end_name": "武汉大学老斋舍",
                     "has_ambiguity": False,
                 },
             },
@@ -63,7 +63,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "牌坊",
-                    "end_name": "樱顶",
+                    "end_name": "武汉大学老斋舍",
                     "constraints": {"slope": "avoid"},
                     "has_ambiguity": False,
                 },
@@ -78,7 +78,7 @@ MULTITURN_TEST_CASES = [
                 "query": "去图书馆",
                 "expected": {
                     "task_type": "path_planning",
-                    "end_name": "总图书馆",
+                    "end_name": "武汉大学图书馆(总馆)",
                     "has_ambiguity": True,
                 },
             },
@@ -87,7 +87,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "梅园",
-                    "end_name": "总图书馆",
+                    "end_name": "武汉大学图书馆(总馆)",
                     "has_ambiguity": False,
                 },
             },
@@ -131,7 +131,7 @@ MULTITURN_TEST_CASES = [
                 "query": "老图书馆怎么走",
                 "expected": {
                     "task_type": "poi_query",
-                    "start_name": "老图书馆",
+                    "start_name": "武汉大学早期建筑图书馆",
                     "has_ambiguity": False,
                 },
             },
@@ -172,7 +172,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "桂园",
-                    "end_name": "樱顶",
+                    "end_name": "武汉大学老斋舍",
                     "has_ambiguity": False,
                 },
             },
@@ -181,7 +181,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "桂园",
-                    "end_name": "樱顶",
+                    "end_name": "武汉大学老斋舍",
                     "constraints": {"slope": "avoid"},
                     "has_ambiguity": False,
                 },
@@ -233,7 +233,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "牌坊",
-                    "end_name": "樱花大道",
+                    "end_name": "武汉大学樱花大道",
                     "has_ambiguity": False,
                 },
             },
@@ -242,7 +242,7 @@ MULTITURN_TEST_CASES = [
                 "expected": {
                     "task_type": "path_planning",
                     "start_name": "牌坊",
-                    "end_name": "樱花大道",
+                    "end_name": "武汉大学樱花大道",
                     "constraints": {"slope": "avoid"},
                     "has_ambiguity": False,
                 },
@@ -257,7 +257,7 @@ MULTITURN_TEST_CASES = [
                 "query": "从行政楼出发去枫园",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "行政楼",
+                    "start_name": "武汉大学早期建筑工学院",
                     "end_name": "枫园",
                     "has_ambiguity": False,
                 },
@@ -266,7 +266,7 @@ MULTITURN_TEST_CASES = [
                 "query": "不对，去月湖",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "行政楼",
+                    "start_name": "武汉大学早期建筑工学院",
                     "end_name": "月湖",
                     "has_ambiguity": False,
                 },
@@ -540,7 +540,7 @@ class TestMultiturnAmbiguityCompletion:
         assert completed.start is not None
         assert completed.start.name == "牌坊"
         assert completed.end is not None
-        assert completed.end.name == "樱顶"
+        assert completed.end.name == "武汉大学老斋舍"
         assert completed.task_type == "path_planning"
 
     def test_ambiguity_preserves_previous_constraints(self):
@@ -636,7 +636,7 @@ class TestMultiturnPostProcessPipeline:
         assert processed_t2.start is not None
         assert processed_t2.start.name == "牌坊"
         assert processed_t2.end is not None
-        assert processed_t2.end.name == "樱顶"
+        assert processed_t2.end.name == "武汉大学老斋舍"
         ctx_t2 = build_context_from_previous_turn(processed_t2)
 
         # Turn 3: "避开陡坡" — LLM 输出 slope=avoid 约束变更
@@ -651,7 +651,7 @@ class TestMultiturnPostProcessPipeline:
         assert processed_t3.start is not None
         assert processed_t3.start.name == "牌坊"
         assert processed_t3.end is not None
-        assert processed_t3.end.name == "樱顶"
+        assert processed_t3.end.name == "武汉大学老斋舍"
         assert processed_t3.constraints.slope == "avoid"
 
     def test_constraint_adjustment_preserves_context(self):
@@ -676,7 +676,7 @@ class TestMultiturnPostProcessPipeline:
         )
         processed_t2 = _t011_post_process(intent_t2, "换一条路，不要太陡", ctx)
         assert processed_t2.start.name == "桂园"
-        assert processed_t2.end.name == "樱顶"
+        assert processed_t2.end.name == "武汉大学老斋舍"
         assert processed_t2.constraints.slope == "avoid"
 
     def test_endpoint_correction_flow(self):
@@ -700,7 +700,7 @@ class TestMultiturnPostProcessPipeline:
         )
         processed_t2 = _t011_post_process(intent_t2, "不对，去月湖", ctx)
         assert processed_t2.start is not None
-        assert processed_t2.start.name == "行政楼"
+        assert processed_t2.start.name == "武汉大学早期建筑工学院"
         assert processed_t2.end is not None
         assert processed_t2.end.name == "月湖"
 
@@ -726,7 +726,7 @@ class TestMultiturnPostProcessPipeline:
         )
         processed_t3 = _t011_post_process(intent_t3, "要风景最好的路线", ctx)
         assert processed_t3.start.name == "牌坊"
-        assert processed_t3.end.name == "樱花大道"
+        assert processed_t3.end.name == "武汉大学樱花大道"
         assert processed_t3.constraints.scenery == "high"
 
     def test_poi_query_single_turn(self):
@@ -740,7 +740,7 @@ class TestMultiturnPostProcessPipeline:
         processed = _t011_post_process(base, "老图书馆在哪", None)
         assert processed.task_type == "poi_query"
         assert processed.start is not None
-        assert processed.start.name in ("老图书馆", "老图")
+        assert processed.start.name == "武汉大学早期建筑图书馆"
         assert processed.end is None
 
     def test_help_task_type(self):
@@ -782,7 +782,7 @@ class TestMultiturnPostProcessPipeline:
         )
         p2 = _t011_post_process(intent_t2, "想去樱花大道", ctx)
         assert p2.start.name == "牌坊"
-        assert p2.end.name == "樱花大道"
+        assert p2.end.name == "武汉大学樱花大道"
         ctx = build_context_from_previous_turn(p2)
 
         # Turn 3: "有没有不爬坡的路"
@@ -795,7 +795,7 @@ class TestMultiturnPostProcessPipeline:
         )
         p3 = _t011_post_process(intent_t3, "有没有不爬坡的路", ctx)
         assert p3.start.name == "牌坊"
-        assert p3.end.name == "樱花大道"
+        assert p3.end.name == "武汉大学樱花大道"
         assert p3.constraints.slope == "avoid"
 
 
@@ -916,7 +916,7 @@ class TestReferenceResolutionAccuracy:
             }
         }
         r2 = _resolve_ambiguity_completion(intent2, "樱顶", ctx2)
-        results.append(r2.end is not None and r2.end.name == "樱顶")
+        results.append(r2.end is not None and r2.end.name == "武汉大学老斋舍")
 
         # Scenario 3: 保留 constraints
         intent3 = make_base_intent()
@@ -1132,7 +1132,7 @@ class TestThreeTurnContextPreservation:
             "去樱顶", ctx1,
         )
         assert t2.start.name == "牌坊"
-        assert t2.end.name == "樱顶"
+        assert t2.end.name == "武汉大学老斋舍"
 
         # Turn 3 — 用 Turn 2 的 context
         ctx2 = build_context_from_previous_turn(t2)
@@ -1147,7 +1147,7 @@ class TestThreeTurnContextPreservation:
             "避开陡坡", ctx2,
         )
         assert t3.start.name == "牌坊"
-        assert t3.end.name == "樱顶"
+        assert t3.end.name == "武汉大学老斋舍"
         assert t3.constraints.slope == "avoid"
 
     def test_three_turn_context_chain_mt009(self):
@@ -1186,7 +1186,7 @@ class TestThreeTurnContextPreservation:
             "有没有不爬坡的路", ctx2,
         )
         assert t3.start.name == "牌坊"
-        assert t3.end.name == "樱花大道"
+        assert t3.end.name == "武汉大学樱花大道"
         assert t3.constraints.slope == "avoid"
 
     def test_context_fields_preserved_across_turns(self):
@@ -1250,7 +1250,7 @@ class TestFourTaskTypesCoverage:
         r1 = _rule_based_classify("从牌坊到樱顶")
         assert r1["task_type"] == "path_planning"
         assert r1["start_name"] == "牌坊"
-        assert r1["end_name"] == "樱顶"
+        assert r1["end_name"] == "武汉大学老斋舍"
 
         # poi_query: 规则识别 ("怎么走" 含路径词, 用 "在哪" 测试规则分类)
         r2 = _rule_based_classify("老图书馆在哪")

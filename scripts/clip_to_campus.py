@@ -35,6 +35,16 @@ ANN_PATH = os.path.join(PROJECT_ROOT, "data", "road_annotations.json")
 # 路网裁剪缓冲（度）：约 120m，保留校门过街/校门口路段
 CLIP_BUFFER_DEG = 0.0011
 
+# 校外城市道路黑名单：即使在缓冲带内也必须移除（防止路线穿城）
+# 这些路沿校园边界，缓冲带会包含它们，但导航不应走校外市政道路
+OUTSIDE_ROAD_NAMES = {
+    "八一路", "东湖南路", "卓刀泉北路", "广八路", "茶港路", "广卓路",
+    "珞狮路", "珞狮北路", "珞瑜路", "珞喻路",
+    "珞喻路辅路", "珞狮路辅路", "武珞路辅路", "武珞路",
+    "卓刀泉南路", "卓刀泉路", "群光南路", "洪福巷",
+    "武工路", "机电路", "科技小路", "明志路", "汇志大道", "神龙园路",
+}
+
 # 各学部腹地锚点（GCJ-02），用于重叠多边形区的学部归属消歧
 _CAMPUS_ANCHORS = {
     "文理学部": (114.3610, 30.5375),
@@ -151,6 +161,10 @@ def clip_network(dry_run=False):
         print(f"警告: 存在 {len(big)} 个大连通分量，规模: {[len(c) for c in big]}")
         print("  → 若某校区独立，说明缓冲带不足，应调大 CLIP_BUFFER_DEG")
     G_clip = G.subgraph(set().union(*big)).copy()
+
+    # 注意：不直接移除校外道路边，因为湖滨/信息学部西区等区域需要通过
+    # 东湖南路/珞瑜路等边界道路连接主路网。改由 routing.py 的高惩罚系数
+    # （_OUTSIDE_ROAD_PENALTY=10.0）来避免导航走校外道路，同时保持连通性。
 
     n1, e1 = G_clip.number_of_nodes(), G_clip.number_of_edges()
     print(f"\n== 路网裁剪 ==")

@@ -40,7 +40,7 @@ _OUTSIDE_ROAD_NAMES = {
     "八一路", "东湖南路", "卓刀泉北路", "广八路", "茶港路", "广卓路",
     "珞狮路", "珞狮北路", "珞瑜路", "珞喻路",
 }
-_OUTSIDE_ROAD_PENALTY = 3.0  # 校外道路的距离成本放大倍数
+_OUTSIDE_ROAD_PENALTY = 10.0  # 校外道路的距离成本放大倍数（从3.0调至10.0，强避免穿城）
 
 
 def resolve_weights(llm_weights: Optional[dict]) -> dict:

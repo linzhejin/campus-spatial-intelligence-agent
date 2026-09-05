@@ -520,13 +520,20 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
     if not candidate:
         return None
     cand = candidate.strip()
-    # 精确匹配名称
-    if cand in _POI_NAMES_SET:
-        return cand
-    # 精确匹配小写名称
+    # 过短/语气词前缀（"想""不对"等）不参与模糊匹配，避免单字子串误命中长名
+    if len(cand) < 2 or cand in _NON_PLACE_PREFIXES:
+        return None
+    # 宽泛区域词（桂园/信息学部等）是区域而非具体 POI，不做子串/前缀匹配
+    try:
+        from spatial.poi import _BROAD_AREA_TERMS
+        if cand in _BROAD_AREA_TERMS:
+            return None
+    except Exception:
+        pass
+    # 精确匹配名称（别名命中时也返回其所属规范名，保证两阶段归一化一致）
     cand_low = cand.lower()
-    if cand_low in _POI_NAMES_LOWER:
-        return _POI_NAMES_LOWER[cand_low]
+    if cand in _POI_NAMES_SET or cand_low in _POI_NAMES_LOWER:
+        return _POI_NAMES_LOWER.get(cand_low, cand)
     # 分级模糊匹配（确定性排序）
     prefix_matches = []
     substring_matches = []
@@ -535,11 +542,11 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
             prefix_matches.append(name)
         elif cand in name or name in cand:
             substring_matches.append(name)
-    # 前缀匹配优先，然后子串匹配，各内部按字母序
+    # 前缀匹配优先，然后子串匹配，各内部按字母序；统一映射回规范名
     if prefix_matches:
-        return prefix_matches[0]
+        return _POI_NAMES_LOWER.get(prefix_matches[0].lower(), prefix_matches[0])
     if substring_matches:
-        return substring_matches[0]
+        return _POI_NAMES_LOWER.get(substring_matches[0].lower(), substring_matches[0])
     return None
 
 

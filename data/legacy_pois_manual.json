@@ -1,0 +1,5671 @@
+{
+  "version": "2.0",
+  "source": "高德API(原24条) + OpenStreetMap(300条，经GCJ-02转换)；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点；经校园多边形裁剪过滤校外点",
+  "campuses": [
+    "文理学部",
+    "工学部",
+    "信息学部"
+  ],
+  "count": 314,
+  "pois": [
+    {
+      "id": "poi_001",
+      "name": "牌坊",
+      "aliases": [
+        "珞珈门",
+        "武大正门",
+        "国立武汉大学牌坊",
+        "八一路牌坊",
+        "校门",
+        "主入口"
+      ],
+      "coordinates": {
+        "lng": 114.35806,
+        "lat": 30.53318
+      },
+      "type": "landmark",
+      "description": "武大正门八一路老牌坊，国立武汉大学题字，校园主入口。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_002",
+      "name": "樱花大道",
+      "aliases": [
+        "樱园路",
+        "武大樱花",
+        "樱花街",
+        "老斋舍路"
+      ],
+      "coordinates": {
+        "lng": 114.36467,
+        "lat": 30.53945
+      },
+      "type": "scenery",
+      "description": "狮子山南坡樱花主干道，春季赏樱核心路线，旁依老斋舍。",
+      "season_tags": [
+        "spring",
+        "autumn"
+      ],
+      "scenery_score": 5,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_003",
+      "name": "樱顶",
+      "aliases": [
+        "樱花城堡",
+        "樱园屋顶",
+        "老斋舍屋顶",
+        "樱园顶",
+        "樱台"
+      ],
+      "coordinates": {
+        "lng": 114.364,
+        "lat": 30.5395
+      },
+      "type": "scenery",
+      "description": "老斋舍建筑群顶层平台，俯瞰樱花大道与东湖全景。",
+      "season_tags": [
+        "spring",
+        "autumn"
+      ],
+      "scenery_score": 5,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_004",
+      "name": "老图书馆",
+      "aliases": [
+        "老图",
+        "樱顶老图",
+        "武大老图",
+        "校史馆",
+        "老图书馆大楼"
+      ],
+      "coordinates": {
+        "lng": 114.363656,
+        "lat": 30.540196
+      },
+      "type": "scenery",
+      "description": "狮子山顶老图书馆大楼，现为校史馆，武大标志性建筑。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 5,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_005",
+      "name": "行政楼",
+      "aliases": [
+        "老工学院",
+        "九一二操场",
+        "奥林匹克操场",
+        "工学大楼"
+      ],
+      "coordinates": {
+        "lng": 114.36641,
+        "lat": 30.53745
+      },
+      "type": "scenery",
+      "description": "民国老工学院建筑，前临九一二操场，行政办公核心。",
+      "season_tags": [
+        "spring",
+        "autumn"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_006",
+      "name": "梅园",
+      "aliases": [
+        "梅园一舍二舍",
+        "梅园宿舍区",
+        "梅园小操场",
+        "梅操"
+      ],
+      "coordinates": {
+        "lng": 114.36459,
+        "lat": 30.53558
+      },
+      "type": "scenery",
+      "description": "牌坊东北梅园宿舍区，旁设梅园小操场梅操。",
+      "season_tags": [
+        "winter",
+        "spring"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_007",
+      "name": "桂园",
+      "aliases": [
+        "桂操",
+        "桂园操场",
+        "桂园风雨操场",
+        "桂园宿舍区",
+        "桂园路"
+      ],
+      "coordinates": {
+        "lng": 114.35921,
+        "lat": 30.5394
+      },
+      "type": "scenery",
+      "description": "侧船山南侧桂园宿舍区，含桂园操场与桂花林。",
+      "season_tags": [
+        "autumn"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_008",
+      "name": "总图书馆",
+      "aliases": [
+        "图书馆",
+        "总图",
+        "文献中心",
+        "文理图书馆",
+        "新图书馆",
+        "武大图书馆总馆"
+      ],
+      "coordinates": {
+        "lng": 114.36271,
+        "lat": 30.53596
+      },
+      "type": "study",
+      "description": "自强大道北端文理学部总图书馆，新馆建筑。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "文理学部",
+      "category": "study"
+    },
+    {
+      "id": "poi_009",
+      "name": "教五",
+      "aliases": [
+        "教5",
+        "教五楼",
+        "文理学部五教",
+        "第五教学楼",
+        "第五教学楼（教五）"
+      ],
+      "coordinates": {
+        "lng": 114.361426,
+        "lat": 30.53616
+      },
+      "type": "study",
+      "description": "自强大道东侧公共教学楼，文理学部核心教室。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2,
+      "campus": "文理学部",
+      "category": "study"
+    },
+    {
+      "id": "poi_010",
+      "name": "万林艺术馆",
+      "aliases": [
+        "万林艺术博物馆",
+        "万林博物馆",
+        "艺术馆",
+        "西北门博物馆"
+      ],
+      "coordinates": {
+        "lng": 114.363056,
+        "lat": 30.536666
+      },
+      "type": "scenery",
+      "description": "朱镕基题名万林艺术博物馆，校内艺术展览地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_011",
+      "name": "枫园",
+      "aliases": [
+        "枫园宿舍",
+        "留学生区",
+        "枫园十四舍",
+        "枫园四舍",
+        "法学院一带"
+      ],
+      "coordinates": {
+        "lng": 114.37176,
+        "lat": 30.53708
+      },
+      "type": "scenery",
+      "description": "珞珈山东北麓枫园宿舍区，靠近东湖与凌波门。",
+      "season_tags": [
+        "autumn"
+      ],
+      "scenery_score": 3,
+      "campus": "工学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_012",
+      "name": "珞珈山",
+      "aliases": [
+        "罗家山",
+        "珞珈山顶",
+        "十八栋",
+        "环山道",
+        "珞珈山18栋"
+      ],
+      "coordinates": {
+        "lng": 114.37003,
+        "lat": 30.534684
+      },
+      "type": "scenery",
+      "description": "校园中央珞珈山主峰，环山绿道与十八栋老建筑群。",
+      "season_tags": [
+        "spring",
+        "autumn"
+      ],
+      "scenery_score": 5,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_013",
+      "name": "工学部第一教学楼",
+      "aliases": [
+        "工部一教",
+        "水院一教",
+        "一教（工学部）",
+        "武水一教"
+      ],
+      "coordinates": {
+        "lng": 114.3622,
+        "lat": 30.54382
+      },
+      "type": "study",
+      "description": "东湖南路工学部核心教学楼，原武汉水利电力大学一教。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2,
+      "campus": "文理学部",
+      "category": "study"
+    },
+    {
+      "id": "poi_014",
+      "name": "信息学部第一教学楼",
+      "aliases": [
+        "信部一教",
+        "武测一教",
+        "一教（信部）",
+        "广埠屯一教"
+      ],
+      "coordinates": {
+        "lng": 114.36131,
+        "lat": 30.52647
+      },
+      "type": "study",
+      "description": "珞瑜路广埠屯信息学部一教，原武汉测绘科技大学一教。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2,
+      "campus": "信息学部",
+      "category": "study"
+    },
+    {
+      "id": "poi_015",
+      "name": "文理学部",
+      "aliases": [
+        "本部",
+        "老校区",
+        "主校区",
+        "武大本部",
+        "文理学部校区"
+      ],
+      "coordinates": {
+        "lng": 114.36292,
+        "lat": 30.53534
+      },
+      "type": "landmark",
+      "description": "珞珈山本部文理学部核心片区，含教五、总图、行政楼。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "文理学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_016",
+      "name": "宋卿体育馆",
+      "aliases": [
+        "武大老体育馆",
+        "武大体育馆",
+        "老宋卿"
+      ],
+      "coordinates": {
+        "lng": 114.361716,
+        "lat": 30.538244
+      },
+      "type": "scenery",
+      "description": "桂园操场东北、九一二操场西侧的宋卿体育馆，民国经典体育馆建筑。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_017",
+      "name": "老斋舍",
+      "aliases": [
+        "樱花城堡宿舍",
+        "斋舍",
+        "武大老宿舍",
+        "老斋舍建筑群"
+      ],
+      "coordinates": {
+        "lng": 114.36389,
+        "lat": 30.53961
+      },
+      "type": "scenery",
+      "description": "狮子山南坡老斋舍，又名樱花城堡，紧邻樱顶老图。",
+      "season_tags": [
+        "spring",
+        "autumn"
+      ],
+      "scenery_score": 5,
+      "campus": "文理学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_018",
+      "name": "星湖",
+      "aliases": [
+        "信息学部星湖",
+        "星湖园",
+        "星湖体育馆附近",
+        "星湖路"
+      ],
+      "coordinates": {
+        "lng": 114.35971,
+        "lat": 30.5273
+      },
+      "type": "scenery",
+      "description": "信息学部内星湖，旁依星湖体育馆与星湖园宿舍。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "信息学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_019",
+      "name": "自强大道",
+      "aliases": [
+        "武大主干道",
+        "正门大道",
+        "自强路",
+        "弘毅路-自强大道"
+      ],
+      "coordinates": {
+        "lng": 114.3605,
+        "lat": 30.535
+      },
+      "type": "landmark",
+      "description": "牌坊-总图南北主干道，串联教五、万林、总图等地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "文理学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_020",
+      "name": "珞瑜门",
+      "aliases": [
+        "信息学部正门",
+        "南门",
+        "珞瑜路校门",
+        "广埠屯校门",
+        "武大附中门"
+      ],
+      "coordinates": {
+        "lng": 114.36263,
+        "lat": 30.5245
+      },
+      "type": "landmark",
+      "description": "珞瑜路信息学部正门南门，地铁2号线广埠屯K口直达。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "信息学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_021",
+      "name": "凌波门",
+      "aliases": [
+        "东湖凌波门",
+        "凌波门栈桥",
+        "东湖南路凌波门"
+      ],
+      "coordinates": {
+        "lng": 114.37068,
+        "lat": 30.54329
+      },
+      "type": "landmark",
+      "description": "东湖南路凌波门栈桥，武大东湖标志性观景台（注：扬波门才是东门）。",
+      "season_tags": [
+        "spring",
+        "summer"
+      ],
+      "scenery_score": 5,
+      "campus": "工学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_022",
+      "name": "珞瑜二门",
+      "aliases": [
+        "南二门",
+        "信息学部南二门",
+        "武汉大学信息学部（南2门）",
+        "原南2门"
+      ],
+      "coordinates": {
+        "lng": 114.357548,
+        "lat": 30.52599
+      },
+      "type": "landmark",
+      "description": "珞瑜路37号信息学部南二门，地铁2号线街道口C口东400m，校巴1号线始发。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "信息学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_023",
+      "name": "月湖",
+      "aliases": [
+        "武汉大学月湖",
+        "半边山路月湖",
+        "湖滨月湖"
+      ],
+      "coordinates": {
+        "lng": 114.37156,
+        "lat": 30.53995
+      },
+      "type": "scenery",
+      "description": "半边山路-侧船山路月湖，靠近枫园四舍、湖滨食堂与法学院。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "工学部",
+      "category": "scenery"
+    },
+    {
+      "id": "poi_024",
+      "name": "洪波门",
+      "aliases": [
+        "工学部洪波门",
+        "东湖南路洪波门",
+        "水生所旁校门"
+      ],
+      "coordinates": {
+        "lng": 114.366117,
+        "lat": 30.545249
+      },
+      "type": "landmark",
+      "description": "东湖南路工学部洪波门，邻近中科院水生所与工学部新体育馆。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3,
+      "campus": "工学部",
+      "category": "landmark"
+    },
+    {
+      "id": "poi_025",
+      "name": "信息学部CBD",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36005,
+        "lat": 30.527901
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_026",
+      "name": "信息学部一食堂",
+      "aliases": [
+        "信息学部一"
+      ],
+      "coordinates": {
+        "lng": 114.359149,
+        "lat": 30.528263
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_027",
+      "name": "信息学部三食堂",
+      "aliases": [
+        "信息学部三"
+      ],
+      "coordinates": {
+        "lng": 114.358481,
+        "lat": 30.527472
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_028",
+      "name": "信息学部二食堂",
+      "aliases": [
+        "信息学部二"
+      ],
+      "coordinates": {
+        "lng": 114.359149,
+        "lat": 30.528401
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_029",
+      "name": "信息学部四食堂",
+      "aliases": [
+        "信息学部四"
+      ],
+      "coordinates": {
+        "lng": 114.35849,
+        "lat": 30.527016
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_030",
+      "name": "信息学部清真食堂",
+      "aliases": [
+        "信息学部清真"
+      ],
+      "coordinates": {
+        "lng": 114.358632,
+        "lat": 30.527012
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_031",
+      "name": "学子食堂",
+      "aliases": [
+        "学子"
+      ],
+      "coordinates": {
+        "lng": 114.362914,
+        "lat": 30.513657
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_032",
+      "name": "新民天食堂",
+      "aliases": [
+        "新民天"
+      ],
+      "coordinates": {
+        "lng": 114.375247,
+        "lat": 30.520795
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_033",
+      "name": "沁园春食堂",
+      "aliases": [
+        "沁园春"
+      ],
+      "coordinates": {
+        "lng": 114.365237,
+        "lat": 30.515274
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学信息学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_034",
+      "name": "信息学部10舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358042,
+        "lat": 30.526462
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_035",
+      "name": "信息学部11舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358156,
+        "lat": 30.527817
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_036",
+      "name": "信息学部12舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358156,
+        "lat": 30.528089
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_037",
+      "name": "信息学部13舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358158,
+        "lat": 30.528371
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_038",
+      "name": "信息学部14舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35816,
+        "lat": 30.528666
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_039",
+      "name": "信息学部15、16舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357502,
+        "lat": 30.52853
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_040",
+      "name": "信息学部17舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359132,
+        "lat": 30.528776
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_041",
+      "name": "信息学部18舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360073,
+        "lat": 30.52942
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_042",
+      "name": "信息学部19舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.355113,
+        "lat": 30.527022
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_043",
+      "name": "信息学部20舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.355106,
+        "lat": 30.527371
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_044",
+      "name": "信息学部21舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357527,
+        "lat": 30.527378
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_045",
+      "name": "信息学部2舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360076,
+        "lat": 30.527931
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_046",
+      "name": "信息学部3舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360062,
+        "lat": 30.528379
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_047",
+      "name": "信息学部4舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360063,
+        "lat": 30.528696
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_048",
+      "name": "信息学部5舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360051,
+        "lat": 30.529046
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_049",
+      "name": "信息学部6舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359223,
+        "lat": 30.527876
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_050",
+      "name": "信息学部7舍",
+      "aliases": [
+        "信七舍",
+        "信息学部七舍",
+        "信部七舍"
+      ],
+      "coordinates": {
+        "lng": 114.359067,
+        "lat": 30.526513
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_051",
+      "name": "信息学部8舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358886,
+        "lat": 30.526231
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_052",
+      "name": "信息学部9舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357967,
+        "lat": 30.526169
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_053",
+      "name": "学生公寓10栋",
+      "aliases": [
+        "10栋"
+      ],
+      "coordinates": {
+        "lng": 114.376812,
+        "lat": 30.521916
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_054",
+      "name": "学生公寓11栋",
+      "aliases": [
+        "11栋"
+      ],
+      "coordinates": {
+        "lng": 114.376916,
+        "lat": 30.522253
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_055",
+      "name": "学生公寓12栋",
+      "aliases": [
+        "12栋"
+      ],
+      "coordinates": {
+        "lng": 114.377316,
+        "lat": 30.521802
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_056",
+      "name": "学生公寓1栋",
+      "aliases": [
+        "1栋"
+      ],
+      "coordinates": {
+        "lng": 114.375052,
+        "lat": 30.519702
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_057",
+      "name": "学生公寓2栋",
+      "aliases": [
+        "2栋"
+      ],
+      "coordinates": {
+        "lng": 114.37497,
+        "lat": 30.519415
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_058",
+      "name": "学生公寓3栋",
+      "aliases": [
+        "3栋"
+      ],
+      "coordinates": {
+        "lng": 114.374852,
+        "lat": 30.51904
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_059",
+      "name": "学生公寓4栋",
+      "aliases": [
+        "4栋"
+      ],
+      "coordinates": {
+        "lng": 114.374763,
+        "lat": 30.518746
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_060",
+      "name": "学生公寓5栋",
+      "aliases": [
+        "5栋"
+      ],
+      "coordinates": {
+        "lng": 114.374308,
+        "lat": 30.519714
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_061",
+      "name": "学生公寓6栋",
+      "aliases": [
+        "6栋"
+      ],
+      "coordinates": {
+        "lng": 114.374107,
+        "lat": 30.519009
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_062",
+      "name": "学生公寓7栋",
+      "aliases": [
+        "7栋"
+      ],
+      "coordinates": {
+        "lng": 114.375939,
+        "lat": 30.521765
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_063",
+      "name": "学生公寓8栋",
+      "aliases": [
+        "8栋"
+      ],
+      "coordinates": {
+        "lng": 114.375366,
+        "lat": 30.521883
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_064",
+      "name": "学生公寓9栋",
+      "aliases": [
+        "9栋"
+      ],
+      "coordinates": {
+        "lng": 114.376712,
+        "lat": 30.521593
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_065",
+      "name": "男生公寓",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.376064,
+        "lat": 30.522153
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_066",
+      "name": "研究生公寓",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.377476,
+        "lat": 30.522569
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学信息学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_067",
+      "name": "信息学部快递服务中心",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358974,
+        "lat": 30.527875
+      },
+      "type": "landmark",
+      "campus": "信息学部",
+      "category": "landmark",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_068",
+      "name": "信息学部操场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361235,
+        "lat": 30.52767
+      },
+      "type": "sports",
+      "campus": "信息学部",
+      "category": "sports",
+      "description": "武汉大学信息学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_069",
+      "name": "东教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.380081,
+        "lat": 30.520793
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_070",
+      "name": "信息学部1号教学楼",
+      "aliases": [
+        "1号教学楼",
+        "信一教",
+        "信息学部一教",
+        "信部1教",
+        "信部一教"
+      ],
+      "coordinates": {
+        "lng": 114.361217,
+        "lat": 30.526464
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_071",
+      "name": "信息学部2号教学楼",
+      "aliases": [
+        "2号教学楼",
+        "信二教",
+        "信息学部二教",
+        "信部2教",
+        "信部二教"
+      ],
+      "coordinates": {
+        "lng": 114.362352,
+        "lat": 30.526464
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_072",
+      "name": "信息学部3号教学楼",
+      "aliases": [
+        "3号教学楼",
+        "信三教",
+        "信息学部三教",
+        "信部3教",
+        "信部三教"
+      ],
+      "coordinates": {
+        "lng": 114.360088,
+        "lat": 30.526455
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_073",
+      "name": "信息学部4号教学楼",
+      "aliases": [
+        "4号教学楼",
+        "信四教",
+        "信息学部四教",
+        "信部4教",
+        "信部四教"
+      ],
+      "coordinates": {
+        "lng": 114.362347,
+        "lat": 30.526128
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_074",
+      "name": "信息学部5号教学楼",
+      "aliases": [
+        "5号教学楼",
+        "信五教",
+        "信息学部五教",
+        "信部5教",
+        "信部五教"
+      ],
+      "coordinates": {
+        "lng": 114.360095,
+        "lat": 30.525943
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_075",
+      "name": "信息学部7号教学楼",
+      "aliases": [
+        "7号教学楼",
+        "信七",
+        "信七教",
+        "信息学部七教",
+        "信部7教",
+        "信部七教"
+      ],
+      "coordinates": {
+        "lng": 114.360098,
+        "lat": 30.525582
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_076",
+      "name": "信息学部图书馆",
+      "aliases": [
+        "信息学部图"
+      ],
+      "coordinates": {
+        "lng": 114.361219,
+        "lat": 30.529097
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学信息学部图书馆，提供借阅和自习服务。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_077",
+      "name": "信息学部西区A2教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357028,
+        "lat": 30.527085
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_078",
+      "name": "信息学部西区B4教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.356771,
+        "lat": 30.527643
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_079",
+      "name": "国际学术交流中心",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.378768,
+        "lat": 30.523751
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_080",
+      "name": "学思楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.375333,
+        "lat": 30.520131
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_081",
+      "name": "科学会堂",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364652,
+        "lat": 30.517966
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_082",
+      "name": "科技楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.379615,
+        "lat": 30.521468
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_083",
+      "name": "纳米科技楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362275,
+        "lat": 30.517457
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_084",
+      "name": "行政办公楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.378439,
+        "lat": 30.520348
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_085",
+      "name": "行政楼（信息学部）",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361883,
+        "lat": 30.517957
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_086",
+      "name": "行政楼附楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361887,
+        "lat": 30.517296
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_087",
+      "name": "西教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.377859,
+        "lat": 30.521441
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学信息学部教学楼，位于信息学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_089",
+      "name": "工学部CBD",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36597,
+        "lat": 30.543772
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_090",
+      "name": "工学部一、二、清真食堂",
+      "aliases": [
+        "工学部一、二、清真"
+      ],
+      "coordinates": {
+        "lng": 114.365916,
+        "lat": 30.54318
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_091",
+      "name": "工学部一食堂",
+      "aliases": [
+        "工学部一"
+      ],
+      "coordinates": {
+        "lng": 114.365721,
+        "lat": 30.543144
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_092",
+      "name": "工学部三、四食堂",
+      "aliases": [
+        "工学部三、四"
+      ],
+      "coordinates": {
+        "lng": 114.365823,
+        "lat": 30.543776
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_093",
+      "name": "工学部三食堂",
+      "aliases": [
+        "工学部三"
+      ],
+      "coordinates": {
+        "lng": 114.366013,
+        "lat": 30.54382
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_094",
+      "name": "工学部二食堂",
+      "aliases": [
+        "工学部二"
+      ],
+      "coordinates": {
+        "lng": 114.365927,
+        "lat": 30.543162
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_095",
+      "name": "工学部清真食堂",
+      "aliases": [
+        "工学部清真"
+      ],
+      "coordinates": {
+        "lng": 114.366126,
+        "lat": 30.543179
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_096",
+      "name": "枫园CBD",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372252,
+        "lat": 30.537391
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_097",
+      "name": "枫园风味食堂",
+      "aliases": [
+        "枫园风味"
+      ],
+      "coordinates": {
+        "lng": 114.372065,
+        "lat": 30.537268
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_098",
+      "name": "枫园食堂",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371759,
+        "lat": 30.537012
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_099",
+      "name": "湖滨风味食堂",
+      "aliases": [
+        "湖滨风味"
+      ],
+      "coordinates": {
+        "lng": 114.369917,
+        "lat": 30.541447
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_100",
+      "name": "湖滨食堂",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370149,
+        "lat": 30.541555
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "武汉大学工学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_101",
+      "name": "工学部10舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365713,
+        "lat": 30.544927
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_102",
+      "name": "工学部11舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365135,
+        "lat": 30.544027
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_103",
+      "name": "工学部12舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36513,
+        "lat": 30.544564
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_104",
+      "name": "工学部15舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366063,
+        "lat": 30.541484
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_105",
+      "name": "工学部16舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366128,
+        "lat": 30.541064
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_106",
+      "name": "工学部17舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366889,
+        "lat": 30.541095
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_107",
+      "name": "工学部1舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365284,
+        "lat": 30.542467
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_108",
+      "name": "工学部2舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364519,
+        "lat": 30.542272
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_109",
+      "name": "工学部3舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366079,
+        "lat": 30.542449
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_110",
+      "name": "工学部4舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365367,
+        "lat": 30.541895
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_111",
+      "name": "工学部5舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364649,
+        "lat": 30.541835
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_112",
+      "name": "工学部6舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366084,
+        "lat": 30.542001
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_113",
+      "name": "工学部7舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364639,
+        "lat": 30.543075
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_114",
+      "name": "工学部8舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364525,
+        "lat": 30.543893
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_115",
+      "name": "工学部9舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365765,
+        "lat": 30.544514
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_116",
+      "name": "枫园一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371214,
+        "lat": 30.537885
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_117",
+      "name": "枫园三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370861,
+        "lat": 30.537143
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_118",
+      "name": "枫园九舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373338,
+        "lat": 30.537263
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_119",
+      "name": "枫园二舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371231,
+        "lat": 30.537401
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_120",
+      "name": "枫园五舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372884,
+        "lat": 30.536927
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_121",
+      "name": "枫园八舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373809,
+        "lat": 30.537302
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_122",
+      "name": "枫园六舍、七舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373459,
+        "lat": 30.536953
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_123",
+      "name": "枫园十一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371926,
+        "lat": 30.538073
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_124",
+      "name": "枫园十三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372586,
+        "lat": 30.538285
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_125",
+      "name": "枫园十二舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372035,
+        "lat": 30.537694
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_126",
+      "name": "枫园十四舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369451,
+        "lat": 30.537106
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_127",
+      "name": "枫园十舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373845,
+        "lat": 30.536969
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_128",
+      "name": "枫园四舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372858,
+        "lat": 30.537222
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_129",
+      "name": "湖滨14舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370646,
+        "lat": 30.540622
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_130",
+      "name": "湖滨一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369556,
+        "lat": 30.541006
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_131",
+      "name": "湖滨七舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.37093,
+        "lat": 30.542469
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_132",
+      "name": "湖滨三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371259,
+        "lat": 30.541144
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_133",
+      "name": "湖滨九舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370124,
+        "lat": 30.542775
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_134",
+      "name": "湖滨二舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370483,
+        "lat": 30.541048
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_135",
+      "name": "湖滨五舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370863,
+        "lat": 30.541709
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_136",
+      "name": "湖滨八舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370941,
+        "lat": 30.542893
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_137",
+      "name": "湖滨六舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370909,
+        "lat": 30.542
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_138",
+      "name": "湖滨十一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369441,
+        "lat": 30.542987
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_139",
+      "name": "湖滨十七舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369116,
+        "lat": 30.54203
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_140",
+      "name": "湖滨十三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369978,
+        "lat": 30.542088
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_141",
+      "name": "湖滨十二舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369268,
+        "lat": 30.542759
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_142",
+      "name": "湖滨十五舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.368045,
+        "lat": 30.542475
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_143",
+      "name": "湖滨十六舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.368902,
+        "lat": 30.541816
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_144",
+      "name": "湖滨十舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369946,
+        "lat": 30.542446
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_145",
+      "name": "湖滨四舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371343,
+        "lat": 30.541586
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_146",
+      "name": "留学生宿舍1号楼",
+      "aliases": [
+        "留1号楼"
+      ],
+      "coordinates": {
+        "lng": 114.374561,
+        "lat": 30.537633
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_147",
+      "name": "留学生宿舍2号楼",
+      "aliases": [
+        "留2号楼"
+      ],
+      "coordinates": {
+        "lng": 114.374381,
+        "lat": 30.537988
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_148",
+      "name": "留学生宿舍3号楼",
+      "aliases": [
+        "留3号楼"
+      ],
+      "coordinates": {
+        "lng": 114.373232,
+        "lat": 30.537854
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学工学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_149",
+      "name": "凌波门（工学部）",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.37058,
+        "lat": 30.54327
+      },
+      "type": "gate",
+      "campus": "工学部",
+      "category": "gate",
+      "description": "武汉大学凌波门（工学部），校园出入口之一。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_150",
+      "name": "凌波门码头",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.37395,
+        "lat": 30.542158
+      },
+      "type": "gate",
+      "campus": "工学部",
+      "category": "gate",
+      "description": "武汉大学凌波门码头，校园出入口之一。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_151",
+      "name": "历史文化教育基地",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.374753,
+        "lat": 30.535326
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学工学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_152",
+      "name": "工学部49栋",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358122,
+        "lat": 30.541831
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学工学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_153",
+      "name": "工学部大学生活动中心",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365424,
+        "lat": 30.543225
+      },
+      "type": "landmark",
+      "campus": "工学部",
+      "category": "landmark",
+      "description": "武汉大学工学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_155",
+      "name": "平湖珞樱观湖平台",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373716,
+        "lat": 30.541783
+      },
+      "type": "scenery",
+      "campus": "工学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于工学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_156",
+      "name": "凌波门游泳池",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.371416,
+        "lat": 30.543567
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_157",
+      "name": "工学部体育馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366765,
+        "lat": 30.543743
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_158",
+      "name": "工学部体育馆健身房",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366964,
+        "lat": 30.544082
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_159",
+      "name": "工学部排球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366997,
+        "lat": 30.542704
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_160",
+      "name": "工学部操场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367973,
+        "lat": 30.543589
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_161",
+      "name": "工学部篮球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36707,
+        "lat": 30.54214
+      },
+      "type": "sports",
+      "campus": "工学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_162",
+      "name": "工学部网球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363562,
+        "lat": 30.541424
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学工学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_163",
+      "name": "亮胜楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.373164,
+        "lat": 30.538796
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学工学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_164",
+      "name": "人文社科楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372552,
+        "lat": 30.541242
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学工学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_165",
+      "name": "信息管理学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.375223,
+        "lat": 30.536625
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学信息管理学院大楼，位于工学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_166",
+      "name": "外国语言文学学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370865,
+        "lat": 30.539492
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学外国语言文学学院大楼，位于工学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_167",
+      "name": "工学部11号教学楼",
+      "aliases": [
+        "工学部11教",
+        "工11教"
+      ],
+      "coordinates": {
+        "lng": 114.360891,
+        "lat": 30.54067
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_168",
+      "name": "工学部1号教学楼",
+      "aliases": [
+        "工学部1教",
+        "工1教"
+      ],
+      "coordinates": {
+        "lng": 114.362275,
+        "lat": 30.543837
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_169",
+      "name": "工学部3号教学楼",
+      "aliases": [
+        "工学部3教",
+        "工3教"
+      ],
+      "coordinates": {
+        "lng": 114.363163,
+        "lat": 30.54389
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_170",
+      "name": "工学部4号教学楼",
+      "aliases": [
+        "工学部4教",
+        "工4教"
+      ],
+      "coordinates": {
+        "lng": 114.361164,
+        "lat": 30.5431
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_171",
+      "name": "工学部5号教学楼",
+      "aliases": [
+        "工学部5教",
+        "工5教"
+      ],
+      "coordinates": {
+        "lng": 114.363477,
+        "lat": 30.54337
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_172",
+      "name": "工学部6号教学楼",
+      "aliases": [
+        "工学部6教",
+        "工6教"
+      ],
+      "coordinates": {
+        "lng": 114.361501,
+        "lat": 30.542493
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_173",
+      "name": "工学部7号教学楼",
+      "aliases": [
+        "工学部7教",
+        "工7教"
+      ],
+      "coordinates": {
+        "lng": 114.363223,
+        "lat": 30.542546
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_174",
+      "name": "工学部8号教学楼",
+      "aliases": [
+        "工学部8教",
+        "工8教"
+      ],
+      "coordinates": {
+        "lng": 114.362405,
+        "lat": 30.542537
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_175",
+      "name": "工学部9号教学楼",
+      "aliases": [
+        "工学部9教",
+        "工9教"
+      ],
+      "coordinates": {
+        "lng": 114.36339,
+        "lat": 30.54467
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_176",
+      "name": "工学部图书馆",
+      "aliases": [
+        "工学部图"
+      ],
+      "coordinates": {
+        "lng": 114.361322,
+        "lat": 30.543733
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学工学部图书馆，提供借阅和自习服务。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_177",
+      "name": "枫园教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.374602,
+        "lat": 30.537132
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学工学部教学楼，位于工学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_178",
+      "name": "法学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.37113,
+        "lat": 30.538714
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学法学院大楼，位于工学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_179",
+      "name": "学生食堂",
+      "aliases": [
+        "学生"
+      ],
+      "coordinates": {
+        "lng": 114.366699,
+        "lat": 30.525132
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_180",
+      "name": "弘博公寓食堂",
+      "aliases": [
+        "弘博公寓"
+      ],
+      "coordinates": {
+        "lng": 114.367849,
+        "lat": 30.525695
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_181",
+      "name": "桂园一食堂",
+      "aliases": [
+        "桂园一"
+      ],
+      "coordinates": {
+        "lng": 114.359204,
+        "lat": 30.538519
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_182",
+      "name": "桂园二食堂",
+      "aliases": [
+        "桂二食堂",
+        "桂园二"
+      ],
+      "coordinates": {
+        "lng": 114.358944,
+        "lat": 30.538481
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_183",
+      "name": "桂园食堂",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359138,
+        "lat": 30.538316
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_184",
+      "name": "梅园CBD",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364725,
+        "lat": 30.535663
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_185",
+      "name": "梅园教工食堂",
+      "aliases": [
+        "梅园教工"
+      ],
+      "coordinates": {
+        "lng": 114.364429,
+        "lat": 30.535289
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_186",
+      "name": "梅园食堂",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364571,
+        "lat": 30.535595
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_187",
+      "name": "珞珈咖啡",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363032,
+        "lat": 30.536485
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_188",
+      "name": "珞珈数咖",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357466,
+        "lat": 30.534716
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_189",
+      "name": "田园食堂",
+      "aliases": [
+        "田园"
+      ],
+      "coordinates": {
+        "lng": 114.35743,
+        "lat": 30.542161
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_190",
+      "name": "老樱园食堂",
+      "aliases": [
+        "老樱园"
+      ],
+      "coordinates": {
+        "lng": 114.361894,
+        "lat": 30.539769
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "武汉大学文理学部食堂，提供日常餐饮。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_191",
+      "name": "国际园区5栋学生宿舍",
+      "aliases": [
+        "国际园区5栋"
+      ],
+      "coordinates": {
+        "lng": 114.355676,
+        "lat": 30.522693
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_192",
+      "name": "国际园区6栋学生宿舍",
+      "aliases": [
+        "国际园区6栋"
+      ],
+      "coordinates": {
+        "lng": 114.35585,
+        "lat": 30.521994
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_193",
+      "name": "国际园区学生宿舍1栋",
+      "aliases": [
+        "国际园区1栋"
+      ],
+      "coordinates": {
+        "lng": 114.357425,
+        "lat": 30.52157
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_194",
+      "name": "国际园区学生宿舍3栋",
+      "aliases": [
+        "国际园区3栋"
+      ],
+      "coordinates": {
+        "lng": 114.355978,
+        "lat": 30.523253
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_195",
+      "name": "国际园区学生宿舍4栋",
+      "aliases": [
+        "国际园区4栋"
+      ],
+      "coordinates": {
+        "lng": 114.356704,
+        "lat": 30.523692
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_196",
+      "name": "国际园区学生宿舍8栋",
+      "aliases": [
+        "国际园区8栋"
+      ],
+      "coordinates": {
+        "lng": 114.356903,
+        "lat": 30.521601
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_197",
+      "name": "国际园区学生宿舍9栋",
+      "aliases": [
+        "国际园区9栋"
+      ],
+      "coordinates": {
+        "lng": 114.356905,
+        "lat": 30.5218
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_198",
+      "name": "学生新1栋",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35686,
+        "lat": 30.541799
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_199",
+      "name": "学生新4栋",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35746,
+        "lat": 30.541828
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_200",
+      "name": "桂园一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358841,
+        "lat": 30.538777
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_201",
+      "name": "桂园七舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359227,
+        "lat": 30.539899
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_202",
+      "name": "桂园三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35861,
+        "lat": 30.539465
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_203",
+      "name": "桂园九舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359049,
+        "lat": 30.54009
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_204",
+      "name": "桂园二舍",
+      "aliases": [
+        "桂二",
+        "桂二舍"
+      ],
+      "coordinates": {
+        "lng": 114.358718,
+        "lat": 30.539108
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_205",
+      "name": "桂园五舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359419,
+        "lat": 30.539198
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_206",
+      "name": "桂园八舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359903,
+        "lat": 30.539704
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_207",
+      "name": "桂园六舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35935,
+        "lat": 30.539601
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_208",
+      "name": "桂园四舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358554,
+        "lat": 30.539756
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_209",
+      "name": "梅园一舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363969,
+        "lat": 30.536777
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_210",
+      "name": "梅园三舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364735,
+        "lat": 30.536906
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_211",
+      "name": "梅园二舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364052,
+        "lat": 30.536483
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_212",
+      "name": "梅园五舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365485,
+        "lat": 30.536475
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_213",
+      "name": "梅园六舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364144,
+        "lat": 30.536223
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_214",
+      "name": "梅园四舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365085,
+        "lat": 30.536308
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_215",
+      "name": "樱园1舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36468,
+        "lat": 30.539758
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_216",
+      "name": "樱园2舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364119,
+        "lat": 30.539649
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_217",
+      "name": "樱园3舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363568,
+        "lat": 30.539541
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_218",
+      "name": "樱园4舍",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363037,
+        "lat": 30.539454
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_219",
+      "name": "蝶楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.368051,
+        "lat": 30.542002
+      },
+      "type": "dorm",
+      "campus": "工学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_220",
+      "name": "西区学生宿舍2栋",
+      "aliases": [
+        "西区2栋"
+      ],
+      "coordinates": {
+        "lng": 114.359769,
+        "lat": 30.5182
+      },
+      "type": "dorm",
+      "campus": "信息学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_221",
+      "name": "青年宿舍楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.356778,
+        "lat": 30.530031
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_222",
+      "name": "青年教师公寓55栋",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35765,
+        "lat": 30.542416
+      },
+      "type": "dorm",
+      "campus": "文理学部",
+      "category": "dorm",
+      "description": "武汉大学文理学部学生宿舍区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_223",
+      "name": "武汉大学南门",
+      "aliases": [
+        "南门"
+      ],
+      "coordinates": {
+        "lng": 114.365787,
+        "lat": 30.530204
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "武汉大学武汉大学南门，校园出入口之一。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_224",
+      "name": "武汉大学科技门",
+      "aliases": [
+        "科技门"
+      ],
+      "coordinates": {
+        "lng": 114.360619,
+        "lat": 30.532047
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "武汉大学武汉大学科技门，校园出入口之一。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_225",
+      "name": "珞珈门",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357885,
+        "lat": 30.532626
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "武汉大学珞珈门，校园出入口之一。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_226",
+      "name": "教五多功能报告厅",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361526,
+        "lat": 30.536372
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_227",
+      "name": "教工新3栋",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.356732,
+        "lat": 30.54146
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_229",
+      "name": "武汉大学医院",
+      "aliases": [
+        "医院"
+      ],
+      "coordinates": {
+        "lng": 114.364038,
+        "lat": 30.533489
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_230",
+      "name": "武汉大学校史馆",
+      "aliases": [
+        "校史馆"
+      ],
+      "coordinates": {
+        "lng": 114.363682,
+        "lat": 30.540203
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_231",
+      "name": "珞珈·工学天地",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365903,
+        "lat": 30.543599
+      },
+      "type": "landmark",
+      "campus": "工学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_232",
+      "name": "珞珈讲坛",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363714,
+        "lat": 30.540081
+      },
+      "type": "landmark",
+      "campus": "文理学部",
+      "category": "landmark",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 2
+    },
+    {
+      "id": "poi_233",
+      "name": "樱园",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363028,
+        "lat": 30.539102
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_234",
+      "name": "樱花大道（文理学部）",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366991,
+        "lat": 30.539723
+      },
+      "type": "scenery",
+      "campus": "工学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_235",
+      "name": "樱顶壁画",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363505,
+        "lat": 30.539793
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_236",
+      "name": "武汉大学早期建筑",
+      "aliases": [
+        "早期建筑"
+      ],
+      "coordinates": {
+        "lng": 114.362091,
+        "lat": 30.534391
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_237",
+      "name": "武汉大学牌楼",
+      "aliases": [
+        "牌楼"
+      ],
+      "coordinates": {
+        "lng": 114.35821,
+        "lat": 30.53335
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_239",
+      "name": "珞珈山庄",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.368366,
+        "lat": 30.535861
+      },
+      "type": "scenery",
+      "campus": "工学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_240",
+      "name": "珞珈广场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360571,
+        "lat": 30.53477
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校园景点，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 4
+    },
+    {
+      "id": "poi_241",
+      "name": "九一二操场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36629,
+        "lat": 30.538692
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_242",
+      "name": "卓尔体育馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357363,
+        "lat": 30.536957
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_243",
+      "name": "宋卿体育馆健身房",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361639,
+        "lat": 30.538155
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_244",
+      "name": "星湖体育馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.356808,
+        "lat": 30.528103
+      },
+      "type": "sports",
+      "campus": "信息学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_245",
+      "name": "桂园操场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360594,
+        "lat": 30.537825
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_246",
+      "name": "梅园小操场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364799,
+        "lat": 30.538453
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_247",
+      "name": "梅园排球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.3643,
+        "lat": 30.538239
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_248",
+      "name": "梅园篮球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363841,
+        "lat": 30.537972
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_249",
+      "name": "梅园羽毛球场",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364117,
+        "lat": 30.535915
+      },
+      "type": "sports",
+      "campus": "文理学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_250",
+      "name": "竹园体育馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362369,
+        "lat": 30.52769
+      },
+      "type": "sports",
+      "campus": "信息学部",
+      "category": "sports",
+      "description": "武汉大学文理学部体育设施。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_251",
+      "name": "一号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358282,
+        "lat": 30.518863
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_252",
+      "name": "三号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359149,
+        "lat": 30.519547
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_253",
+      "name": "东科技楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359401,
+        "lat": 30.537822
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_254",
+      "name": "二号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360011,
+        "lat": 30.518845
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_255",
+      "name": "于刚·宋晓楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358497,
+        "lat": 30.537742
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_256",
+      "name": "云英阁",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357544,
+        "lat": 30.523035
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_257",
+      "name": "人文馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367944,
+        "lat": 30.539036
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_258",
+      "name": "仿真机楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366437,
+        "lat": 30.52465
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_259",
+      "name": "佩松楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367761,
+        "lat": 30.539833
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_260",
+      "name": "先进制造与人工智能实验室",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.369122,
+        "lat": 30.542392
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_261",
+      "name": "八号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359161,
+        "lat": 30.520228
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_262",
+      "name": "军事教研室",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359377,
+        "lat": 30.538883
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_263",
+      "name": "农田水利楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362449,
+        "lat": 30.542191
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_264",
+      "name": "力学实验楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360128,
+        "lat": 30.544074
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_265",
+      "name": "动力楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365061,
+        "lat": 30.525616
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_266",
+      "name": "博观楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361555,
+        "lat": 30.532964
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_267",
+      "name": "喻鹏楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360352,
+        "lat": 30.532436
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_268",
+      "name": "四方楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366519,
+        "lat": 30.536815
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_270",
+      "name": "国际交流中心",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35793,
+        "lat": 30.530796
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_271",
+      "name": "国际园区2号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.356755,
+        "lat": 30.522887
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_272",
+      "name": "国际园区3号教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35645,
+        "lat": 30.522485
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_273",
+      "name": "地球空间环境与大地测量研究室",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362541,
+        "lat": 30.529319
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_274",
+      "name": "城市设计学院教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364881,
+        "lat": 30.541405
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_275",
+      "name": "基础楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.365163,
+        "lat": 30.52525
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_276",
+      "name": "大创中心",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361731,
+        "lat": 30.541397
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_277",
+      "name": "实习楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367203,
+        "lat": 30.524349
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_278",
+      "name": "尖端科技楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.366733,
+        "lat": 30.544771
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_279",
+      "name": "当代楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.35931,
+        "lat": 30.532945
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_280",
+      "name": "振华楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358919,
+        "lat": 30.534738
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_281",
+      "name": "教学实验大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362243,
+        "lat": 30.525474
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_282",
+      "name": "文华公书林",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361037,
+        "lat": 30.518883
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_283",
+      "name": "文理学部第三教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360104,
+        "lat": 30.539459
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_284",
+      "name": "文理学部第二教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361737,
+        "lat": 30.538903
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_285",
+      "name": "文理学部第五教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361437,
+        "lat": 30.536243
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_286",
+      "name": "文理学部第六教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360219,
+        "lat": 30.538975
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_287",
+      "name": "文理学部第四教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361892,
+        "lat": 30.536873
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_288",
+      "name": "文科教学科研楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358239,
+        "lat": 30.520976
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_289",
+      "name": "文科科研楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358391,
+        "lat": 30.521722
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_290",
+      "name": "星湖综合实验大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.355844,
+        "lat": 30.527303
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_291",
+      "name": "机电实验楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363347,
+        "lat": 30.542261
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_292",
+      "name": "机电排灌楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363993,
+        "lat": 30.54442
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_293",
+      "name": "标本楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367073,
+        "lat": 30.540281
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_294",
+      "name": "武汉大学",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36589,
+        "lat": 30.535051
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_295",
+      "name": "武汉大学图书馆",
+      "aliases": [
+        "武汉大学图"
+      ],
+      "coordinates": {
+        "lng": 114.362998,
+        "lat": 30.535265
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部图书馆，提供借阅和自习服务。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_296",
+      "name": "武汉大学科学技术发展研究院",
+      "aliases": [
+        "科学技术发展研究院"
+      ],
+      "coordinates": {
+        "lng": 114.359597,
+        "lat": 30.542542
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_298",
+      "name": "水工大厅",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364501,
+        "lat": 30.544471
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_299",
+      "name": "水工实验楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.361443,
+        "lat": 30.542078
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_300",
+      "name": "法学院图书馆",
+      "aliases": [
+        "法学院图"
+      ],
+      "coordinates": {
+        "lng": 114.370622,
+        "lat": 30.538851
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学文理学部图书馆，提供借阅和自习服务。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_301",
+      "name": "法学院楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358878,
+        "lat": 30.521453
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学法学院楼，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_302",
+      "name": "泥沙实验楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360732,
+        "lat": 30.541241
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_303",
+      "name": "测绘遥感信息工程国家重点实验室大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360256,
+        "lat": 30.527083
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_304",
+      "name": "测量仪器陈列馆",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362546,
+        "lat": 30.528736
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_305",
+      "name": "物院新楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363001,
+        "lat": 30.53379
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_306",
+      "name": "物院老楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.362308,
+        "lat": 30.534035
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_307",
+      "name": "田家炳楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360974,
+        "lat": 30.519332
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_308",
+      "name": "电气工程学院报告厅",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363215,
+        "lat": 30.543859
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学电气工程学院报告厅，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_309",
+      "name": "研究生院",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367349,
+        "lat": 30.53555
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_310",
+      "name": "社会学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.368096,
+        "lat": 30.540429
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学社会学院大楼，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_311",
+      "name": "结构楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360999,
+        "lat": 30.544631
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_312",
+      "name": "聚英楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359159,
+        "lat": 30.536364
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_313",
+      "name": "计算机学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357447,
+        "lat": 30.538876
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学计算机学院大楼，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_314",
+      "name": "逸夫楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.3606,
+        "lat": 30.533292
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_315",
+      "name": "附3教学楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359885,
+        "lat": 30.526227
+      },
+      "type": "study",
+      "campus": "信息学部",
+      "category": "study",
+      "description": "武汉大学文理学部教学楼，位于文理学部核心教学区。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_316",
+      "name": "雷军科技楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.357235,
+        "lat": 30.534613
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_317",
+      "name": "马克思主义学院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.367823,
+        "lat": 30.538172
+      },
+      "type": "study",
+      "campus": "工学部",
+      "category": "study",
+      "description": "武汉大学马克思主义学院大楼，位于文理学部。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_318",
+      "name": "高压大厅",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363633,
+        "lat": 30.542725
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_319",
+      "name": "高电压绝缘监测实验室",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.360419,
+        "lat": 30.540601
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    },
+    {
+      "id": "poi_320",
+      "name": "高等研究院大楼",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.359876,
+        "lat": 30.532769
+      },
+      "type": "study",
+      "campus": "文理学部",
+      "category": "study",
+      "description": "武汉大学文理学部地标。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1
+    }
+  ]
+}
