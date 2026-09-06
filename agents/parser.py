@@ -159,18 +159,20 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
     client = OpenAI(
         api_key=DEEPSEEK_API_KEY,
         base_url=OPENAI_BASE_URL,
-        timeout=httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+        # read 25s：DeepSeek 常见响应 10~25s，10s 会频繁超时导致"无返回"；
+        # 2 次重试最坏 ~52s，仍在 gunicorn --timeout 60 之内。
+        timeout=httpx.Timeout(connect=5.0, read=25.0, write=10.0, pool=5.0),
     )
 
     messages = _build_messages(query, context)
 
     last_error = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             response = client.chat.completions.create(
                 model=LLM_MODEL,
                 messages=messages,
-                temperature=0.1,
+                temperature=0.0,
                 max_tokens=512,
             )
             raw_text = response.choices[0].message.content
@@ -272,6 +274,7 @@ _POI_QUERY_PATTERNS = [
     r"^查(一?下)?(.+?)$",
     r"^(.+?)怎么走$",   # "X怎么走" 无起点 → poi_query
     r"^(.+?)怎么去$",   # "X怎么去" 无起点 → poi_query
+    r"^(.+?)(?:怎么样|如何|好玩吗|值得去吗)$",   # "X怎么样" 评价类 → poi_query
 ]
 
 # Help 查询关键词（T-011 验收 8）
@@ -342,7 +345,7 @@ def _is_explicit_poi_query(q: str) -> bool:
     "樱花大道在哪里"、"珞珈山是什么" 也应判为 poi_query 而非 chat。
     """
     q = q.strip()
-    if re.match(r"^(.+?)(?:怎么走|怎么去|去哪|在哪里|在哪儿|在哪)$", q):
+    if re.match(r"^(.+?)(?:怎么走|怎么去|去哪|在哪里|在哪儿|在哪|怎么样|如何|好玩吗|值得去吗)$", q):
         return True
     for pattern in _POI_QUERY_PATTERNS:
         if re.match(pattern, q):
@@ -433,6 +436,23 @@ def _rule_based_classify(query: str) -> dict:
                 "start_name": matched,
                 "end_name": None,
             }
+
+    # Step 3.5: "去X" 开头的目的地请求 → path_planning（缺起点，由上层引导/上下文承接）
+    m_go = re.match(r"^(?:我(?:想|要|打算|准备)|想去|要去|打算|准备)?去(.+)$", q)
+    if m_go:
+        end_candidate = m_go.group(1).strip(" 的地得了吗啊呀你我他她它，。！？、那边")
+        if end_candidate and not q.startswith("去哪"):
+            matched_end = _fuzzy_match_poi_name(end_candidate)
+            end_name = matched_end or (
+                end_candidate if 2 <= len(end_candidate) <= 12
+                and end_candidate not in _NON_PLACE_PREFIXES else None
+            )
+            if end_name:
+                return {
+                    "task_type": "path_planning",
+                    "start_name": None,
+                    "end_name": end_name,
+                }
 
     # Step 4: 匹配 POI 纯查询（T-011 验收 7）—— 不包含 A→B 路径语义
     # "X怎么走/去哪" 无起点 → poi_query（只有孤立的目的地问路）
@@ -560,10 +580,13 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
             prefix_matches.append(name)
         elif cand in name or name in cand:
             substring_matches.append(name)
-    # 前缀匹配优先，然后子串匹配，各内部按字母序；统一映射回规范名
+    # 前缀匹配优先，然后子串匹配；各集合内"更短名称"优先（更短 = 更具体的实体，
+    # 如"工学部集贸市场"应命中市场本身而非市场内的小吃店），同长按字母序保证确定性
     if prefix_matches:
+        prefix_matches.sort(key=lambda n: (len(n), n))
         return _POI_NAMES_LOWER.get(prefix_matches[0].lower(), prefix_matches[0])
     if substring_matches:
+        substring_matches.sort(key=lambda n: (len(n), n))
         return _POI_NAMES_LOWER.get(substring_matches[0].lower(), substring_matches[0])
     return None
 
@@ -607,6 +630,15 @@ def _apply_priority_logic(intent: TaskIntent, weight_source_hint: str | None = N
     return intent
 
 
+# 多轮延续语标记：命中说明本轮是在上一轮基础上调整（换偏好/继续问），
+# 才允许在未提取到新地点时沿用 context 的起终点。
+_CONTINUATION_MARKERS = [
+    "换", "改", "调", "避开", "缩短", "延长", "加", "减", "别走", "不走",
+    "这条", "刚才", "继续", "重新", "还是", "一样", "同样", "原来的",
+    "风景", "坡", "快", "慢", "远", "近", "起点", "终点",
+]
+
+
 def _merge_context_with_intent(intent: TaskIntent, context: dict | None, query: str) -> TaskIntent:
     """多轮上下文承接：本轮缺 start/end 时复用 context 中的起终点（T-011 验收 9）。
 
@@ -618,10 +650,21 @@ def _merge_context_with_intent(intent: TaskIntent, context: dict | None, query: 
         "weights": {...},
         "previous_intent": {...TaskIntent snapshot...}
       }
+
+    守卫（防止多轮污染，2026-09 反馈：前面对话的 POI 被静默当作本轮起终点）：
+    必须满足其一才承接：
+      a) 本轮提取到至少一个新地点（用户明确在说路径的一部分）
+      b) 本轮含多轮延续语（换/改/避开/这条/刚才…，说明在调整上一轮）
+    否则（如"皇冠幸福里怎么样"这类新话题）不承接，交由上层引导或闲聊。
     """
     if not context:
         return intent
     if intent.task_type not in ("path_planning", "poi_query"):
+        return intent
+
+    has_new_place = intent.start is not None or intent.end is not None
+    has_continuation = any(m in query for m in _CONTINUATION_MARKERS)
+    if not has_new_place and not has_continuation:
         return intent
 
     # 缺 start → 补 context.start
@@ -783,5 +826,19 @@ def _t011_post_process(
             intent.constraints = Constraints(**DEFAULT_CONSTRAINTS_DICT)
         except (ValidationError, TypeError):
             pass
+
+    # 7. path_planning 的 ambiguity 规范化：
+    #    规则兜底/上下文承接已补全起终点 → 清除；仍缺某端 → 给出对应引导，
+    #    避免残留"解析失败"文案（与实际状态不符，且会污染下一轮补全判断）
+    if intent.task_type == "path_planning":
+        if intent.start is not None and intent.end is not None:
+            intent.ambiguity = None
+        elif intent.ambiguity in ("解析失败，请尝试更明确的描述", None, ""):
+            if intent.start is None and intent.end is None:
+                intent.ambiguity = "解析失败，请尝试更明确的描述"
+            elif intent.start is None:
+                intent.ambiguity = "请指定起点"
+            else:
+                intent.ambiguity = "请指定终点"
 
     return intent
