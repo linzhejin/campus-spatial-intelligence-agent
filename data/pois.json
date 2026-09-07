@@ -1,6 +1,6 @@
 {
-  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/景点/校内服务（300条）",
-  "count": 298,
+  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/餐饮/景点/校内服务（410条）",
+  "count": 412,
   "pois": [
     {
       "id": "poi_001",
@@ -19,7 +19,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_002",
@@ -35,13 +36,14 @@
         "lat": 30.544863
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_004",
@@ -64,7 +66,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.7
     },
     {
       "id": "poi_005",
@@ -85,7 +88,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_006",
@@ -104,7 +108,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_007",
@@ -131,7 +136,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_008",
@@ -145,13 +151,14 @@
         "lat": 30.544023
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。八一路299号武汉大学工学部内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_009",
@@ -162,13 +169,14 @@
         "lat": 30.542
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。东湖南路8号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_010",
@@ -185,7 +193,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_011",
@@ -206,7 +215,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 2.6
     },
     {
       "id": "poi_012",
@@ -225,7 +235,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_013",
@@ -244,14 +255,19 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_014",
       "name": "武汉大学国际教育学院(桂园楼)",
       "aliases": [
         "国际教育学院(桂园楼)",
-        "文理学部第六教学楼"
+        "文理学部第六教学楼",
+        "教六",
+        "教6楼",
+        "6教",
+        "第六教学楼"
       ],
       "coordinates": {
         "lng": 114.360366,
@@ -264,7 +280,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_015",
@@ -291,7 +308,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.8
     },
     {
       "id": "poi_016",
@@ -308,13 +326,14 @@
         "lat": 30.543853
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。武汉大学工学部内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_017",
@@ -325,13 +344,14 @@
         "lat": 30.544925
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_018",
@@ -346,13 +366,14 @@
         "lat": 30.544399
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_019",
@@ -366,13 +387,14 @@
         "lat": 30.541411
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山16号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_020",
@@ -385,13 +407,14 @@
         "lat": 30.528499
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "信息学部",
       "category": "study",
       "description": "文理学部校内地点。珞瑜路129号武汉大学信息学部",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_021",
@@ -405,13 +428,14 @@
         "lat": 30.541631
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_022",
@@ -430,7 +454,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_023",
@@ -443,13 +468,14 @@
         "lat": 30.544034
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。八一路299号武汉大学内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_024",
@@ -469,7 +495,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_025",
@@ -492,7 +519,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_026",
@@ -505,13 +533,14 @@
         "lat": 30.54466
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。八一路299号武汉大学内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_027",
@@ -528,13 +557,14 @@
         "lat": 30.542869
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。八一路299号武汉大学工学部内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_028",
@@ -554,7 +584,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_029",
@@ -576,7 +607,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_030",
@@ -601,7 +633,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_031",
@@ -627,7 +660,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_032",
@@ -652,7 +686,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_033",
@@ -663,13 +698,14 @@
         "lat": 30.54415
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。东湖南路72号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_034",
@@ -696,7 +732,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_035",
@@ -719,7 +756,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_036",
@@ -741,7 +779,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_037",
@@ -761,7 +800,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_038",
@@ -780,7 +820,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_039",
@@ -799,7 +840,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_040",
@@ -818,13 +860,14 @@
         "lat": 30.542581
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。桃园教八楼（高德核实）",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_041",
@@ -840,13 +883,14 @@
         "lat": 30.542436
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。东湖南路8号武汉大学桃园教8楼",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_042",
@@ -860,13 +904,14 @@
         "lat": 30.542099
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_043",
@@ -879,13 +924,14 @@
         "lat": 30.544325
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。东湖南路8号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_044",
@@ -907,7 +953,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_045",
@@ -927,7 +974,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_046",
@@ -946,7 +994,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_047",
@@ -966,7 +1015,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_048",
@@ -985,7 +1035,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_049",
@@ -1004,7 +1055,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_050",
@@ -1026,7 +1078,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_051",
@@ -1045,15 +1098,15 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_052",
       "name": "武汉大学电子信息学院海态实验室",
       "aliases": [
         "武汉大学电子信息学院无线电海洋遥感实验室",
-        "电子信息学院海态实验室",
-        "计算机学院大楼"
+        "电子信息学院海态实验室"
       ],
       "coordinates": {
         "lng": 114.357168,
@@ -1066,7 +1119,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_053",
@@ -1085,7 +1139,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_054",
@@ -1104,7 +1159,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_055",
@@ -1117,13 +1173,14 @@
         "lat": 30.542614
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。武汉大学文理学部地标。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_056",
@@ -1152,7 +1209,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_057",
@@ -1172,7 +1230,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_058",
@@ -1193,7 +1252,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_059",
@@ -1204,13 +1264,14 @@
         "lat": 30.544705
       },
       "type": "study",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "study",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_060",
@@ -1229,7 +1290,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_061",
@@ -1251,7 +1313,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_062",
@@ -1268,7 +1331,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_064",
@@ -1285,41 +1349,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_065",
-      "name": "湖北经济学院四眼井",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.356125,
-        "lat": 30.531025
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。珞狮路辅路与珞珈山路交叉口东100米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
-    },
-    {
-      "id": "poi_066",
-      "name": "湖北经济学院洪山校区学生宿舍",
-      "aliases": [],
-      "coordinates": {
-        "lng": 114.356025,
-        "lat": 30.529525
-      },
-      "type": "study",
-      "campus": "文理学部",
-      "category": "study",
-      "description": "文理学部校内地点。求是大道与星湖三路交叉口西160米",
-      "season_tags": [
-        "all"
-      ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_067",
@@ -1335,11 +1366,12 @@
       "type": "dining",
       "campus": "文理学部",
       "category": "dining",
-      "description": "文理学部校内地点。武汉大学工学部食堂，提供日常餐饮。",
+      "description": "文理学部校内地点。枫园餐饮区风味食堂，近枫园CBD，日常餐饮（高德核实）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.0
     },
     {
       "id": "poi_068",
@@ -1360,7 +1392,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_069",
@@ -1368,7 +1401,8 @@
       "aliases": [
         "桂2食堂",
         "桂二食堂",
-        "桂园二"
+        "桂园二",
+        "桂园餐厅"
       ],
       "coordinates": {
         "lng": 114.358944,
@@ -1381,7 +1415,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_070",
@@ -1394,11 +1429,12 @@
       "type": "dining",
       "campus": "文理学部",
       "category": "dining",
-      "description": "文理学部校内地点。武汉大学文理学部食堂，提供日常餐饮。",
+      "description": "文理学部校内地点。桂园食堂综合楼（桂园一/二食堂及桂园餐厅所在地），日常餐饮。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_071",
@@ -1417,16 +1453,16 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_072",
       "name": "武汉大学枫园食堂",
       "aliases": [
-        "枫园宿舍",
         "枫园食堂",
-        "法学院一带",
-        "留学生区"
+        "枫园学生食堂",
+        "枫园食堂楼"
       ],
       "coordinates": {
         "lng": 114.37176,
@@ -1435,11 +1471,12 @@
       "type": "dining",
       "campus": "文理学部",
       "category": "dining",
-      "description": "文理学部校内地点。珞珈山16号武汉大学",
+      "description": "文理学部校内地点。枫园食堂综合楼，麦当劳/达美乐/库迪等枫园CBD商铺在其周边。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_073",
@@ -1458,7 +1495,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_074",
@@ -1479,7 +1517,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_075",
@@ -1495,13 +1534,14 @@
         "lat": 30.542155
       },
       "type": "dining",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "dining",
-      "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
+      "description": "工学部校内地点。田园食堂（暂停营业），近青年教师公寓与茶港门，周边有小吃街（高德核实属工学部）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_076",
@@ -1520,7 +1560,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_077",
@@ -1539,7 +1580,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_078",
@@ -1556,7 +1598,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_079",
@@ -1573,13 +1616,18 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_080",
       "name": "武汉大学九一二运动场",
       "aliases": [
-        "九一二运动场"
+        "九一二运动场",
+        "912操场",
+        "九一二操场",
+        "9·12操场",
+        "912运动场"
       ],
       "coordinates": {
         "lng": 114.366465,
@@ -1592,7 +1640,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.8
     },
     {
       "id": "poi_081",
@@ -1617,7 +1666,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_082",
@@ -1637,7 +1687,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_083",
@@ -1657,7 +1708,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.3
     },
     {
       "id": "poi_084",
@@ -1671,13 +1723,14 @@
         "lat": 30.541563
       },
       "type": "sports",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "sports",
       "description": "文理学部校内地点。东湖南路140附近",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_085",
@@ -1698,7 +1751,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.1
     },
     {
       "id": "poi_086",
@@ -1717,7 +1771,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_087",
@@ -1747,7 +1802,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_088",
@@ -1770,7 +1826,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_089",
@@ -1793,7 +1850,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_090",
@@ -1816,7 +1874,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_091",
@@ -1829,13 +1888,14 @@
         "lat": 30.541436
       },
       "type": "dorm",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "dorm",
       "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_092",
@@ -1859,7 +1919,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_093",
@@ -1883,7 +1944,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_094",
@@ -1907,7 +1969,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_095",
@@ -1931,7 +1994,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_096",
@@ -1955,7 +2019,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_097",
@@ -1979,7 +2044,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_098",
@@ -2003,7 +2069,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_099",
@@ -2022,7 +2089,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_100",
@@ -2046,7 +2114,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_101",
@@ -2070,7 +2139,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_102",
@@ -2094,7 +2164,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_103",
@@ -2118,7 +2189,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_104",
@@ -2134,13 +2206,14 @@
         "lat": 30.543575
       },
       "type": "dorm",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "dorm",
       "description": "文理学部校内地点。松园东路与松园北路交叉口南80米",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_105",
@@ -2159,7 +2232,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_106",
@@ -2183,7 +2257,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_107",
@@ -2207,7 +2282,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_108",
@@ -2231,7 +2307,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_109",
@@ -2255,7 +2332,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_110",
@@ -2285,7 +2363,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_111",
@@ -2309,7 +2388,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_112",
@@ -2333,7 +2413,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_113",
@@ -2357,7 +2438,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_114",
@@ -2381,7 +2463,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_115",
@@ -2405,7 +2488,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_116",
@@ -2429,7 +2513,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_117",
@@ -2453,7 +2538,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_118",
@@ -2478,7 +2564,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_119",
@@ -2503,7 +2590,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_120",
@@ -2528,7 +2616,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_121",
@@ -2548,7 +2637,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_122",
@@ -2571,7 +2661,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_123",
@@ -2593,7 +2684,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_124",
@@ -2614,7 +2706,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_125",
@@ -2635,7 +2728,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_126",
@@ -2656,7 +2750,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_127",
@@ -2677,7 +2772,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_128",
@@ -2698,7 +2794,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_129",
@@ -2719,7 +2816,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_130",
@@ -2740,7 +2838,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_131",
@@ -2759,7 +2858,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_132",
@@ -2778,7 +2878,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_133",
@@ -2797,7 +2898,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_134",
@@ -2816,7 +2918,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_135",
@@ -2835,7 +2938,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_136",
@@ -2854,7 +2958,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_137",
@@ -2876,13 +2981,17 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.7
     },
     {
       "id": "poi_138",
-      "name": "武汉大学南门",
+      "name": "珞南门",
       "aliases": [
-        "南门"
+        "南门",
+        "武大附中门",
+        "武汉大学南门",
+        "附中门"
       ],
       "coordinates": {
         "lng": 114.365787,
@@ -2891,11 +3000,12 @@
       "type": "gate",
       "campus": "文理学部",
       "category": "gate",
-      "description": "文理学部校内地点。武汉大学武汉大学南门，校园出入口之一。",
+      "description": "文理学部/信息学部交界处校内地点。八一路广八路附近，又称附中门，地铁2号线广埠屯站可达（官方名珞南门）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_139",
@@ -2914,7 +3024,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_140",
@@ -2926,20 +3037,22 @@
         "校门",
         "正门",
         "武大正门",
-        "珞珈门"
+        "珞珈门",
+        "国立武汉大学牌楼"
       ],
       "coordinates": {
-        "lng": 114.35806,
-        "lat": 30.53318
+        "lng": 114.358238,
+        "lat": 30.53334
       },
       "type": "gate",
       "campus": "文理学部",
       "category": "gate",
-      "description": "文理学部校内地点。武大正门八一路老牌坊，国立武汉大学题字，校园主入口。",
+      "description": "文理学部校内地点。武大正门八一路老牌坊，国立武汉大学题字，校园主入口（高德坐标：国立武汉大学牌楼新）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_141",
@@ -2958,7 +3071,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.7
     },
     {
       "id": "poi_142",
@@ -2978,7 +3092,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.8
     },
     {
       "id": "poi_143",
@@ -2998,7 +3113,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": null
     },
     {
       "id": "poi_144",
@@ -3017,7 +3133,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": null
     },
     {
       "id": "poi_145",
@@ -3036,7 +3153,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.7
     },
     {
       "id": "poi_146",
@@ -3055,7 +3173,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.9
     },
     {
       "id": "poi_147",
@@ -3074,7 +3193,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.5
     },
     {
       "id": "poi_148",
@@ -3096,7 +3216,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.8
     },
     {
       "id": "poi_149",
@@ -3115,7 +3236,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.7
     },
     {
       "id": "poi_150",
@@ -3132,7 +3254,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.4
     },
     {
       "id": "poi_151",
@@ -3154,7 +3277,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.6
     },
     {
       "id": "poi_152",
@@ -3174,7 +3298,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.6
     },
     {
       "id": "poi_153",
@@ -3198,7 +3323,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.1
     },
     {
       "id": "poi_154",
@@ -3217,7 +3343,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 2.8
     },
     {
       "id": "poi_155",
@@ -3236,7 +3363,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.0
     },
     {
       "id": "poi_156",
@@ -3255,7 +3383,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.6
     },
     {
       "id": "poi_157",
@@ -3279,7 +3408,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.3
     },
     {
       "id": "poi_158",
@@ -3298,7 +3428,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.5
     },
     {
       "id": "poi_159",
@@ -3317,7 +3448,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.4
     },
     {
       "id": "poi_160",
@@ -3330,13 +3462,14 @@
         "lat": 30.544491
       },
       "type": "scenery",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "scenery",
-      "description": "文理学部校内地点。校园北路附近",
+      "description": "工学部校内地点。校园北路附近",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 2.8
     },
     {
       "id": "poi_161",
@@ -3370,7 +3503,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": null
     },
     {
       "id": "poi_162",
@@ -3389,14 +3523,17 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.0
     },
     {
       "id": "poi_163",
-      "name": "武汉大学闻一多",
+      "name": "闻一多雕像",
       "aliases": [
-        "学生新1栋",
-        "闻一多"
+        "闻一多塑像",
+        "闻一多",
+        "武汉大学闻一多",
+        "闻一多像"
       ],
       "coordinates": {
         "lng": 114.365089,
@@ -3405,11 +3542,12 @@
       "type": "scenery",
       "campus": "文理学部",
       "category": "scenery",
-      "description": "文理学部校内地点。八一路299号武汉大学内",
+      "description": "文理学部校内地点。闻一多先生雕像，位于樱花城堡（樱园老斋舍）区域（高德风景名胜POI核实）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.3
     },
     {
       "id": "poi_164",
@@ -3428,7 +3566,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.1
     },
     {
       "id": "poi_165",
@@ -3445,7 +3584,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.2
     },
     {
       "id": "poi_166",
@@ -3464,7 +3604,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_167",
@@ -3481,13 +3622,14 @@
         "lat": 30.541869
       },
       "type": "service",
-      "campus": "文理学部",
+      "campus": "工学部",
       "category": "service",
       "description": "文理学部校内地点。武汉大学第二附属小学西南门北230米",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_168",
@@ -3508,7 +3650,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_169",
@@ -3527,7 +3670,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_170",
@@ -3546,7 +3690,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_171",
@@ -3557,13 +3702,14 @@
         "lat": 30.534456
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。武汉大学珞珈山别墅群第18栋",
+      "description": "文理学部校内地点。武汉大学珞珈山别墅群第18栋",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_172",
@@ -3589,7 +3735,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_173",
@@ -3603,13 +3750,14 @@
         "lat": 30.540185
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。八一路299号",
+      "description": "文理学部校内地点。八一路299号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_174",
@@ -3625,13 +3773,14 @@
         "lat": 30.536589
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山16号武汉大学",
+      "description": "文理学部校内地点。珞珈山16号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_175",
@@ -3650,7 +3799,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_176",
@@ -3664,13 +3814,14 @@
         "lat": 30.541948
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。凌波路湖滨六舍附楼1层",
+      "description": "文理学部校内地点。凌波路湖滨六舍附楼1层",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_177",
@@ -3683,13 +3834,14 @@
         "lat": 30.535554
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山路16号",
+      "description": "文理学部校内地点。珞珈山路16号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_178",
@@ -3704,13 +3856,14 @@
         "lat": 30.538649
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山16号武汉大学",
+      "description": "文理学部校内地点。珞珈山16号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_179",
@@ -3723,13 +3876,14 @@
         "lat": 30.534403
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。文理学部珞珈山武汉大学别墅区一区20栋",
+      "description": "文理学部校内地点。文理学部珞珈山武汉大学别墅区一区20栋",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_180",
@@ -3743,13 +3897,14 @@
         "lat": 30.539478
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。八一路299号珞珈山",
+      "description": "文理学部校内地点。八一路299号珞珈山",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_181",
@@ -3768,7 +3923,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_182",
@@ -3796,7 +3952,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_183",
@@ -3825,7 +3982,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_184",
@@ -3853,7 +4011,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_185",
@@ -3880,7 +4039,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_186",
@@ -3899,7 +4059,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_187",
@@ -3930,7 +4091,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_188",
@@ -3957,7 +4119,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_189",
@@ -3976,7 +4139,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_190",
@@ -3991,11 +4155,12 @@
       "type": "study",
       "campus": "工学部",
       "category": "study",
-      "description": "工学部校内地点。弘毅大道与珞山路交叉口南120米",
+      "description": "文理学部校内地点。弘毅大道与珞山路交叉口南120米",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_191",
@@ -4009,13 +4174,14 @@
         "lat": 30.53986
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。八一路299号武汉大学内",
+      "description": "文理学部校内地点。八一路299号武汉大学内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_192",
@@ -4026,13 +4192,14 @@
         "lat": 30.541051
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山街道八一路299号武汉大学",
+      "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_193",
@@ -4043,13 +4210,14 @@
         "lat": 30.541563
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山街道八一路299号武汉大学",
+      "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_194",
@@ -4064,13 +4232,14 @@
         "lat": 30.538815
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。东湖南路28号",
+      "description": "文理学部校内地点。东湖南路28号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_195",
@@ -4084,13 +4253,14 @@
         "lat": 30.538687
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山16号武汉大学",
+      "description": "文理学部校内地点。珞珈山16号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_196",
@@ -4103,13 +4273,14 @@
         "lat": 30.541079
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。半边山路与侧船山路交叉口东240米",
+      "description": "文理学部校内地点。半边山路与侧船山路交叉口东240米",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_197",
@@ -4122,13 +4293,14 @@
         "lat": 30.537561
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。珞珈山街道八一路299号武汉大学",
+      "description": "文理学部校内地点。珞珈山街道八一路299号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_198",
@@ -4142,13 +4314,14 @@
         "lat": 30.540413
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。八一路299号武汉大学内",
+      "description": "文理学部校内地点。八一路299号武汉大学内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_199",
@@ -4164,13 +4337,14 @@
         "lat": 30.538851
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。八一路299号珞珈山武汉大学",
+      "description": "文理学部校内地点。八一路299号珞珈山武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_200",
@@ -4184,13 +4358,14 @@
         "lat": 30.539028
       },
       "type": "study",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "study",
-      "description": "工学部校内地点。人文路",
+      "description": "文理学部校内地点。人文路",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_201",
@@ -4211,7 +4386,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_202",
@@ -4230,7 +4406,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_203",
@@ -4255,7 +4432,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_204",
@@ -4274,12 +4452,17 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_205",
       "name": "工学部操场",
-      "aliases": [],
+      "aliases": [
+        "奥场",
+        "奥林匹克运动场",
+        "工学部田径场"
+      ],
       "coordinates": {
         "lng": 114.367973,
         "lat": 30.543589
@@ -4291,7 +4474,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_206",
@@ -4308,7 +4492,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.2
     },
     {
       "id": "poi_207",
@@ -4331,7 +4516,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_208",
@@ -4354,7 +4540,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_209",
@@ -4377,7 +4564,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_210",
@@ -4400,7 +4588,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_211",
@@ -4423,7 +4612,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_212",
@@ -4447,7 +4637,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_213",
@@ -4471,7 +4662,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_214",
@@ -4495,7 +4687,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_215",
@@ -4519,7 +4712,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_216",
@@ -4543,7 +4737,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_217",
@@ -4567,7 +4762,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_218",
@@ -4586,7 +4782,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_219",
@@ -4610,7 +4807,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_220",
@@ -4634,7 +4832,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_221",
@@ -4659,7 +4858,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_222",
@@ -4678,7 +4878,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_223",
@@ -4696,13 +4897,14 @@
         "lat": 30.537687
       },
       "type": "dorm",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "dorm",
-      "description": "工学部校内地点。八一路299号武汉大学内",
+      "description": "文理学部校内地点。八一路299号武汉大学内",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_224",
@@ -4720,13 +4922,14 @@
         "lat": 30.537981
       },
       "type": "dorm",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "dorm",
-      "description": "工学部校内地点。珞珈山16号武汉大学",
+      "description": "文理学部校内地点。珞珈山16号武汉大学",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_225",
@@ -4739,13 +4942,14 @@
         "lat": 30.537854
       },
       "type": "dorm",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "dorm",
-      "description": "工学部校内地点。武汉大学工学部学生宿舍区。",
+      "description": "文理学部校内地点。武汉大学工学部学生宿舍区。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_226",
@@ -4766,7 +4970,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 3.5
     },
     {
       "id": "poi_227",
@@ -4788,7 +4993,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.4
     },
     {
       "id": "poi_228",
@@ -4801,13 +5007,14 @@
         "lat": 30.53451
       },
       "type": "scenery",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "scenery",
-      "description": "工学部校内地点。珞珈山一区27号",
+      "description": "文理学部校内地点。珞珈山一区27号",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 4.3
     },
     {
       "id": "poi_229",
@@ -4818,13 +5025,14 @@
         "lat": 30.534706
       },
       "type": "scenery",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "scenery",
-      "description": "工学部校内地点。环山南路珞珈山",
+      "description": "文理学部校内地点。环山南路珞珈山",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": 3.8
     },
     {
       "id": "poi_230",
@@ -4843,7 +5051,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_231",
@@ -4860,13 +5069,14 @@
         "lat": 30.537369
       },
       "type": "service",
-      "campus": "工学部",
+      "campus": "文理学部",
       "category": "service",
-      "description": "工学部校内地点。武汉大学枫园阅览室西门东90米",
+      "description": "文理学部校内地点。武汉大学枫园阅览室西门东90米",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.1
     },
     {
       "id": "poi_232",
@@ -4883,7 +5093,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 2.6
     },
     {
       "id": "poi_233",
@@ -4900,7 +5111,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_234",
@@ -4917,7 +5129,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_235",
@@ -4934,7 +5147,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_236",
@@ -4951,7 +5165,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_237",
@@ -4968,7 +5183,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_238",
@@ -5001,7 +5217,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_239",
@@ -5030,7 +5247,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_240",
@@ -5052,7 +5270,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_241",
@@ -5076,7 +5295,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_242",
@@ -5096,7 +5316,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_243",
@@ -5115,7 +5336,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_244",
@@ -5134,7 +5356,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_245",
@@ -5163,7 +5386,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_246",
@@ -5186,7 +5410,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_247",
@@ -5215,7 +5440,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_248",
@@ -5234,7 +5460,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_249",
@@ -5253,7 +5480,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_250",
@@ -5273,7 +5501,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_251",
@@ -5290,7 +5519,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_252",
@@ -5307,7 +5537,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_253",
@@ -5326,7 +5557,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_254",
@@ -5350,7 +5582,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_255",
@@ -5374,7 +5607,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_256",
@@ -5398,7 +5632,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.7
     },
     {
       "id": "poi_257",
@@ -5415,7 +5650,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.6
     },
     {
       "id": "poi_258",
@@ -5434,7 +5670,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 3.8
     },
     {
       "id": "poi_259",
@@ -5454,7 +5691,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.4
     },
     {
       "id": "poi_260",
@@ -5473,7 +5711,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.5
     },
     {
       "id": "poi_261",
@@ -5492,7 +5731,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.4
     },
     {
       "id": "poi_262",
@@ -5511,7 +5751,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": 4.2
     },
     {
       "id": "poi_263",
@@ -5536,7 +5777,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_264",
@@ -5555,7 +5797,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_265",
@@ -5574,7 +5817,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_266",
@@ -5593,7 +5837,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_267",
@@ -5612,7 +5857,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_268",
@@ -5631,7 +5877,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_269",
@@ -5650,7 +5897,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_270",
@@ -5677,7 +5925,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_271",
@@ -5697,7 +5946,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_272",
@@ -5724,7 +5974,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_273",
@@ -5751,7 +6002,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_274",
@@ -5778,7 +6030,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_275",
@@ -5805,7 +6058,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_276",
@@ -5832,7 +6086,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_277",
@@ -5859,7 +6114,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_278",
@@ -5887,7 +6143,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_279",
@@ -5914,7 +6171,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_280",
@@ -5941,7 +6199,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_281",
@@ -5970,7 +6229,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_282",
@@ -5989,7 +6249,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_283",
@@ -6008,7 +6269,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_284",
@@ -6027,7 +6289,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_285",
@@ -6054,7 +6317,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_286",
@@ -6081,7 +6345,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_287",
@@ -6108,7 +6373,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_288",
@@ -6135,7 +6401,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_289",
@@ -6154,7 +6421,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_290",
@@ -6181,7 +6449,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_291",
@@ -6200,7 +6469,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_292",
@@ -6219,7 +6489,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_293",
@@ -6238,7 +6509,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_294",
@@ -6259,13 +6531,14 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_295",
       "name": "武汉大学文澜门",
       "aliases": [
-        "信息学部文澜门",
+        "工学部文澜门",
         "文澜门",
         "武大文澜门"
       ],
@@ -6274,13 +6547,14 @@
         "lat": 30.545254
       },
       "type": "gate",
-      "campus": "信息学部",
+      "campus": "工学部",
       "category": "gate",
-      "description": "信息学部校内地点。信息学部文澜门（广埠屯，高德核实）",
+      "description": "工学部校内地点。靠近东湖湖岸线，位于工学部，打车进校常用门（高德核实，原误标信息学部）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_296",
@@ -6302,7 +6576,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_297",
@@ -6311,21 +6586,21 @@
         "信息学部南门",
         "信息学部正门",
         "广埠屯校门",
-        "武大附中门",
         "珞瑜路校门"
       ],
       "coordinates": {
-        "lng": 114.36263,
-        "lat": 30.5245
+        "lng": 114.3611,
+        "lat": 30.5254
       },
       "type": "gate",
       "campus": "信息学部",
       "category": "gate",
-      "description": "信息学部校内地点。珞瑜路信息学部正门南门，地铁2号线广埠屯K口直达。",
+      "description": "信息学部校内地点。信息学部南端正门，门内友谊广场，门外珞喻路，地铁2号线广埠屯站可达（坐标经高德核实修正）。",
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_298",
@@ -6346,7 +6621,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 3
+      "scenery_score": 3,
+      "rating": null
     },
     {
       "id": "poi_299",
@@ -6365,7 +6641,8 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
     },
     {
       "id": "poi_300",
@@ -6386,7 +6663,2354 @@
       "season_tags": [
         "all"
       ],
-      "scenery_score": 1
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_301",
+      "name": "弘毅门",
+      "aliases": [
+        "西门",
+        "武汉大学西门",
+        "武大西门",
+        "弘毅门(西门)"
+      ],
+      "coordinates": {
+        "lng": 114.35671,
+        "lat": 30.535388
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "文理学部校内地点。西门，卓尔体育馆附近，正对珞狮路，本部最大交通要塞之一（高德核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_302",
+      "name": "北门",
+      "aliases": [
+        "武汉大学北门",
+        "武大北门",
+        "工学部北门"
+      ],
+      "coordinates": {
+        "lng": 114.362596,
+        "lat": 30.544989
+      },
+      "type": "gate",
+      "campus": "工学部",
+      "category": "gate",
+      "description": "工学部校内地点。校园北侧出入口，靠近工学部教学楼（高德核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_303",
+      "name": "扬波门",
+      "aliases": [
+        "东门",
+        "武汉大学东门",
+        "武大东门",
+        "扬波门(东门)"
+      ],
+      "coordinates": {
+        "lng": 114.377272,
+        "lat": 30.535162
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "文理学部校内地点。东门，武大最东侧，珞珈山脚下东湖湖岸线，校外可达一棵树进入东湖绿道（高德核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_304",
+      "name": "西南门",
+      "aliases": [
+        "武汉大学西南门",
+        "武大西南门"
+      ],
+      "coordinates": {
+        "lng": 114.3565,
+        "lat": 30.5325
+      },
+      "type": "gate",
+      "campus": "文理学部",
+      "category": "gate",
+      "description": "文理学部校内地点。校园西南侧出入口（高德地图有此门，坐标为珞珈山路附近近似值，待精确核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_305",
+      "name": "五洲餐厅(求是大道店)",
+      "aliases": [
+        "五洲餐厅",
+        "求是大道餐厅"
+      ],
+      "coordinates": {
+        "lng": 114.35791,
+        "lat": 30.5303
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信息学部北片，求是大道旁（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_306",
+      "name": "沙县小吃(信息学部店)",
+      "aliases": [
+        "沙县小吃信部店",
+        "信部沙县小吃"
+      ],
+      "coordinates": {
+        "lng": 114.35722,
+        "lat": 30.53102
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信息学部教工宿舍区小吃店（高德核实信息学部内）（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_307",
+      "name": "星湖园餐厅",
+      "aliases": [
+        "星湖园餐厅(暂停营业)"
+      ],
+      "coordinates": {
+        "lng": 114.36058,
+        "lat": 30.53041
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信息学部星湖旁餐厅（暂停营业）（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.6
+    },
+    {
+      "id": "poi_308",
+      "name": "佳乐粉面馆(信息学部)",
+      "aliases": [
+        "佳乐粉面馆",
+        "信部粉面馆"
+      ],
+      "coordinates": {
+        "lng": 114.36026,
+        "lat": 30.53142
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信息学部北片粉面馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_309",
+      "name": "大浪咖啡包子铺(信息学部)",
+      "aliases": [
+        "大浪咖啡",
+        "大浪包子铺"
+      ],
+      "coordinates": {
+        "lng": 114.36068,
+        "lat": 30.53142
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信息学部北片咖啡与包子铺（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.6
+    },
+    {
+      "id": "poi_310",
+      "name": "库迪咖啡(信息学部店)",
+      "aliases": [
+        "库迪咖啡信部店"
+      ],
+      "coordinates": {
+        "lng": 114.35843,
+        "lat": 30.52724
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部食堂楼（近四食堂）（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_311",
+      "name": "柚见鲜茶(信息学部三食堂店)",
+      "aliases": [
+        "柚见鲜茶",
+        "信部柚见鲜茶"
+      ],
+      "coordinates": {
+        "lng": 114.35843,
+        "lat": 30.52733
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部三食堂旁饮品店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_312",
+      "name": "沫芝墨汁酸奶捞(信部CBD店)",
+      "aliases": [
+        "沫芝酸奶捞",
+        "信部酸奶捞"
+      ],
+      "coordinates": {
+        "lng": 114.35972,
+        "lat": 30.52782
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD酸奶水果捞（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 0.9
+    },
+    {
+      "id": "poi_313",
+      "name": "瑞幸咖啡(信息学部店)",
+      "aliases": [
+        "瑞幸咖啡信部店"
+      ],
+      "coordinates": {
+        "lng": 114.35975,
+        "lat": 30.52784
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_314",
+      "name": "霸王茶姬(信息学部店)",
+      "aliases": [
+        "霸王茶姬信部店",
+        "CHAGEE信部店"
+      ],
+      "coordinates": {
+        "lng": 114.35974,
+        "lat": 30.52803
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_315",
+      "name": "肯德基(信息学部店)",
+      "aliases": [
+        "肯德基信部店",
+        "KFC信息学部"
+      ],
+      "coordinates": {
+        "lng": 114.35975,
+        "lat": 30.52791
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD快餐店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_316",
+      "name": "古茗(信息学部店)",
+      "aliases": [
+        "古茗信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36006,
+        "lat": 30.52782
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_317",
+      "name": "Manner Coffee(信息学部店)",
+      "aliases": [
+        "Manner信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36007,
+        "lat": 30.52788
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.4
+    },
+    {
+      "id": "poi_318",
+      "name": "一品豆花(信息学部店)",
+      "aliases": [
+        "一品豆花信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36007,
+        "lat": 30.52792
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD豆花甜品（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.6
+    },
+    {
+      "id": "poi_319",
+      "name": "柠季手打柠檬茶(信息学部店)",
+      "aliases": [
+        "柠季信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36011,
+        "lat": 30.52787
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_320",
+      "name": "爱的锅三汁焖锅(信息学部店)",
+      "aliases": [
+        "爱的锅",
+        "三汁焖锅信部店"
+      ],
+      "coordinates": {
+        "lng": 114.3601,
+        "lat": 30.52781
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD焖锅餐厅（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_321",
+      "name": "鱼你在一起(信息学部店)",
+      "aliases": [
+        "鱼你在一起信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36017,
+        "lat": 30.52777
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD酸菜鱼饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_322",
+      "name": "煎百味(信息学部店)",
+      "aliases": [
+        "煎百味"
+      ],
+      "coordinates": {
+        "lng": 114.36017,
+        "lat": 30.52788
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD煎菜饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_323",
+      "name": "老乡鸡(信息学部店)",
+      "aliases": [
+        "老乡鸡信部店"
+      ],
+      "coordinates": {
+        "lng": 114.36029,
+        "lat": 30.52791
+      },
+      "type": "dining",
+      "campus": "信息学部",
+      "category": "dining",
+      "description": "信息学部校内地点。信部CBD中式快餐（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_324",
+      "name": "鱼籽村秘制拌饭(武大店)",
+      "aliases": [
+        "鱼籽村拌饭"
+      ],
+      "coordinates": {
+        "lng": 114.36455,
+        "lat": 30.53054
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片（珞南门内）小吃店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_325",
+      "name": "超牛堡炙烤牛肉汉堡(武大进校店)",
+      "aliases": [
+        "超牛堡"
+      ],
+      "coordinates": {
+        "lng": 114.364,
+        "lat": 30.53086
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片汉堡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.7
+    },
+    {
+      "id": "poi_326",
+      "name": "金闪闪炸鸡腿(武大店)",
+      "aliases": [
+        "金闪闪炸鸡腿"
+      ],
+      "coordinates": {
+        "lng": 114.3635,
+        "lat": 30.53092
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片炸鸡小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.5
+    },
+    {
+      "id": "poi_327",
+      "name": "好味道粉面馆(武大店)",
+      "aliases": [
+        "好味道粉面馆"
+      ],
+      "coordinates": {
+        "lng": 114.36382,
+        "lat": 30.53092
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片粉面馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_328",
+      "name": "糯米包油条(武大文理学部店)",
+      "aliases": [
+        "武大糯米包油条"
+      ],
+      "coordinates": {
+        "lng": 114.3637,
+        "lat": 30.53096
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片早餐小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.4
+    },
+    {
+      "id": "poi_329",
+      "name": "丁记炒饭(武大可送校内店)",
+      "aliases": [
+        "丁记炒饭"
+      ],
+      "coordinates": {
+        "lng": 114.36366,
+        "lat": 30.53098
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片炒饭小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_330",
+      "name": "有家黄焖鸡(武大店)",
+      "aliases": [
+        "有家黄焖鸡"
+      ],
+      "coordinates": {
+        "lng": 114.36386,
+        "lat": 30.53101
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片黄焖鸡（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.2
+    },
+    {
+      "id": "poi_331",
+      "name": "刘府井北京烤鸭(武大店)",
+      "aliases": [
+        "刘府井北京烤鸭"
+      ],
+      "coordinates": {
+        "lng": 114.36347,
+        "lat": 30.53102
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部南片烤鸭店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_332",
+      "name": "Greenhouse花房咖啡",
+      "aliases": [
+        "花房咖啡"
+      ],
+      "coordinates": {
+        "lng": 114.36784,
+        "lat": 30.53127
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部家属区咖啡馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_333",
+      "name": "鹏记热干面(白锦街店)",
+      "aliases": [
+        "鹏记热干面"
+      ],
+      "coordinates": {
+        "lng": 114.36764,
+        "lat": 30.53162
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部家属区热干面（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_334",
+      "name": "初山饭团(武大店)",
+      "aliases": [
+        "初山饭团"
+      ],
+      "coordinates": {
+        "lng": 114.36742,
+        "lat": 30.53167
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部家属区饭团小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.5
+    },
+    {
+      "id": "poi_335",
+      "name": "金麦坊面包房(武大店)",
+      "aliases": [
+        "金麦坊面包房",
+        "金麦坊"
+      ],
+      "coordinates": {
+        "lng": 114.36797,
+        "lat": 30.53174
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。文理学部家属区面包房（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_336",
+      "name": "香茵波克现烤汉堡(武大校区店)",
+      "aliases": [
+        "香茵波克汉堡"
+      ],
+      "coordinates": {
+        "lng": 114.36461,
+        "lat": 30.53277
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园片区南端汉堡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_337",
+      "name": "古茗(梅园南区店)",
+      "aliases": [
+        "古茗梅园店"
+      ],
+      "coordinates": {
+        "lng": 114.36434,
+        "lat": 30.53281
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园片区南区茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_338",
+      "name": "瑞幸咖啡(梅园店)",
+      "aliases": [
+        "瑞幸咖啡梅园店"
+      ],
+      "coordinates": {
+        "lng": 114.36452,
+        "lat": 30.53522
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园食堂旁咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_339",
+      "name": "茶颜悦色(梅园店)",
+      "aliases": [
+        "茶颜悦色梅园店"
+      ],
+      "coordinates": {
+        "lng": 114.36459,
+        "lat": 30.53533
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园食堂旁茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.4
+    },
+    {
+      "id": "poi_340",
+      "name": "周麻婆川式小炒(武大店)",
+      "aliases": [
+        "周麻婆"
+      ],
+      "coordinates": {
+        "lng": 114.36463,
+        "lat": 30.53546
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD川式小炒（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_341",
+      "name": "小肆川(梅园店)",
+      "aliases": [
+        "小肆川"
+      ],
+      "coordinates": {
+        "lng": 114.36463,
+        "lat": 30.53558
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD川菜馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.9
+    },
+    {
+      "id": "poi_342",
+      "name": "呷哺呷哺(梅园店)",
+      "aliases": [
+        "呷哺呷哺"
+      ],
+      "coordinates": {
+        "lng": 114.36459,
+        "lat": 30.53558
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD小火锅（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_343",
+      "name": "饱立来(梅园店)",
+      "aliases": [
+        "饱立来"
+      ],
+      "coordinates": {
+        "lng": 114.36463,
+        "lat": 30.53558
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD快餐（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.9
+    },
+    {
+      "id": "poi_344",
+      "name": "氧气层(梅园店)",
+      "aliases": [
+        "氧气层"
+      ],
+      "coordinates": {
+        "lng": 114.36462,
+        "lat": 30.53559
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园食堂内轻食档口（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_345",
+      "name": "饱嗝便当(梅园店)",
+      "aliases": [
+        "饱嗝便当"
+      ],
+      "coordinates": {
+        "lng": 114.3646,
+        "lat": 30.53572
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD便当店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.5
+    },
+    {
+      "id": "poi_346",
+      "name": "鱼你在一起(梅园店)",
+      "aliases": [
+        "鱼你在一起梅园店"
+      ],
+      "coordinates": {
+        "lng": 114.36469,
+        "lat": 30.536
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD酸菜鱼饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_347",
+      "name": "肯德基(梅园店)",
+      "aliases": [
+        "肯德基武大校园店",
+        "KFC梅园"
+      ],
+      "coordinates": {
+        "lng": 114.36515,
+        "lat": 30.53607
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD肯德基（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_348",
+      "name": "麦当劳(梅园店)",
+      "aliases": [
+        "麦当劳武大店",
+        "麦当劳武汉大学店"
+      ],
+      "coordinates": {
+        "lng": 114.36453,
+        "lat": 30.53623
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。梅园CBD麦当劳（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_349",
+      "name": "布咖啡(武汉大学校园店)",
+      "aliases": [
+        "布咖啡"
+      ],
+      "coordinates": {
+        "lng": 114.36348,
+        "lat": 30.53543
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。总图书馆旁校园咖啡馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_350",
+      "name": "栀否栀否冰激淋糖水(武大校内店)",
+      "aliases": [
+        "栀否栀否"
+      ],
+      "coordinates": {
+        "lng": 114.36348,
+        "lat": 30.53543
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。总图书馆旁甜品店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_351",
+      "name": "蔬三时轻食(武大校内店)",
+      "aliases": [
+        "蔬三时轻食"
+      ],
+      "coordinates": {
+        "lng": 114.36338,
+        "lat": 30.53627
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。万林艺术博物馆旁轻食店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.9
+    },
+    {
+      "id": "poi_352",
+      "name": "达美乐比萨(枫园店)",
+      "aliases": [
+        "达美乐枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37233,
+        "lat": 30.53687
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD披萨店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_353",
+      "name": "麦当劳(枫园店)",
+      "aliases": [
+        "麦当劳枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37188,
+        "lat": 30.53702
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园食堂旁麦当劳（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_354",
+      "name": "瑞幸咖啡(枫园店)",
+      "aliases": [
+        "瑞幸咖啡枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37217,
+        "lat": 30.53698
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.4
+    },
+    {
+      "id": "poi_355",
+      "name": "库迪咖啡(枫园CBD店)",
+      "aliases": [
+        "库迪咖啡枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37184,
+        "lat": 30.53715
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_356",
+      "name": "1973继光香香鸡(武大店)",
+      "aliases": [
+        "继光香香鸡"
+      ],
+      "coordinates": {
+        "lng": 114.37163,
+        "lat": 30.53706
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD炸鸡小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.4
+    },
+    {
+      "id": "poi_357",
+      "name": "孃孃出川(枫园店)",
+      "aliases": [
+        "孃孃出川"
+      ],
+      "coordinates": {
+        "lng": 114.37177,
+        "lat": 30.53708
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD川味小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 0.6
+    },
+    {
+      "id": "poi_358",
+      "name": "蛋挞家的烫饭(枫园店)",
+      "aliases": [
+        "蛋挞家的烫饭"
+      ],
+      "coordinates": {
+        "lng": 114.37193,
+        "lat": 30.53708
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园食堂旁烫饭店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.5
+    },
+    {
+      "id": "poi_359",
+      "name": "沙县小吃(枫园店)",
+      "aliases": [
+        "沙县小吃枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37172,
+        "lat": 30.53712
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD沙县小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.2
+    },
+    {
+      "id": "poi_360",
+      "name": "蜜雪冰城(枫园店)",
+      "aliases": [
+        "蜜雪冰城枫园店"
+      ],
+      "coordinates": {
+        "lng": 114.37202,
+        "lat": 30.53736
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.5
+    },
+    {
+      "id": "poi_361",
+      "name": "匠心卤(枫园食堂店)",
+      "aliases": [
+        "匠心卤"
+      ],
+      "coordinates": {
+        "lng": 114.37212,
+        "lat": 30.53738
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园食堂旁热卤拌饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_362",
+      "name": "京津炸鸡(枫园店)",
+      "aliases": [
+        "京津炸鸡"
+      ],
+      "coordinates": {
+        "lng": 114.37203,
+        "lat": 30.53759
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD炸鸡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.3
+    },
+    {
+      "id": "poi_363",
+      "name": "三津汤包(枫园店)",
+      "aliases": [
+        "三津汤包"
+      ],
+      "coordinates": {
+        "lng": 114.37228,
+        "lat": 30.53758
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD汤包早餐（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.5
+    },
+    {
+      "id": "poi_364",
+      "name": "初莳牛排焗饭意面(武大校内店)",
+      "aliases": [
+        "初莳"
+      ],
+      "coordinates": {
+        "lng": 114.37233,
+        "lat": 30.53768
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园CBD西餐店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.0
+    },
+    {
+      "id": "poi_365",
+      "name": "祝芝兰手作东方茶(枫园食堂店)",
+      "aliases": [
+        "祝芝兰"
+      ],
+      "coordinates": {
+        "lng": 114.37223,
+        "lat": 30.53772
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。枫园食堂旁茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.4
+    },
+    {
+      "id": "poi_366",
+      "name": "青柠欢喜咖啡果饮(武大店)",
+      "aliases": [
+        "青柠欢喜"
+      ],
+      "coordinates": {
+        "lng": 114.37071,
+        "lat": 30.54103
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。湖滨片区咖啡果饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.0
+    },
+    {
+      "id": "poi_367",
+      "name": "珞珈面馆(湖滨店)",
+      "aliases": [
+        "珞珈面馆"
+      ],
+      "coordinates": {
+        "lng": 114.36998,
+        "lat": 30.54145
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。湖滨风味食堂旁面馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_368",
+      "name": "蜜雪冰城(湖滨店)",
+      "aliases": [
+        "蜜雪冰城湖滨店"
+      ],
+      "coordinates": {
+        "lng": 114.36959,
+        "lat": 30.54259
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。湖滨宿舍区茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_369",
+      "name": "瑞幸咖啡(湖滨店)",
+      "aliases": [
+        "瑞幸咖啡湖滨店"
+      ],
+      "coordinates": {
+        "lng": 114.36912,
+        "lat": 30.54287
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。湖滨宿舍区咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_370",
+      "name": "珞珈饮品(桂园店)",
+      "aliases": [
+        "珞珈饮品"
+      ],
+      "coordinates": {
+        "lng": 114.35863,
+        "lat": 30.53847
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园食堂旁饮品店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.0
+    },
+    {
+      "id": "poi_371",
+      "name": "WHU1893咖啡馆",
+      "aliases": [
+        "WHU1893",
+        "1893咖啡馆"
+      ],
+      "coordinates": {
+        "lng": 114.36219,
+        "lat": 30.5397
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。樱园食堂/樱花城堡旁校园文创咖啡馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.5
+    },
+    {
+      "id": "poi_372",
+      "name": "珞珈山庄餐厅",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.36822,
+        "lat": 30.53606
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。珞珈山庄内餐厅（校内接待餐厅）（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_373",
+      "name": "Manner coffee(工学部店)",
+      "aliases": [
+        "Manner工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.36588,
+        "lat": 30.54362
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_374",
+      "name": "喜茶(工学部店)",
+      "aliases": [
+        "喜茶工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.36589,
+        "lat": 30.54376
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_375",
+      "name": "瑞幸咖啡(工学部店)",
+      "aliases": [
+        "瑞幸咖啡工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.36595,
+        "lat": 30.54374
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_376",
+      "name": "饱嗝食集(工学天地店)",
+      "aliases": [
+        "饱嗝食集"
+      ],
+      "coordinates": {
+        "lng": 114.36617,
+        "lat": 30.54378
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地美食广场（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.5
+    },
+    {
+      "id": "poi_377",
+      "name": "茶百道(工学部店)",
+      "aliases": [
+        "茶百道武大校内店"
+      ],
+      "coordinates": {
+        "lng": 114.36615,
+        "lat": 30.5438
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_378",
+      "name": "赛百味(工学部店)",
+      "aliases": [
+        "赛百味武大店"
+      ],
+      "coordinates": {
+        "lng": 114.36612,
+        "lat": 30.5438
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD三明治（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_379",
+      "name": "吉野家(工学部店)",
+      "aliases": [
+        "吉野家"
+      ],
+      "coordinates": {
+        "lng": 114.36612,
+        "lat": 30.54382
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD牛肉饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.5
+    },
+    {
+      "id": "poi_380",
+      "name": "遇见小面(工学部店)",
+      "aliases": [
+        "遇见小面"
+      ],
+      "coordinates": {
+        "lng": 114.36586,
+        "lat": 30.54384
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD面馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_381",
+      "name": "袁记云饺(武大店)",
+      "aliases": [
+        "袁记云饺"
+      ],
+      "coordinates": {
+        "lng": 114.36563,
+        "lat": 30.54392
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD云吞饺子（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_382",
+      "name": "朴大叔拌饭(工学部店)",
+      "aliases": [
+        "朴大叔拌饭"
+      ],
+      "coordinates": {
+        "lng": 114.36577,
+        "lat": 30.54393
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD拌饭（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_383",
+      "name": "星巴克(工学部店)",
+      "aliases": [
+        "星巴克武大店"
+      ],
+      "coordinates": {
+        "lng": 114.3661,
+        "lat": 30.54393
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_384",
+      "name": "库迪咖啡(工学部店)",
+      "aliases": [
+        "库迪咖啡工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.36561,
+        "lat": 30.54396
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学天地CBD咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_385",
+      "name": "书亦烧仙草(工学部店)",
+      "aliases": [
+        "书亦烧仙草"
+      ],
+      "coordinates": {
+        "lng": 114.36619,
+        "lat": 30.54154
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部校内烧仙草饮品店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_386",
+      "name": "花焙格各音乐餐吧",
+      "aliases": [
+        "花焙格各"
+      ],
+      "coordinates": {
+        "lng": 114.3567,
+        "lat": 30.54085
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部青年教师公寓旁音乐餐吧（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_387",
+      "name": "小食坊粉丝煲(工学部集贸市场)",
+      "aliases": [
+        "小食坊粉丝煲"
+      ],
+      "coordinates": {
+        "lng": 114.35688,
+        "lat": 30.54032
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场小吃店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 0.7
+    },
+    {
+      "id": "poi_388",
+      "name": "桂圆馄饨(工学部集贸市场)",
+      "aliases": [
+        "桂圆馄饨"
+      ],
+      "coordinates": {
+        "lng": 114.35693,
+        "lat": 30.54032
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场馄饨店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.9
+    },
+    {
+      "id": "poi_389",
+      "name": "恩施炕小土豆(武大店)",
+      "aliases": [
+        "炕小土豆"
+      ],
+      "coordinates": {
+        "lng": 114.35702,
+        "lat": 30.54028
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场特色小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.1
+    },
+    {
+      "id": "poi_390",
+      "name": "不颠哥港式甜品店(武大店)",
+      "aliases": [
+        "不颠哥甜品"
+      ],
+      "coordinates": {
+        "lng": 114.35701,
+        "lat": 30.5403
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场港式甜品（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_391",
+      "name": "武大第一炒酸奶店",
+      "aliases": [
+        "第一炒酸奶"
+      ],
+      "coordinates": {
+        "lng": 114.35706,
+        "lat": 30.54057
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场炒酸奶（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.3
+    },
+    {
+      "id": "poi_392",
+      "name": "蔡明纬(工学部店)",
+      "aliases": [
+        "蔡明纬工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.35717,
+        "lat": 30.53997
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场旁武汉小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_393",
+      "name": "小伙计(工学部店)",
+      "aliases": [
+        "小伙计"
+      ],
+      "coordinates": {
+        "lng": 114.35738,
+        "lat": 30.54002
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场旁餐馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.2
+    },
+    {
+      "id": "poi_394",
+      "name": "土黄牛肉面(工学部店)",
+      "aliases": [
+        "土黄牛肉面"
+      ],
+      "coordinates": {
+        "lng": 114.35745,
+        "lat": 30.54003
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场旁牛肉面馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.1
+    },
+    {
+      "id": "poi_395",
+      "name": "皇冠幸福里(工学部店)",
+      "aliases": [
+        "皇冠幸福里",
+        "皇冠蛋糕"
+      ],
+      "coordinates": {
+        "lng": 114.35762,
+        "lat": 30.54032
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。工学部集贸市场旁蛋糕烘焙（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_396",
+      "name": "湘菜馆(武汉大学内店)",
+      "aliases": [
+        "武大湘菜馆"
+      ],
+      "coordinates": {
+        "lng": 114.35748,
+        "lat": 30.54134
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园一路湘菜馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_397",
+      "name": "川味坊(桂园一路店)",
+      "aliases": [
+        "川味坊"
+      ],
+      "coordinates": {
+        "lng": 114.35755,
+        "lat": 30.54134
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园一路川味餐馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.4
+    },
+    {
+      "id": "poi_398",
+      "name": "武汉大学家常菜(桂园一路)",
+      "aliases": [
+        "桂园一路家常菜",
+        "武大家常菜"
+      ],
+      "coordinates": {
+        "lng": 114.35757,
+        "lat": 30.54138
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园一路家常菜馆（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_399",
+      "name": "大囍螺蛳粉(桂园一路)",
+      "aliases": [
+        "大囍螺蛳粉"
+      ],
+      "coordinates": {
+        "lng": 114.35752,
+        "lat": 30.54147
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园一路螺蛳粉店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.0
+    },
+    {
+      "id": "poi_400",
+      "name": "农家小炒(桂园一路)",
+      "aliases": [
+        "农家小炒"
+      ],
+      "coordinates": {
+        "lng": 114.35743,
+        "lat": 30.5416
+      },
+      "type": "dining",
+      "campus": "文理学部",
+      "category": "dining",
+      "description": "文理学部校内地点。桂园一路小炒店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.3
+    },
+    {
+      "id": "poi_401",
+      "name": "沙县小吃(工学部店)",
+      "aliases": [
+        "沙县小吃工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.35773,
+        "lat": 30.54172
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。桂园一路沙县小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 1.5
+    },
+    {
+      "id": "poi_402",
+      "name": "重庆小面(弘毅大道店)",
+      "aliases": [
+        "重庆小面"
+      ],
+      "coordinates": {
+        "lng": 114.35819,
+        "lat": 30.54173
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。弘毅大道旁重庆小面（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_403",
+      "name": "云山俏云南小锅米线(工学部店)",
+      "aliases": [
+        "云山俏米线"
+      ],
+      "coordinates": {
+        "lng": 114.35868,
+        "lat": 30.54147
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部南区云南米线（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.8
+    },
+    {
+      "id": "poi_404",
+      "name": "宝岛小厨(工学部店)",
+      "aliases": [
+        "宝岛小厨"
+      ],
+      "coordinates": {
+        "lng": 114.35796,
+        "lat": 30.54181
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部田园片区小厨（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.1
+    },
+    {
+      "id": "poi_405",
+      "name": "瑞幸咖啡(田园食堂店)",
+      "aliases": [
+        "瑞幸咖啡田园店"
+      ],
+      "coordinates": {
+        "lng": 114.35771,
+        "lat": 30.54213
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。田园食堂旁咖啡店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.2
+    },
+    {
+      "id": "poi_406",
+      "name": "蜜雪冰城(工学部田园店)",
+      "aliases": [
+        "蜜雪冰城田园店"
+      ],
+      "coordinates": {
+        "lng": 114.3577,
+        "lat": 30.54213
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。田园食堂旁茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_407",
+      "name": "爷爷不泡茶(田园店)",
+      "aliases": [
+        "爷爷不泡茶"
+      ],
+      "coordinates": {
+        "lng": 114.35793,
+        "lat": 30.54213
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。田园食堂旁茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 4.0
+    },
+    {
+      "id": "poi_408",
+      "name": "古茗(工学部田园店)",
+      "aliases": [
+        "古茗工学部店"
+      ],
+      "coordinates": {
+        "lng": 114.35771,
+        "lat": 30.5423
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。田园食堂旁茶饮店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.8
+    },
+    {
+      "id": "poi_409",
+      "name": "秀味馄饨(工学部店)",
+      "aliases": [
+        "秀味馄饨"
+      ],
+      "coordinates": {
+        "lng": 114.35804,
+        "lat": 30.54266
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部中区馄饨店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.9
+    },
+    {
+      "id": "poi_410",
+      "name": "珞珈山下文创咖啡",
+      "aliases": [
+        "珞珈山下咖啡"
+      ],
+      "coordinates": {
+        "lng": 114.3574,
+        "lat": 30.54274
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。青年教师公寓旁文创咖啡（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.6
+    },
+    {
+      "id": "poi_411",
+      "name": "欢喜水果捞(工学部店)",
+      "aliases": [
+        "欢喜水果捞"
+      ],
+      "coordinates": {
+        "lng": 114.35797,
+        "lat": 30.54276
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部中区水果捞小吃（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_412",
+      "name": "珞家拾光(工学部店)",
+      "aliases": [
+        "珞家拾光"
+      ],
+      "coordinates": {
+        "lng": 114.35748,
+        "lat": 30.54276
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部青年教师公寓旁休闲小店（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.7
+    },
+    {
+      "id": "poi_413",
+      "name": "舌尖大师铁板锅(武大珞珈山店)",
+      "aliases": [
+        "舌尖大师"
+      ],
+      "coordinates": {
+        "lng": 114.35915,
+        "lat": 30.5427
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部中区043栋铁板锅（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 3.7
+    },
+    {
+      "id": "poi_414",
+      "name": "谭小嗨热卤牛骨火锅鸡(武大珞珈山店)",
+      "aliases": [
+        "谭小嗨"
+      ],
+      "coordinates": {
+        "lng": 114.35922,
+        "lat": 30.54267
+      },
+      "type": "dining",
+      "campus": "工学部",
+      "category": "dining",
+      "description": "工学部校内地点。工学部中区043栋火锅鸡（高德餐饮POI逆地核实为校内）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": 2.9
+    },
+    {
+      "id": "poi_415",
+      "name": "武汉大学工学部集贸市场",
+      "aliases": [
+        "工学部菜市场",
+        "工学部菜场",
+        "武大菜场",
+        "集贸市场"
+      ],
+      "coordinates": {
+        "lng": 114.356937,
+        "lat": 30.540298
+      },
+      "type": "service",
+      "campus": "文理学部",
+      "category": "service",
+      "description": "文理学部校内地点。工学部集贸市场（工学部菜市场），茶港路计算机大楼后，生鲜副食综合市场（高德核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
+    },
+    {
+      "id": "poi_416",
+      "name": "武汉大学明珠园",
+      "aliases": [
+        "明珠园宾馆",
+        "明珠园接待中心"
+      ],
+      "coordinates": {
+        "lng": 114.35894,
+        "lat": 30.542002
+      },
+      "type": "service",
+      "campus": "工学部",
+      "category": "service",
+      "description": "工学部校内地点。明珠园，东湖南路湖边接待中心/宾馆，2楼为国际教育中心（高德核实）。",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 1,
+      "rating": null
     }
   ]
 }
