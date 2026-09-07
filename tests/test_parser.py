@@ -11,6 +11,7 @@ from agents.parser import (
     _resolve_ambiguity_completion,
     _t011_post_process,
     _annotate_weight_source,
+    detect_travel_mode,
 )
 
 
@@ -238,3 +239,95 @@ class TestParseQueryOfflineMock:
             result = parse_query("随便说点什么没有地名")
             assert isinstance(result, TaskIntent)
             assert result.ambiguity is not None
+
+
+class TestTravelModeDetection:
+    """出行方式（walk/bike/drive）关键词检测与全链路解析。"""
+
+    @pytest.mark.parametrize("query,expected_mode,expected_explicit", [
+        ("骑车从牌坊到樱顶", "bike", True),
+        ("开车去教五", "drive", True),
+        ("步行去樱花大道", "walk", True),
+        ("从牌坊到樱顶", "walk", False),
+        # "校车/坐车问询"不含精确驾车词，不得误判为 drive
+        ("校车在哪里坐", "walk", False),
+        ("共享单车能进吗", "bike", True),
+    ])
+    def test_detect_travel_mode(self, query, expected_mode, expected_explicit):
+        mode, explicit = detect_travel_mode(query)
+        assert mode == expected_mode
+        assert explicit == expected_explicit
+
+    def test_task_intent_default_mode_walk(self):
+        """TaskIntent 未指定 mode 时默认为 walk。"""
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=PoiRef(name="牌坊", type="poi"),
+            end=PoiRef(name="樱顶", type="poi"),
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        )
+        assert intent.mode == "walk"
+
+    def test_post_process_keyword_overrides_llm_mode(self):
+        """关键词后处理纠偏：query 含"骑车"时，即使 LLM/默认给了 walk 也强制改为 bike。"""
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=PoiRef(name="牌坊", type="poi"),
+            end=PoiRef(name="樱顶", type="poi"),
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+            mode="walk",
+        )
+        processed = _t011_post_process(intent, "骑车从牌坊到樱顶", None)
+        assert processed.mode == "bike"
+
+    def test_post_process_drive_keyword(self):
+        """query 含"开车"时 mode 强制为 drive。"""
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=PoiRef(name="牌坊", type="poi"),
+            end=PoiRef(name="教五", type="poi"),
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+            mode="walk",
+        )
+        processed = _t011_post_process(intent, "开车从牌坊到教五", None)
+        assert processed.mode == "drive"
+
+    def test_context_inherits_previous_mode(self):
+        """多轮承接：本轮未提出行方式但有延续语（"继续"）→ 继承 previous_intent.mode=bike。"""
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=None,
+            end=None,
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        )
+        context = {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "previous_intent": {"mode": "bike"},
+        }
+        merged = _merge_context_with_intent(intent, context, "继续")
+        assert merged.mode == "bike"
+
+    def test_context_mode_not_inherited_without_guard(self):
+        """守卫不满足（新话题、无延续语、无新地点）时不继承上轮 mode。"""
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=None,
+            end=None,
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        )
+        context = {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "previous_intent": {"mode": "bike"},
+        }
+        merged = _merge_context_with_intent(intent, context, "皇冠幸福里怎么样")
+        assert merged.mode == "walk"
+
+    def test_parse_query_bike_keyword_fallback(self):
+        """无 API key 规则兜底：含"骑车"的路径 query 解析出 mode=bike。"""
+        with patch("agents.parser.DEEPSEEK_API_KEY", ""):
+            from agents.parser import parse_query
+            result = parse_query("骑车从牌坊到樱顶")
+            assert result.task_type == "path_planning"
+            assert result.mode == "bike"

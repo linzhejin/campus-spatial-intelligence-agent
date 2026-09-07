@@ -608,6 +608,163 @@ class TestEndToEndOffline:
 
 
 # =========================================================================
+# TestTravelModeEndToEnd: 出行方式（walk/bike/drive）全链路
+# Flask 内存测试客户端 + 无 LLM key 走规则兜底，路网读本地 graphml 缓存
+# =========================================================================
+class TestTravelModeEndToEnd:
+    """出行方式全链路：NL/body 指定 mode → 模式过滤路网 → compute_route → 响应/解释。
+
+    使用 Flask test_client（无需独立服务器）。路网不可用（无缓存且无法下载）时跳过。
+    """
+
+    @pytest.fixture(autouse=True)
+    def setup_client(self):
+        try:
+            from app import create_app
+            app = create_app()
+            app.config["TESTING"] = True
+            self.client = app.test_client()
+        except Exception as e:
+            pytest.skip(f"无法创建测试客户端: {e}")
+        # 预加载路网（首次从 data/whu_road_network.graphml 缓存读入）
+        try:
+            from spatial.network import get_network, load_or_download_network
+            if get_network() is None:
+                load_or_download_network()
+        except Exception as e:
+            pytest.skip(f"路网不可用，跳过出行方式 e2e: {e}")
+        yield
+
+    def _post(self, path: str, payload: dict):
+        resp = self.client.post(
+            path,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        return resp.status_code, resp.get_json()
+
+    # ---- /api/chat ----
+    def test_chat_travel_mode_bike(self):
+        """/api/chat 带 travel_mode=bike：响应 mode=bike 且含 duration_min。"""
+        code, body = self._post("/api/chat", {"query": "从牌坊到樱顶", "travel_mode": "bike"})
+        assert code == 200, body
+        data = body["data"]
+        assert data["task_type"] == "path_planning"
+        assert data["mode"] == "bike"
+        assert data["duration_min"] is not None
+        assert data["shortest_duration_min"] is not None
+        assert data["speed_kmh"] == 14.0
+        # 模板解释（无 LLM key）应包含出行方式
+        assert "骑行" in data["explanation"]
+
+    def test_chat_travel_mode_drive(self):
+        """/api/chat 带 travel_mode=drive（驾车可达 POI 对）：mode=drive 且含 duration_min。"""
+        code, body = self._post("/api/chat", {
+            "query": "从人工智能学院到化学与分子科学学院",
+            "travel_mode": "drive",
+        })
+        assert code == 200, body
+        data = body["data"]
+        assert data["task_type"] == "path_planning"
+        assert data["mode"] == "drive"
+        assert data["duration_min"] is not None
+        assert data["speed_kmh"] == 25.0
+        assert "驾车" in data["explanation"]
+
+    def test_chat_nl_keyword_mode_overrides_body(self):
+        """优先级：NL 显式关键词（开车）> body.travel_mode（bike）。"""
+        code, body = self._post("/api/chat", {
+            "query": "开车从人工智能学院到化学与分子科学学院",
+            "travel_mode": "bike",
+        })
+        assert code == 200, body
+        assert body["data"]["mode"] == "drive"
+
+    def test_chat_default_mode_walk(self):
+        """未指定出行方式时默认 walk，响应同样带 mode/duration_min 字段。"""
+        code, body = self._post("/api/chat", {"query": "从牌坊到樱顶"})
+        assert code == 200, body
+        data = body["data"]
+        assert data["mode"] == "walk"
+        assert data["duration_min"] is not None
+        assert data["speed_kmh"] == 4.5
+
+    # ---- /api/route ----
+    def test_route_travel_mode_bike(self):
+        """/api/route 带 travel_mode=bike。"""
+        code, body = self._post("/api/route", {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "travel_mode": "bike",
+        })
+        assert code == 200, body
+        data = body["data"]
+        assert data["mode"] == "bike"
+        assert data["duration_min"] is not None
+        assert data["shortest_duration_min"] is not None
+        assert data["speed_kmh"] == 14.0
+        assert len(data["recommended"]) >= 2
+
+    def test_route_travel_mode_drive(self):
+        """/api/route 带 travel_mode=drive（驾车可达 POI 对）。"""
+        code, body = self._post("/api/route", {
+            "start": {"name": "武汉大学人工智能学院", "type": "poi"},
+            "end": {"name": "武汉大学化学与分子科学学院西区", "type": "poi"},
+            "travel_mode": "drive",
+        })
+        assert code == 200, body
+        data = body["data"]
+        assert data["mode"] == "drive"
+        assert data["duration_min"] is not None
+        assert data["speed_kmh"] == 25.0
+        assert len(data["recommended"]) >= 2
+
+    def test_route_mode_field_compat(self):
+        """兼容 /api/parse 返回体的 mode 字段：值为 bike 时采纳；distance_first 等预设不采纳。"""
+        code, body = self._post("/api/route", {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "mode": "bike",
+        })
+        assert code == 200, body
+        assert body["data"]["mode"] == "bike"
+
+        code, body = self._post("/api/route", {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "mode": "distance_first",
+        })
+        assert code == 200, body
+        # 快捷预设值不属于 TRAVEL_MODES → 回退默认 walk
+        assert body["data"]["mode"] == "walk"
+
+    # ---- /api/parse shortcut ----
+    def test_parse_shortcut_travel_mode_drive(self):
+        """/api/parse 快捷模式带 travel_mode=drive：响应 mode=drive，前端链路自动携带。"""
+        code, body = self._post("/api/parse", {
+            "input_method": "shortcut",
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "教五", "type": "poi"},
+            "mode": "distance_first",
+            "travel_mode": "drive",
+        })
+        assert code == 200, body
+        data = body["data"]
+        assert data["mode"] == "drive"
+        assert data["task_type"] == "path_planning"
+        assert data["weight_source"] == "shortcut"
+
+    def test_parse_nl_bike_keyword(self):
+        """/api/parse NL 模式含"骑车"关键词：规则兜底解析 mode=bike。"""
+        code, body = self._post("/api/parse", {
+            "query": "骑车从牌坊到樱顶",
+            "input_method": "nl",
+        })
+        assert code == 200, body
+        assert body["data"]["mode"] == "bike"
+
+
+# =========================================================================
 # Standalone runner (no pytest needed)
 # =========================================================================
 if __name__ == "__main__":

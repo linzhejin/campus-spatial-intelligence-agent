@@ -14,8 +14,36 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 MAX_EXPLANATION_LENGTH = 150
 
+# 出行方式中文标签（与 spatial.routing.TRAVEL_MODES 对应）
+MODE_LABELS = {"walk": "步行", "bike": "骑行", "drive": "驾车"}
+
 
 _system_prompt_cache = None
+
+
+def _rounded_minutes(duration_min) -> int | None:
+    """把 duration_min（float 分钟）取整为分钟数；0/None/非法 → None。"""
+    if not duration_min:
+        return None
+    try:
+        mins = int(round(float(duration_min)))
+    except (TypeError, ValueError):
+        return None
+    return mins if mins > 0 else None
+
+
+def _build_mode_duration_prefix(route_data: dict) -> str | None:
+    """生成出行方式 + 预计用时前缀，如「骑行约 8 分钟」；无方式信息返回 None。
+
+    duration_min 为 0/None 时只写方式（如「驾车」）。
+    """
+    label = MODE_LABELS.get(route_data.get("mode"))
+    if not label:
+        return None
+    mins = _rounded_minutes(route_data.get("duration_min"))
+    if mins:
+        return f"{label}约 {mins} 分钟"
+    return label
 
 
 def _load_system_prompt() -> str:
@@ -33,7 +61,12 @@ def _build_route_summary(route_data: dict) -> str:
     pois = route_data.get("pois", [])
     filter_status = route_data.get("filter_status", "no_filter")
 
-    parts = [f"距离 {distance} 米"]
+    parts = []
+    # 出行方式 + 预计用时前缀（如「骑行约 8 分钟，距离 2100 米」）
+    mode_prefix = _build_mode_duration_prefix(route_data)
+    if mode_prefix:
+        parts.append(mode_prefix)
+    parts.append(f"距离 {distance} 米")
     if pois:
         poi_names = [p["name"] if isinstance(p, dict) else str(p) for p in pois]
         parts.append(f"途经 {', '.join(poi_names)}")
@@ -85,8 +118,18 @@ def _build_template_explanation(
     shortest_distance = route_data.get("shortest_distance_m", route_data.get("shortest_distance", 0))
     pois = route_data.get("pois", [])
     filter_status = route_data.get("filter_status", "no_filter")
+    mode = route_data.get("mode")
 
     segments = []
+
+    # 出行方式 + 预计用时片段放在最前面（如「已为您规划骑行路线，约 8 分钟」）
+    mode_label = MODE_LABELS.get(mode)
+    if mode_label:
+        mins = _rounded_minutes(route_data.get("duration_min"))
+        if mins:
+            segments.append(f"已为您规划{mode_label}路线，约 {mins} 分钟")
+        else:
+            segments.append(f"已为您规划{mode_label}路线")
 
     prefix = _build_weight_source_prefix(weight_source)
     if prefix:
@@ -95,7 +138,8 @@ def _build_template_explanation(
     if user_constraints:
         slope = user_constraints.get("slope", "normal")
         scenery = user_constraints.get("scenery", "normal")
-        if slope == "avoid":
+        # 驾车模式不关心坡度（车行路网本身已剔除台阶/步道），不出现避坡文案
+        if slope == "avoid" and mode != "drive":
             if filter_status == "filtered":
                 segments.append("已避开陡坡路段")
             elif filter_status == "degraded_slope":
@@ -147,8 +191,14 @@ def generate_explanation(
     filter_status = route_data.get("filter_status", "no_filter")
     weight_source_label = _build_weight_source_prefix(weight_source).rstrip("。") or "无来源标注"
 
+    # 出行方式 + 预计用时（结构化字段，便于 LLM 生成与方式匹配的解释）
+    mode_label = MODE_LABELS.get(route_data.get("mode")) or "步行"
+    mode_mins = _rounded_minutes(route_data.get("duration_min"))
+    mode_line = f"出行方式：{mode_label}" + (f"（预计用时约 {mode_mins} 分钟）" if mode_mins else "")
+
     user_content = (
         f"偏好来源：{weight_source_label}\n"
+        f"{mode_line}\n"
         f"约束：{json.dumps(user_constraints or {}, ensure_ascii=False)}\n"
         f"权重：{json.dumps(user_weights or {}, ensure_ascii=False)}\n"
         f"推荐路线：{route_summary}\n"

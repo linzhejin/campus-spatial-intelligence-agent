@@ -17,11 +17,18 @@ import re
 import networkx as nx
 from flask import Blueprint, request, jsonify
 
-from agents.parser import parse_query
+from agents.parser import parse_query, detect_travel_mode
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
-from spatial.routing import compute_route, resolve_weights, _path_length
+from spatial.routing import (
+    compute_route,
+    resolve_weights,
+    _path_length,
+    TRAVEL_MODES,
+    normalize_mode,
+    filter_graph_for_mode,
+)
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 
 logger = logging.getLogger(__name__)
@@ -55,6 +62,35 @@ def _ok(data, status=200):
 
 def _err(code, message, status):
     return jsonify({"error": code, "message": message}), status
+
+
+def _resolve_travel_mode(query=None, body_mode=None, intent_mode=None):
+    """确定最终出行方式（walk/bike/drive）。
+
+    优先级：
+      1. NL 显式关键词（detect_travel_mode explicit=True）
+      2. body.travel_mode（经 normalize_mode，非法值兜底为 walk）
+      3. intent.mode（LLM 输出 / 多轮上下文继承）
+      4. 默认 "walk"
+    """
+    if query:
+        nl_mode, explicit = detect_travel_mode(query)
+        if explicit:
+            return normalize_mode(nl_mode)
+    if body_mode is not None:
+        return normalize_mode(body_mode)
+    if intent_mode is not None:
+        return normalize_mode(intent_mode)
+    return "walk"
+
+
+def _mode_filtered_graph(G, mode):
+    """按出行方式过滤路网，返回 (G_mode, status, penalty_map)。
+
+    起终点 snap 用 G_mode（驾车时吸附到最近车行节点）；路径坐标展开/POI 沿途
+    检索仍用原图 G（副本节点 id 与 geometry 与原图一致）。
+    """
+    return filter_graph_for_mode(G, mode)
 
 
 def _haversine(lat1, lon1, lat2, lon2):
@@ -275,6 +311,8 @@ def parse():
             "end": end,
             "constraints": preset["constraints"],
             "weights": preset["weights"],
+            # 出行方式：快捷按钮链路携带 travel_mode（步行/骑行/驾车），非法值兜底 walk
+            "mode": normalize_mode(body.get("travel_mode")),
             "input_method": "shortcut",
             "ambiguity": None,
             "weight_source": "shortcut",
@@ -350,17 +388,28 @@ def route():
     if start_poi["name"] == end_poi["name"]:
         return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
+    # 出行方式：优先 body.travel_mode；兼容 /api/parse 返回体里的 mode 字段
+    # （注意与快捷预设 distance_first 等区分：只有值在 TRAVEL_MODES 内才采纳）
+    body_mode = body.get("travel_mode")
+    if body_mode is None and body.get("mode") in TRAVEL_MODES:
+        body_mode = body.get("mode")
+    final_mode = _resolve_travel_mode(query=None, body_mode=body_mode, intent_mode=None)
+
+    # 按出行方式过滤路网：snap 用过滤后的图（驾车吸附到最近车行节点）；
+    # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
+    G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
+
     # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
     start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
     end_lon_wgs, end_lat_wgs = gcj02_to_wgs84(end_poi["lon"], end_poi["lat"])
 
     try:
-        start_node = get_nearest_node(G, start_lon_wgs, start_lat_wgs)
+        start_node = get_nearest_node(G_mode, start_lon_wgs, start_lat_wgs)
     except RuntimeError as e:
         return _err("nearest_node_failed", f"起点最近节点查找失败: {e}", 500)
 
     try:
-        end_node = get_nearest_node(G, end_lon_wgs, end_lat_wgs)
+        end_node = get_nearest_node(G_mode, end_lon_wgs, end_lat_wgs)
     except RuntimeError as e:
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
@@ -375,8 +424,10 @@ def route():
             end_node=end_node,
             constraints=constraints,
             weights=weights,
+            mode=final_mode,
         )
     except ValueError as e:
+        # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
         return _err("route_not_found", str(e), 404)
     except Exception as e:
         logger.exception("路径计算异常")
@@ -407,6 +458,11 @@ def route():
         "shortest_distance_m": route_result["shortest_length_m"],
         "applied_weights": route_result.get("applied_weights", resolved_weights),
         "degraded_count": route_result.get("degraded_count", 0),
+        # 出行方式与预计用时
+        "mode": route_result["mode"],
+        "duration_min": route_result["duration_min"],
+        "shortest_duration_min": route_result["shortest_duration_min"],
+        "speed_kmh": route_result["speed_kmh"],
     }
 
     return _ok(response)
@@ -574,17 +630,28 @@ def chat():
     if start_poi["name"] == end_poi["name"]:
         return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
+    # 出行方式优先级：NL 显式关键词（骑车/开车/步行…）> body.travel_mode > intent.mode（含上下文继承）> walk
+    final_mode = _resolve_travel_mode(
+        query=query,
+        body_mode=body.get("travel_mode"),
+        intent_mode=intent_data.get("mode"),
+    )
+
+    # 按出行方式过滤路网：snap 用过滤后的图（驾车吸附到最近车行节点）；
+    # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
+    G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
+
     # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
     start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
     end_lon_wgs, end_lat_wgs = gcj02_to_wgs84(end_poi["lon"], end_poi["lat"])
 
     try:
-        start_node = get_nearest_node(G, start_lon_wgs, start_lat_wgs)
+        start_node = get_nearest_node(G_mode, start_lon_wgs, start_lat_wgs)
     except RuntimeError as e:
         return _err("nearest_node_failed", f"起点最近节点查找失败: {e}", 500)
 
     try:
-        end_node = get_nearest_node(G, end_lon_wgs, end_lat_wgs)
+        end_node = get_nearest_node(G_mode, end_lon_wgs, end_lat_wgs)
     except RuntimeError as e:
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
@@ -598,8 +665,10 @@ def chat():
             end_node=end_node,
             constraints=constraints,
             weights=weights,
+            mode=final_mode,
         )
     except ValueError as e:
+        # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
         return _err("route_not_found", str(e), 404)
     except Exception as e:
         logger.exception("路径计算异常")
@@ -622,6 +691,8 @@ def chat():
         "costs": costs,
         "pois": pois_along,
         "filter_status": route_result["filter_status"],
+        "mode": final_mode,
+        "duration_min": route_result["duration_min"],
     }
 
     explanation = ""
@@ -658,6 +729,11 @@ def chat():
         "shortest_distance_m": route_result["shortest_length_m"],
         "applied_weights": route_result.get("applied_weights", resolved_weights),
         "degraded_count": route_result.get("degraded_count", 0),
+        # 出行方式与预计用时
+        "mode": final_mode,
+        "duration_min": route_result["duration_min"],
+        "shortest_duration_min": route_result["shortest_duration_min"],
+        "speed_kmh": route_result["speed_kmh"],
         "explanation": explanation,
         "suggestions": suggestions,
     }

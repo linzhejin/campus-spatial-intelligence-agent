@@ -22,6 +22,7 @@
     var MAP_ZOOM = CFG.MAP_ZOOM;
     var CONTEXT_KEY_PREFIX = 'whu_walker:context:';
     var PREFS_KEY = 'whu_walker:preferences';
+    var TRAVEL_MODE_KEY = 'whu_walker:travel_mode';  // 出行方式持久化偏好
 
     var state = {
         map: null,
@@ -35,26 +36,160 @@
         activeMode: null,
         loadingTimer: null,  // 轮播加载语定时器
         requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
+        travelMode: 'walk',  // 出行方式：walk / bike / drive（持久化偏好，默认步行）
     };
 
-    // ========== 轮播加载语（有人味儿） ==========
-    var LOADING_MESSAGES = [
-        { text: '正在理解你的需求…', sub: '嗯，让我想想怎么走最好' },
-        { text: '正在查地图…', sub: '珞珈山的路我都熟' },
-        { text: '正在计算最佳路线…', sub: '帮你避开那些不好走的路' },
-        { text: '正在找沿途的好风景…', sub: '这条路樱花季特别美' },
-        { text: '快好了…', sub: '稍等一下下' },
-    ];
+    // ========== 出行方式配置（珞珈秋色：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝） ==========
+    var TRAVEL_MODES = {
+        walk: {
+            label: '步行',
+            color: '#E8929C',
+            speedKmh: 4.5,   // 前端兜底估速（后端未返回 duration_min 时用）
+            loadingText: '正在漫步找路…',
+            loadingSub: '穿过樱花大道，慢慢走就好',
+        },
+        bike: {
+            label: '骑行',
+            color: '#7BA37B',
+            speedKmh: 14,
+            loadingText: '正在规划骑行路线…',
+            loadingSub: '帮你避开台阶和陡坡',
+        },
+        drive: {
+            label: '驾车',
+            color: '#6A9FB5',
+            speedKmh: 25,
+            loadingText: '正在规划车行路线…',
+            loadingSub: '优先校园车行道，省时省心',
+        },
+    };
+
+    // ========== 出行方式：读取 / 持久化 / UI 同步 ==========
+    function loadTravelMode() {
+        var mode = 'walk';
+        try {
+            var saved = localStorage.getItem(TRAVEL_MODE_KEY);
+            if (saved && TRAVEL_MODES[saved]) mode = saved;
+        } catch (e) { mode = 'walk'; }  // localStorage 不可用时回退步行
+        state.travelMode = mode;
+    }
+
+    function persistTravelMode() {
+        try { localStorage.setItem(TRAVEL_MODE_KEY, state.travelMode); } catch (e) {}
+    }
+
+    // 同步分段选择器选中态、aria、图例配色与文案、驾车模式下隐藏"平坦优先"
+    function syncTravelModeUI() {
+        var mode = TRAVEL_MODES[state.travelMode] ? state.travelMode : 'walk';
+        state.travelMode = mode;
+
+        document.querySelectorAll('.travel-mode-btn').forEach(function (btn) {
+            var active = btn.getAttribute('data-travel-mode') === mode;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        var chips = document.getElementById('quick-chips');
+        if (chips) chips.classList.toggle('is-drive', mode === 'drive');
+
+        // 驾车不关心坡度：若"平坦优先"正高亮，清掉高亮，避免重算时带上矛盾偏好
+        if (mode === 'drive' && state.activeMode === 'slope_avoid') {
+            state.activeMode = null;
+            document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
+        }
+
+        // 图例：推荐路线色块 + 文案随模式
+        var tm = TRAVEL_MODES[mode];
+        var legendLine = document.getElementById('legend-recommended-line');
+        if (legendLine) legendLine.style.background = tm.color;
+        var legendText = document.getElementById('legend-recommended-text');
+        if (legendText) legendText.textContent = '推荐路线（' + tm.label + '）';
+
+        // 模式色渗透：模式栏底色 / 说明卡左边框 / 预计用时数字色
+        var modeBar = document.getElementById('mode-bar');
+        if (modeBar) {
+            modeBar.classList.remove('mode-walk', 'mode-bike', 'mode-drive');
+            modeBar.classList.add('mode-' + mode);
+        }
+        var expBox = document.getElementById('explanation-box');
+        if (expBox) {
+            expBox.classList.remove('mode-walk', 'mode-bike', 'mode-drive');
+            expBox.classList.add('mode-' + mode);
+        }
+        var durCard = document.getElementById('duration-card');
+        if (durCard) {
+            durCard.setAttribute('data-mode-color', mode);
+        }
+    }
+
+    // 用户手动切换出行方式：更新状态 + 持久化 + 必要时用当前起终点自动重算
+    function setTravelMode(mode) {
+        if (!TRAVEL_MODES[mode]) mode = 'walk';
+        if (mode === state.travelMode) return;
+        state.travelMode = mode;
+        persistTravelMode();
+        syncTravelModeUI();
+        maybeRecomputeRouteForMode();
+    }
+
+    // 服务端响应里的 mode（NL 识别"骑车/开车"）以服务端为准，回写选择器状态
+    function syncModeFromServer(data) {
+        if (data && data.mode && TRAVEL_MODES[data.mode] && data.mode !== state.travelMode) {
+            state.travelMode = data.mode;
+            persistTravelMode();
+            syncTravelModeUI();
+        }
+    }
+
+    // 切换出行方式后，若当前正展示路径规划结果且有起终点，自动重算（走 /api/parse shortcut 链路，带 travel_mode）
+    function maybeRecomputeRouteForMode() {
+        var resultsSec = document.getElementById('results-section');
+        if (!resultsSec || resultsSec.hidden) return;  // 当前没有路线结果，不重算
+        var intent = state.lastIntent;
+        if (!intent || intent.task_type !== 'path_planning') return;
+        if (!intent.start || !intent.end) return;
+        if (state.loading) {
+            // 上一轮请求还在飞：先挂起，等它落地后再按新方式重算（避免结果与选择器不一致）
+            state.pendingModeRecompute = true;
+            return;
+        }
+        handleShortcutMode(state.activeMode);  // activeMode 为 null 时不带偏好，仅带 travel_mode
+    }
+
+    // 一轮请求结束后，若用户在等待期间切换过出行方式，按最新方式补一次重算
+    function flushPendingModeRecompute() {
+        if (state.pendingModeRecompute && !state.loading) {
+            state.pendingModeRecompute = false;
+            maybeRecomputeRouteForMode();
+        }
+    }
+
+    // ========== 轮播加载语（有人味儿，随出行方式变化） ==========
+    function getLoadingMessages() {
+        var mode = TRAVEL_MODES[state.travelMode] ? state.travelMode : 'walk';
+        var first = TRAVEL_MODES[mode];
+        var calcSub = mode === 'bike' ? '帮你避开台阶和陡坡，骑车更省心'
+                   : mode === 'drive' ? '优先校园车行道，避开步行小路'
+                   : '帮你避开那些不好走的路';
+        return [
+            { text: first.loadingText, sub: first.loadingSub },
+            { text: '正在查地图…', sub: '珞珈山的路我都熟' },
+            { text: '正在计算最佳路线…', sub: calcSub },
+            { text: '正在找沿途的好风景…', sub: '这条路樱花季特别美' },
+            { text: '快好了…', sub: '稍等一下下' },
+        ];
+    }
 
     function startLoadingMessages() {
+        var messages = getLoadingMessages();
         var idx = 0;
         var textEl = document.getElementById('loading-text');
         var subEl = document.getElementById('loading-subtext');
-        showLoading(LOADING_MESSAGES[0].text, LOADING_MESSAGES[0].sub);
+        showLoading(messages[0].text, messages[0].sub);
 
         state.loadingTimer = setInterval(function () {
-            idx = (idx + 1) % LOADING_MESSAGES.length;
-            var msg = LOADING_MESSAGES[idx];
+            idx = (idx + 1) % messages.length;
+            var msg = messages[idx];
             // 淡入淡出效果
             textEl.classList.add('fade');
             subEl.classList.add('fade');
@@ -111,7 +246,7 @@
         if (state.conversationHistory.length > 10) {
             state.conversationHistory = state.conversationHistory.slice(-10);
         }
-        // 保存最近一轮完整意图快照（含起终点/缺失标记），供下一轮"补起点/终点"承接
+        // 保存最近一轮完整意图快照（含起终点/缺失标记/出行方式），供下一轮"补起点/终点"承接
         state.lastIntent = {
             task_type: result.task_type || null,
             start: result.start || null,
@@ -119,6 +254,7 @@
             constraints: result.constraints || null,
             weights: result.weights || null,
             ambiguity: result.ambiguity || null,
+            mode: result.mode || state.travelMode,
         };
         saveContext();
     }
@@ -222,9 +358,14 @@
                 return { lng: c.lng, lat: c.lat };
             }));
 
+            // 推荐线配色按出行方式：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝（响应 mode 优先，兜底当前选择器）
+            var routeMode = (routeData && routeData.mode && TRAVEL_MODES[routeData.mode])
+                ? routeData.mode : state.travelMode;
+            var recColor = (TRAVEL_MODES[routeMode] || TRAVEL_MODES.walk).color;
+
             state.recommendedLine = new AMap.Polyline({
                 path: recPath,
-                strokeColor: '#E8929C',
+                strokeColor: recColor,
                 strokeWeight: 6,
                 strokeOpacity: 0.85,
                 strokeStyle: 'solid',
@@ -365,6 +506,20 @@
         document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
     }
 
+    // 预计用时文案：后端 duration_min 优先（≥1 分钟"约 X 分钟"，<1 显示"约 1 分钟"）；
+    // 后端未给时用前端兜底速度 walk 4.5 / bike 14 / drive 25 km/h 按推荐距离估算
+    function estimateDurationText(data) {
+        var min = data ? data.duration_min : null;
+        if (min == null || isNaN(min) || min <= 0) {
+            var recM = (data && (data.recommended_length_m || data.distance_m)) || 0;
+            var mode = (data && data.mode && TRAVEL_MODES[data.mode]) ? data.mode : state.travelMode;
+            var speed = (TRAVEL_MODES[mode] || TRAVEL_MODES.walk).speedKmh;
+            min = recM > 0 ? (recM / 1000) / speed * 60 : null;
+        }
+        if (min == null || isNaN(min)) return '—';
+        return '约 ' + Math.max(1, Math.round(min)) + ' 分钟';
+    }
+
     function showResults(data) {
         // 隐藏欢迎气泡
         var welcomeBubble = document.getElementById('welcome-bubble');
@@ -381,6 +536,10 @@
             (data.shortest_length_m || data.shortest_distance_m || 0).toFixed(0) + ' m';
         document.getElementById('overlap-rate').textContent =
             ((data.overlap_rate || 0) * 100).toFixed(0) + '%';
+
+        // 预计用时：优先用后端 duration_min，缺失时按模式兜底速度估算（fail-soft）
+        var durationEl = document.getElementById('estimated-duration');
+        if (durationEl) durationEl.textContent = estimateDurationText(data);
 
         var poiList = document.getElementById('poi-items');
         poiList.innerHTML = '';
@@ -401,11 +560,15 @@
         // 跟进建议
         showSuggestions(data);
 
-        // 自动滚到结果区
+        // 自动滚到结果区：让摘要卡顶部对齐可视区（结果卡片在用户气泡之前，
+        // 短面板上若直接滚到底会把结果滚出可视区，手机端尤其明显）
         var chatContent = document.getElementById('chat-content');
         if (chatContent) {
             setTimeout(function () {
-                chatContent.scrollTo({ top: chatContent.scrollHeight, behavior: 'smooth' });
+                var contentRect = chatContent.getBoundingClientRect();
+                var sectionRect = section.getBoundingClientRect();
+                var target = chatContent.scrollTop + (sectionRect.top - contentRect.top) - 8;
+                chatContent.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
             }, 100);
         }
     }
@@ -440,22 +603,35 @@
         var constraints = data.constraints || {};
         var recLen = data.recommended_length_m || data.distance_m || 0;
         var shortLen = data.shortest_length_m || data.shortest_distance_m || 0;
+        // 建议规则随出行方式变化（响应 mode 优先，兜底当前选择器）
+        var mode = (data && data.mode && TRAVEL_MODES[data.mode]) ? data.mode : state.travelMode;
 
-        // 如果没避开陡坡 → 建议避开
-        if (constraints.slope !== 'avoid') {
-            suggestions.push({ label: '🪜 走更平坦的路', query: '帮我找一条更平坦的路线' });
+        if (mode === 'drive') {
+            // 驾车不关心坡度 → 推"最快到达"，不推平坦
+            if (constraints.distance !== 'short') {
+                suggestions.push({ label: '⚡ 最快到达', query: '帮我规划最快到达的路线' });
+            }
+        } else {
+            // 步行 / 骑行都怕坡（骑行尤其），没避开陡坡 → 建议避开
+            if (constraints.slope !== 'avoid') {
+                suggestions.push({ label: '🪜 走更平坦的路', query: '帮我找一条更平坦的路线' });
+            }
         }
         // 如果没优先风景 → 建议看风景
         if (constraints.scenery !== 'high') {
             suggestions.push({ label: '🌸 想看风景好的路', query: '走风景更好的路线' });
         }
-        // 如果推荐比最短长不少 → 建议最短
-        if (recLen > shortLen * 1.3 && constraints.distance !== 'short') {
+        // 如果推荐比最短长不少 → 建议最短（驾车已有"最快到达"，不重复推）
+        if (mode !== 'drive' && recLen > shortLen * 1.3 && constraints.distance !== 'short') {
             suggestions.push({ label: '⚡ 我要最短路径', query: '帮我规划最短路径' });
         }
         // 总有一条默认
         if (suggestions.length === 0) {
-            suggestions.push({ label: '🪜 换条更平坦的', query: '换一条更平坦的路线' });
+            if (mode === 'drive') {
+                suggestions.push({ label: '⚡ 换条更快的路线', query: '换一条更快到达的路线' });
+            } else {
+                suggestions.push({ label: '🪜 换条更平坦的', query: '换一条更平坦的路线' });
+            }
             suggestions.push({ label: '🌸 换条风景更好的', query: '换一条风景更好的路线' });
         }
         // 最多 4 条
@@ -580,6 +756,7 @@
             var result = await apiRequest('/api/chat', {
                 query: query,
                 context: context,
+                travel_mode: state.travelMode,
             });
 
             // 竞态检查：如果用户在等待期间又发了新请求，丢弃本次结果
@@ -626,6 +803,8 @@
 
             // path_planning → 渲染路线
             if (result.recommended && result.recommended.length > 0) {
+                // 服务端 NL 识别的出行方式（"骑车去X"/"开车到X"）优先，回写选择器
+                syncModeFromServer(result);
                 renderRoute(result);
                 showResults(result);
                 addConversationTurn(query, result);
@@ -705,6 +884,10 @@
     async function handleShortcutMode(mode) {
         hideError();
 
+        // 请求序号竞态防护：快速切换出行方式/偏好时，只渲染最后一次请求的结果
+        state.requestSeq += 1;
+        var mySeq = state.requestSeq;
+
         var modeConfig = {
             distance_first: {
                 loadingText: '正在规划最短路径…',
@@ -720,8 +903,8 @@
             },
         };
 
-        var cfg = modeConfig[mode];
-        if (!cfg) return;
+        // mode 为 null（切换出行方式后的自动重算）时不带偏好，仅带 travel_mode
+        var cfg = modeConfig[mode] || {};
 
         // 优先沿用当前对话的起终点；没有的话才用默认的牌坊→樱顶
         var startName = '牌坊';
@@ -731,17 +914,29 @@
             endName = state.lastIntent.end.name || '樱顶';
         }
 
-        showLoading(cfg.loadingText, cfg.loadingSubtext);
+        // loading 主文案随出行方式变化（漫步/骑行/车行），子文案优先保留快捷偏好语义
+        var tm = TRAVEL_MODES[state.travelMode] || TRAVEL_MODES.walk;
+        showLoading(tm.loadingText, cfg.loadingSubtext || tm.loadingSub);
 
         try {
-            var parseResult = await apiRequest('/api/parse', {
+            var parsePayload = {
                 start: { name: startName },
                 end: { name: endName },
-                mode: mode,
                 input_method: 'shortcut',
-            });
+                travel_mode: state.travelMode,
+            };
+            if (mode) parsePayload.mode = mode;
 
-            var routeResult = await apiRequest('/api/route', parseResult);
+            var parseResult = await apiRequest('/api/parse', parsePayload);
+            if (mySeq !== state.requestSeq) return;  // 已有更新的请求，丢弃本次结果
+
+            // parseResult 整体 POST 给 /api/route；兜底确保带 travel_mode（/api/route 认 travel_mode/mode）
+            // 快捷/重算链路的出行方式始终以用户在选择器上的最新选择为准，不用服务端回显覆盖
+            var routePayload = parseResult || {};
+            routePayload.travel_mode = state.travelMode;
+
+            var routeResult = await apiRequest('/api/route', routePayload);
+            if (mySeq !== state.requestSeq) return;
 
             if (routeResult.recommended && routeResult.recommended.length > 0) {
                 renderRoute(routeResult);
@@ -750,10 +945,93 @@
                 showError('路线规划失败', '未能生成有效的路线');
             }
         } catch (err) {
+            if (mySeq !== state.requestSeq) return;
             showError('规划出错', err.message);
         } finally {
-            hideLoading();
+            if (mySeq === state.requestSeq) {
+                hideLoading();
+                flushPendingModeRecompute();
+            }
         }
+    }
+
+    // ========== 快捷键系统 ==========
+
+    // 给按钮加 0.35s 闪动反馈（快捷键触发后视觉确认）
+    function flashButton(el) {
+        if (!el) return;
+        el.classList.remove('flash');
+        // 强制 reflow 再加 class，确保动画重新播放
+        void el.offsetWidth;
+        el.classList.add('flash');
+        setTimeout(function () { el.classList.remove('flash'); }, 400);
+    }
+
+    function showKbdHelp() {
+        var sec = document.getElementById('kbd-help-section');
+        if (sec) sec.hidden = false;
+    }
+    function hideKbdHelp() {
+        var sec = document.getElementById('kbd-help-section');
+        if (sec) sec.hidden = true;
+    }
+
+    // 全局键盘快捷键
+    function handleGlobalKeydown(e) {
+        // 输入框/textarea 聚焦时：只放行 Esc，其余字母不拦截（用户在打字）
+        var tag = (e.target.tagName || '').toLowerCase();
+        var inInput = (tag === 'input' || tag === 'textarea' || e.target.isContentEditable);
+
+        // Esc：关闭所有弹窗（输入框内也生效）
+        if (e.key === 'Escape') {
+            hideError();
+            hideKbdHelp();
+            return;
+        }
+
+        // 输入框内：不拦截其余按键（Enter/Shift+Enter 已有专门处理）
+        if (inInput) return;
+
+        // 数字键 1/2/3：切出行方式（输入框失焦时才触发）
+        if (e.key === '1') { triggerTravelMode('walk'); e.preventDefault(); return; }
+        if (e.key === '2') { triggerTravelMode('bike'); e.preventDefault(); return; }
+        if (e.key === '3') { triggerTravelMode('drive'); e.preventDefault(); return; }
+
+        // 字母快捷键：偏好 chip + 功能键
+        var key = e.key.toUpperCase();
+        if (key === 'F') { triggerChip('scenery_first'); e.preventDefault(); return; }
+        if (key === 'S') { triggerChip('slope_avoid'); e.preventDefault(); return; }
+        if (key === 'D') { triggerChip('distance_first'); e.preventDefault(); return; }
+        if (key === 'R') { var rb = document.getElementById('reset-btn'); flashButton(rb); handleReset(); e.preventDefault(); return; }
+        if (e.key === '?' || (e.shiftKey && e.key === '/')) { var hb = document.getElementById('help-btn'); flashButton(hb); showKbdHelp(); e.preventDefault(); return; }
+
+        // / 聚焦输入框
+        if (e.key === '/') {
+            var inp = document.getElementById('nl-input');
+            if (inp) { inp.focus(); inp.select(); e.preventDefault(); }
+            return;
+        }
+    }
+
+    // 快捷键触发出行方式切换
+    function triggerTravelMode(mode) {
+        var btn = document.querySelector('.travel-mode-btn[data-travel-mode="' + mode + '"]');
+        flashButton(btn);
+        setTravelMode(mode);
+    }
+
+    // 快捷键触发偏好 chip
+    function triggerChip(chipMode) {
+        // 驾车模式下 S（平坦优先）无效
+        if (chipMode === 'slope_avoid' && state.travelMode === 'drive') return;
+        var chip = document.querySelector('.quick-chip[data-mode="' + chipMode + '"]');
+        if (!chip) return;
+        flashButton(chip);
+        // 模拟点击逻辑：高亮 + 触发规划
+        document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        state.activeMode = chipMode;
+        handleShortcutMode(chipMode);
     }
 
     function bindEvents() {
@@ -811,6 +1089,15 @@
             });
         });
 
+        // 出行方式分段选择器（步行 / 骑行 / 驾车）：只切状态，不自动发请求（有路线结果时自动重算）
+        var travelModeBtns = document.querySelectorAll('.travel-mode-btn');
+        travelModeBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var travelMode = btn.getAttribute('data-travel-mode');
+                setTravelMode(travelMode);
+            });
+        });
+
         // 快捷小卡片（经典路线、赏樱路线）
         var miniCards = document.querySelectorAll('.mini-card');
         miniCards.forEach(function (card) {
@@ -832,11 +1119,23 @@
             resetBtn.addEventListener('click', handleReset);
         }
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                hideError();
-            }
-        });
+        // 帮助按钮 → 快捷键帮助弹窗
+        var helpBtn = document.getElementById('help-btn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', function () {
+                flashButton(helpBtn);
+                showKbdHelp();
+            });
+        }
+
+        // 快捷键帮助弹窗关闭按钮
+        var kbdHelpClose = document.getElementById('kbd-help-close');
+        if (kbdHelpClose) {
+            kbdHelpClose.addEventListener('click', hideKbdHelp);
+        }
+
+        // 全局键盘快捷键
+        document.addEventListener('keydown', handleGlobalKeydown);
     }
 
     function showWelcomeHint() {
@@ -853,7 +1152,9 @@
     function init() {
         state.sessionId = generateSessionId();
         loadContext();
+        loadTravelMode();  // 读取持久化的出行方式偏好（非法值回退 walk）
         bindEvents();
+        syncTravelModeUI();  // 同步选择器选中态 / 图例 / 驾车隐藏平坦 chip
         showWelcomeHint();
         initMap();
 

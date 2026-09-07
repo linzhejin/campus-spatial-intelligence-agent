@@ -238,6 +238,19 @@ body {
     color: var(--cherry-deep);
 }
 
+/* ===== Mode bar（出行方式分段选择器，固定不随消息滚动） ===== */
+.mode-bar {
+    flex-shrink: 0;
+    padding: 10px 22px 8px;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
+    background: rgba(250, 248, 245, 0.65);
+    transition: background 0.3s ease;
+}
+/* 模式色渗透：选中不同出行方式时，模式栏底色变化（肉眼可辨） */
+.mode-bar.mode-walk  { background: rgba(232, 146, 156, 0.15); }
+.mode-bar.mode-bike  { background: rgba(123, 163, 123, 0.15); }
+.mode-bar.mode-drive { background: rgba(106, 159, 181, 0.15); }
+
 /* ===== Chat Content (scrollable) ===== */
 .chat-content {
     flex: 1;
@@ -342,6 +355,61 @@ body {
 
 .chip-emoji { font-size: 0.95rem; }
 
+/* 驾车模式隐藏"平坦优先"快捷 chip（驾车不关心坡度） */
+.quick-chips.is-drive .quick-chip[data-mode="slope_avoid"] { display: none; }
+
+/* ===== Travel mode segmented control（步行 / 骑行 / 驾车） ===== */
+.travel-mode-switch {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid var(--divider);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.travel-mode-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px 4px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+    font-size: 0.95rem;   /* ≥15px，大字号不挤 */
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    transition: background 0.22s ease, color 0.22s ease, box-shadow 0.22s ease, transform 0.15s ease;
+}
+
+.travel-mode-btn:hover { background: rgba(255, 255, 255, 0.85); }
+
+.travel-mode-btn:focus-visible {
+    outline: 2px solid var(--cherry);
+    outline-offset: 2px;
+}
+
+.travel-mode-btn.active {
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.travel-mode-btn.active[data-travel-mode="walk"]  { background: #E8929C; }
+.travel-mode-btn.active[data-travel-mode="bike"]  { background: #7BA37B; }
+.travel-mode-btn.active[data-travel-mode="drive"] { background: #6A9FB5; }
+
+.travel-mode-btn:active { transform: scale(0.97); }
+
 /* ===== Mini shortcut cards row ===== */
 .shortcut-cards-row {
     display: flex;
@@ -406,14 +474,19 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.summary-card { text-align: center; flex: 1; }
+.summary-card { text-align: center; flex: 1; min-width: 0; padding: 0 2px; }
 
 .summary-value {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--cherry-deep);
     font-variant-numeric: tabular-nums;
 }
+
+/* 预计用时数字色随出行方式变化 */
+.summary-card[data-mode-color="walk"]  .summary-value { color: #C66E78; }
+.summary-card[data-mode-color="bike"]  .summary-value { color: #4E8051; }
+.summary-card[data-mode-color="drive"] .summary-value { color: #4A7A8E; }
 
 .summary-label {
     font-size: 0.7rem;
@@ -460,13 +533,17 @@ body {
     font-weight: 500;
 }
 
-/* Explanation card */
+/* Explanation card — 左边框色随出行方式变化 */
 .explanation-box {
     background: linear-gradient(135deg, var(--cherry-soft) 0%, var(--jade-soft) 100%);
     border-radius: var(--radius-md);
     padding: 14px 16px;
     border-left: 3px solid var(--cherry);
+    transition: border-color 0.3s ease;
 }
+.explanation-box.mode-walk  { border-left-color: #E8929C; }
+.explanation-box.mode-bike  { border-left-color: #7BA37B; }
+.explanation-box.mode-drive { border-left-color: #6A9FB5; }
 
 .explanation-box p {
     font-size: 0.88rem;
@@ -724,12 +801,18 @@ body {
 
     .header-tagline { display: none; }
 
+    .mode-bar { padding: 8px 16px; }
+
     .chat-content { padding: 12px 16px; gap: 10px; }
 
     .bubble-body { max-width: 280px; }
 
-    .route-summary { padding: 12px 4px; }
-    .summary-value { font-size: 1.1rem; }
+    /* 4 张摘要卡在手机端 2×2 自适应，不挤压不出界 */
+    .route-summary { flex-wrap: wrap; row-gap: 12px; padding: 12px 8px; }
+    .summary-divider { display: none; }
+    .summary-card { flex: 1 1 44%; }
+    .summary-value { font-size: 1.05rem; }
+    .summary-label { font-size: 0.68rem; }
 
     .chat-input-bar { padding: 10px 12px; }
 
@@ -745,6 +828,8 @@ body {
    ============================== */
 @media (min-width: 1200px) {
     body { grid-template-columns: 440px 1fr; }
+
+    .mode-bar { padding: 10px 28px 8px; }
 
     .chat-content { padding: 20px 28px; }
 
@@ -963,6 +1048,80 @@ body {
     .welcome-tips { padding: 10px 16px; }
     .welcome-footer { padding: 12px 16px 16px; }
 }
+
+/* ===== 快捷键帮助弹窗 ===== */
+.kbd-help-section {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.kbd-help-section[hidden] { display: none !important; }
+.kbd-help-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px 20px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: var(--shadow-float);
+    animation: error-in 0.25s ease-out;
+}
+.kbd-help-card h3 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.kbd-help-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+.kbd-help-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+}
+.kbd-help-row kbd {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 5px;
+    background: var(--cherry-soft);
+    border: 0.5px solid var(--stone);
+    font-family: -apple-system, "Segoe UI", monospace;
+    font-size: 0.78rem;
+    color: var(--cherry-deep);
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+}
+.kbd-help-close {
+    width: 100%;
+    min-height: 40px;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.kbd-help-close:active { transform: scale(0.97); }
 
 /* ===== Chat bubbles ===== */
 .chat-bubble-row {

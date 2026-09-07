@@ -16,39 +16,47 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 FEW_SHOT_EXAMPLES = [
     (
         "从牌坊到樱顶",
-        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "从牌坊骑车到樱顶",
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"bike","input_method":"nl","ambiguity":null}',
+    ),
+    (
+        "开车从信息学部到文理学部教五",
+        '{"task_type":"path_planning","start":{"name":"信息学部","type":"poi"},"end":{"name":"教五","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"drive","input_method":"nl","ambiguity":null}',
     ),
     (
         "从牌坊到樱顶，避开陡坡",
-        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"avoid","scenery":"normal"},"weights":{"distance":0.2,"slope":0.6,"scenery":0.2},"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"avoid","scenery":"normal"},"weights":{"distance":0.2,"slope":0.6,"scenery":0.2},"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "我第一次来武大，想看樱花和老图书馆，但膝盖不好",
-        '{"task_type":"path_planning","start":null,"end":null,"constraints":{"distance":"medium","slope":"avoid","scenery":"high"},"weights":{"distance":0.1,"slope":0.5,"scenery":0.4},"input_method":"nl","ambiguity":"请指定起点"}',
+        '{"task_type":"path_planning","start":null,"end":null,"constraints":{"distance":"medium","slope":"avoid","scenery":"high"},"weights":{"distance":0.1,"slope":0.5,"scenery":0.4},"mode":"walk","input_method":"nl","ambiguity":"请指定起点"}',
     ),
     (
         "从梅园到桂园，最短路径",
-        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"weights":{"distance":0.8,"slope":0.1,"scenery":0.1},"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"weights":{"distance":0.8,"slope":0.1,"scenery":0.1},"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "带朋友逛，从教五去图书馆，走风景好的路",
-        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "樱顶在哪里",
-        '{"task_type":"poi_query","start":{"name":"樱顶","type":"poi"},"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+        '{"task_type":"poi_query","start":{"name":"樱顶","type":"poi"},"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "你能做什么",
-        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "推荐几个景点",
-        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+        '{"task_type":"help","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "今天天气怎么样",
-        '{"task_type":"chat","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"input_method":"nl","ambiguity":null}',
+        '{"task_type":"chat","start":null,"end":null,"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
 ]
 
@@ -70,10 +78,38 @@ class TaskIntent(BaseModel):
     start: Optional[PoiRef] = None
     end: Optional[PoiRef] = None
     constraints: Constraints
+    mode: Literal["walk", "bike", "drive"] = "walk"
     weights: Optional[dict] = None
     input_method: Literal["nl", "shortcut", "map_click"] = "nl"
     ambiguity: Optional[str] = None
     weight_source: Optional[Literal["explicit_nl", "shortcut", "default"]] = None
+
+
+# 出行方式关键词（与 spatial.routing.TRAVEL_MODES 对应）：
+#   bike  骑行/骑车/自行车/单车/共享单车…
+#   drive 自驾/驾车/开车/打车/坐车/乘车…（"校车""公交车"等不含精确词，不误判；"车"单字不判）
+#   walk  步行/走路/散步/徒步/走着…
+# 检测顺序：bike → drive → walk（bike 与 drive 关键词互不重叠）；都不命中返回 ("walk", False)
+_BIKE_MODE_PATTERN = re.compile(r"骑行|骑车|骑自行车|骑单车|单车|自行车|共享单车|骑车去|骑个车")
+_DRIVE_MODE_PATTERN = re.compile(r"自驾|驾车|开车|打车|坐车|乘车|开车去|驾个车|开车来")
+_WALK_MODE_PATTERN = re.compile(r"步行|走路|散步|徒步|走着|走过去|走路去")
+
+
+def detect_travel_mode(query: str) -> tuple[str, bool]:
+    """从自然语言中检测出行方式，返回 (mode, explicit)。
+
+    mode ∈ {"walk", "bike", "drive"}；explicit=True 表示用户显式提到了出行方式
+    （关键词后处理纠偏优先级高于 LLM），False 表示未提及，调用方应保留默认/继承值。
+    """
+    if not query:
+        return ("walk", False)
+    if _BIKE_MODE_PATTERN.search(query):
+        return ("bike", True)
+    if _DRIVE_MODE_PATTERN.search(query):
+        return ("drive", True)
+    if _WALK_MODE_PATTERN.search(query):
+        return ("walk", True)
+    return ("walk", False)
 
 
 _system_prompt_cache = None
@@ -135,6 +171,7 @@ def _fallback_task_intent(query: str) -> TaskIntent:
         start=None,
         end=None,
         constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        mode="walk",
         weights=None,
         input_method="nl",
         ambiguity="解析失败，请尝试更明确的描述",
@@ -685,6 +722,15 @@ def _merge_context_with_intent(intent: TaskIntent, context: dict | None, query: 
                 type=ctx_end.get("type", "poi"),
                 coordinates=ctx_end.get("coordinates"),
             )
+    # 出行方式承接：本轮未显式提到出行方式（无 bike/drive/walk 关键词）时，
+    # 沿用上一轮 previous_intent 的 mode（与起终点承接共用同一守卫，防止跨话题污染）
+    _nl_mode, mode_explicit = detect_travel_mode(query)
+    if not mode_explicit:
+        prev_intent = context.get("previous_intent") or {}
+        prev_mode = prev_intent.get("mode")
+        if prev_mode in ("walk", "bike", "drive"):
+            intent.mode = prev_mode
+
     # 清除已补全字段的 ambiguity 提示
     if intent.start is not None and intent.end is not None and intent.ambiguity in (
         "请指定起点", "请指定终点", "请指定起点和终点"
@@ -809,6 +855,12 @@ def _t011_post_process(
 
     # 3. 多轮 context 承接（T-011 验收 9）—— 缺 start/end 时用 context 补齐
     intent = _merge_context_with_intent(intent, context, query)
+
+    # 3.5 出行方式关键词纠偏：NL 显式提到骑行/驾车/步行时强制覆盖（优先级高于 LLM
+    #     与上下文继承，与项目"关键词后处理纠偏"约定一致）；未提及时保留 LLM/继承值
+    kw_mode, mode_explicit = detect_travel_mode(query)
+    if mode_explicit:
+        intent.mode = kw_mode
 
     # 4. 优先级打标（T-011 验收 6）
     if shortcut_mode_hint:

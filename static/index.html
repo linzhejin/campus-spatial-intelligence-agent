@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
     <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=a2b5b66">
+    <link rel="stylesheet" href="/css/style.css?v=20260907">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚶</text></svg>">
@@ -129,7 +129,7 @@
                         <div class="summary-label">推荐距离</div>
                     </div>
                     <div class="summary-divider"></div>
-                    <div class="summary-card">
+                    <div class="summary-card" id="duration-card" data-mode-color="walk">
                         <div class="summary-value" id="estimated-duration">—</div>
                         <div class="summary-label">预计用时</div>
                     </div>
@@ -169,11 +169,11 @@
             <textarea
                 id="nl-input"
                 class="nl-input"
-                placeholder="告诉我想去哪……步行、骑行、驾车都可以"
+                placeholder="告诉我想去哪……步行、骑行、驾车都可以（⏎ 发送 / ⇧⏎ 换行）"
                 maxlength="200"
                 rows="1"
             ></textarea>
-            <button id="submit-btn" class="submit-btn" type="button" title="发送">
+            <button id="submit-btn" class="submit-btn" type="button" title="发送 (Enter)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="19" x2="12" y2="5"></line>
                     <polyline points="5 12 12 5 19 12"></polyline>
@@ -182,6 +182,17 @@
             <div class="input-counter" id="input-counter">
                 <span id="char-count">0</span>/200
             </div>
+        </div>
+
+        <!-- 快捷键提示行 -->
+        <div class="kbd-hint-bar">
+            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切模式
+            <kbd>F</kbd> 风景
+            <kbd>S</kbd> 平坦
+            <kbd>D</kbd> 最短
+            <kbd>R</kbd> 重置
+            <kbd>/</kbd> 聚焦
+            <kbd>?</kbd> 帮助
         </div>
     </div>
 
@@ -201,6 +212,24 @@
             <h3 class="error-title" id="error-title">唔，出错了</h3>
             <p class="error-message" id="error-message">抱歉，出了点意外状况</p>
             <button class="error-close-btn" id="error-close-btn" type="button">知道了</button>
+        </div>
+    </section>
+
+    <!-- ====== 快捷键帮助弹窗 ====== -->
+    <section class="kbd-help-section" id="kbd-help-section" hidden>
+        <div class="kbd-help-card">
+            <h3>⌨ 快捷键指南</h3>
+            <div class="kbd-help-grid">
+                <div class="kbd-help-row"><span>🚶 步行 / 🚴 骑行 / 🚗 驾车</span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div>
+                <div class="kbd-help-row"><span>🌸 风景优先</span><kbd>F</kbd></div>
+                <div class="kbd-help-row"><span>🪜 平坦优先</span><kbd>S</kbd></div>
+                <div class="kbd-help-row"><span>⚡ 最短路径</span><kbd>D</kbd></div>
+                <div class="kbd-help-row"><span>↺ 重置对话</span><kbd>R</kbd></div>
+                <div class="kbd-help-row"><span>聚焦输入框</span><kbd>/</kbd></div>
+                <div class="kbd-help-row"><span>⏎ 发送 / ⇧⏎ 换行</span><kbd>Enter</kbd></div>
+                <div class="kbd-help-row"><span>关闭弹窗</span><kbd>Esc</kbd></div>
+            </div>
+            <button class="kbd-help-close" id="kbd-help-close" type="button">知道了</button>
         </div>
     </section>
 
@@ -332,6 +361,6 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="/js/app.js?v=a2b5b66"></script>
+    <script src="/js/app.js?v=20260907"></script>
 </body>
 </html>

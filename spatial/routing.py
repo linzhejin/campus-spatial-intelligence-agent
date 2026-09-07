@@ -72,6 +72,148 @@ def _is_outside_road(raw_name) -> bool:
     return False
 
 
+# ---------------------------------------------------------------------------
+# 出行方式（walk 步行 / bike 骑行 / drive 驾车）
+# ---------------------------------------------------------------------------
+
+TRAVEL_MODES = ("walk", "bike", "drive")
+
+MODE_SPEEDS_KMH = {"walk": 4.5, "bike": 14.0, "drive": 25.0}
+
+# 各模式默认多因素权重（walk 与 DEFAULT_WEIGHTS 完全一致，保持步行行为不变）
+MODE_DEFAULT_WEIGHTS = {
+    "walk": {"distance": 0.5, "slope": 0.2, "scenery": 0.3},
+    "bike": {"distance": 0.35, "slope": 0.45, "scenery": 0.2},
+    "drive": {"distance": 0.8, "slope": 0.05, "scenery": 0.15},
+}
+
+# 校外市政道路惩罚倍数：步行强避免（10×，与 _OUTSIDE_ROAD_PENALTY 保持一致）；
+# 骑行/驾车本身就常走市政路，惩罚逐档降低。
+MODE_OUTSIDE_ROAD_PENALTY = {"walk": _OUTSIDE_ROAD_PENALTY, "bike": 3.0, "drive": 1.2}
+
+# 骑行不可通行：纯台阶/垂直交通标签（边只要还含 footway/path 等可骑行标签即保留）
+_BIKE_BLOCKED_HIGHWAY = {"steps", "elevator", "escalator"}
+
+# 驾车白名单：边的 highway 标签中任意一个命中即视为车行道
+_DRIVE_ALLOWED_HIGHWAY = {
+    "motorway", "motorway_link", "trunk", "trunk_link",
+    "primary", "primary_link", "secondary", "secondary_link",
+    "tertiary", "tertiary_link", "unclassified", "residential",
+    "service", "living_street", "road",
+}
+
+
+def normalize_mode(mode) -> str:
+    """归一化出行方式：None / 非法值统一回退 "walk"，合法值原样返回。"""
+    if isinstance(mode, str) and mode in TRAVEL_MODES:
+        return mode
+    return "walk"
+
+
+def _edge_highway_tags(edge_data: dict) -> list:
+    """解析边的 highway 属性（str / list / 被 str() 序列化的 list），返回标签字符串列表。"""
+    if not edge_data:
+        return []
+    return _road_name_list(edge_data.get("highway"))
+
+
+def _merge_penalty_maps(*maps: dict) -> dict:
+    """合并多个 penalty_map：同一 (u, v, k) 上的惩罚倍数相乘。"""
+    merged = {}
+    for m in maps:
+        if not m:
+            continue
+        for key, multiplier in m.items():
+            if key in merged:
+                merged[key] *= multiplier
+            else:
+                merged[key] = multiplier
+    return merged
+
+
+def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
+    """
+    按出行方式过滤路网。
+
+    - walk:  返回 (G, "no_filter", {})，原图原样返回（不复制、不改边）
+    - bike:  复制图后移除"纯台阶/垂直交通"边（所有 highway 标签都属于
+             {steps, elevator, escalator} 才移除）；slope_level=5 边给 3.0×、
+             slope_level=4 边给 1.5× 软惩罚（不删边，保证可达）
+    - drive: 复制图后仅保留车行道边（highway 标签任一命中车行白名单即保留）；
+             无惩罚
+    过滤后图为空（极端情况）时回退原图，status 追加 "_degraded"。
+
+    Returns:
+        (G_filtered, status_str, penalty_map)
+    """
+    mode = normalize_mode(mode)
+
+    if mode == "walk":
+        return G, "no_filter", {}
+
+    G_mode = G.copy()
+    edges_to_remove = []
+
+    if mode == "bike":
+        for u, v, k, data in list(G_mode.edges(keys=True, data=True)):
+            tags = _edge_highway_tags(data)
+            if tags and all(tag in _BIKE_BLOCKED_HIGHWAY for tag in tags):
+                edges_to_remove.append((u, v, k))
+        base_status = "mode_bike"
+    else:  # drive
+        for u, v, k, data in list(G_mode.edges(keys=True, data=True)):
+            tags = _edge_highway_tags(data)
+            if not any(tag in _DRIVE_ALLOWED_HIGHWAY for tag in tags):
+                edges_to_remove.append((u, v, k))
+        base_status = "mode_drive"
+
+    G_mode.remove_edges_from(edges_to_remove)
+
+    if G_mode.number_of_edges() == 0:
+        # 极端情况：方式过滤删掉了所有边（数据异常），回退原图保证可达
+        logger.warning(
+            "出行方式 %s 过滤后图为空（移除 %d 条边），回退原图",
+            mode, len(edges_to_remove),
+        )
+        G_mode = G
+        status = f"{base_status}_degraded"
+    else:
+        # 删除孤立节点（仅连接被移除边的纯步行节点）：
+        # 不删的话 get_nearest_node 会把起终点吸附到"没有任何可通行边"的
+        # 孤立节点上（虽然离 POI 只有几米），导致起终点不可达。
+        isolated = [n for n, deg in G_mode.degree() if deg == 0]
+        if isolated:
+            G_mode.remove_nodes_from(isolated)
+            logger.info("出行方式 %s：移除 %d 条不可通行边、%d 个孤立节点",
+                        mode, len(edges_to_remove), len(isolated))
+        status = base_status
+
+    penalty_map = {}
+    if mode == "bike":
+        # 骑行怕陡坡：软惩罚不删边，保证可达
+        for u, v, k, data in G_mode.edges(keys=True, data=True):
+            lvl = data.get("slope_level")
+            if lvl == 5:
+                penalty_map[(u, v, k)] = 3.0
+            elif lvl == 4:
+                penalty_map[(u, v, k)] = 1.5
+
+    return G_mode, status, penalty_map
+
+
+def estimate_duration_min(length_m, mode) -> float:
+    """
+    按模式平均速度估算通行时长（分钟），round 到 1 位小数。
+
+    length 为 0 / None 时返回 0.0。
+    """
+    if not length_m:
+        return 0.0
+    mode = normalize_mode(mode)
+    meters_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
+    return round(length_m / meters_per_min, 1)
+
+
 def resolve_weights(llm_weights: Optional[dict]) -> dict:
     """
     解析 LLM 输出的 weights，校验后返回最终权重。
@@ -248,9 +390,14 @@ def _edge_cost_factory(
     weights: dict,
     penalty_map: dict,
     annotation_degraded_tag: Optional[str] = None,
+    outside_road_penalty: float = _OUTSIDE_ROAD_PENALTY,
 ):
     """
     创建边权函数（用于 Dijkstra 路径计算）。
+
+    Args:
+        outside_road_penalty: 校外市政道路成本放大倍数（按出行模式取，
+            walk=10.0 与历史行为一致）。
 
     返回的函数签名: edge_weight(u, v, data) -> float
     """
@@ -277,7 +424,7 @@ def _edge_cost_factory(
 
         # 校外道路惩罚：尽量避免推荐路线绕出校园（东湖南路/八一路等市政路）
         if _is_outside_road(edge_data.get("name")):
-            cost *= _OUTSIDE_ROAD_PENALTY
+            cost *= outside_road_penalty
 
         penalty = penalty_map.get(key, 1.0)
         cost *= penalty
@@ -332,8 +479,9 @@ def _path_length(G: nx.MultiDiGraph, path: list) -> float:
     return total
 
 
-def _raise_no_path(G, start_node, end_node, filter_status, G_filtered):
+def _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode="walk"):
     """不可达诊断：记录日志并抛出带友好提示的 ValueError。"""
+    mode = normalize_mode(mode)
     from spatial.network import get_node_coords
     try:
         sn_coords = get_node_coords(G, start_node)
@@ -341,10 +489,15 @@ def _raise_no_path(G, start_node, end_node, filter_status, G_filtered):
     except Exception:
         sn_coords, en_coords = None, None
     logger.warning(
-        "路径不可达: start=%s (%s) end=%s (%s) filter=%s edges=%d/%d",
-        start_node, sn_coords, end_node, en_coords,
+        "路径不可达: start=%s (%s) end=%s (%s) mode=%s filter=%s edges=%d/%d",
+        start_node, sn_coords, end_node, en_coords, mode,
         filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
     )
+    if mode == "drive":
+        # 驾车不能走台阶/步行道，没有台阶软降级，给模式化文案
+        raise ValueError(
+            "驾车无法到达该地点（附近可能只有步行道/台阶），建议切换骑行或步行～"
+        )
     raise ValueError(
         f"起点 {start_node} 到终点 {end_node} 不可达。"
         f"附近可能仅有台阶或陡坡路段，或路网数据不足；"
@@ -358,24 +511,28 @@ def compute_route(
     end_node: int,
     constraints: Optional[dict] = None,
     weights: Optional[dict] = None,
+    mode: str = "walk",
 ) -> dict:
     """
     多因素路径计算主函数。
 
     流程：
-      1. 解析权重（默认 → 校验 → 归一化）
-      2. 硬约束过滤（过滤不可通行路段）
-      3. 软成本优化（Dijkstra 计算推荐路线）
-      4. 计算最短路径基线
-      5. 路径长度上限裁剪
-      6. 计算重叠率
+      1. 解析出行方式与权重（默认 → 校验 → 归一化）
+      2. 出行方式过滤（walk 不过滤；bike 删纯台阶；drive 仅留车行道）
+      3. 硬约束过滤（过滤不可通行路段）
+      4. 软成本优化（Dijkstra 计算推荐路线）
+      5. 计算最短路径基线（在方式过滤图上，避免驾车最短路线穿台阶）
+      6. 路径长度上限裁剪
+      7. 计算重叠率
 
     Args:
         G: OSMnx MultiDiGraph 路网
         start_node: 起点节点 ID
         end_node: 终点节点 ID
         constraints: 约束 dict，如 {"slope": "avoid"}
-        weights: 权重 dict，如 {"distance": 0.2, "slope": 0.5, "scenery": 0.3}
+        weights: 权重 dict，如 {"distance": 0.2, "slope": 0.5, "scenery": 0.3}；
+                 None 时取 MODE_DEFAULT_WEIGHTS[mode]
+        mode: 出行方式 "walk" / "bike" / "drive"（默认 "walk"）
 
     Returns:
         {
@@ -389,32 +546,66 @@ def compute_route(
             "shortest_length_m": float, 最短路径长度
             "applied_weights": dict, 实际使用的权重
             "length_capped": bool, 是否触发了长度上限
+            "max_len": float, 全图最长边长度
+            "_annotation_degraded": bool, 是否处于标注降级
+            "mode": str, 出行方式
+            "duration_min": float, 推荐路径预估时长（分钟）
+            "shortest_duration_min": float, 最短路径预估时长（分钟）
+            "speed_kmh": float, 模式平均速度
         }
 
     Raises:
         ValueError: 起终点不可达时
     """
     constraints = constraints or {}
-    resolved_weights = resolve_weights(weights)
+    mode = normalize_mode(mode)
+
+    if weights is None:
+        resolved_weights = dict(MODE_DEFAULT_WEIGHTS[mode])
+    else:
+        resolved_weights = resolve_weights(weights)
 
     max_len, norm_lengths = _normalize_lengths(G)
 
     annotation_degraded = _should_degrade_annotations()
 
-    G_filtered, filter_status, penalty_map = _filter_by_constraints(G, constraints)
+    # 1) 出行方式过滤（walk 原样返回 G；bike/drive 在副本上删边+删孤立节点）
+    G_mode, mode_status, mode_penalty = filter_graph_for_mode(G, mode)
+
+    # 起终点在方式过滤后被作为孤立节点移除（如驾车时起终点只连台阶/步行道）
+    # → 该方式不可达，直接给模式化友好提示（否则 dijkstra 抛 NodeNotFound）
+    if mode != "walk" and (start_node not in G_mode or end_node not in G_mode):
+        _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
+
+    # 2) 硬约束过滤（坡度等），在方式过滤图上进行
+    G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
+
+    # 方式惩罚与约束惩罚合并（同一 key 相乘）
+    penalty_map = _merge_penalty_maps(mode_penalty, constraint_penalty)
 
     # 将 edge key 注入边数据，使 edge_weight 能按 (u, v, k) 查找 norm 和 penalty
     for u, v, k, data in G_filtered.edges(keys=True, data=True):
         data["_key"] = k
 
-    if annotation_degraded is not None:
-        if filter_status == "no_filter":
-            filter_status = annotation_degraded
-        else:
-            filter_status = f"{filter_status}+{annotation_degraded}"
+    if mode == "walk":
+        if annotation_degraded is not None:
+            if filter_status == "no_filter":
+                filter_status = annotation_degraded
+            else:
+                filter_status = f"{filter_status}+{annotation_degraded}"
+    else:
+        status_parts = [mode_status]
+        if filter_status != "no_filter":
+            status_parts.append(filter_status)
+        if annotation_degraded is not None:
+            status_parts.append(annotation_degraded)
+        filter_status = "+".join(status_parts)
+
+    outside_penalty = MODE_OUTSIDE_ROAD_PENALTY[mode]
 
     edge_weight = _edge_cost_factory(
-        G_filtered, norm_lengths, resolved_weights, penalty_map, annotation_degraded
+        G_filtered, norm_lengths, resolved_weights, penalty_map,
+        annotation_degraded, outside_road_penalty=outside_penalty,
     )
 
     try:
@@ -424,35 +615,44 @@ def compute_route(
     except nx.NetworkXNoPath:
         # 避坡硬过滤（删除 slope_level=5 边）可能割裂路网（湖滨/凌波门等台阶密集区域）。
         # 软降级重试：不删边，level5 边 3× 成本、level4 边 2× 成本，保证可达、仍尽量少走陡坡。
+        # bike/drive 下在方式过滤图 G_mode 上重建（drive 被删的台阶/步行道边不会恢复）。
         if constraints.get("slope") == "avoid":
-            penalty_map = {}
-            for u, v, k, data in G.edges(keys=True, data=True):
+            retry_penalty = {}
+            for u, v, k, data in G_mode.edges(keys=True, data=True):
                 lvl = data.get("slope_level")
                 if lvl == 5:
-                    penalty_map[(u, v, k)] = 3.0
+                    retry_penalty[(u, v, k)] = 3.0
                 elif lvl == 4:
-                    penalty_map[(u, v, k)] = 2.0
+                    retry_penalty[(u, v, k)] = 2.0
+            retry_penalty = _merge_penalty_maps(mode_penalty, retry_penalty)
             edge_weight = _edge_cost_factory(
-                G, norm_lengths, resolved_weights, penalty_map, annotation_degraded
+                G_mode, norm_lengths, resolved_weights, retry_penalty,
+                annotation_degraded, outside_road_penalty=outside_penalty,
             )
             try:
                 recommended = nx.dijkstra_path(
-                    G, start_node, end_node, weight=edge_weight
+                    G_mode, start_node, end_node, weight=edge_weight
                 )
-                filter_status = "degraded_slope"
-                if annotation_degraded is not None:
-                    filter_status = f"degraded_slope+{annotation_degraded}"
+                if mode == "walk":
+                    filter_status = "degraded_slope"
+                    if annotation_degraded is not None:
+                        filter_status = f"degraded_slope+{annotation_degraded}"
+                else:
+                    filter_status = f"{mode_status}+degraded_slope"
+                    if annotation_degraded is not None:
+                        filter_status = f"{mode_status}+degraded_slope+{annotation_degraded}"
                 logger.info(
-                    "避坡硬过滤导致 start=%s end=%s 不可达，软降级（陡坡3×成本）后重算成功",
-                    start_node, end_node,
+                    "避坡硬过滤导致 start=%s end=%s mode=%s 不可达，软降级（陡坡3×成本）后重算成功",
+                    start_node, end_node, mode,
                 )
             except nx.NetworkXNoPath:
-                _raise_no_path(G, start_node, end_node, filter_status, G_filtered)
+                _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
         else:
-            _raise_no_path(G, start_node, end_node, filter_status, G_filtered)
+            _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
 
+    # 最短路径基线在方式过滤图上计算（避免驾车最短路线穿台阶/步行道）
     try:
-        shortest = nx.dijkstra_path(G, start_node, end_node, weight="length")
+        shortest = nx.dijkstra_path(G_mode, start_node, end_node, weight="length")
     except nx.NetworkXNoPath:
         shortest = recommended
 
@@ -503,6 +703,10 @@ def compute_route(
         "length_capped": length_capped,
         "max_len": max_len,
         "_annotation_degraded": annotation_degraded is not None,
+        "mode": mode,
+        "duration_min": estimate_duration_min(recommended_len, mode),
+        "shortest_duration_min": estimate_duration_min(shortest_len, mode),
+        "speed_kmh": MODE_SPEEDS_KMH[mode],
     }
 
 
@@ -513,6 +717,7 @@ def compute_route_with_annotations(
     constraints: Optional[dict] = None,
     weights: Optional[dict] = None,
     annotations: Optional[list] = None,
+    mode: str = "walk",
 ) -> dict:
     """
     带路段标注的路径计算（slope_level / scenery_level 注入路网边属性）。
@@ -524,6 +729,7 @@ def compute_route_with_annotations(
         constraints: 约束 dict
         weights: 权重 dict
         annotations: 标注列表，每项含 edge_id 列表和属性值
+        mode: 出行方式 "walk" / "bike" / "drive"（默认 "walk"）
 
     Returns:
         同 compute_route 返回结构
@@ -549,4 +755,6 @@ def compute_route_with_annotations(
                     if name:
                         data["name"] = str(name)
 
-    return compute_route(G_annotated, start_node, end_node, constraints, weights)
+    return compute_route(
+        G_annotated, start_node, end_node, constraints, weights, mode=mode
+    )

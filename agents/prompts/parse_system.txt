@@ -10,7 +10,23 @@
 
 **判断优先级**：路径语义 > 景点查询 > 帮助 > 闲聊
 
-# 二、约束等级（constraints）提取规则
+# 二、出行方式（mode）提取
+
+判断用户本次出行采用的交通方式，输出到 JSON 的 "mode" 字段，取值固定为 "walk" / "bike" / "drive"：
+
+| 用户表述 | 输出 |
+|----------|------|
+| 「骑车」「骑行」「骑自行车」「骑单车」「单车」「自行车」「共享单车」 | "bike" |
+| 「开车」「驾车」「自驾」「打车」「坐车」「乘车」 | "drive" |
+| 「步行」「走路」「散步」「徒步」「走着去」「走过去」 | "walk" |
+| 未提及任何出行方式 | "walk" |
+
+**关键规则**：
+- 「车」单独出现不代表驾车：「校车」「公交车」「下車」等不含上表精确词，不得判为 drive
+- 一条 query 只输出一种方式；骑行与驾车关键词互斥，按出现的精确词判断
+- 多轮对话中本轮未提及出行方式时，沿用上一轮的 mode
+
+# 三、约束等级（constraints）提取规则
 
 你必须根据用户的自然语言表述，判断三个维度的约束等级：
 
@@ -78,13 +94,14 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 | path_planning 缺终点 | "请指定终点" |
 | 正常解析 / chat | null |
 
-# 六、多轮上下文
+# 七、多轮上下文
 
 如果输入包含"上下文" JSON：
 - 本轮只说「换风景好的」「改成避开陡坡」「缩短一点」→ 复用上下文中的 start/end，只更新 constraints/weights
 - 上一轮 ambiguity 提示缺起点/终点，本轮只回复一个 POI 名 → 识别为补全字段
+- 本轮未提及出行方式（无骑车/开车/步行等关键词）→ 沿用上一轮的 mode
 
-# 七、输出格式
+# 八、输出格式
 
 ```json
 {
@@ -93,6 +110,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
   "end": {"name": "樱顶", "type": "poi"},
   "constraints": {"distance": "medium", "slope": "avoid", "scenery": "high"},
   "weights": {"distance": 0.1, "slope": 0.5, "scenery": 0.4},
+  "mode": "walk",
   "input_method": "nl",
   "ambiguity": null
 }
@@ -100,52 +118,58 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 
 只输出 JSON，不要输出任何其他文字。
 
-# 八、Few-shot 示例
+# 九、Few-shot 示例
 
 输入："从牌坊到樱顶"
-输出：{"task_type": "path_planning", "start": {"name": "牌坊", "type": "poi"}, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "牌坊", "type": "poi"}, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
+
+输入："从牌坊骑车到樱顶"
+输出：{"task_type": "path_planning", "start": {"name": "牌坊", "type": "poi"}, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "bike", "input_method": "nl", "ambiguity": null}
+
+输入："开车从信息学部到文理学部教五"
+输出：{"task_type": "path_planning", "start": {"name": "信息学部", "type": "poi"}, "end": {"name": "教五", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "drive", "input_method": "nl", "ambiguity": null}
 
 输入："从牌坊到樱顶，避开陡坡"
-输出：{"task_type": "path_planning", "start": {"name": "牌坊", "type": "poi"}, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "牌坊", "type": "poi"}, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："我第一次来武大，想看樱花和老图书馆，但膝盖不好"
-输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "high"}, "weights": {"distance": 0.1, "slope": 0.5, "scenery": 0.4}, "input_method": "nl", "ambiguity": "请指定起点"}
+输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "high"}, "weights": {"distance": 0.1, "slope": 0.5, "scenery": 0.4}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："从梅园到桂园，最短路径"
-输出：{"task_type": "path_planning", "start": {"name": "梅园", "type": "poi"}, "end": {"name": "桂园", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "梅园", "type": "poi"}, "end": {"name": "桂园", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："带朋友逛，从教五去图书馆，走风景好的路"
-输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "图书馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "图书馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："从老斋舍到宋卿体育馆，避开爬坡"
-输出：{"task_type": "path_planning", "start": {"name": "老斋舍", "type": "poi"}, "end": {"name": "宋卿体育馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "老斋舍", "type": "poi"}, "end": {"name": "宋卿体育馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："从总图书馆到凌波门，走风景好的路线"
-输出：{"task_type": "path_planning", "start": {"name": "总图书馆", "type": "poi"}, "end": {"name": "凌波门", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "总图书馆", "type": "poi"}, "end": {"name": "凌波门", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："哪条路去樱顶最近"
-输出：{"task_type": "path_planning", "start": null, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.7, "slope": 0.15, "scenery": 0.15}, "input_method": "nl", "ambiguity": "请指定起点"}
+输出：{"task_type": "path_planning", "start": null, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.7, "slope": 0.15, "scenery": 0.15}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："我第一次来武大，想看最美的校园路线"
-输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "input_method": "nl", "ambiguity": "请指定起点"}
+输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："从信息学部到文理学部怎么走"
-输出：{"task_type": "path_planning", "start": {"name": "信息学部", "type": "poi"}, "end": {"name": "文理学部", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "信息学部", "type": "poi"}, "end": {"name": "文理学部", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："樱顶在哪"
-输出：{"task_type": "poi_query", "start": {"name": "樱顶", "type": "poi"}, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "poi_query", "start": {"name": "樱顶", "type": "poi"}, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："凌波门附近有什么好玩的"
-输出：{"task_type": "poi_query", "start": {"name": "凌波门", "type": "poi"}, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "poi_query", "start": {"name": "凌波门", "type": "poi"}, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："你能做什么"
-输出：{"task_type": "help", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "help", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："今天天气怎么样"
-输出：{"task_type": "chat", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "chat", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："从教五到信息学部第一教学楼"
-输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "信息学部第一教学楼", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "信息学部第一教学楼", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："从珞珈山到樱花大道，走平坦的路"
-输出：{"task_type": "path_planning", "start": {"name": "珞珈山", "type": "poi"}, "end": {"name": "樱花大道", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "珞珈山", "type": "poi"}, "end": {"name": "樱花大道", "type": "poi"}, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"}, "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}, "mode": "walk", "input_method": "nl", "ambiguity": null}
