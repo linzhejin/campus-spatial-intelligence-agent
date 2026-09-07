@@ -1522,7 +1522,7 @@
     },
     {
       "id": "poi_075",
-      "name": "武汉大学田园食堂(暂停营业)",
+      "name": "武汉大学田园食堂",
       "aliases": [
         "田园",
         "田园食堂",
@@ -3029,8 +3029,9 @@
     },
     {
       "id": "poi_140",
-      "name": "牌坊",
+      "name": "珞珈门",
       "aliases": [
+        "牌坊",
         "主入口",
         "八一路牌坊",
         "国立武汉大学牌坊",
@@ -9011,6 +9012,25 @@
       ],
       "scenery_score": 1,
       "rating": null
+    },
+    {
+      "id": "poi_417",
+      "name": "月湖",
+      "aliases": [
+        "武大月湖"
+      ],
+      "coordinates": {
+        "lng": 114.3655,
+        "lat": 30.54
+      },
+      "type": "scenery",
+      "campus": "文理学部",
+      "category": "scenery",
+      "description": "武汉大学校内湖泊，位于文理学部，月湖旁有爱平音乐厅",
+      "season_tags": [
+        "all"
+      ],
+      "scenery_score": 3
     }
   ]
 }
