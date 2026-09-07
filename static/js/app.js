@@ -364,9 +364,10 @@
         var shortest = routeData.shortest || [];
 
         if (recommended.length > 0) {
-            var recPath = toGcj02Path(recommended.map(function (c) {
-                return { lng: c.lng, lat: c.lat };
-            }));
+            // 后端已将路径坐标从 WGS-84 转成 GCJ-02，前端直接使用即可
+            var recPath = recommended.map(function (c) {
+                return [c.lng, c.lat];
+            });
 
             // 推荐线配色按出行方式：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝（响应 mode 优先，兜底当前选择器）
             var routeMode = (routeData && routeData.mode && TRAVEL_MODES[routeData.mode])
@@ -387,9 +388,10 @@
         }
 
         if (shortest.length > 0) {
-            var shortPath = toGcj02Path(shortest.map(function (c) {
-                return { lng: c.lng, lat: c.lat };
-            }));
+            // 后端已将路径坐标从 WGS-84 转成 GCJ-02，前端直接使用即可
+            var shortPath = shortest.map(function (c) {
+                return [c.lng, c.lat];
+            });
 
             state.shortestLine = new AMap.Polyline({
                 path: shortPath,
