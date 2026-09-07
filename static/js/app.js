@@ -1789,3 +1789,76 @@
         } catch (e) { /* 静默忽略 */ }
     };
 })();
+/* =============== PWA 安装引导（独立模块） =============== */
+(function () {
+    var LS_DISMISS = 'whu_walker:install_dismissed_at';
+    var deferredPrompt = null;
+    var banner = null, btn = null, sub = null;
+
+    function isStandalone() {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+    }
+    function isIos() {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    function recentlyDismissed() {
+        try {
+            var t = parseInt(localStorage.getItem(LS_DISMISS) || '0', 10);
+            return t && (Date.now() - t < 30 * 24 * 3600 * 1000); // 30 天内不再打扰
+        } catch (e) { return false; }
+    }
+    function showBanner(text) {
+        if (isStandalone() || recentlyDismissed() || !banner) return;
+        if (text && sub) sub.textContent = text;
+        banner.hidden = false;
+    }
+    function hideBanner(persist) {
+        if (banner) banner.hidden = true;
+        if (persist) {
+            try { localStorage.setItem(LS_DISMISS, String(Date.now())); } catch (e) {}
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        banner = document.getElementById('install-banner');
+        btn = document.getElementById('install-btn');
+        sub = document.getElementById('install-banner-sub');
+        if (!banner) return;
+
+        document.getElementById('install-dismiss').addEventListener('click', function () {
+            hideBanner(true);
+        });
+        btn.addEventListener('click', function () {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function () {
+                    deferredPrompt = null;
+                    hideBanner(true);
+                });
+            } else if (isIos()) {
+                // iOS 无原生弹窗：展开文字步骤
+                if (sub) sub.textContent = '点底部分享图标「□↑」→ 选「添加到主屏幕」';
+                btn.textContent = '知道了';
+                btn.addEventListener('click', function () { hideBanner(true); }, { once: true });
+            }
+        });
+
+        // Android / Chrome / Edge：捕获系统安装事件
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            // 延迟一会儿，避免首屏就弹
+            setTimeout(function () { showBanner(); }, 2500);
+        });
+        window.addEventListener('appinstalled', function () { hideBanner(true); });
+
+        // iOS Safari：手动引导（仅非 standalone 且首次）
+        if (isIos() && !isStandalone()) {
+            setTimeout(function () {
+                showBanner('点底部分享图标「□↑」→「添加到主屏幕」');
+            }, 3000);
+        }
+    });
+})();

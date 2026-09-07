@@ -1,11 +1,23 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#6B2828">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#9E3A4B">
     <meta name="description" content="漫步珞珈 — 武大校园智能路径规划助手">
     <title>漫步珞珈 · WHU-Walker</title>
+
+    <!-- ====== PWA / iOS 主屏安装支持 ====== -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <!-- iOS Safari：独立全屏运行 + 状态栏样式 + 应用名 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="漫步珞珈">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +27,7 @@
     <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
     <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=20260907">
-
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚶</text></svg>">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="/css/style.css?v=20260907b">
 </head>
 <body>
 
@@ -361,6 +369,17 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="/js/app.js?v=20260907"></script>
+    <!-- ====== PWA 安装引导横幅（满足条件时由 app.js 显示） ====== -->
+    <div id="install-banner" class="install-banner" hidden>
+        <div class="install-banner__icon">🌸</div>
+        <div class="install-banner__text">
+            <div class="install-banner__title">把「漫步珞珈」装到主屏幕</div>
+            <div class="install-banner__sub" id="install-banner-sub">离线可用 · 全屏运行 · 像 App 一样</div>
+        </div>
+        <button type="button" id="install-btn" class="install-banner__btn">安装</button>
+        <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
+    </div>
+
+    <script src="/js/app.js?v=20260907b"></script>
 </body>
 </html>

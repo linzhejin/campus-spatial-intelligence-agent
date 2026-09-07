@@ -1178,3 +1178,60 @@ body {
     color: #fff;
 }
 
+
+/* ==============================
+   PWA 安装引导横幅
+   ============================== */
+.install-banner {
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(158, 58, 75, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(120, 40, 50, 0.22);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: install-banner-in 0.35s ease;
+}
+.install-banner[hidden] { display: none; }
+@keyframes install-banner-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.install-banner__icon { font-size: 1.6rem; line-height: 1; }
+.install-banner__text { flex: 1 1 auto; min-width: 0; }
+.install-banner__title {
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-weight: 700; font-size: 0.92rem; color: #6B2828;
+}
+.install-banner__sub { font-size: 0.74rem; color: #A87880; margin-top: 1px; }
+.install-banner__btn {
+    flex: 0 0 auto;
+    border: none; border-radius: 999px;
+    padding: 8px 18px;
+    background: #E8929C; color: #fff;
+    font-family: "Noto Serif SC", serif; font-weight: 600; font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(158, 58, 75, 0.3);
+}
+.install-banner__btn:active { transform: scale(0.96); }
+.install-banner__close {
+    flex: 0 0 auto;
+    border: none; background: transparent;
+    color: #B5B0AB; font-size: 0.9rem;
+    cursor: pointer; padding: 4px 6px;
+}
+
+/* 刘海屏顶部安全区：聊天头部与模式条让出刘海 */
+.chat-header, .mode-bar {
+    padding-left: calc(22px + env(safe-area-inset-left, 0px));
+    padding-right: calc(22px + env(safe-area-inset-right, 0px));
+}

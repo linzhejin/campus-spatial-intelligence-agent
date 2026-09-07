@@ -2,24 +2,45 @@
     "name": "漫步珞珈 · WHU-Walker",
     "short_name": "漫步珞珈",
     "description": "武大校园智能路径规划助手 — 基于 LLM 的空间偏好转换器",
+    "id": "/",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#FAF8F5",
-    "theme_color": "#E8929C",
+    "theme_color": "#9E3A4B",
     "lang": "zh-CN",
+    "dir": "ltr",
     "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
         {
             "src": "/icons/icon-192.svg",
             "sizes": "192x192",
             "type": "image/svg+xml",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "/icons/icon-512.svg",
             "sizes": "512x512",
             "type": "image/svg+xml",
-            "purpose": "any maskable"
+            "purpose": "any"
         }
     ],
     "categories": ["travel", "navigation", "education"],
