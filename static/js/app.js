@@ -339,6 +339,16 @@
 
             state.map.addControl(new AMap.Scale());
             state.map.addControl(new AMap.ToolBar({ position: 'RB' }));
+            // 定位控件：右上角一个小蓝点，点击获取当前位置
+            if (AMap.Geolocation) {
+                state.map.addControl(new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    zoomToAccuracy: true,
+                    position: 'RB',
+                    buttonPosition: 'RB',
+                }));
+            }
         } catch (e) {
             console.error('地图初始化失败:', e);
             showError('地图加载失败', '无法初始化地图组件，请刷新页面重试');

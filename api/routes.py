@@ -64,6 +64,31 @@ def _err(code, message, status):
     return jsonify({"error": code, "message": message}), status
 
 
+# ====== WGS-84 → GCJ-02 转换（前端高德底图用 GCJ-02）======
+# 后端路网/路径坐标来自 OSM(WGS-84)，直接画在高德(GCJ-02)上会偏 50-100m
+def _coords_wgs_to_gcj(coords_list):
+    """路径坐标点列表 [{lng, lat}, ...] 整体转换"""
+    if not coords_list:
+        return coords_list
+    return [{"lng": round(gcj_lng, 6), "lat": round(gcj_lat, 6)}
+            for c in coords_list
+            for gcj_lng, gcj_lat in [wgs84_to_gcj02(c["lng"], c["lat"])]]
+
+
+def _pois_wgs_to_gcj(pois_list):
+    """沿途 POI 列表 [{"lng", "lat", ...}, ...] 整体转换"""
+    if not pois_list:
+        return pois_list
+    result = []
+    for p in pois_list:
+        gcj_lng, gcj_lat = wgs84_to_gcj02(p.get("lng", 0), p.get("lat", 0))
+        new_p = dict(p)
+        new_p["lng"] = round(gcj_lng, 6)
+        new_p["lat"] = round(gcj_lat, 6)
+        result.append(new_p)
+    return result
+
+
 def _resolve_travel_mode(query=None, body_mode=None, intent_mode=None):
     """确定最终出行方式（walk/bike/drive）。
 
@@ -443,6 +468,11 @@ def route():
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
+    # WGS-84 → GCJ-02：路网坐标转成高德坐标系再返回前端
+    recommended_coords = _coords_wgs_to_gcj(recommended_coords)
+    shortest_coords = _coords_wgs_to_gcj(shortest_coords)
+    pois_along = _pois_wgs_to_gcj(pois_along)
+
     response = {
         "recommended": recommended_coords,
         "shortest": shortest_coords,
@@ -715,10 +745,11 @@ def chat():
         "end": end,
         "constraints": constraints,
         "weights": weights,
-        "recommended": recommended_coords,
-        "shortest": shortest_coords,
+        # WGS-84 → GCJ-02：路网坐标转成高德坐标系再返回前端
+        "recommended": _coords_wgs_to_gcj(recommended_coords),
+        "shortest": _coords_wgs_to_gcj(shortest_coords),
         "costs": costs,
-        "pois": pois_along,
+        "pois": _pois_wgs_to_gcj(pois_along),
         "filter_status": route_result["filter_status"],
         "overlap_rate": route_result["overlap_rate"],
         "recommended_length_m": route_result["recommended_length_m"],

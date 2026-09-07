@@ -348,7 +348,7 @@
                 return;
             }
             var script = document.createElement('script');
-            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar';
+            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar,AMap.Geolocation';
             script.async = true;
             var loaded = false;
             script.onload = function () { loaded = true; };
