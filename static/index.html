@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
     <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=a2b5b66">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚶</text></svg>">
@@ -34,8 +34,8 @@
         <!-- 地图图例浮层 -->
         <div class="map-legend" id="map-legend">
             <div class="legend-item">
-                <span class="legend-line recommended"></span>
-                <span>推荐路线</span>
+                <span class="legend-line recommended" id="legend-recommended-line"></span>
+                <span id="legend-recommended-text">推荐路线</span>
             </div>
             <div class="legend-item">
                 <span class="legend-line shortest"></span>
@@ -66,6 +66,15 @@
             </div>
         </header>
 
+        <!-- 出行方式切换（步行 / 骑行 / 驾车）— 固定在顶栏下方，任何时候都可点 -->
+        <div class="mode-bar" id="mode-bar">
+            <div class="travel-mode-switch" id="travel-mode-switch" role="group" aria-label="出行方式切换：步行、骑行、驾车">
+                <button type="button" class="travel-mode-btn" data-travel-mode="walk" aria-pressed="true">🚶 步行</button>
+                <button type="button" class="travel-mode-btn" data-travel-mode="bike" aria-pressed="false">🚴 骑行</button>
+                <button type="button" class="travel-mode-btn" data-travel-mode="drive" aria-pressed="false">🚗 驾车</button>
+            </div>
+        </div>
+
         <!-- 对话区：滚动内容 -->
         <div class="chat-content" id="chat-content">
 
@@ -74,7 +83,7 @@
                 <div class="bubble-avatar">🌸</div>
                 <div class="bubble-body">
                     <p class="bubble-greeting">嗨！我是你的珞珈漫步向导～</p>
-                    <p class="bubble-text">告诉我想从哪走到哪，有什么偏好——比如想看风景、不想爬坡——我帮你找最合适的路线。</p>
+                    <p class="bubble-text">告诉我想从哪走到哪——🚶步行、🚴骑行、🚗驾车都可以，想看风景、不想爬坡之类的偏好也尽管说，我帮你找最合适的路线。</p>
                 </div>
             </div>
 
@@ -121,6 +130,11 @@
                     </div>
                     <div class="summary-divider"></div>
                     <div class="summary-card">
+                        <div class="summary-value" id="estimated-duration">—</div>
+                        <div class="summary-label">预计用时</div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-card">
                         <div class="summary-value" id="shortest-distance">—</div>
                         <div class="summary-label">最短距离</div>
                     </div>
@@ -155,7 +169,7 @@
             <textarea
                 id="nl-input"
                 class="nl-input"
-                placeholder="告诉我你的漫步需求…"
+                placeholder="告诉我想去哪……步行、骑行、驾车都可以"
                 maxlength="200"
                 rows="1"
             ></textarea>
@@ -260,11 +274,12 @@
             </section>
             <section class="welcome-tips" aria-label="新手提示">
                 <details class="welcome-tips-details" open>
-                    <summary class="welcome-tips-summary">新手提示 · 3 步快速上手</summary>
+                    <summary class="welcome-tips-summary">新手提示 · 快速上手</summary>
                     <div class="welcome-tips-list">
                         <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">直接说人话就行：「从牌坊到樱顶，避开陡坡」</span></div>
                         <div class="tip-item"><span class="tip-num">②</span><span class="tip-text">点地图上的景点标记，可快捷设出发/到达</span></div>
                         <div class="tip-item"><span class="tip-num">③</span><span class="tip-text">规划后点「你可能想问」快速调整路线</span></div>
+                        <div class="tip-item"><span class="tip-num">④</span><span class="tip-text">支持 🚶 步行 / 🚴 骑行 / 🚗 驾车三种方式，点聊天区上方按钮切换</span></div>
                     </div>
                 </details>
             </section>
@@ -317,6 +332,6 @@
             document.head.appendChild(script);
         })();
     </script>
-    <script src="/js/app.js"></script>
+    <script src="/js/app.js?v=a2b5b66"></script>
 </body>
 </html>

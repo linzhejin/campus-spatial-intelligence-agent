@@ -6,7 +6,7 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v2';
+var CACHE_NAME = 'whu-walker-v3';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -96,10 +96,28 @@ self.addEventListener('fetch', function (event) {
     }
 
     /* ───────────────────────────────────────────────
-     * 策略 ① cache-first：同源静态资源（navigate + static）
-     *   · navigate（HTML 导航）：cache-first，miss 才 fetch
-     *   · 其他静态（CSS/JS/img/icon）：cache-first，miss fetch 成功再写缓存
+     * 策略 ① 静态资源
+     *   · navigate（HTML 导航）：network-first —— 有网必拿最新页面，
+     *     成功后写缓存；离线才回退缓存的 index.html（SPA offline shell）
+     *   · 其他静态（CSS/JS/img/icon）：cache-first（配合 index.html 里的 ?v= 版本号失效）
      * ─────────────────────────────────────────────── */
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request).then(function (response) {
+                if (response && response.status === 200) {
+                    var copy = response.clone();
+                    caches.open(CACHE_NAME).then(function (cache) {
+                        cache.put('/index.html', copy);
+                    });
+                }
+                return response;
+            }).catch(function () {
+                return caches.match('/index.html');
+            })
+        );
+        return;
+    }
+
     event.respondWith(
         caches.match(request).then(function (cached) {
             if (cached) {
