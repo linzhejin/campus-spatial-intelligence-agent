@@ -237,3 +237,20 @@ output/*.png
 
 # 运行时缓存
 cache/
+
+# 运行时生成文件（不应入库）
+data/gates_amap_raw.json
+data/poi_search_stats.json
+data/pois.json.bak-*
+data/*.bak-campus
+*.bak-campus
+_tmp_*.json
+_tmp_*.py
+*.bak
+
+# 部署产物
+output/*.zip
+output/*.bak
+
+# 临时调试脚本
+scripts/_tmp_*.py
