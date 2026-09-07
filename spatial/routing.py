@@ -34,6 +34,57 @@ _EDGE_ATTR_DEFAULTS = {
     "scenery_level": 3,
 }
 
+# ====== 校园边界多边形（精确剔除"真校外"路段） ======
+# 仅两端都落在校园多边形外的边才算"真校外"并删除；
+# 一端在内一端在外的跨边界边（如东湖南路沿湖段、珞瑜路校门段）保留以维持学部连通。
+_campus_polygon = None
+_outside_edge_cache = {}  # key: id(G) → set of (u,v,k)
+
+def get_campus_polygon():
+    """懒加载校园边界多边形（WGS-84，不加缓冲）。"""
+    global _campus_polygon
+    if _campus_polygon is None:
+        try:
+            from config import CAMPUS_POLYS_GCJ
+            from spatial.coord_transform import gcj02_to_wgs84
+            from shapely.geometry import Polygon
+            from shapely.ops import unary_union
+            polys = [Polygon([gcj02_to_wgs84(lng, lat) for lng, lat in poly])
+                     for poly in CAMPUS_POLYS_GCJ.values()]
+            _campus_polygon = unary_union(polys)
+        except Exception as e:
+            logger.warning("校园多边形加载失败，校外边检测降级为路名匹配: %s", e)
+            _campus_polygon = False
+    return _campus_polygon
+
+
+def _get_outside_edges(G: nx.MultiDiGraph) -> set:
+    """
+    返回"两端均在校外"的边 key 集合。
+    用校园多边形精确判定（非路名），避免误删穿越校园的市政路段。
+    结果按 id(G) 缓存，路网不变时只算一次。
+    """
+    poly = get_campus_polygon()
+    if not poly:
+        # 多边形不可用 → 退路名匹配（保守）
+        return set()
+    cache_key = id(G)
+    cached = _outside_edge_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    from shapely.geometry import Point
+    outside = set()
+    for u, v, k, d in G.edges(keys=True, data=True):
+        ud = G.nodes[u]
+        vd = G.nodes[v]
+        pu = Point(float(ud.get("x", 0)), float(ud.get("y", 0)))
+        pv = Point(float(vd.get("x", 0)), float(vd.get("y", 0)))
+        if not poly.covers(pu) and not poly.covers(pv):
+            outside.add((u, v, k))
+    _outside_edge_cache[cache_key] = outside
+    return outside
+
+
 # 校外市政道路（武大校园周边的马路）：推荐路径应尽量避开，
 # 只在起终点本身就在这些路边时（凌波门/牌坊/珞瑜门等）才必要地经过。
 # 这些路的 scenery 标注可能很高（如东湖南路沿湖），若不惩罚会导致推荐路线绕出校园。
@@ -135,23 +186,37 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     """
     按出行方式过滤路网。
 
-    - walk:  返回 (G, "no_filter", {})，原图原样返回（不复制、不改边）
-    - bike:  复制图后移除"纯台阶/垂直交通"边（所有 highway 标签都属于
-             {steps, elevator, escalator} 才移除）；slope_level=5 边给 3.0×、
-             slope_level=4 边给 1.5× 软惩罚（不删边，保证可达）
-    - drive: 复制图后仅保留车行道边（highway 标签任一命中车行白名单即保留）；
-             无惩罚
-    过滤后图为空（极端情况）时回退原图，status 追加 "_degraded"。
+    第一步（所有模式）：剔除"真校外"边——两端均在校园多边形外的边。
+        跨边界边（一端在内）保留以维持学部连通。
+    第二步（按模式）：
+    - walk:  仅剔校外边后返回
+    - bike:  再移除纯台阶/垂直交通边；陡坡软惩罚
+    - drive: 仅保留车行道边
+
+    过滤后图为空时回退，status 追加 "_degraded"。
 
     Returns:
         (G_filtered, status_str, penalty_map)
     """
     mode = normalize_mode(mode)
 
-    if mode == "walk":
-        return G, "no_filter", {}
+    # —— 第一步：所有模式都剔除真校外边 ——
+    outside_edges = _get_outside_edges(G)
+    if outside_edges:
+        G_mode = G.copy()
+        G_mode.remove_edges_from(list(outside_edges))
+        isolated = [n for n, deg in G_mode.degree() if deg == 0]
+        if isolated:
+            G_mode.remove_nodes_from(isolated)
+    else:
+        G_mode = G
+    outside_status = "no_outside" if outside_edges else "no_filter"
 
-    G_mode = G.copy()
+    if mode == "walk":
+        return G_mode, outside_status, {}
+
+    # bike/drive：在已剔校外边的图副本上继续删边（绝不能改原图）
+    G_mode = G_mode.copy()
     edges_to_remove = []
 
     if mode == "bike":
@@ -178,9 +243,6 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
         G_mode = G
         status = f"{base_status}_degraded"
     else:
-        # 删除孤立节点（仅连接被移除边的纯步行节点）：
-        # 不删的话 get_nearest_node 会把起终点吸附到"没有任何可通行边"的
-        # 孤立节点上（虽然离 POI 只有几米），导致起终点不可达。
         isolated = [n for n, deg in G_mode.degree() if deg == 0]
         if isolated:
             G_mode.remove_nodes_from(isolated)
@@ -190,7 +252,6 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
 
     penalty_map = {}
     if mode == "bike":
-        # 骑行怕陡坡：软惩罚不删边，保证可达
         for u, v, k, data in G_mode.edges(keys=True, data=True):
             lvl = data.get("slope_level")
             if lvl == 5:
@@ -494,14 +555,17 @@ def _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode="wal
         filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
     )
     if mode == "drive":
-        # 驾车不能走台阶/步行道，没有台阶软降级，给模式化文案
         raise ValueError(
             "驾车无法到达该地点（附近可能只有步行道/台阶），建议切换骑行或步行～"
         )
+    if mode == "bike":
+        raise ValueError(
+            "骑行无法到达该地点（附近可能只有台阶/陡坡），建议切换步行～"
+        )
     raise ValueError(
-        f"起点 {start_node} 到终点 {end_node} 不可达。"
-        f"附近可能仅有台阶或陡坡路段，或路网数据不足；"
-        f"可试试切换到普通模式，或选择附近的其他校门/道路入口。"
+        f"该两点之间没有完全在校内的步行路线，"
+        f"可能需要经过校外市政道路。"
+        f"可试试选择附近的其他校门或地点作为起终点。"
     )
 
 
@@ -569,12 +633,12 @@ def compute_route(
 
     annotation_degraded = _should_degrade_annotations()
 
-    # 1) 出行方式过滤（walk 原样返回 G；bike/drive 在副本上删边+删孤立节点）
+    # 1) 出行方式过滤（所有模式先剔真校外边；bike/drive 再按方式删边+删孤立节点）
     G_mode, mode_status, mode_penalty = filter_graph_for_mode(G, mode)
 
-    # 起终点在方式过滤后被作为孤立节点移除（如驾车时起终点只连台阶/步行道）
-    # → 该方式不可达，直接给模式化友好提示（否则 dijkstra 抛 NodeNotFound）
-    if mode != "walk" and (start_node not in G_mode or end_node not in G_mode):
+    # 起终点在过滤后被作为孤立节点移除（如驾车时起终点只连台阶/步行道，
+    # 或步行时起终点只连校外路段）→ 该方式不可达，给友好提示
+    if start_node not in G_mode or end_node not in G_mode:
         _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
 
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
@@ -588,11 +652,12 @@ def compute_route(
         data["_key"] = k
 
     if mode == "walk":
+        status_parts = [mode_status] if mode_status != "no_filter" else []
+        if filter_status != "no_filter":
+            status_parts.append(filter_status)
         if annotation_degraded is not None:
-            if filter_status == "no_filter":
-                filter_status = annotation_degraded
-            else:
-                filter_status = f"{filter_status}+{annotation_degraded}"
+            status_parts.append(annotation_degraded)
+        filter_status = "+".join(status_parts) if status_parts else "no_filter"
     else:
         status_parts = [mode_status]
         if filter_status != "no_filter":

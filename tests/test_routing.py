@@ -11,9 +11,18 @@ from spatial.routing import (
 )
 
 
+def _set_campus_coords(G):
+    """给测试图所有节点设置校园内坐标（珞珈山附近），避免被校外边过滤误删。"""
+    for n in G.nodes():
+        G.nodes[n]["x"] = 114.360
+        G.nodes[n]["y"] = 30.535
+    return G
+
+
 def _build_mock_graph():
     G = nx.MultiDiGraph()
     G.add_nodes_from(range(6))
+    _set_campus_coords(G)
     edges = [
         (0, 1, {"length": 100.0, "slope_level": 2, "scenery_level": 3}),
         (1, 2, {"length": 200.0, "slope_level": 4, "scenery_level": 5}),
@@ -112,7 +121,7 @@ class TestComputeRouteErrors:
         G.add_node(0)
         G.add_node(1)
         G.add_edge(0, 0, length=10.0)
-        with pytest.raises(ValueError, match="不可达"):
+        with pytest.raises(ValueError, match="校内"):
             compute_route(G, 0, 1)
 
     def test_compute_route_success(self, mock_graph):
@@ -149,6 +158,7 @@ def _build_mode_mock_graph():
     """含 footway/steps/service/residential/corridor/path/混合标签 的小图（双向边）。"""
     G = nx.MultiDiGraph()
     G.add_nodes_from(range(8))
+    _set_campus_coords(G)
     edges = [
         # (u, v, highway, length, slope_level)
         (0, 1, "footway", 100.0, 2),
@@ -324,6 +334,7 @@ class TestComputeRouteModes:
     def test_drive_no_path_steps_only_raises(self):
         G = nx.MultiDiGraph()
         G.add_nodes_from(range(4))
+        _set_campus_coords(G)
         # 0-1 仅台阶连通（驾车不可达）
         for u, v in ((0, 1), (1, 0)):
             G.add_edge(
