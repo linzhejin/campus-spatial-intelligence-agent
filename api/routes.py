@@ -468,10 +468,10 @@ def route():
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
-    # WGS-84 → GCJ-02：路网坐标转成高德坐标系再返回前端
+    # WGS-84 → GCJ-02：路网路径坐标转成高德坐标系再返回前端
+    # 注意：pois_along 里的 POI 本身来自 pois.json(GCJ-02)，不需要再转！
     recommended_coords = _coords_wgs_to_gcj(recommended_coords)
     shortest_coords = _coords_wgs_to_gcj(shortest_coords)
-    pois_along = _pois_wgs_to_gcj(pois_along)
 
     response = {
         "recommended": recommended_coords,
@@ -745,11 +745,12 @@ def chat():
         "end": end,
         "constraints": constraints,
         "weights": weights,
-        # WGS-84 → GCJ-02：路网坐标转成高德坐标系再返回前端
+        # WGS-84 → GCJ-02：路网路径坐标转成高德坐标系再返回前端
+        # 注意：pois_along 里的 POI 本身来自 pois.json(GCJ-02)，不需要再转！
         "recommended": _coords_wgs_to_gcj(recommended_coords),
         "shortest": _coords_wgs_to_gcj(shortest_coords),
         "costs": costs,
-        "pois": _pois_wgs_to_gcj(pois_along),
+        "pois": pois_along,
         "filter_status": route_result["filter_status"],
         "overlap_rate": route_result["overlap_rate"],
         "recommended_length_m": route_result["recommended_length_m"],
