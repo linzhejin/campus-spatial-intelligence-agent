@@ -19,7 +19,7 @@ class TestTaskIntentInstantiation:
     def test_task_intent_valid_path_planning(self):
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             weights=None,
@@ -27,14 +27,14 @@ class TestTaskIntentInstantiation:
             ambiguity=None,
         )
         assert intent.task_type == "path_planning"
-        assert intent.start.name == "牌坊"
+        assert intent.start.name == "珞珈门"
         assert intent.end.name == "樱顶"
         assert intent.constraints.distance == "medium"
 
     def test_task_intent_weight_source_annotation(self):
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             weights={"distance": 0.5, "slope": 0.2, "scenery": 0.3},
@@ -46,7 +46,7 @@ class TestTaskIntentInstantiation:
     def test_task_intent_shortcut_weight_source(self):
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             weights=None,
@@ -146,12 +146,12 @@ class TestContextMerge:
             ambiguity="请指定起点和终点",
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "继续")
         assert merged.start is not None
-        assert merged.start.name == "牌坊"
+        assert merged.start.name == "珞珈门"
         assert merged.end is not None
         assert merged.end.name == "樱顶"
         assert merged.ambiguity is None
@@ -164,7 +164,7 @@ class TestContextMerge:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "继续")
@@ -190,7 +190,7 @@ class TestAmbiguityCompletion:
         }
         completed = _resolve_ambiguity_completion(intent, "牌坊", context)
         assert completed.start is not None
-        assert completed.start.name == "牌坊"
+        assert completed.start.name == "珞珈门"
         assert completed.end is not None
         assert completed.end.name == "樱顶"
         assert completed.task_type == "path_planning"
@@ -206,14 +206,14 @@ class TestAmbiguityCompletion:
         context = {
             "previous_intent": {
                 "ambiguity": "请指定终点",
-                "start": {"name": "牌坊", "type": "poi"},
+                "start": {"name": "珞珈门", "type": "poi"},
                 "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"},
                 "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7},
             }
         }
         completed = _resolve_ambiguity_completion(intent, "樱顶", context)
         assert completed.start is not None
-        assert completed.start.name == "牌坊"
+        assert completed.start.name == "珞珈门"
         assert completed.end is not None
         assert completed.end.name == "武汉大学老斋舍"
         assert completed.task_type == "path_planning"
@@ -228,7 +228,7 @@ class TestParseQueryOfflineMock:
             result = parse_query("从牌坊到樱顶")
             assert isinstance(result, TaskIntent)
             assert result.task_type == "path_planning"
-            assert result.start is not None and result.start.name == "牌坊"
+            assert result.start is not None and result.start.name == "珞珈门"
             assert result.end is not None and result.end.name == "武汉大学老斋舍"
             assert result.ambiguity is None
 
@@ -262,7 +262,7 @@ class TestTravelModeDetection:
         """TaskIntent 未指定 mode 时默认为 walk。"""
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
@@ -272,7 +272,7 @@ class TestTravelModeDetection:
         """关键词后处理纠偏：query 含"骑车"时，即使 LLM/默认给了 walk 也强制改为 bike。"""
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             mode="walk",
@@ -284,7 +284,7 @@ class TestTravelModeDetection:
         """query 含"开车"时 mode 强制为 drive。"""
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="教五", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             mode="walk",
@@ -301,7 +301,7 @@ class TestTravelModeDetection:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
             "previous_intent": {"mode": "bike"},
         }
@@ -317,7 +317,7 @@ class TestTravelModeDetection:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
             "previous_intent": {"mode": "bike"},
         }

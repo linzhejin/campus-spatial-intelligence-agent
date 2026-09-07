@@ -1,6 +1,6 @@
 {
   "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/餐饮/景点/校内服务（410条）",
-  "count": 412,
+  "count": 413,
   "pois": [
     {
       "id": "poi_001",
@@ -9020,13 +9020,13 @@
         "武大月湖"
       ],
       "coordinates": {
-        "lng": 114.3655,
-        "lat": 30.54
+        "lng": 114.37156,
+        "lat": 30.539948
       },
       "type": "scenery",
       "campus": "文理学部",
       "category": "scenery",
-      "description": "武汉大学校内湖泊，位于文理学部，月湖旁有爱平音乐厅",
+      "description": "武汉大学校内湖泊，位于文理学部半边山路附近，月湖旁有爱平音乐厅",
       "season_tags": [
         "all"
       ],

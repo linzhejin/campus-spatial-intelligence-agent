@@ -29,6 +29,7 @@
         recommendedLine: null,
         shortestLine: null,
         poiMarkers: [],
+        roadConditionMarkers: [],  // 路况事件标记
         loading: false,
         sessionId: null,
         conversationHistory: [],
@@ -349,6 +350,9 @@
                     buttonPosition: 'RB',
                 }));
             }
+
+            // 加载路况事件标记
+            loadAndRenderRoadConditions();
         } catch (e) {
             console.error('地图初始化失败:', e);
             showError('地图加载失败', '无法初始化地图组件，请刷新页面重试');
@@ -446,6 +450,65 @@
         }
         state.poiMarkers.forEach(function (m) { m.setMap(null); });
         state.poiMarkers = [];
+    }
+
+    // ===================== 路况事件 =====================
+
+    // 路况类型对应的图标和颜色
+    var ROAD_CONDITION_STYLES = {
+        closure:     { icon: '🚫', color: '#C0392B', label: '封闭' },
+        construction:{ icon: '🚧', color: '#E67E22', label: '施工' },
+        event:       { icon: '🎉', color: '#9B59B6', label: '活动' },
+        flooding:    { icon: '🌊', color: '#2980B9', label: '积水' },
+        accident:    { icon: '⚠️', color: '#F39C12', label: '事故' },
+    };
+
+    // 清除路况标记
+    function clearRoadConditionMarkers() {
+        state.roadConditionMarkers.forEach(function (m) { m.setMap(null); });
+        state.roadConditionMarkers = [];
+    }
+
+    // 拉取并渲染路况事件标记
+    function loadAndRenderRoadConditions() {
+        if (!state.map) return;
+        apiRequest('/api/road-conditions', null, 'GET').then(function (data) {
+            clearRoadConditionMarkers();
+            var conditions = (data && data.conditions) || [];
+            conditions.forEach(function (cond) {
+                var style = ROAD_CONDITION_STYLES[cond.type] || { icon: '⚠️', color: '#999', label: cond.type };
+                var lng = cond.coordinates.lng;
+                var lat = cond.coordinates.lat;
+
+                // 圆形影响范围
+                var circle = new AMap.Circle({
+                    center: [lng, lat],
+                    radius: cond.radius_m || 30,
+                    strokeColor: style.color,
+                    strokeOpacity: 0.6,
+                    strokeWeight: 1,
+                    fillColor: style.color,
+                    fillOpacity: 0.15,
+                    zIndex: 50,
+                });
+                circle.setMap(state.map);
+                state.roadConditionMarkers.push(circle);
+
+                // 标记点
+                var marker = new AMap.Marker({
+                    position: [lng, lat],
+                    title: cond.name,
+                    content: '<div style="background:' + style.color + ';color:white;padding:2px 6px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.3);white-space:nowrap;">' +
+                        style.icon + ' ' + (cond.name || style.label) + '</div>',
+                    zIndex: 60,
+                    offset: new AMap.Pixel(0, 0),
+                });
+                marker.setMap(state.map);
+                state.roadConditionMarkers.push(marker);
+            });
+        }).catch(function () {
+            // 静默失败，不影响主流程
+        });
     }
 
     // 清除路线结果区 + 地图覆盖物（非路径规划响应时调用，避免旧路线残留）
@@ -569,6 +632,18 @@
         var explanation = data.explanation || '已为您规划好路线';
         document.getElementById('explanation-text').textContent = explanation;
 
+        // 路况提示：若有生效的路况事件，在解释下方显示提醒
+        var roadNoticeEl = document.getElementById('road-conditions-notice');
+        if (roadNoticeEl) {
+            var rcCount = data.road_conditions_applied || 0;
+            if (rcCount > 0) {
+                roadNoticeEl.style.display = 'block';
+                roadNoticeEl.textContent = '⚠️ 当前有 ' + rcCount + ' 条路况事件生效，路线已自动绕行';
+            } else {
+                roadNoticeEl.style.display = 'none';
+            }
+        }
+
         // 跟进建议
         showSuggestions(data);
 
@@ -615,29 +690,57 @@
         var constraints = data.constraints || {};
         var recLen = data.recommended_length_m || data.distance_m || 0;
         var shortLen = data.shortest_length_m || data.shortest_distance_m || 0;
-        // 建议规则随出行方式变化（响应 mode 优先，兜底当前选择器）
         var mode = (data && data.mode && TRAVEL_MODES[data.mode]) ? data.mode : state.travelMode;
 
+        // 偏好类建议
         if (mode === 'drive') {
-            // 驾车不关心坡度 → 推"最快到达"，不推平坦
             if (constraints.distance !== 'short') {
                 suggestions.push({ label: '⚡ 最快到达', query: '帮我规划最快到达的路线' });
             }
         } else {
-            // 步行 / 骑行都怕坡（骑行尤其），没避开陡坡 → 建议避开
             if (constraints.slope !== 'avoid') {
                 suggestions.push({ label: '🪜 走更平坦的路', query: '帮我找一条更平坦的路线' });
             }
         }
-        // 如果没优先风景 → 建议看风景
         if (constraints.scenery !== 'high') {
             suggestions.push({ label: '🌸 想看风景好的路', query: '走风景更好的路线' });
         }
-        // 如果推荐比最短长不少 → 建议最短（驾车已有"最快到达"，不重复推）
         if (mode !== 'drive' && recLen > shortLen * 1.3 && constraints.distance !== 'short') {
             suggestions.push({ label: '⚡ 我要最短路径', query: '帮我规划最短路径' });
         }
-        // 总有一条默认
+
+        // 校园生活场景建议（基于起终点推断）
+        var start = data.start && data.start.name ? data.start.name : '';
+        var end = data.end && data.end.name ? data.end.name : '';
+        var routeText = (start + end) || '';
+
+        // 不重复已有的偏好建议
+        var existingLabels = suggestions.map(function (s) { return s.label; });
+        function addIfNew(label, query) {
+            if (existingLabels.indexOf(label) === -1) {
+                suggestions.push({ label: label, query: query });
+                existingLabels.push(label);
+            }
+        }
+
+        // 吃饭场景
+        if (routeText.indexOf('食堂') === -1 && routeText.indexOf('餐') === -1) {
+            addIfNew('🍜 去附近食堂', '从' + (end || '这里') + '去最近的食堂');
+        }
+        // 学习场景
+        if (routeText.indexOf('图书馆') === -1 && routeText.indexOf('教') === -1) {
+            addIfNew('📚 去图书馆', '从' + (end || '这里') + '去总图书馆');
+        }
+        // 赏樱/景点场景
+        if (routeText.indexOf('樱') === -1) {
+            addIfNew('🌸 去樱花大道', '从' + (end || '这里') + '去樱花大道');
+        }
+        // 校门场景
+        if (routeText.indexOf('门') === -1) {
+            addIfNew('🚪 去最近校门', '从' + (end || '这里') + '去最近的校门');
+        }
+
+        // 兜底
         if (suggestions.length === 0) {
             if (mode === 'drive') {
                 suggestions.push({ label: '⚡ 换条更快的路线', query: '换一条更快到达的路线' });
@@ -646,7 +749,6 @@
             }
             suggestions.push({ label: '🌸 换条风景更好的', query: '换一条风景更好的路线' });
         }
-        // 最多 4 条
         return suggestions.slice(0, 4);
     }
 
@@ -746,16 +848,16 @@
     async function handleNlSubmit(query) {
         hideError();
         startLoadingMessages();
-        // 隐藏欢迎元素 + 记录用户输入气泡（对话流完整）
         hideWelcomeElements();
         showUserBubble(query);
 
-        // 请求序号竞态防护：只有最后一个请求的结果才会渲染
+        // 显示"思考中"气泡，结果回来后替换内容
+        var thinkingBubble = showChatBubble(query, '🌸 正在为你规划路线…');
+
         state.requestSeq += 1;
         var mySeq = state.requestSeq;
 
         try {
-            // 传最近一轮完整意图快照，供后端多轮承接（补起点/终点）
             var context = state.lastIntent ? {
                 previous_intent: state.lastIntent,
                 last_ambiguity: state.lastIntent.ambiguity,
@@ -763,6 +865,10 @@
                 end: state.lastIntent.end,
                 constraints: state.lastIntent.constraints,
                 weights: state.lastIntent.weights,
+                // 最近 3 轮对话历史，供 LLM 处理代词指代（"从这里去那里"）
+                history: state.conversationHistory.slice(-3).map(function (h) {
+                    return { query: h.query };
+                }),
             } : null;
 
             var result = await apiRequest('/api/chat', {
@@ -771,39 +877,35 @@
                 travel_mode: state.travelMode,
             });
 
-            // 竞态检查：如果用户在等待期间又发了新请求，丢弃本次结果
             if (mySeq !== state.requestSeq) return;
 
             var taskType = result.task_type;
 
-            // chat → 在对话流中显示闲聊回复
             if (taskType === 'chat') {
                 hideWelcomeElements();
                 clearRouteResult();
-                showChatBubble(query, result.reply || result.message || '嗯…这个问题有点难，换个问法试试？');
+                updateChatBubble(thinkingBubble, result.reply || result.message || '嗯…这个问题有点难，换个问法试试？');
                 addConversationTurn(query, result);
                 stopLoadingMessages();
                 hideLoading();
                 return;
             }
 
-            // help / unknown → 显示引导消息
             if (taskType === 'help' || taskType === 'unknown') {
                 hideWelcomeElements();
                 clearRouteResult();
-                showChatBubble(query, result.message || '有什么可以帮你的？');
+                updateChatBubble(thinkingBubble, result.message || '有什么可以帮你的？');
                 addConversationTurn(query, result);
                 stopLoadingMessages();
                 hideLoading();
                 return;
             }
 
-            // poi_query → 显示景点信息 + 地图定位
             if (taskType === 'poi_query') {
                 hideWelcomeElements();
                 clearRouteResult();
                 var poi = result.poi;
-                showChatBubble(query, result.message || (poi ? poi.description : '找到相关信息了～'));
+                updateChatBubble(thinkingBubble, result.message || (poi ? poi.description : '找到相关信息了～'));
                 if (poi && state.map) {
                     focusPoiOnMap(poi);
                 }
@@ -813,27 +915,26 @@
                 return;
             }
 
-            // path_planning → 渲染路线
+            // path_planning → 渲染路线 + 对话反馈
             if (result.recommended && result.recommended.length > 0) {
-                // 服务端 NL 识别的出行方式（"骑车去X"/"开车到X"）优先，回写选择器
                 syncModeFromServer(result);
                 renderRoute(result);
                 showResults(result);
+                // 用后端 explanation 作为对话反馈，没有则兜底文案
+                var reply = result.explanation || buildRouteSummary(result);
+                updateChatBubble(thinkingBubble, reply);
                 addConversationTurn(query, result);
             } else {
                 clearRouteResult();
-                showError('路线规划失败', '未能生成有效的路线，请尝试更明确的需求描述');
+                updateChatBubble(thinkingBubble, '唔，这条路我没能规划出来😅 试试换个目的地？比如「从牌坊到樱顶」');
             }
         } catch (err) {
             if (mySeq !== state.requestSeq) return;
-            if (err.code && isGuideableError(err.code)) {
-                // 信息不完整 / 输入无法理解 → 对话式引导，不弹错误窗
-                hideWelcomeElements();
-                clearRouteResult();
-                showChatBubble(query, err.message);
-            } else {
-                showError('规划出错', err.message);
-            }
+            // 所有错误都走对话气泡，不弹错误窗
+            hideWelcomeElements();
+            clearRouteResult();
+            var errMsg = (err && err.message) || '出了点小问题，再试一次吧～';
+            updateChatBubble(thinkingBubble, errMsg);
         } finally {
             if (mySeq === state.requestSeq) {
                 hideLoading();
@@ -858,10 +959,10 @@
         chatContent.appendChild(bubble);
     }
 
-    // 在对话流中显示聊天气泡
+    // 在对话流中显示聊天气泡，返回气泡元素供后续 updateChatBubble 替换内容
     function showChatBubble(query, reply) {
         var chatContent = document.getElementById('chat-content');
-        if (!chatContent) return;
+        if (!chatContent) return null;
 
         var bubble = document.createElement('div');
         bubble.className = 'chat-bubble-row';
@@ -874,10 +975,41 @@
             '</div>';
         chatContent.appendChild(bubble);
 
-        // 自动滚动到底部
         setTimeout(function () {
             chatContent.scrollTo({ top: chatContent.scrollHeight, behavior: 'smooth' });
         }, 100);
+
+        return bubble;
+    }
+
+    // 替换已有气泡内容（用于"思考中"→最终回复）
+    function updateChatBubble(bubble, text) {
+        if (!bubble) return;
+        var textEl = bubble.querySelector('.chat-bubble-text');
+        if (textEl) {
+            textEl.textContent = text;
+        }
+        var chatContent = document.getElementById('chat-content');
+        if (chatContent) {
+            setTimeout(function () {
+                chatContent.scrollTo({ top: chatContent.scrollHeight, behavior: 'smooth' });
+            }, 100);
+        }
+    }
+
+    // 路线摘要兜底文案（后端 explanation 缺失时用）
+    function buildRouteSummary(data) {
+        var dist = (data.recommended_length_m || data.distance_m || 0).toFixed(0);
+        var dur = estimateDurationText(data);
+        var pois = data.pois || [];
+        var poiNames = pois.slice(0, 3).map(function (p) { return p.name; }).join('、');
+        var reply = '为你规划好了路线，约 ' + dist + ' 米，' + dur + '。';
+        if (poiNames) {
+            reply += ' 沿途经过 ' + poiNames;
+            if (pois.length > 3) reply += ' 等 ' + pois.length + ' 个地点';
+            reply += '。';
+        }
+        return reply;
     }
 
     function hideWelcomeElements() {
@@ -896,7 +1028,6 @@
     async function handleShortcutMode(mode) {
         hideError();
 
-        // 请求序号竞态防护：快速切换出行方式/偏好时，只渲染最后一次请求的结果
         state.requestSeq += 1;
         var mySeq = state.requestSeq;
 
@@ -904,21 +1035,22 @@
             distance_first: {
                 loadingText: '正在规划最短路径…',
                 loadingSubtext: '优先考虑距离',
+                userQuery: '帮我规划最短路径',
             },
             scenery_first: {
                 loadingText: '正在规划风景路线…',
                 loadingSubtext: '优先考虑景观',
+                userQuery: '帮我找一条风景好的路线',
             },
             slope_avoid: {
                 loadingText: '正在规划平坦路线…',
                 loadingSubtext: '优先考虑坡度',
+                userQuery: '帮我找一条平坦的路线',
             },
         };
 
-        // mode 为 null（切换出行方式后的自动重算）时不带偏好，仅带 travel_mode
         var cfg = modeConfig[mode] || {};
 
-        // 优先沿用当前对话的起终点；没有的话才用默认的牌坊→樱顶
         var startName = '牌坊';
         var endName = '樱顶';
         if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
@@ -926,7 +1058,11 @@
             endName = state.lastIntent.end.name || '樱顶';
         }
 
-        // loading 主文案随出行方式变化（漫步/骑行/车行），子文案优先保留快捷偏好语义
+        // 快捷模式也走对话流：用户气泡 + 思考气泡
+        hideWelcomeElements();
+        showUserBubble(cfg.userQuery || ('从' + startName + '到' + endName));
+        var thinkingBubble = showChatBubble('', '🌸 正在为你规划路线…');
+
         var tm = TRAVEL_MODES[state.travelMode] || TRAVEL_MODES.walk;
         showLoading(tm.loadingText, cfg.loadingSubtext || tm.loadingSub);
 
@@ -940,10 +1076,8 @@
             if (mode) parsePayload.mode = mode;
 
             var parseResult = await apiRequest('/api/parse', parsePayload);
-            if (mySeq !== state.requestSeq) return;  // 已有更新的请求，丢弃本次结果
+            if (mySeq !== state.requestSeq) return;
 
-            // parseResult 整体 POST 给 /api/route；兜底确保带 travel_mode（/api/route 认 travel_mode/mode）
-            // 快捷/重算链路的出行方式始终以用户在选择器上的最新选择为准，不用服务端回显覆盖
             var routePayload = parseResult || {};
             routePayload.travel_mode = state.travelMode;
 
@@ -953,12 +1087,17 @@
             if (routeResult.recommended && routeResult.recommended.length > 0) {
                 renderRoute(routeResult);
                 showResults(routeResult);
+                // 快捷模式后端不返回 explanation，用兜底摘要
+                updateChatBubble(thinkingBubble, buildRouteSummary(routeResult));
             } else {
-                showError('路线规划失败', '未能生成有效的路线');
+                clearRouteResult();
+                updateChatBubble(thinkingBubble, '唔，这条路我没能规划出来😅 试试换个目的地？');
             }
         } catch (err) {
             if (mySeq !== state.requestSeq) return;
-            showError('规划出错', err.message);
+            clearRouteResult();
+            var errMsg = (err && err.message) || '出了点小问题，再试一次吧～';
+            updateChatBubble(thinkingBubble, errMsg);
         } finally {
             if (mySeq === state.requestSeq) {
                 hideLoading();

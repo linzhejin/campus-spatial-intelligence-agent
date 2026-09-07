@@ -1,13 +1,16 @@
 """
 漫步珞珈 (WHU-Walker) — RESTful API 路由
 
-6 个端点:
+端点:
   POST /api/parse   — 自然语言 → 结构化任务意图
   POST /api/route   — 任务意图 → 多因素路径规划
   POST /api/chat    — 一站式 NL → 解析 + 路径 + 解释
   GET  /api/pois   — POI 列表（支持 type/season 筛选）
   GET  /api/pois/<name> — 单 POI 查询
   POST /api/network/init — 触发路网加载
+  GET  /api/road-conditions — 路况事件列表
+  POST /api/road-conditions — 新增路况事件
+  DELETE /api/road-conditions/<id> — 删除路况事件
 """
 import logging
 import math
@@ -30,6 +33,9 @@ from spatial.routing import (
     filter_graph_for_mode,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
+from spatial.road_conditions import (
+    list_conditions, add_condition, remove_condition, CONDITION_LABELS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -493,6 +499,7 @@ def route():
         "duration_min": route_result["duration_min"],
         "shortest_duration_min": route_result["shortest_duration_min"],
         "speed_kmh": route_result["speed_kmh"],
+        "road_conditions_applied": route_result.get("road_conditions_applied", 0),
     }
 
     return _ok(response)
@@ -974,3 +981,69 @@ def candidates():
         })
 
     return _ok({"candidates": result, "start": start})
+
+
+# ===================== 路况管理 =====================
+
+@api_bp.route("/road-conditions", methods=["GET"])
+def get_road_conditions():
+    """GET /api/road-conditions — 返回当前生效的路况事件列表"""
+    conditions = list_conditions()
+    # 附加可读类型标签
+    for c in conditions:
+        c["type_label"] = CONDITION_LABELS.get(c["type"], c["type"])
+    return _ok({"conditions": conditions, "count": len(conditions)})
+
+
+@api_bp.route("/road-conditions", methods=["POST"])
+def create_road_condition():
+    """POST /api/road-conditions — 新增路况事件
+
+    Input: {
+        "type": "closure|construction|event|flooding|accident",
+        "name": "樱花大道施工",
+        "lng": 114.365,
+        "lat": 30.536,
+        "radius_m": 50,
+        "description": "施工期间禁止通行",
+        "end_time": 1728345600  # 可选，Unix时间戳，0=长期有效
+    }
+    """
+    body = request.get_json(silent=True)
+    if body is None:
+        return _err("invalid_json", "请求体必须为合法 JSON", 400)
+
+    cond_type = body.get("type")
+    name = body.get("name")
+    lng = body.get("lng")
+    lat = body.get("lat")
+
+    if not cond_type or not name or lng is None or lat is None:
+        return _err("missing_fields", "type, name, lng, lat 必填", 400)
+
+    try:
+        condition = add_condition(
+            cond_type=cond_type,
+            name=name,
+            lng=float(lng),
+            lat=float(lat),
+            radius_m=float(body.get("radius_m", 30.0)),
+            description=body.get("description", ""),
+            end_time=body.get("end_time"),
+        )
+        condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
+        return _ok({"condition": condition}, status=201)
+    except ValueError as e:
+        return _err("invalid_type", str(e), 400)
+    except Exception as e:
+        logger.exception("新增路况失败")
+        return _err("create_failed", f"新增失败: {e}", 500)
+
+
+@api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
+def delete_road_condition(cond_id):
+    """DELETE /api/road-conditions/<id> — 删除路况事件"""
+    success = remove_condition(cond_id)
+    if not success:
+        return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
+    return _ok({"message": "已删除", "id": cond_id})

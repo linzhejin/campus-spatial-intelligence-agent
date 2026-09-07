@@ -91,14 +91,14 @@ class TestNormalizePoiRefs:
         assert result.end.name == "武汉大学图书馆(总馆)"
 
     def test_fuzzy_prefix_normalized(self):
-        """「武大牌坊」应归一化为「牌坊」。"""
+        """「武大牌坊」应归一化为「珞珈门」（牌坊为别名）。"""
         result = _normalize_poi_refs(self._intent(start="武大牌坊"))
-        assert result.start.name == "牌坊"
+        assert result.start.name == "珞珈门"
 
     def test_exact_name_unchanged(self):
-        """规范名精确命中时保持不变。"""
+        """别名命中时归一化为规范名「珞珈门」。"""
         result = _normalize_poi_refs(self._intent(start="牌坊"))
-        assert result.start.name == "牌坊"
+        assert result.start.name == "珞珈门"
 
     def test_unmatched_keeps_raw(self):
         """匹配不到的地名保留原样（由 route 层引导用户）。"""
@@ -160,7 +160,7 @@ class TestRuleFallbackWithExpandedPois:
     def test_classify_path_query(self):
         r = _rule_based_classify("从牌坊到樱顶")
         assert r["task_type"] == "path_planning"
-        assert r["start_name"] == "牌坊"
+        assert r["start_name"] == "珞珈门"
         assert r["end_name"] == "武汉大学老斋舍"
 
     def test_classify_poi_query(self):

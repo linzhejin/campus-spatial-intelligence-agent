@@ -44,7 +44,7 @@ MULTITURN_TEST_CASES = [
                 "query": "从牌坊出发",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "end_name": None,
                     "has_ambiguity": True,
                 },
@@ -53,7 +53,7 @@ MULTITURN_TEST_CASES = [
                 "query": "去樱顶",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "end_name": "武汉大学老斋舍",
                     "has_ambiguity": False,
                 },
@@ -62,7 +62,7 @@ MULTITURN_TEST_CASES = [
                 "query": "避开陡坡",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "end_name": "武汉大学老斋舍",
                     "constraints": {"slope": "avoid"},
                     "has_ambiguity": False,
@@ -108,7 +108,7 @@ MULTITURN_TEST_CASES = [
                 "query": "从牌坊走",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "has_ambiguity": True,
                 },
             },
@@ -116,7 +116,7 @@ MULTITURN_TEST_CASES = [
                 "query": "要风景最好的路线",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "constraints": {"scenery": "high"},
                     "has_ambiguity": False,
                 },
@@ -224,7 +224,7 @@ MULTITURN_TEST_CASES = [
                 "query": "我在牌坊",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "has_ambiguity": True,
                 },
             },
@@ -232,7 +232,7 @@ MULTITURN_TEST_CASES = [
                 "query": "想去樱花大道",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "end_name": "武汉大学樱花大道",
                     "has_ambiguity": False,
                 },
@@ -241,7 +241,7 @@ MULTITURN_TEST_CASES = [
                 "query": "有没有不爬坡的路",
                 "expected": {
                     "task_type": "path_planning",
-                    "start_name": "牌坊",
+                    "start_name": "珞珈门",
                     "end_name": "武汉大学樱花大道",
                     "constraints": {"slope": "avoid"},
                     "has_ambiguity": False,
@@ -412,12 +412,12 @@ class TestMultiturnContextMerge:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "去樱顶")
         assert merged.start is not None
-        assert merged.start.name == "牌坊"
+        assert merged.start.name == "珞珈门"
         assert merged.end is not None
         assert merged.end.name == "樱顶"
 
@@ -425,18 +425,18 @@ class TestMultiturnContextMerge:
         """TC-CTX-02: 本轮缺 end，从 context 补充。"""
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "从牌坊出发")
         assert merged.end is not None
         assert merged.end.name == "樱顶"
-        assert merged.start.name == "牌坊"
+        assert merged.start.name == "珞珈门"
 
     def test_preserve_existing_start_when_context_has_different(self):
         """TC-CTX-03: 本轮已有 start，不被 context 覆盖。"""
@@ -447,7 +447,7 @@ class TestMultiturnContextMerge:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "继续")
@@ -464,7 +464,7 @@ class TestMultiturnContextMerge:
             ambiguity="请指定起点和终点",
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "继续")
@@ -495,7 +495,7 @@ class TestMultiturnContextMerge:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         context = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }
         merged = _merge_context_with_intent(intent, context, "你能做什么")
@@ -519,7 +519,7 @@ class TestMultiturnAmbiguityCompletion:
         }
         completed = _resolve_ambiguity_completion(intent, "牌坊", context)
         assert completed.start is not None
-        assert completed.start.name == "牌坊"
+        assert completed.start.name == "珞珈门"
         assert completed.end is not None
         assert completed.end.name == "樱顶"
         assert completed.task_type == "path_planning"
@@ -531,14 +531,14 @@ class TestMultiturnAmbiguityCompletion:
         context = {
             "previous_intent": {
                 "ambiguity": "请指定终点",
-                "start": {"name": "牌坊", "type": "poi"},
+                "start": {"name": "珞珈门", "type": "poi"},
                 "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"},
                 "weights": None,
             }
         }
         completed = _resolve_ambiguity_completion(intent, "樱顶", context)
         assert completed.start is not None
-        assert completed.start.name == "牌坊"
+        assert completed.start.name == "珞珈门"
         assert completed.end is not None
         assert completed.end.name == "武汉大学老斋舍"
         assert completed.task_type == "path_planning"
@@ -604,7 +604,7 @@ class TestMultiturnAmbiguityCompletion:
         }
         completed = _resolve_ambiguity_completion(intent, "牌坊", context)
         assert completed.start is not None
-        assert completed.start.name == "牌坊"
+        assert completed.start.name == "珞珈门"
 
 
 class TestMultiturnPostProcessPipeline:
@@ -615,7 +615,7 @@ class TestMultiturnPostProcessPipeline:
         # Turn 1: "从牌坊出发" — LLM 可能输出 start=牌坊, end=None
         intent_t1 = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
@@ -634,7 +634,7 @@ class TestMultiturnPostProcessPipeline:
         )
         processed_t2 = _t011_post_process(intent_t2, "去樱顶", ctx_t1)
         assert processed_t2.start is not None
-        assert processed_t2.start.name == "牌坊"
+        assert processed_t2.start.name == "珞珈门"
         assert processed_t2.end is not None
         assert processed_t2.end.name == "武汉大学老斋舍"
         ctx_t2 = build_context_from_previous_turn(processed_t2)
@@ -649,7 +649,7 @@ class TestMultiturnPostProcessPipeline:
         )
         processed_t3 = _t011_post_process(intent_t3, "避开陡坡", ctx_t2)
         assert processed_t3.start is not None
-        assert processed_t3.start.name == "牌坊"
+        assert processed_t3.start.name == "珞珈门"
         assert processed_t3.end is not None
         assert processed_t3.end.name == "武汉大学老斋舍"
         assert processed_t3.constraints.slope == "avoid"
@@ -709,7 +709,7 @@ class TestMultiturnPostProcessPipeline:
         # Turn 2 模拟: "从牌坊走" 已解析 start=牌坊
         intent_t2 = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱花大道", type="poi"),
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
@@ -725,7 +725,7 @@ class TestMultiturnPostProcessPipeline:
             weights={"distance": 0.2, "slope": 0.1, "scenery": 0.7},
         )
         processed_t3 = _t011_post_process(intent_t3, "要风景最好的路线", ctx)
-        assert processed_t3.start.name == "牌坊"
+        assert processed_t3.start.name == "珞珈门"
         assert processed_t3.end.name == "武汉大学樱花大道"
         assert processed_t3.constraints.scenery == "high"
 
@@ -764,12 +764,12 @@ class TestMultiturnPostProcessPipeline:
         # Turn 1: "我在牌坊"
         intent_t1 = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         p1 = _t011_post_process(intent_t1, "我在牌坊", None)
-        assert p1.start.name == "牌坊"
+        assert p1.start.name == "珞珈门"
         assert p1.end is None
         ctx = build_context_from_previous_turn(p1)
 
@@ -781,7 +781,7 @@ class TestMultiturnPostProcessPipeline:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         p2 = _t011_post_process(intent_t2, "想去樱花大道", ctx)
-        assert p2.start.name == "牌坊"
+        assert p2.start.name == "珞珈门"
         assert p2.end.name == "武汉大学樱花大道"
         ctx = build_context_from_previous_turn(p2)
 
@@ -794,7 +794,7 @@ class TestMultiturnPostProcessPipeline:
             weights={"distance": 0.2, "slope": 0.6, "scenery": 0.2},
         )
         p3 = _t011_post_process(intent_t3, "有没有不爬坡的路", ctx)
-        assert p3.start.name == "牌坊"
+        assert p3.start.name == "珞珈门"
         assert p3.end.name == "武汉大学樱花大道"
         assert p3.constraints.slope == "avoid"
 
@@ -826,13 +826,13 @@ class TestReferenceResolutionAccuracy:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         merged = _merge_context_with_intent(
-            intent, {"start": {"name": "牌坊", "type": "poi"}}, "test"
+            intent, {"start": {"name": "珞珈门", "type": "poi"}}, "test"
         )
-        results.append(merged.start is not None and merged.start.name == "牌坊")
+        results.append(merged.start is not None and merged.start.name == "珞珈门")
 
         # Scenario 2: 缺 end 补 end
         intent2 = TaskIntent(
-            task_type="path_planning", start=PoiRef(name="牌坊", type="poi"),
+            task_type="path_planning", start=PoiRef(name="珞珈门", type="poi"),
             end=None,
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
@@ -848,7 +848,7 @@ class TestReferenceResolutionAccuracy:
             constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
         )
         merged3 = _merge_context_with_intent(
-            intent3, {"start": {"name": "牌坊", "type": "poi"}}, "test"
+            intent3, {"start": {"name": "珞珈门", "type": "poi"}}, "test"
         )
         results.append(merged3.start.name == "梅园")
 
@@ -860,7 +860,7 @@ class TestReferenceResolutionAccuracy:
         )
         merged4 = _merge_context_with_intent(
             intent4, {
-                "start": {"name": "牌坊", "type": "poi"},
+                "start": {"name": "珞珈门", "type": "poi"},
                 "end": {"name": "樱顶", "type": "poi"},
             }, "test"
         )
@@ -903,14 +903,14 @@ class TestReferenceResolutionAccuracy:
             }
         }
         r = _resolve_ambiguity_completion(intent, "牌坊", ctx)
-        results.append(r.start is not None and r.start.name == "牌坊")
+        results.append(r.start is not None and r.start.name == "珞珈门")
 
         # Scenario 2: 补 end
         intent2 = make_base_intent()
         ctx2 = {
             "previous_intent": {
                 "ambiguity": "请指定终点",
-                "start": {"name": "牌坊", "type": "poi"},
+                "start": {"name": "珞珈门", "type": "poi"},
                 "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"},
                 "weights": None,
             }
@@ -980,7 +980,7 @@ class TestConstraintAdjustmentCorrectness:
     def test_scenery_adjustment_keeps_endpoints(self):
         """TC-CON-02: 景观偏好调整后起终点不变。"""
         ctx = {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱花大道", "type": "poi"},
             "constraints": {"distance": "medium", "slope": "normal", "scenery": "normal"},
             "weights": None,
@@ -993,7 +993,7 @@ class TestConstraintAdjustmentCorrectness:
             weights={"distance": 0.2, "slope": 0.1, "scenery": 0.7},
         )
         merged = _merge_context_with_intent(intent, ctx, "要风景最好的路线")
-        assert merged.start.name == "牌坊"
+        assert merged.start.name == "珞珈门"
         assert merged.end.name == "樱花大道"
         assert merged.constraints.scenery == "high"
 
@@ -1046,11 +1046,11 @@ class TestConstraintAdjustmentCorrectness:
             constraints=Constraints(distance="medium", slope="normal", scenery="high"),
         )
         m2 = _merge_context_with_intent(intent2, {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱花大道", "type": "poi"},
         }, "风景最好")
         results.append(
-            m2.start.name == "牌坊" and m2.end.name == "樱花大道" and m2.constraints.scenery == "high"
+            m2.start.name == "珞珈门" and m2.end.name == "樱花大道" and m2.constraints.scenery == "high"
         )
 
         # 3
@@ -1085,11 +1085,11 @@ class TestConstraintAdjustmentCorrectness:
             weights={"distance": 0.1, "slope": 0.5, "scenery": 0.4},
         )
         m5 = _merge_context_with_intent(intent5, {
-            "start": {"name": "牌坊", "type": "poi"},
+            "start": {"name": "珞珈门", "type": "poi"},
             "end": {"name": "樱顶", "type": "poi"},
         }, "不要太陡，风景要好")
         results.append(
-            m5.start.name == "牌坊" and m5.end.name == "樱顶"
+            m5.start.name == "珞珈门" and m5.end.name == "樱顶"
             and m5.constraints.slope == "avoid" and m5.constraints.scenery == "high"
         )
 
@@ -1112,13 +1112,13 @@ class TestThreeTurnContextPreservation:
         t1 = _t011_post_process(
             TaskIntent(
                 task_type="path_planning",
-                start=PoiRef(name="牌坊", type="poi"),
+                start=PoiRef(name="珞珈门", type="poi"),
                 end=None,
                 constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             ),
             "从牌坊出发", None,
         )
-        assert t1.start.name == "牌坊"
+        assert t1.start.name == "珞珈门"
 
         # Turn 2 — 用 Turn 1 的 context
         ctx1 = build_context_from_previous_turn(t1)
@@ -1131,7 +1131,7 @@ class TestThreeTurnContextPreservation:
             ),
             "去樱顶", ctx1,
         )
-        assert t2.start.name == "牌坊"
+        assert t2.start.name == "珞珈门"
         assert t2.end.name == "武汉大学老斋舍"
 
         # Turn 3 — 用 Turn 2 的 context
@@ -1146,7 +1146,7 @@ class TestThreeTurnContextPreservation:
             ),
             "避开陡坡", ctx2,
         )
-        assert t3.start.name == "牌坊"
+        assert t3.start.name == "珞珈门"
         assert t3.end.name == "武汉大学老斋舍"
         assert t3.constraints.slope == "avoid"
 
@@ -1156,7 +1156,7 @@ class TestThreeTurnContextPreservation:
         t1 = _t011_post_process(
             TaskIntent(
                 task_type="path_planning",
-                start=PoiRef(name="牌坊", type="poi"),
+                start=PoiRef(name="珞珈门", type="poi"),
                 end=None,
                 constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
             ),
@@ -1185,7 +1185,7 @@ class TestThreeTurnContextPreservation:
             ),
             "有没有不爬坡的路", ctx2,
         )
-        assert t3.start.name == "牌坊"
+        assert t3.start.name == "珞珈门"
         assert t3.end.name == "武汉大学樱花大道"
         assert t3.constraints.slope == "avoid"
 
@@ -1193,14 +1193,14 @@ class TestThreeTurnContextPreservation:
         """TC-3T-03: 验证 build_context_from_previous_turn 包含所有必要字段。"""
         intent = TaskIntent(
             task_type="path_planning",
-            start=PoiRef(name="牌坊", type="poi"),
+            start=PoiRef(name="珞珈门", type="poi"),
             end=PoiRef(name="樱顶", type="poi"),
             constraints=Constraints(distance="short", slope="avoid", scenery="high"),
             weights={"distance": 0.2, "slope": 0.6, "scenery": 0.2},
             ambiguity="请指定起点",
         )
         ctx = build_context_from_previous_turn(intent)
-        assert ctx["start"]["name"] == "牌坊"
+        assert ctx["start"]["name"] == "珞珈门"
         assert ctx["end"]["name"] == "樱顶"
         assert ctx["constraints"]["distance"] == "short"
         assert ctx["constraints"]["slope"] == "avoid"
@@ -1249,7 +1249,7 @@ class TestFourTaskTypesCoverage:
         # path_planning: 规则 fallback 直接识别 A→B
         r1 = _rule_based_classify("从牌坊到樱顶")
         assert r1["task_type"] == "path_planning"
-        assert r1["start_name"] == "牌坊"
+        assert r1["start_name"] == "珞珈门"
         assert r1["end_name"] == "武汉大学老斋舍"
 
         # poi_query: 规则识别 ("怎么走" 含路径词, 用 "在哪" 测试规则分类)

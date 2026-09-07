@@ -551,6 +551,16 @@ body {
     color: var(--ink);
 }
 
+.road-conditions-notice {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #FFF3E0;
+    border-left: 2px solid #E67E22;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    color: #D35400;
+}
+
 /* Follow-up suggestions */
 .suggestions-area {
     padding-top: 8px;

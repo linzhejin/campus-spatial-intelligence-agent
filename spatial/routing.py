@@ -576,6 +576,7 @@ def compute_route(
     constraints: Optional[dict] = None,
     weights: Optional[dict] = None,
     mode: str = "walk",
+    road_conditions: Optional[list] = None,
 ) -> dict:
     """
     多因素路径计算主函数。
@@ -583,11 +584,12 @@ def compute_route(
     流程：
       1. 解析出行方式与权重（默认 → 校验 → 归一化）
       2. 出行方式过滤（walk 不过滤；bike 删纯台阶；drive 仅留车行道）
-      3. 硬约束过滤（过滤不可通行路段）
-      4. 软成本优化（Dijkstra 计算推荐路线）
-      5. 计算最短路径基线（在方式过滤图上，避免驾车最短路线穿台阶）
-      6. 路径长度上限裁剪
-      7. 计算重叠率
+      3. 特殊路况处理（封闭边移除，施工/积水等施加惩罚）
+      4. 硬约束过滤（坡度等）
+      5. 软成本优化（Dijkstra 计算推荐路线）
+      6. 计算最短路径基线
+      7. 路径长度上限裁剪
+      8. 计算重叠率
 
     Args:
         G: OSMnx MultiDiGraph 路网
@@ -597,6 +599,7 @@ def compute_route(
         weights: 权重 dict，如 {"distance": 0.2, "slope": 0.5, "scenery": 0.3}；
                  None 时取 MODE_DEFAULT_WEIGHTS[mode]
         mode: 出行方式 "walk" / "bike" / "drive"（默认 "walk"）
+        road_conditions: 路况事件列表，None 时自动加载 active 事件
 
     Returns:
         {
@@ -616,6 +619,7 @@ def compute_route(
             "duration_min": float, 推荐路径预估时长（分钟）
             "shortest_duration_min": float, 最短路径预估时长（分钟）
             "speed_kmh": float, 模式平均速度
+            "road_conditions_applied": int, 实际生效的路况事件数
         }
 
     Raises:
@@ -641,11 +645,34 @@ def compute_route(
     if start_node not in G_mode or end_node not in G_mode:
         _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
 
+    # 1.5) 特殊路况处理：封闭边移除，施工/积水等施加惩罚
+    road_penalty = {}
+    road_conditions_applied = 0
+    if road_conditions is None:
+        try:
+            from spatial.road_conditions import list_conditions
+            road_conditions = list_conditions()
+        except Exception as e:
+            logger.warning("路况加载失败，跳过: %s", e)
+            road_conditions = []
+    if road_conditions:
+        from spatial.road_conditions import apply_conditions_to_graph
+        G_mode, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
+        road_conditions_applied = len(road_conditions)
+        if closed_edges:
+            mode_status = f"{mode_status}+road_closure"
+        if road_penalty:
+            mode_status = f"{mode_status}+road_penalty"
+        # 路况可能导致起终点变成孤立节点
+        if start_node not in G_mode or end_node not in G_mode:
+            _raise_no_path(G, start_node, end_node, f"{mode_status}+road_blocked", G_mode, mode=mode)
+
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
     G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
 
-    # 方式惩罚与约束惩罚合并（同一 key 相乘）
-    penalty_map = _merge_penalty_maps(mode_penalty, constraint_penalty)
+    # 方式惩罚 + 路况惩罚 + 约束惩罚合并（同一 key 相乘）
+    penalty_map = _merge_penalty_maps(mode_penalty, road_penalty)
+    penalty_map = _merge_penalty_maps(penalty_map, constraint_penalty)
 
     # 将 edge key 注入边数据，使 edge_weight 能按 (u, v, k) 查找 norm 和 penalty
     for u, v, k, data in G_filtered.edges(keys=True, data=True):
@@ -772,6 +799,7 @@ def compute_route(
         "duration_min": estimate_duration_min(recommended_len, mode),
         "shortest_duration_min": estimate_duration_min(shortest_len, mode),
         "speed_kmh": MODE_SPEEDS_KMH[mode],
+        "road_conditions_applied": road_conditions_applied,
     }
 
 
@@ -783,6 +811,7 @@ def compute_route_with_annotations(
     weights: Optional[dict] = None,
     annotations: Optional[list] = None,
     mode: str = "walk",
+    road_conditions: Optional[list] = None,
 ) -> dict:
     """
     带路段标注的路径计算（slope_level / scenery_level 注入路网边属性）。
@@ -795,6 +824,7 @@ def compute_route_with_annotations(
         weights: 权重 dict
         annotations: 标注列表，每项含 edge_id 列表和属性值
         mode: 出行方式 "walk" / "bike" / "drive"（默认 "walk"）
+        road_conditions: 路况事件列表
 
     Returns:
         同 compute_route 返回结构
@@ -821,5 +851,6 @@ def compute_route_with_annotations(
                         data["name"] = str(name)
 
     return compute_route(
-        G_annotated, start_node, end_node, constraints, weights, mode=mode
+        G_annotated, start_node, end_node, constraints, weights, mode=mode,
+        road_conditions=road_conditions,
     )
