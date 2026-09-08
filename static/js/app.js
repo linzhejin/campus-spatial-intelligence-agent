@@ -500,16 +500,64 @@
                 var marker = new AMap.Marker({
                     position: [lng, lat],
                     title: cond.name,
-                    content: '<div style="background:' + style.color + ';color:white;padding:2px 6px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.3);white-space:nowrap;">' +
+                    content: '<div style="background:' + style.color + ';color:white;padding:2px 6px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.3);white-space:nowrap;cursor:pointer;">' +
                         style.icon + ' ' + (cond.name || style.label) + '</div>',
                     zIndex: 60,
                     offset: new AMap.Pixel(0, 0),
                 });
                 marker.setMap(state.map);
                 state.roadConditionMarkers.push(marker);
+
+                // 点击标记弹出信息窗（管理员可删除）
+                marker.on('click', function () {
+                    showConditionInfoWindow(cond, style);
+                });
             });
         }).catch(function () {
             // 静默失败，不影响主流程
+        });
+    }
+
+    // 路况事件信息窗
+    function showConditionInfoWindow(cond, style) {
+        var info = '<div style="padding:6px 4px;font-size:13px;line-height:1.6;min-width:160px;">' +
+            '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;">' +
+            style.icon + ' ' + (cond.name || style.label) + '</div>' +
+            '<div style="color:#666;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
+            '<div id="cond-delete-area" style="margin-top:8px;"></div>' +
+            '</div>';
+
+        var infoWindow = new AMap.InfoWindow({
+            content: info,
+            offset: new AMap.Pixel(0, -20),
+        });
+        infoWindow.open(state.map, [cond.coordinates.lng, cond.coordinates.lat]);
+
+        // 检查管理员状态，决定是否显示删除按钮
+        apiRequest('/api/admin/status', null, 'GET').then(function (data) {
+            if (!(data && data.is_admin)) return;
+            // 等待 infoWindow DOM 渲染
+            setTimeout(function () {
+                var area = document.getElementById('cond-delete-area');
+                if (!area) return;
+                area.innerHTML = '<button id="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">删除此路况</button>';
+                var btn = document.getElementById('cond-delete-btn');
+                if (btn) {
+                    btn.addEventListener('click', function () {
+                        deleteRoadCondition(cond.id, infoWindow);
+                    });
+                }
+            }, 50);
+        }).catch(function () {});
+    }
+
+    // 删除路况事件
+    function deleteRoadCondition(id, infoWindow) {
+        apiRequest('/api/road-conditions/' + id, null, 'DELETE').then(function () {
+            if (infoWindow) infoWindow.close();
+            loadAndRenderRoadConditions();
+        }).catch(function (err) {
+            alert('删除失败：' + (err && err.message ? err.message : '请重试'));
         });
     }
 
