@@ -95,22 +95,9 @@
             <div class="welcome-bubble" id="welcome-bubble">
                 <div class="bubble-avatar">🌸</div>
                 <div class="bubble-body">
-                    <p class="bubble-greeting">嗨！我是你的珞珈漫步向导～</p>
-                    <p class="bubble-text">告诉我想从哪走到哪——🚶步行、🚴骑行、🚗驾车都可以，想看风景、不想爬坡之类的偏好也尽管说，我帮你找最合适的路线。</p>
+                    <p class="bubble-greeting">嗨！我是珞珈智行～</p>
+                    <p class="bubble-text">告诉我想从哪到哪，偏好也尽管说——想看风景、不想爬坡、赶时间都可以。</p>
                 </div>
-            </div>
-
-            <!-- 快捷 Chip 条 -->
-            <div class="quick-chips" id="quick-chips">
-                <button class="quick-chip" data-mode="scenery_first">
-                    <span class="chip-emoji">🌸</span> 风景优先
-                </button>
-                <button class="quick-chip" data-mode="slope_avoid">
-                    <span class="chip-emoji">🪜</span> 平坦优先
-                </button>
-                <button class="quick-chip" data-mode="distance_first">
-                    <span class="chip-emoji">⚡</span> 最短路径
-                </button>
             </div>
 
             <!-- 快捷卡片（欢迎引导用） -->
@@ -183,7 +170,7 @@
             <textarea
                 id="nl-input"
                 class="nl-input"
-                placeholder="告诉我想去哪……步行、骑行、驾车都可以（⏎ 发送 / ⇧⏎ 换行）"
+                placeholder="告诉我想去哪……比如「珞珈门到樱顶，走风景好的路」"
                 maxlength="200"
                 rows="1"
             ></textarea>
@@ -198,8 +185,8 @@
             </div>
         </div>
 
-        <!-- 快捷键提示行 -->
-        <div class="kbd-hint-bar">
+        <!-- 快捷键提示行（桌面端才显示） -->
+        <div class="kbd-hint-bar" id="kbd-hint-bar">
             <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切模式
             <kbd>F</kbd> 风景
             <kbd>S</kbd> 平坦
