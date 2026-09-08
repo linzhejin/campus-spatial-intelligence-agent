@@ -65,18 +65,13 @@
         },
     };
 
-    // ========== 出行方式：读取 / 持久化 / UI 同步 ==========
+    // ========== 出行方式：固定默认步行（不持久化其他模式） ==========
     function loadTravelMode() {
-        var mode = 'walk';
-        try {
-            var saved = localStorage.getItem(TRAVEL_MODE_KEY);
-            if (saved && TRAVEL_MODES[saved]) mode = saved;
-        } catch (e) { mode = 'walk'; }  // localStorage 不可用时回退步行
-        state.travelMode = mode;
+        state.travelMode = 'walk';  // 固定默认步行，不读取 localStorage
     }
 
     function persistTravelMode() {
-        try { localStorage.setItem(TRAVEL_MODE_KEY, state.travelMode); } catch (e) {}
+        // 不再持久化出行方式，每次刷新默认步行
     }
 
     // 同步分段选择器选中态、aria、图例配色与文案、驾车模式下隐藏"平坦优先"
