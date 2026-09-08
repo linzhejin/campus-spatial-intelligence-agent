@@ -283,10 +283,10 @@ def apply_conditions_to_graph(
     将路况应用到路网，返回 (G_modified, penalty_map, closed_edges)。
 
     策略：
-    - closure: 不硬删边，施加 100× 惩罚（路线尽量绕开，但保证可达，避免割裂路网）
+    - closure: 硬删除边（真的不能走）
     - 其他类型: 施加惩罚系数（由调用方在 cost 函数中使用）
 
-    返回 closed_edges 仅用于状态标记，不再实际删除。
+    返回 closed_edges 供调用方在不可达时做软降级重试。
     """
     if conditions is None:
         conditions = list_conditions()
@@ -296,15 +296,12 @@ def apply_conditions_to_graph(
     closed = get_closed_edges(G, conditions)
     penalties = get_condition_penalties(G, conditions)
 
-    # 封闭边不删除，改为高惩罚，保证路网连通性
     if closed:
-        _CLOSURE_PENALTY = 100.0
-        for edge_key in closed:
-            u, v, k = edge_key
-            # 双向都惩罚
-            penalties[(u, v, k)] = max(penalties.get((u, v, k), 1.0), _CLOSURE_PENALTY)
-            # 反向边也找到并惩罚
-            for rk in G.get_edge_data(v, u, {}).keys():
-                penalties[(v, u, rk)] = max(penalties.get((v, u, rk), 1.0), _CLOSURE_PENALTY)
+        G = G.copy()
+        G.remove_edges_from(list(closed))
+        # 清理孤立节点
+        isolated = [n for n, deg in G.degree() if deg == 0]
+        if isolated:
+            G.remove_nodes_from(isolated)
 
     return G, penalties, closed

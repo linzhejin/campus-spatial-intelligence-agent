@@ -554,6 +554,20 @@ def _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode="wal
         start_node, sn_coords, end_node, en_coords, mode,
         filter_status, G_filtered.number_of_edges(), G.number_of_edges(),
     )
+    # 路况导致不可达时，给出针对性提示
+    is_road_blocked = "road_closure" in filter_status or "road_blocked" in filter_status
+    if is_road_blocked:
+        if mode == "drive":
+            raise ValueError(
+                "驾车路线因道路封闭/施工无法通行，建议切换骑行或步行，或选择其他路线～"
+            )
+        if mode == "bike":
+            raise ValueError(
+                "骑行路线因道路封闭/施工无法通行，建议切换步行，或选择其他路线～"
+            )
+        raise ValueError(
+            "该路线因道路封闭/施工暂时无法通行，建议选择附近的其他地点作为起终点，或稍后再试～"
+        )
     if mode == "drive":
         raise ValueError(
             "驾车无法到达该地点（附近可能只有步行道/台阶），建议切换骑行或步行～"
@@ -665,9 +679,11 @@ def compute_route(
     if start_node not in G_mode or end_node not in G_mode:
         _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
 
-    # 1.5) 特殊路况处理：封闭边施加100×惩罚（不删除，保证可达），施工/积水等施加惩罚
+    # 1.5) 特殊路况处理：封闭边硬删除，施工/积水等施加惩罚
     road_penalty = {}
     road_conditions_applied = 0
+    closed_edges = set()
+    G_mode_before_road = G_mode  # 保存路况处理前的图，用于不可达时软降级重试
     if road_conditions is None:
         try:
             from spatial.road_conditions import list_conditions
@@ -677,12 +693,15 @@ def compute_route(
             road_conditions = []
     if road_conditions:
         from spatial.road_conditions import apply_conditions_to_graph
-        _G_cond, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
+        G_mode, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
         road_conditions_applied = len(road_conditions)
         if closed_edges:
             mode_status = f"{mode_status}+road_closure"
         if road_penalty:
             mode_status = f"{mode_status}+road_penalty"
+        # 路况封闭边可能导致起终点变成孤立节点
+        if start_node not in G_mode or end_node not in G_mode:
+            _raise_no_path(G, start_node, end_node, f"{mode_status}+road_blocked", G_mode, mode=mode)
 
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
     G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
@@ -737,10 +756,30 @@ def compute_route(
             G_filtered, start_node, end_node, weight=edge_weight
         )
     except nx.NetworkXNoPath:
+        # 路况封闭边导致不可达时，软降级重试：不删边，封闭边施加 1000× 惩罚
+        if closed_edges:
+            closure_penalty = {(u, v, k): 1000.0 for u, v, k in closed_edges}
+            retry_penalty = _merge_penalty_maps(mode_penalty, road_penalty, closure_penalty)
+            edge_weight = _edge_cost_factory(
+                G_mode_before_road, norm_lengths, resolved_weights, retry_penalty,
+                annotation_degraded, outside_road_penalty=outside_penalty,
+            )
+            try:
+                recommended = nx.dijkstra_path(
+                    G_mode_before_road, start_node, end_node, weight=edge_weight
+                )
+                filter_status = "degraded_road_closure"
+                if annotation_degraded is not None:
+                    filter_status = f"degraded_road_closure+{annotation_degraded}"
+                logger.info(
+                    "路况封闭导致 start=%s end=%s mode=%s 不可达，软降级（封闭边1000×成本）后重算成功",
+                    start_node, end_node, mode,
+                )
+            except nx.NetworkXNoPath:
+                _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
         # 避坡硬过滤（删除 slope_level=5 边）可能割裂路网（湖滨/凌波门等台阶密集区域）。
         # 软降级重试：不删边，level5 边 3× 成本、level4 边 2× 成本，保证可达、仍尽量少走陡坡。
-        # bike/drive 下在方式过滤图 G_mode 上重建（drive 被删的台阶/步行道边不会恢复）。
-        if constraints.get("slope") == "avoid":
+        elif constraints.get("slope") == "avoid":
             retry_penalty = {}
             for u, v, k, data in G_mode.edges(keys=True, data=True):
                 lvl = data.get("slope_level")
