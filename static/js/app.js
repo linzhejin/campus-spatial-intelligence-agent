@@ -1458,16 +1458,11 @@
         setTravelMode(mode);
     }
 
-    // 快捷键触发偏好 chip
-    function triggerChip(chipMode) {
+    // 快捷键触发偏好路线（风景/平坦/最短），不再依赖页面上的 chip 元素
+    function triggerChip(chipMode, sourceEl) {
         // 驾车模式下 S（平坦优先）无效
         if (chipMode === 'slope_avoid' && state.travelMode === 'drive') return;
-        var chip = document.querySelector('.quick-chip[data-mode="' + chipMode + '"]');
-        if (!chip) return;
-        flashButton(chip);
-        // 模拟点击逻辑：高亮 + 触发规划
-        document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
+        if (sourceEl) flashButton(sourceEl);
         state.activeMode = chipMode;
         handleShortcutMode(chipMode);
     }
@@ -1607,8 +1602,9 @@
                 if (action.indexOf('mode:') === 0) {
                     triggerTravelMode(action.slice(5));
                 } else if (action.indexOf('chip:') === 0) {
-                    triggerChip(action.slice(5));
+                    triggerChip(action.slice(5), k);
                 } else if (action === 'reset') {
+                    flashButton(k);
                     handleReset();
                 } else if (action === 'focus') {
                     var inp = document.getElementById('nl-input');

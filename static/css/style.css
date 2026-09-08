@@ -711,12 +711,25 @@ body {
 /* ===== Keyboard hint bar (desktop only) ===== */
 .kbd-hint-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 6px;
-    padding: 4px 16px 6px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 16px 8px;
     font-size: 0.7rem;
     color: var(--ink-light);
+}
+
+.kbd-row {
+    display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 6px;
+}
+
+.kbd-label {
+    margin-right: 8px;
+}
+.kbd-row .kbd-label:last-child {
+    margin-right: 0;
 }
 
 .kbd-hint-bar kbd {
