@@ -1,5 +1,5 @@
 """
-漫步珞珈 (WHU-Walker) — Flask 应用入口
+珞珈智行 (WHU-Walker) — Flask 应用入口
 
 注册 API 蓝图、配置 CORS、统一错误处理、dev/prod 模式切换。
 """
@@ -68,7 +68,7 @@ def create_app() -> Flask:
     def health_check():
         return jsonify({
             "status": "ok",
-            "project": "漫步珞珈",
+            "project": "珞珈智行",
             "timestamp": int(time.time()),
         })
 

@@ -587,12 +587,13 @@
             var textEl = document.getElementById('weather-text');
             if (!badge) return;
             var icon = WEATHER_ICONS[w.weather] || '🌡';
-            // 雨/雪/高温 用醒目色提示路况影响
-            var text = w.weather + ' ' + Math.round(w.temperature) + '°';
+            var temp = w.temperature != null ? Math.round(w.temperature) : null;
+            var text = w.weather || '';
+            if (temp != null) text += ' ' + temp + '°';
             if (w.label) text += ' · ' + w.label;
             if (iconEl) iconEl.textContent = icon;
             if (textEl) textEl.textContent = text;
-            badge.title = w.advice || ('当前武汉天气：' + w.weather);
+            badge.title = w.advice || ('当前武汉天气：' + w.weather + (temp != null ? '，' + temp + '°C' : ''));
             badge.hidden = false;
             if (w.slippery) badge.classList.add('weather-slippery');
             else if (w.hot) badge.classList.add('weather-hot');
@@ -1084,14 +1085,14 @@
 
     function mapError(code, msg) {
         var errorMap = {
-            'missing_query': '嗯？你还没告诉我你想去哪呢～试试输入「从牌坊到樱顶」',
+            'missing_query': '嗯？你还没告诉我你想去哪呢～试试输入「从珞珈门到樱顶」',
             'missing_endpoints': '需要起点和终点才能规划路线哦，在地图上选点或者打字告诉我吧',
             'missing_poi_names': '起点和终点得有个名字才行～',
             'poi_not_found': '抱歉，我没找到这个地方😅 试试换个说法？比如「教五」就是「第五教学楼」',
             'route_not_found': '这条路线走不通…可能是路网数据还不够全，试试换个目的地？',
             'network_not_initialized': '地图还没加载完，稍等一下下就好～',
             'network_load_failed': '地图数据加载失败了，刷新一下页面试试？',
-            'parse_failed': '我没太理解你的意思…试试简单一点的说法，比如「从牌坊到樱顶」',
+            'parse_failed': '我没太理解你的意思…试试简单一点的说法，比如「从珞珈门到樱顶」',
             'parse_validation_error': '输入格式有点问题，试试更简洁的描述？',
             'route_computation_failed': '路线计算出错了，可能是网络不太好，再试一次？',
             'nearest_node_failed': '这个位置我没法定位，换个附近的地点试试？',
@@ -1192,7 +1193,7 @@
                 addConversationTurn(query, result);
             } else {
                 clearRouteResult();
-                updateChatBubble(thinkingBubble, '唔，这条路我没能规划出来😅 试试换个目的地？比如「从牌坊到樱顶」');
+                updateChatBubble(thinkingBubble, '唔，这条路我没能规划出来😅 试试换个目的地？比如「从珞珈门到樱顶」');
             }
         } catch (err) {
             if (mySeq !== state.requestSeq) return;
@@ -1317,10 +1318,10 @@
 
         var cfg = modeConfig[mode] || {};
 
-        var startName = '牌坊';
+        var startName = '珞珈门';
         var endName = '樱顶';
         if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
-            startName = state.lastIntent.start.name || '牌坊';
+            startName = state.lastIntent.start.name || '珞珈门';
             endName = state.lastIntent.end.name || '樱顶';
         }
 
@@ -1483,7 +1484,7 @@
             submitBtn.addEventListener('click', function () {
                 var query = nlInput.value.trim();
                 if (!query) {
-                    showError('嗯？还没说去哪呢', '告诉我你想从哪走到哪吧～比如「从牌坊到樱顶」');
+                    showError('嗯？还没说去哪呢', '告诉我你想从哪走到哪吧～比如「从珞珈门到樱顶」');
                     nlInput.focus();
                     return;
                 }
@@ -1609,7 +1610,7 @@
     }
 })();
 /* ========================================================================
-   漫步珞珈 · 冷启动欢迎卡片（方案 1）交互逻辑
+   珞珈智行 · 冷启动欢迎卡片（方案 1）交互逻辑
    · Append-only IIFE，命名空间：window.WelcomeColdStart
    · 不修改任何原有函数、不覆盖原有全局变量
    · 所有事件绑定使用事件委托 + once/debounce
@@ -1932,7 +1933,7 @@
     }
 })();
 /* ========================================================================
-   漫步珞珈 · T-024 快捷按钮权重优先级（前端高亮 + 清除逻辑）
+   珞珈智行 · T-024 快捷按钮权重优先级（前端高亮 + 清除逻辑）
    · Append-only IIFE，不修改任何原有函数
    · 高亮类名：.shortcut-active
    · 清除触发：收到 /api/parse 或 /api/chat 返回 weights != null 且 input_method != shortcut 时
@@ -2007,7 +2008,7 @@
     }
 })();
 /* ========================================================================
-   漫步珞珈 · T-022 场景 3 候选 POI 交互卡片（候选点选择闭环）
+   珞珈智行 · T-022 场景 3 候选 POI 交互卡片（候选点选择闭环）
    · Append-only IIFE，命名空间：window.showCandidateCards
    · 不修改任何原有函数、不覆盖原有全局变量
    · 卡片点击 → 自动触发路线规划（复用现有提交流程）

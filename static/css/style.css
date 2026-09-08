@@ -1,4 +1,4 @@
-/* ===== 漫步珞珈 · 旅行向导设计系统 ===== */
+/* ===== 珞珈智行 · 旅行向导设计系统 ===== */
 
 :root {
     /* 珞珈秋色 · 朱红（老斋舍砖墙）/ 深绿（珞珈山林）/ 米白（民国纸张） */
@@ -493,6 +493,7 @@ body {
     gap: 12px;
     animation: result-in 0.45s ease-out;
 }
+.results-section[hidden] { display: none !important; }
 
 @keyframes result-in {
     from { opacity: 0; transform: translateY(10px); }

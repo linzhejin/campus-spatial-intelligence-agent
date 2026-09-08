@@ -1,5 +1,5 @@
 """
-漫步珞珈 (WHU-Walker) — RESTful API 路由
+珞珈智行 (WHU-Walker) — RESTful API 路由
 
 端点:
   POST /api/parse   — 自然语言 → 结构化任务意图
@@ -680,7 +680,7 @@ def chat():
         return _ok({
             "task_type": "unknown",
             "message": guidance,
-            "example_queries": ["樱顶在哪", "从牌坊到樱顶"],
+            "example_queries": ["樱顶在哪", "从珞珈门到樱顶"],
         })
 
     # help → 返回功能介绍
@@ -689,7 +689,7 @@ def chat():
             "task_type": "help",
             "message": "我可以帮你规划武大校园路线、查询景点、回答校园问题～",
             "features": ["路径规划（支持避开陡坡/风景优先/最短路径）", "景点查询与介绍", "校园生活问答"],
-            "example_queries": ["从牌坊到樱顶，避开陡坡", "樱花开了吗", "哪个食堂好吃"],
+            "example_queries": ["从珞珈门到樱顶，避开陡坡", "樱花开了吗", "哪个食堂好吃"],
         })
 
     # unknown → 返回引导
@@ -697,7 +697,7 @@ def chat():
         return _ok({
             "task_type": "unknown",
             "message": intent_data.get("ambiguity", "抱歉，我只能回答武大校园相关的问题哦～"),
-            "example_queries": ["从牌坊到樱顶", "樱顶在哪", "樱花开了吗"],
+            "example_queries": ["从珞珈门到樱顶", "樱顶在哪", "樱花开了吗"],
         })
 
     # chat → 调用 LLM 闲聊回复
@@ -718,10 +718,10 @@ def chat():
     if not start or not end:
         # 缺起终点不是"错误"，而是信息不完整——用对话式引导，而非报错弹窗
         if not start and not end:
-            guide = "想从哪走到哪呢？告诉我起点和终点，我就能帮你规划啦～比如「从牌坊到樱顶」😊"
+            guide = "想从哪走到哪呢？告诉我起点和终点，我就能帮你规划啦～比如「从珞珈门到樱顶」😊"
             ambiguity = "请指定起点和终点"
         elif not start:
-            guide = "从哪出发呢？告诉我起点就好啦～比如「从牌坊出发」"
+            guide = "从哪出发呢？告诉我起点就好啦～比如「从珞珈门出发」"
             ambiguity = "请指定起点"
         else:
             guide = "要去哪儿呢？告诉我目的地，我帮你规划路线～比如「到樱顶」"
@@ -734,7 +734,7 @@ def chat():
             "constraints": intent_data.get("constraints", {}),
             "weights": intent_data.get("weights"),
             "ambiguity": ambiguity,
-            "example_queries": ["从牌坊到樱顶", "从教五到总图书馆", "去樱顶"],
+            "example_queries": ["从珞珈门到樱顶", "从教五到总图书馆", "去樱顶"],
         })
 
     start_name = start.get("name")
@@ -1005,7 +1005,7 @@ def network_init():
 def candidates():
     """POST /api/candidates — scenario 3: find candidate POIs by type near a start point.
 
-    Input: {"start": {"name": "牌坊"}, "poi_type": "scenery", "keyword": "樱花"}
+    Input: {"start": {"name": "珞珈门"}, "poi_type": "scenery", "keyword": "樱花"}
     Output: {"candidates": [{"name": "...", "type": "...", "scenery_score": N, "distance_m": N}, ...]}
     """
     body = request.get_json(silent=True)

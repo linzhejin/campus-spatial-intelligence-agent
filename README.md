@@ -1,10 +1,23 @@
-# 漫步珞珈 (WHU-Walker) 🌸
+# 珞珈智行 (WHU-Walker) 🌸
 
-武汉大学校园空间智能体 — 多因素路径规划与 NL 交互。
+武汉大学校园空间智能体 — 多出行方式路径规划与自然语言交互。
 
-## 15 分钟 Hello World
+## 核心特性
 
-### 1. 环境准备
+- 🗺️ **多因素路径规划**：距离、坡度、景观三维加权
+- 🚶🚴🚗 **三种出行方式**：步行 / 骑行 / 驾车，自然语言识别 + 切换按钮
+- 💬 **NL 交互**：一句话完成解析 + 规划 + 解释，多轮对话承接上下文
+- 🏔️ **智能避坡**：DEM 坡度数据，"膝盖不好"自动避开陡坡
+- 🌸 **季节感知**：POI 季节标签，推荐当季景观路线
+- 🚧 **路况上报**：管理员登录后可上报封闭/施工/事故，按类型分级处理
+- 📱 **PWA**：可添加到手机主屏幕，Service Worker v3 版本化缓存
+
+## 在线访问
+
+http://152.136.102.172:5000
+
+## 快速开始
+
 ```bash
 git clone <repo-url>
 cd campus-spatial-intelligence-agent
@@ -13,83 +26,58 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
-创建 `.env` 文件：
+创建 `.env`（参考 `.env.example`）：
 ```env
 DEEPSEEK_API_KEY=sk-your-deepseek-key
 AMAP_KEY=your-amap-js-api-key
+AMAP_SECURITY_CODE=your-amap-security-code
 ```
 
-### 3. 初始化路网
+初始化路网 + 启动：
 ```bash
-python scripts/validate_osm_network.py
-```
-首次运行会自动下载武大周边 OSM 路网数据（约 30s），后续从缓存加载（<1s）。
-
-### 4. 启动服务
-```bash
+python scripts/validate/validate_osm_network.py
 python app.py
 ```
-打开浏览器访问 `http://localhost:5000`。
 
-### 5. 试试这些 Query
-- "从牌坊到樱顶怎么走"
-- "我想避开陡坡，从行政楼到枫园"
-- "从总图书馆到凌波门，走风景好的路线"
+访问 http://localhost:5000，试试：
+- 「从珞珈门到樱顶」
+- 「从珞珈门骑车到樱花大道」
+- 「我想避开陡坡，从行政楼到枫园」
 
-## 技术架构
+## 技术栈
 
-| 层级 | 技术选型 |
-|------|---------|
+| 层级 | 选型 |
+|---|---|
 | 前端 | 高德 JS API 2.0 + Vanilla JS + PWA |
 | 后端 | Flask + gunicorn |
 | 路网 | OSMnx + NetworkX (WGS-84) |
-| AI | DeepSeek V4-Flash (OpenAI SDK 兼容) |
+| AI | DeepSeek (OpenAI SDK 兼容) |
 | 坐标 | GCJ-02 ↔ WGS-84 双向转换 |
-| 部署 | Render (新加坡) |
+| 部署 | 腾讯云 CVM + systemd |
 
-## 核心特性
+## 文档
 
-- 🗺️ **多因素路径规划**: 距离、坡度、景观三维加权
-- 💬 **NL 交互**: 自然语言输入 + 快捷按钮 + 多轮对话
-- 🏔️ **智能避坡**: 硬约束过滤陡坡路段，含兜底降级策略
-- 🌸 **季节感知**: POI 标注季节标签（春樱/秋桂/冬梅）
-- 📱 **PWA 支持**: 可添加到手机主屏幕
-- 🎨 **珞珈主题**: 樱花粉 + 翡翠绿视觉系统
+完整文档位于 [docs/](docs/)：
 
-## API 端点
+- [产品介绍](docs/01_产品介绍.md)
+- [快速开始](docs/02_快速开始.md)
+- [部署指南](docs/03_部署指南.md)
+- [API 参考](docs/04_API参考.md)
+- [架构设计](docs/05_架构设计.md)
+- [数据字典](docs/06_数据字典.md)
+- [前端指南](docs/07_前端指南.md)
+- [开发指南](docs/08_开发指南.md)
+- [故障排查](docs/09_故障排查.md)
+- [数据校验报告](docs/武汉大学三校区步行导航数据校验报告.docx)
 
-| Method | Path | 说明 |
-|--------|------|------|
-| POST | /api/parse | NL → 结构化意图 |
-| POST | /api/route | 意图 → 路径规划 |
-| POST | /api/chat | 一站式 NL → 解析+路径+解释 |
-| POST | /api/candidates | 场景3候选POI |
-| GET | /api/pois | POI 列表 |
-| GET | /api/pois/<name> | 单POI查询 |
-| POST | /api/network/init | 路网初始化 |
+开发期历史文档：[docs/development/](docs/development/)
 
-## 部署 (Render)
+## 测试
 
-1. Fork 本仓库
-2. 在 Render Dashboard 创建新的 Web Service
-3. 连接 GitHub 仓库（render.yaml 自动检测）
-4. 设置环境变量：
-   - `DEEPSEEK_API_KEY`: DeepSeek API Key
-   - `AMAP_KEY`: 高德 JS API Key
-5. 在高德控制台设置 Referer 白名单：`*.onrender.com`
-6. Deploy → 等待构建完成 → 获取 `*.onrender.com` 公网 URL
-
-## 项目文档
-
-| 文档 | 说明 |
-|------|------|
-| [PRD](project-docs/01_PRD.md) | 产品需求文档 |
-| [TDD](project-docs/03_TDD.md) | 技术设计文档 |
-| [ARCH_REVIEW](project-docs/04_ARCH_REVIEW.md) | 架构审核 |
-| [TASKS](project-docs/05_TASKS.md) | 32 任务清单 |
-| [DECISIONS](project-docs/06_DECISIONS.md) | 技术决策日志 |
-| [QA_REPORT](project-docs/08_QA_REPORT.md) | 测试与质量报告 |
+```bash
+pytest  # 232 passed
+python scripts/validate/validate_all_data.py
+```
 
 ## License
 

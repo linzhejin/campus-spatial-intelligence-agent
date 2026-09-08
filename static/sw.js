@@ -1,5 +1,5 @@
 /* ===========================================================
- * 漫步珞珈 · Service Worker（T-018 §5 标准）
+ * 珞珈智行 · Service Worker（T-018 §5 标准）
  * 三缓存策略（TDD §9.4 明确）:
  *   1. cache-first        → 首屏静态资源 /static/*  (HTML/CSS/JS/icon/manifest)
  *   2. stale-while-revalidate → /api/* 后端接口调用（SWR：出缓存 + 后台静默更新）

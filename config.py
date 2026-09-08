@@ -1,5 +1,5 @@
 """
-漫步珞珈 (WHU-Walker) V1 全局配置
+珞珈智行 (WHU-Walker) V1 全局配置
 """
 import os
 from dotenv import load_dotenv

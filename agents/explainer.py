@@ -436,7 +436,7 @@ def generate_poi_guidance(query: str, unknown_name: str, alternatives: list = No
             return (
                 f"「{unknown_name}」不在武汉大学校园内哦～我只熟悉武大文理学部、"
                 f"工学部、信息学部三个学部的道路和地点，换个校内目的地试试吧？"
-                f"比如「从牌坊到樱花大道」😊"
+                f"比如「从珞珈门到樱花大道」😊"
             )
     except Exception:
         pass

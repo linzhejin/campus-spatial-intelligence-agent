@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#9E3A4B">
-    <meta name="description" content="漫步珞珈 — 武大校园智能路径规划助手">
-    <title>漫步珞珈 · WHU-Walker</title>
+    <meta name="description" content="珞珈智行 — 武大校园智能路径规划助手">
+    <title>珞珈智行 · WHU-Walker</title>
 
     <!-- ====== PWA / iOS 主屏安装支持 ====== -->
     <link rel="manifest" href="/manifest.json">
@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="漫步珞珈">
+    <meta name="apple-mobile-web-app-title" content="珞珈智行">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,7 +64,7 @@
             <div class="header-left">
                 <h1 class="app-title">
                     <span class="title-icon">🌸</span>
-                    漫步珞珈
+                    珞珈智行
                 </h1>
             </div>
             <div class="header-right">
@@ -72,7 +72,7 @@
                     <span id="weather-icon">🌤</span>
                     <span id="weather-text">—</span>
                 </span>
-                <span class="header-tagline">武大校园 · AI 漫步向导</span>
+                <span class="header-tagline">武大校园 · AI 出行向导</span>
                 <button id="road-report-btn" class="road-report-btn" aria-label="上报路况" title="上报施工/活动/管制">🚧</button>
                 <button id="reset-btn" class="reset-btn" aria-label="重新开始" title="重新开始">↺</button>
                 <button id="help-btn" class="help-btn" aria-label="帮助引导" title="查看引导">?</button>
@@ -117,19 +117,19 @@
             <div class="shortcut-cards-row" id="shortcut-cards-row">
                 <button class="mini-card sc-accent"
                         data-action="path_planning"
-                        data-start="牌坊" data-end="樱顶"
+                        data-start="珞珈门" data-end="樱顶"
                         data-constraints='{"distance":"medium","slope":"normal","scenery":"high"}'
-                        data-display-text="经典路线 · 牌坊 → 樱顶（景观优先）">
+                        data-display-text="经典路线 · 珞珈门 → 樱顶（景观优先）">
                     <span class="mini-card-icon">🚶</span>
-                    <span class="mini-card-text">经典路线 牌坊→樱顶</span>
+                    <span class="mini-card-text">经典路线 珞珈门→樱顶</span>
                 </button>
                 <button class="mini-card sc-pink"
                         data-action="path_planning"
-                        data-start="牌坊" data-end="樱花大道"
+                        data-start="珞珈门" data-end="樱花大道"
                         data-constraints='{"distance":"relaxed","slope":"normal","scenery":"high"}'
-                        data-display-text="赏樱路线 · 牌坊 → 樱花大道（春天必走）">
+                        data-display-text="赏樱路线 · 珞珈门 → 樱花大道（春天必走）">
                     <span class="mini-card-icon">🌸</span>
-                    <span class="mini-card-text">赏樱路线 牌坊→樱花大道</span>
+                    <span class="mini-card-text">赏樱路线 珞珈门→樱花大道</span>
                 </button>
             </div>
 
@@ -308,7 +308,7 @@
     <!-- ====== 欢迎覆盖层（冷启动） ====== -->
     <div id="welcome-overlay" class="welcome-overlay hidden" aria-hidden="true">
         <div class="welcome-mask" data-close-welcome="true"></div>
-        <div class="welcome-card" role="dialog" aria-label="欢迎使用漫步珞珈" aria-modal="true">
+        <div class="welcome-card" role="dialog" aria-label="欢迎使用珞珈智行" aria-modal="true">
             <div class="welcome-card-topbar" aria-hidden="true"></div>
             <button class="welcome-close" data-close-welcome="true" aria-label="关闭欢迎页">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -317,30 +317,30 @@
                 </svg>
             </button>
             <header class="welcome-header">
-                <h1 class="welcome-title">🌸 漫步珞珈</h1>
+                <h1 class="welcome-title">🌸 珞珈智行</h1>
                 <p class="welcome-subtitle">武大校园 · 问路 · 查景点 · 推荐路线</p>
             </header>
             <section class="welcome-shortcuts" aria-label="快捷查询示例">
                 <button class="shortcut-card sc-accent"
                         data-action="path_planning"
-                        data-start="牌坊" data-end="樱顶"
+                        data-start="珞珈门" data-end="樱顶"
                         data-constraints='{"distance":"medium","slope":"normal","scenery":"high"}'
-                        data-display-text="经典路线 · 牌坊 → 樱顶（景观优先）">
+                        data-display-text="经典路线 · 珞珈门 → 樱顶（景观优先）">
                     <span class="sc-emoji" aria-hidden="true">🚶</span>
                     <div class="sc-text">
                         <span class="sc-name">经典路线</span>
-                        <small class="sc-desc">牌坊 → 樱顶 · 走风景最好的主路</small>
+                        <small class="sc-desc">珞珈门 → 樱顶 · 走风景最好的主路</small>
                     </div>
                 </button>
                 <button class="shortcut-card sc-pink"
                         data-action="path_planning"
-                        data-start="牌坊" data-end="樱花大道"
+                        data-start="珞珈门" data-end="樱花大道"
                         data-constraints='{"distance":"relaxed","slope":"normal","scenery":"high"}'
-                        data-display-text="赏樱路线 · 牌坊 → 樱花大道（春天必走）">
+                        data-display-text="赏樱路线 · 珞珈门 → 樱花大道（春天必走）">
                     <span class="sc-emoji" aria-hidden="true">🌸</span>
                     <div class="sc-text">
                         <span class="sc-name">赏樱路线</span>
-                        <small class="sc-desc">牌坊 → 樱花大道 · 春天打卡必走</small>
+                        <small class="sc-desc">珞珈门 → 樱花大道 · 春天打卡必走</small>
                     </div>
                 </button>
                 <button class="shortcut-card sc-jade"
@@ -377,7 +377,7 @@
                 <details class="welcome-tips-details" open>
                     <summary class="welcome-tips-summary">新手提示 · 快速上手</summary>
                     <div class="welcome-tips-list">
-                        <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">直接说人话就行：「从牌坊到樱顶，避开陡坡」</span></div>
+                        <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">直接说人话就行：「从珞珈门到樱顶，避开陡坡」</span></div>
                         <div class="tip-item"><span class="tip-num">②</span><span class="tip-text">点地图上的景点标记，可快捷设出发/到达</span></div>
                         <div class="tip-item"><span class="tip-num">③</span><span class="tip-text">规划后点「你可能想问」快速调整路线</span></div>
                         <div class="tip-item"><span class="tip-num">④</span><span class="tip-text">支持 🚶 步行 / 🚴 骑行 / 🚗 驾车三种方式，点聊天区上方按钮切换</span></div>
@@ -437,7 +437,7 @@
     <div id="install-banner" class="install-banner" hidden>
         <div class="install-banner__icon">🌸</div>
         <div class="install-banner__text">
-            <div class="install-banner__title">把「漫步珞珈」装到主屏幕</div>
+            <div class="install-banner__title">把「珞珈智行」装到主屏幕</div>
             <div class="install-banner__sub" id="install-banner-sub">离线可用 · 全屏运行 · 像 App 一样</div>
         </div>
         <button type="button" id="install-btn" class="install-banner__btn">安装</button>

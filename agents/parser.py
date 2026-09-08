@@ -271,7 +271,7 @@ UNKNOWN_GUIDE_TEXT = (
 
 EXTERNAL_GUIDE_TEXT = (
     "这个地点不在武汉大学校园内哦～我只熟悉武大文理学部、工学部、信息学部"
-    "三个学部的道路和地点，换个校内目的地试试吧？比如「从牌坊到樱花大道」😊"
+    "三个学部的道路和地点，换个校内目的地试试吧？比如「从珞珈门到樱花大道」😊"
 )
 
 HELP_GUIDE_AMBIGUITY = None
@@ -837,7 +837,7 @@ def _t011_post_process(
         intent.ambiguity = None
     elif classified["task_type"] == "path_planning":
         # 正则兜底：从 query 中提取到起终点，覆盖 LLM fallback 的空值；
-        # 同时纠正 LLM 误判的 task_type（如 "我在牌坊" 被 LLM 判成 poi_query）
+        # 同时纠正 LLM 误判的 task_type（如 "我在珞珈门" 被 LLM 判成 poi_query）
         intent.task_type = "path_planning"
         if classified["start_name"]:
             intent.start = PoiRef(name=classified["start_name"], type="poi")

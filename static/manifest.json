@@ -1,6 +1,6 @@
 {
-    "name": "漫步珞珈 · WHU-Walker",
-    "short_name": "漫步珞珈",
+    "name": "珞珈智行 · WHU-Walker",
+    "short_name": "珞珈智行",
     "description": "武大校园智能路径规划助手 — 基于 LLM 的空间偏好转换器",
     "id": "/",
     "start_url": "/",
