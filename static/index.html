@@ -73,6 +73,7 @@
                     <span id="weather-text">—</span>
                 </span>
                 <span class="header-tagline">武大校园 · AI 漫步向导</span>
+                <button id="road-report-btn" class="road-report-btn" aria-label="上报路况" title="上报施工/活动/管制">🚧</button>
                 <button id="reset-btn" class="reset-btn" aria-label="重新开始" title="重新开始">↺</button>
                 <button id="help-btn" class="help-btn" aria-label="帮助引导" title="查看引导">?</button>
             </div>
@@ -243,6 +244,44 @@
                 <div class="kbd-help-row"><span>关闭弹窗</span><kbd>Esc</kbd></div>
             </div>
             <button class="kbd-help-close" id="kbd-help-close" type="button">知道了</button>
+        </div>
+    </section>
+
+    <!-- ====== 上报路况弹窗 ====== -->
+    <section class="road-report-section" id="road-report-section" hidden>
+        <div class="road-report-card">
+            <h3>🚧 上报路况</h3>
+            <p class="road-report-desc">校内施工/活动/管制等动态路况，提交后路线自动绕行。</p>
+            <form id="road-report-form">
+                <label>
+                    <span>事件类型</span>
+                    <select id="rr-type" required>
+                        <option value="construction">🚧 施工</option>
+                        <option value="event">🎉 活动/人流密集</option>
+                        <option value="closure">🚫 道路封闭</option>
+                        <option value="flooding">🌊 积水</option>
+                        <option value="accident">⚠️ 事故/临时障碍</option>
+                    </select>
+                </label>
+                <label>
+                    <span>事件名称</span>
+                    <input type="text" id="rr-name" placeholder="如：樱花大道路面维修" required maxlength="30">
+                </label>
+                <label>
+                    <span>影响半径（米）</span>
+                    <input type="number" id="rr-radius" value="30" min="5" max="200" required>
+                </label>
+                <label>
+                    <span>位置（点击地图选点）</span>
+                    <input type="text" id="rr-location" placeholder="点下方按钮在地图上选点" readonly required>
+                </label>
+                <div class="road-report-actions">
+                    <button type="button" class="rr-btn-secondary" id="rr-pick-btn">📍 在地图上选点</button>
+                    <button type="button" class="rr-btn-secondary" id="rr-cancel-btn">取消</button>
+                    <button type="submit" class="rr-btn-primary" id="rr-submit-btn">提交</button>
+                </div>
+            </form>
+            <div class="road-report-hint" id="road-report-hint"></div>
         </div>
     </section>
 

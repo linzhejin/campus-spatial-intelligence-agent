@@ -219,24 +219,34 @@ body {
 .weather-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 14px;
-    font-size: 0.72rem;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 0.88rem;
     font-weight: 600;
     color: var(--ink-soft);
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid var(--stone);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1.5px solid var(--stone);
     white-space: nowrap;
     cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+.weather-badge:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-1px);
+}
+.weather-badge #weather-icon {
+    font-size: 1.15rem;
+    line-height: 1;
 }
 .weather-badge.weather-slippery {
-    background: rgba(66, 133, 244, 0.14);
+    background: rgba(66, 133, 244, 0.18);
     border-color: #4285f4;
     color: #1a56c4;
 }
 .weather-badge.weather-hot {
-    background: rgba(230, 120, 50, 0.14);
+    background: rgba(230, 120, 50, 0.18);
     border-color: #e07832;
     color: #c0531c;
 }
@@ -1158,6 +1168,114 @@ body {
     transition: transform 0.15s;
 }
 .kbd-help-close:active { transform: scale(0.97); }
+
+/* ===== 上报路况弹窗 ===== */
+.road-report-section {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.road-report-section[hidden] { display: none !important; }
+.road-report-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: var(--shadow-float);
+    animation: error-in 0.25s ease-out;
+}
+.road-report-card h3 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+.road-report-desc {
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    margin-bottom: 16px;
+}
+#road-report-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+#road-report-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+#road-report-form select,
+#road-report-form input {
+    padding: 9px 12px;
+    border: 1.5px solid var(--stone);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: var(--surface);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+}
+#road-report-form select:focus,
+#road-report-form input:focus {
+    border-color: var(--cherry);
+}
+.road-report-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.rr-btn-primary, .rr-btn-secondary {
+    flex: 1;
+    min-height: 38px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s, opacity 0.15s;
+}
+.rr-btn-primary {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: white;
+}
+.rr-btn-secondary {
+    background: var(--bg-soft);
+    color: var(--ink-soft);
+    border: 1.5px solid var(--stone);
+}
+.rr-btn-primary:active, .rr-btn-secondary:active { transform: scale(0.97); }
+.rr-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.road-report-hint {
+    margin-top: 12px;
+    font-size: 0.78rem;
+    color: var(--cherry-deep);
+    min-height: 16px;
+}
+.road-report-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--stone);
+    background: var(--surface);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+}
+.road-report-btn:hover { background: var(--bg-soft); transform: scale(1.08); }
 
 /* ===== Chat bubbles ===== */
 .chat-bubble-row {

@@ -543,6 +543,119 @@
         }).catch(function () { /* 静默失败 */ });
     }
 
+    // ====== 上报路况 ======
+    var _pickHandler = null;
+    var _pickMarker = null;
+
+    function openRoadReport() {
+        var section = document.getElementById('road-report-section');
+        if (section) section.hidden = false;
+        var hint = document.getElementById('road-report-hint');
+        if (hint) hint.textContent = '';
+    }
+
+    function closeRoadReport() {
+        var section = document.getElementById('road-report-section');
+        if (section) section.hidden = true;
+        stopPickLocation();
+        var form = document.getElementById('road-report-form');
+        if (form) form.reset();
+        var loc = document.getElementById('rr-location');
+        if (loc) loc.value = '';
+    }
+
+    function startPickLocation() {
+        if (!state.map) {
+            var hint = document.getElementById('road-report-hint');
+            if (hint) hint.textContent = '地图尚未加载，请稍后再试';
+            return;
+        }
+        // 关闭弹窗，进入地图选点模式
+        var section = document.getElementById('road-report-section');
+        if (section) section.hidden = true;
+
+        var hint = document.getElementById('road-report-hint');
+        if (hint) hint.textContent = '请在地图上点击事件发生位置…';
+
+        if (_pickHandler) return;
+        _pickHandler = state.map.on('click', function (e) {
+            var lng = e.lnglat.getLng();
+            var lat = e.lnglat.getLat();
+            if (_pickMarker) {
+                state.map.remove(_pickMarker);
+            }
+            _pickMarker = new AMap.Marker({
+                position: [lng, lat],
+                content: '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+                zIndex: 200,
+            });
+            _pickMarker.setMap(state.map);
+
+            state._pickedLng = lng;
+            state._pickedLat = lat;
+            var loc = document.getElementById('rr-location');
+            if (loc) loc.value = lng.toFixed(6) + ', ' + lat.toFixed(6);
+
+            // 选点后重新打开弹窗
+            stopPickLocation();
+            if (section) section.hidden = false;
+            if (hint) hint.textContent = '已选点：' + lng.toFixed(5) + ', ' + lat.toFixed(5);
+        });
+    }
+
+    function stopPickLocation() {
+        if (_pickHandler) {
+            state.map.off('click', _pickHandler);
+            _pickHandler = null;
+        }
+    }
+
+    function handleRoadReportSubmit(e) {
+        e.preventDefault();
+        var type = document.getElementById('rr-type').value;
+        var name = document.getElementById('rr-name').value.trim();
+        var radius = parseInt(document.getElementById('rr-radius').value, 10);
+        var lng = state._pickedLng;
+        var lat = state._pickedLat;
+
+        var hint = document.getElementById('road-report-hint');
+        if (lng == null || lat == null) {
+            if (hint) hint.textContent = '请先在地图上选点';
+            return;
+        }
+        if (!name) {
+            if (hint) hint.textContent = '请填写事件名称';
+            return;
+        }
+
+        var submitBtn = document.getElementById('rr-submit-btn');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
+
+        apiRequest('/api/road-conditions', {
+            type: type,
+            name: name,
+            lng: lng,
+            lat: lat,
+            radius_m: radius,
+        }).then(function () {
+            if (hint) hint.textContent = '✅ 上报成功！路线将自动绕行。';
+            // 清理选点标记
+            if (_pickMarker) { state.map.remove(_pickMarker); _pickMarker = null; }
+            state._pickedLng = null;
+            state._pickedLat = null;
+            // 刷新路况标记
+            loadAndRenderRoadConditions();
+            // 2 秒后关闭弹窗
+            setTimeout(function () {
+                closeRoadReport();
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '提交'; }
+            }, 1200);
+        }).catch(function (err) {
+            if (hint) hint.textContent = '提交失败：' + (err && err.message ? err.message : '请重试');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '提交'; }
+        });
+    }
+
     // 清除路线结果区 + 地图覆盖物（非路径规划响应时调用，避免旧路线残留）
     function clearRouteResult() {
         clearMap();
@@ -1314,6 +1427,21 @@
                 showKbdHelp();
             });
         }
+
+        // 上报路况按钮
+        var roadReportBtn = document.getElementById('road-report-btn');
+        if (roadReportBtn) {
+            roadReportBtn.addEventListener('click', function () {
+                flashButton(roadReportBtn);
+                openRoadReport();
+            });
+        }
+        var rrCancel = document.getElementById('rr-cancel-btn');
+        if (rrCancel) rrCancel.addEventListener('click', closeRoadReport);
+        var rrPick = document.getElementById('rr-pick-btn');
+        if (rrPick) rrPick.addEventListener('click', startPickLocation);
+        var rrForm = document.getElementById('road-report-form');
+        if (rrForm) rrForm.addEventListener('submit', handleRoadReportSubmit);
 
         // 快捷键帮助弹窗关闭按钮
         var kbdHelpClose = document.getElementById('kbd-help-close');
