@@ -665,7 +665,7 @@ def compute_route(
     if start_node not in G_mode or end_node not in G_mode:
         _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
 
-    # 1.5) 特殊路况处理：封闭边移除，施工/积水等施加惩罚
+    # 1.5) 特殊路况处理：封闭边施加100×惩罚（不删除，保证可达），施工/积水等施加惩罚
     road_penalty = {}
     road_conditions_applied = 0
     if road_conditions is None:
@@ -677,15 +677,12 @@ def compute_route(
             road_conditions = []
     if road_conditions:
         from spatial.road_conditions import apply_conditions_to_graph
-        G_mode, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
+        _G_cond, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
         road_conditions_applied = len(road_conditions)
         if closed_edges:
             mode_status = f"{mode_status}+road_closure"
         if road_penalty:
             mode_status = f"{mode_status}+road_penalty"
-        # 路况可能导致起终点变成孤立节点
-        if start_node not in G_mode or end_node not in G_mode:
-            _raise_no_path(G, start_node, end_node, f"{mode_status}+road_blocked", G_mode, mode=mode)
 
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
     G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)

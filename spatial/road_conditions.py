@@ -166,11 +166,20 @@ def _edge_in_radius(G, u, v, k, data, center_lng, center_lat, radius_m):
     """
     try:
         from shapely.geometry import Point, LineString
+        from shapely import wkt
         center = Point(center_lng, center_lat)
         geom = data.get("geometry")
-        if geom is not None:
+        if isinstance(geom, LineString):
             line = geom
+        elif isinstance(geom, str) and geom.strip():
+            # OSM 原始 geometry 可能是 WKT 字符串，解析为 shapely 对象
+            try:
+                line = wkt.loads(geom)
+            except Exception:
+                line = None
         else:
+            line = None
+        if line is None:
             ud = G.nodes[u]
             vd = G.nodes[v]
             line = LineString([
@@ -273,8 +282,11 @@ def apply_conditions_to_graph(
     """
     将路况应用到路网，返回 (G_modified, penalty_map, closed_edges)。
 
-    - closure: 移除边
+    策略：
+    - closure: 不硬删边，施加 100× 惩罚（路线尽量绕开，但保证可达，避免割裂路网）
     - 其他类型: 施加惩罚系数（由调用方在 cost 函数中使用）
+
+    返回 closed_edges 仅用于状态标记，不再实际删除。
     """
     if conditions is None:
         conditions = list_conditions()
@@ -284,12 +296,15 @@ def apply_conditions_to_graph(
     closed = get_closed_edges(G, conditions)
     penalties = get_condition_penalties(G, conditions)
 
+    # 封闭边不删除，改为高惩罚，保证路网连通性
     if closed:
-        G = G.copy()
-        G.remove_edges_from(list(closed))
-        # 清理孤立节点
-        isolated = [n for n, deg in G.degree() if deg == 0]
-        if isolated:
-            G.remove_nodes_from(isolated)
+        _CLOSURE_PENALTY = 100.0
+        for edge_key in closed:
+            u, v, k = edge_key
+            # 双向都惩罚
+            penalties[(u, v, k)] = max(penalties.get((u, v, k), 1.0), _CLOSURE_PENALTY)
+            # 反向边也找到并惩罚
+            for rk in G.get_edge_data(v, u, {}).keys():
+                penalties[(v, u, rk)] = max(penalties.get((v, u, rk), 1.0), _CLOSURE_PENALTY)
 
     return G, penalties, closed
