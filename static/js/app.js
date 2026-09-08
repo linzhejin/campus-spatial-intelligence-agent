@@ -482,7 +482,7 @@
                 var lng = cond.coordinates.lng;
                 var lat = cond.coordinates.lat;
 
-                // 圆形影响范围
+                // 圆形影响范围（也可点击）
                 var circle = new AMap.Circle({
                     center: [lng, lat],
                     radius: cond.radius_m || 30,
@@ -490,65 +490,73 @@
                     strokeOpacity: 0.6,
                     strokeWeight: 1,
                     fillColor: style.color,
-                    fillOpacity: 0.15,
+                    fillOpacity: 0.12,
                     zIndex: 50,
+                    bubble: true,
                 });
                 circle.setMap(state.map);
                 state.roadConditionMarkers.push(circle);
 
-                // 标记点
+                // 标记点（加大点击区域）
                 var marker = new AMap.Marker({
                     position: [lng, lat],
                     title: cond.name,
-                    content: '<div style="background:' + style.color + ';color:white;padding:2px 6px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.3);white-space:nowrap;cursor:pointer;">' +
+                    content: '<div style="background:' + style.color + ';color:white;padding:6px 14px;border-radius:16px;font-size:13px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);white-space:nowrap;cursor:pointer;user-select:none;">' +
                         style.icon + ' ' + (cond.name || style.label) + '</div>',
                     zIndex: 60,
                     offset: new AMap.Pixel(0, 0),
+                    bubble: true,
                 });
                 marker.setMap(state.map);
                 state.roadConditionMarkers.push(marker);
 
-                // 点击标记弹出信息窗（管理员可删除）
-                marker.on('click', function () {
+                // 点击标记或圆圈弹出信息窗
+                var onClick = function () {
+                    console.log('[路况] 点击:', cond.name, cond.id);
                     showConditionInfoWindow(cond, style);
-                });
+                };
+                marker.on('click', onClick);
+                circle.on('click', onClick);
             });
-        }).catch(function () {
-            // 静默失败，不影响主流程
+        }).catch(function (e) {
+            console.warn('[路况] 加载失败:', e);
         });
     }
 
     // 路况事件信息窗
     function showConditionInfoWindow(cond, style) {
-        var info = '<div style="padding:6px 4px;font-size:13px;line-height:1.6;min-width:160px;">' +
-            '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;">' +
-            style.icon + ' ' + (cond.name || style.label) + '</div>' +
-            '<div style="color:#666;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
-            '<div id="cond-delete-area" style="margin-top:8px;"></div>' +
-            '</div>';
+        try {
+            var info = '<div style="padding:8px 6px;font-size:13px;line-height:1.7;min-width:170px;">' +
+                '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;font-size:14px;">' +
+                style.icon + ' ' + (cond.name || style.label) + '</div>' +
+                '<div style="color:#888;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
+                '<div id="cond-delete-area" style="margin-top:10px;"></div>' +
+                '</div>';
 
-        var infoWindow = new AMap.InfoWindow({
-            content: info,
-            offset: new AMap.Pixel(0, -20),
-        });
-        infoWindow.open(state.map, [cond.coordinates.lng, cond.coordinates.lat]);
+            var infoWindow = new AMap.InfoWindow({
+                content: info,
+                offset: new AMap.Pixel(0, -28),
+            });
+            infoWindow.open(state.map, [cond.coordinates.lng, cond.coordinates.lat]);
 
-        // 检查管理员状态，决定是否显示删除按钮
-        apiRequest('/api/admin/status', null, 'GET').then(function (data) {
-            if (!(data && data.is_admin)) return;
-            // 等待 infoWindow DOM 渲染
-            setTimeout(function () {
-                var area = document.getElementById('cond-delete-area');
-                if (!area) return;
-                area.innerHTML = '<button id="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">删除此路况</button>';
-                var btn = document.getElementById('cond-delete-btn');
-                if (btn) {
-                    btn.addEventListener('click', function () {
-                        deleteRoadCondition(cond.id, infoWindow);
-                    });
-                }
-            }, 50);
-        }).catch(function () {});
+            // 检查管理员状态，决定是否显示删除按钮
+            apiRequest('/api/admin/status', null, 'GET').then(function (data) {
+                if (!(data && data.is_admin)) return;
+                setTimeout(function () {
+                    var area = document.getElementById('cond-delete-area');
+                    if (!area) return;
+                    area.innerHTML = '<button id="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">🗑 删除此路况</button>';
+                    var btn = document.getElementById('cond-delete-btn');
+                    if (btn) {
+                        btn.addEventListener('click', function () {
+                            deleteRoadCondition(cond.id, infoWindow);
+                        });
+                    }
+                }, 80);
+            }).catch(function () {});
+        } catch (e) {
+            console.error('[路况] 信息窗错误:', e);
+        }
     }
 
     // 删除路况事件
