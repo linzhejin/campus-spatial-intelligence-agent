@@ -782,13 +782,17 @@
         document.getElementById('error-section').hidden = true;
     }
 
-    async function apiRequest(endpoint, data) {
+    async function apiRequest(endpoint, data, method) {
         var url = API_BASE + endpoint;
+        var httpMethod = method || 'POST';
         var options = {
-            method: 'POST',
+            method: httpMethod,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
         };
+        // GET 请求不带 body（否则部分服务器/缓存层会拒绝）
+        if (httpMethod !== 'GET') {
+            options.body = JSON.stringify(data);
+        }
 
         var response;
         try {
