@@ -32,13 +32,13 @@ _CONDITIONS_FILE = os.path.join(
     "data", "road_conditions.json",
 )
 
-# 事件类型 → 边成本惩罚系数（closure 为无穷大，直接移除边）
+# 事件类型 → 边成本惩罚系数（inf 表示硬删除边）
 CONDITION_PENALTIES = {
     "closure": float("inf"),
-    "construction": 3.0,
+    "construction": float("inf"),  # 施工也硬禁止通行
     "event": 2.0,
     "flooding": 2.5,
-    "accident": 2.0,
+    "accident": 3.0,  # 事故 3× 惩罚
 }
 
 CONDITION_LABELS = {
@@ -265,12 +265,17 @@ def get_closed_edges(
     conditions: Optional[list] = None,
 ) -> set:
     """
-    返回因道路封闭而不可通行的边集合 {(u, v, k)}。
+    返回因道路封闭/施工而不可通行的边集合 {(u, v, k)}。
+    所有惩罚系数为 inf 的事件类型（closure、construction）都会硬删除边。
     """
     if conditions is None:
         conditions = list_conditions()
+    # 动态收集所有硬禁止类型（惩罚为 inf）
+    hard_block_types = {
+        t for t, p in CONDITION_PENALTIES.items() if p == float("inf")
+    }
     closed = set()
-    for (u, v, k), _cond in _iter_affected_edges(G, conditions, types={"closure"}):
+    for (u, v, k), _cond in _iter_affected_edges(G, conditions, types=hard_block_types):
         closed.add((u, v, k))
     return closed
 

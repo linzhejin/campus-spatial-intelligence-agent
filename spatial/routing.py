@@ -679,19 +679,20 @@ def compute_route(
     if start_node not in G_mode or end_node not in G_mode:
         _raise_no_path(G, start_node, end_node, mode_status, G_mode, mode=mode)
 
-    # 1.5) 特殊路况处理：封闭边硬删除，施工/积水等施加惩罚
+    # 1.5) 特殊路况处理：封闭/施工硬删除，事故3×惩罚，活动/积水软惩罚
+    # 步行模式不受路况影响（行人可绕行施工区域）
     road_penalty = {}
     road_conditions_applied = 0
     closed_edges = set()
     G_mode_before_road = G_mode  # 保存路况处理前的图，用于不可达时软降级重试
-    if road_conditions is None:
+    if mode != "walk" and road_conditions is None:
         try:
             from spatial.road_conditions import list_conditions
             road_conditions = list_conditions()
         except Exception as e:
             logger.warning("路况加载失败，跳过: %s", e)
             road_conditions = []
-    if road_conditions:
+    if mode != "walk" and road_conditions:
         from spatial.road_conditions import apply_conditions_to_graph
         G_mode, road_penalty, closed_edges = apply_conditions_to_graph(G_mode, road_conditions)
         road_conditions_applied = len(road_conditions)
