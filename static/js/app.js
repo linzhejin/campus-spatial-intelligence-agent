@@ -1597,6 +1597,27 @@
 
         // 全局键盘快捷键
         document.addEventListener('keydown', handleGlobalKeydown);
+
+        // 底部快捷键提示条：点击 kbd 直接执行对应动作（不依赖焦点，鼠标可用）
+        document.querySelectorAll('#kbd-hint-bar kbd[data-kbd]').forEach(function (k) {
+            k.addEventListener('click', function () {
+                var action = k.getAttribute('data-kbd');
+                var active = document.activeElement;
+                if (active && active.id !== 'nl-input') active.blur();
+                if (action.indexOf('mode:') === 0) {
+                    triggerTravelMode(action.slice(5));
+                } else if (action.indexOf('chip:') === 0) {
+                    triggerChip(action.slice(5));
+                } else if (action === 'reset') {
+                    handleReset();
+                } else if (action === 'focus') {
+                    var inp = document.getElementById('nl-input');
+                    if (inp) inp.focus();
+                } else if (action === 'help') {
+                    showKbdHelp();
+                }
+            });
+        });
     }
 
     function showWelcomeHint() {

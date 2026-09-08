@@ -731,6 +731,21 @@ body {
     line-height: 1.3;
 }
 
+/* 可点击的快捷键（data-kbd）：鼠标直接点就能触发，不依赖键盘焦点 */
+.kbd-hint-bar kbd[data-kbd] {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.kbd-hint-bar kbd[data-kbd]:hover {
+    background: var(--cherry);
+    border-color: var(--cherry);
+    color: #fff;
+}
+.kbd-hint-bar kbd[data-kbd]:active {
+    transform: scale(0.92);
+}
+
 /* ===== Loading overlay ===== */
 .loading-section {
     position: fixed;

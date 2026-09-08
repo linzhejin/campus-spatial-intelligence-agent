@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
     <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=20260908a">
+    <link rel="stylesheet" href="/css/style.css?v=20260908b">
 </head>
 <body>
 
@@ -187,13 +187,13 @@
 
         <!-- 快捷键提示行（桌面端才显示） -->
         <div class="kbd-hint-bar" id="kbd-hint-bar">
-            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 切模式
-            <kbd>F</kbd> 风景
-            <kbd>S</kbd> 平坦
-            <kbd>D</kbd> 最短
-            <kbd>R</kbd> 重置
-            <kbd>/</kbd> 聚焦
-            <kbd>?</kbd> 帮助
+            <kbd data-kbd="mode:walk">1</kbd><kbd data-kbd="mode:bike">2</kbd><kbd data-kbd="mode:drive">3</kbd> 切模式
+            <kbd data-kbd="chip:scenery_first">F</kbd> 风景
+            <kbd data-kbd="chip:slope_avoid">S</kbd> 平坦
+            <kbd data-kbd="chip:distance_first">D</kbd> 最短
+            <kbd data-kbd="reset">R</kbd> 重置
+            <kbd data-kbd="focus">/</kbd> 聚焦
+            <kbd data-kbd="help">?</kbd> 帮助
         </div>
     </div>
 
@@ -442,6 +442,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260908a"></script>
+    <script src="/js/app.js?v=20260908b"></script>
 </body>
 </html>
