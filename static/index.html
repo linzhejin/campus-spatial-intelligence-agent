@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
     <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=20260907b">
+    <link rel="stylesheet" href="/css/style.css?v=20260908a">
 </head>
 <body>
 
@@ -277,6 +277,17 @@
                     <span>影响半径（米）</span>
                     <input type="number" id="rr-radius" value="30" min="5" max="200" required>
                 </label>
+                <div class="rr-time-row">
+                    <label class="rr-time-item">
+                        <span>生效开始（选填）</span>
+                        <input type="datetime-local" id="rr-start-time">
+                    </label>
+                    <label class="rr-time-item">
+                        <span>生效结束（选填）</span>
+                        <input type="datetime-local" id="rr-end-time">
+                    </label>
+                </div>
+                <p class="rr-time-hint">不填时间 = 立即生效、长期有效，直到手动删除；到期自动失效。</p>
                 <label>
                     <span>位置（点击地图选点）</span>
                     <input type="text" id="rr-location" placeholder="点下方按钮在地图上选点" readonly required>
@@ -431,6 +442,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260907b"></script>
+    <script src="/js/app.js?v=20260908a"></script>
 </body>
 </html>

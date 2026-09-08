@@ -1258,6 +1258,26 @@ body {
 #road-report-form input:focus {
     border-color: var(--cherry);
 }
+.rr-time-row {
+    display: flex;
+    gap: 10px;
+}
+.rr-time-item {
+    flex: 1;
+    min-width: 0;
+}
+.rr-time-item input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.8rem;
+    padding: 8px 9px;
+}
+.rr-time-hint {
+    margin: -6px 0 0;
+    font-size: 0.72rem;
+    color: var(--ink-faint, #999);
+    line-height: 1.5;
+}
 .road-report-actions {
     display: flex;
     gap: 8px;

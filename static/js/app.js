@@ -521,10 +521,24 @@
     // 路况事件信息窗
     function showConditionInfoWindow(cond, style) {
         try {
+            var timeLine = '';
+            var fmt = function (ts) {
+                var d = new Date(ts * 1000);
+                var p = function (n) { return (n < 10 ? '0' : '') + n; };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+                    ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+            };
+            var start = cond.start_time || 0;
+            var end = cond.end_time || 0;
+            if (start || end) {
+                var range = (start ? fmt(start) : '即时') + ' 至 ' + (end ? fmt(end) : '长期有效');
+                timeLine = '<div style="color:#888;font-size:12px;">生效时间：' + range + '</div>';
+            }
             var info = '<div style="padding:8px 6px;font-size:13px;line-height:1.7;min-width:170px;">' +
                 '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;font-size:14px;">' +
                 style.icon + ' ' + (cond.name || style.label) + '</div>' +
                 '<div style="color:#888;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
+                timeLine +
                 '<div id="cond-delete-area" style="margin-top:10px;"></div>' +
                 '</div>';
 
@@ -741,16 +755,27 @@
             return;
         }
 
+        var startTime = document.getElementById('rr-start-time').value;
+        var endTime = document.getElementById('rr-end-time').value;
+        if (startTime && endTime && endTime <= startTime) {
+            if (hint) hint.textContent = '结束时间必须晚于开始时间';
+            return;
+        }
+
         var submitBtn = document.getElementById('rr-submit-btn');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
 
-        apiRequest('/api/road-conditions', {
+        var payload = {
             type: type,
             name: name,
             lng: lng,
             lat: lat,
             radius_m: radius,
-        }).then(function () {
+        };
+        if (startTime) payload.start_time = startTime;
+        if (endTime) payload.end_time = endTime;
+
+        apiRequest('/api/road-conditions', payload).then(function () {
             if (hint) hint.textContent = '✅ 上报成功！路线将自动绕行。';
             // 清理选点标记
             if (_pickMarker) { state.map.remove(_pickMarker); _pickMarker = null; }

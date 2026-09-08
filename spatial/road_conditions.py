@@ -85,15 +85,23 @@ def _save_conditions(conditions: list) -> None:
         _cache_mtime = os.path.getmtime(_CONDITIONS_FILE)
 
 
-def list_conditions() -> list:
-    """返回所有路况事件（含已过期的，由调用方过滤）。"""
+def list_conditions(include_inactive: bool = False) -> list:
+    """返回当前生效中的路况事件。
+
+    生效判定：start_time <= now < end_time（end_time 为 0 表示长期有效）。
+    include_inactive=True 时返回全部事件（含未开始/已过期），供管理端展示。
+    """
     conditions = _load_conditions()
+    if include_inactive:
+        return list(conditions)
     now = time.time()
     active = []
     for c in conditions:
-        start = c.get("start_time", 0)
-        end = c.get("end_time", 0)
-        if end > 0 and now > end:
+        start = c.get("start_time", 0) or 0
+        end = c.get("end_time", 0) or 0
+        if start and now < start:
+            continue  # 尚未开始（如预录的樱花节管制）
+        if end and now > end:
             continue  # 已过期
         active.append(c)
     return active

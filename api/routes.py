@@ -16,6 +16,7 @@ import logging
 import math
 import os
 import re
+import time
 
 import networkx as nx
 from flask import Blueprint, request, jsonify, session
@@ -1102,13 +1103,50 @@ def candidates():
 
 # ===================== 路况管理 =====================
 
+def _parse_time_input(value):
+    """把时间入参解析为 Unix 时间戳（秒）。
+
+    支持：None/空串/0 → None；数字 → 秒级时间戳；
+    ISO 字符串（如 "2026-09-10T08:00"）→ 本地时间时间戳。
+    """
+    if value is None or value == "" or value == 0:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            pass
+        from datetime import datetime
+        try:
+            return datetime.fromisoformat(value).timestamp()
+        except ValueError:
+            raise ValueError(f"时间格式无法识别: {value}（请用 YYYY-MM-DDTHH:MM 或时间戳）")
+    raise ValueError(f"时间参数类型无效: {type(value)}")
+
+
 @api_bp.route("/road-conditions", methods=["GET"])
 def get_road_conditions():
-    """GET /api/road-conditions — 返回当前生效的路况事件列表"""
-    conditions = list_conditions()
-    # 附加可读类型标签
+    """GET /api/road-conditions — 返回当前生效的路况事件列表
+
+    管理员带 ?all=1 时返回全部事件（含未开始/已过期），并附加 status 字段。
+    """
+    include_all = request.args.get("all") in ("1", "true", "yes")
+    is_admin = _is_admin() if include_all else False
+    conditions = list_conditions(include_inactive=include_all and is_admin)
+    now = time.time()
     for c in conditions:
         c["type_label"] = CONDITION_LABELS.get(c["type"], c["type"])
+        if include_all and is_admin:
+            start = c.get("start_time", 0) or 0
+            end = c.get("end_time", 0) or 0
+            if end and now > end:
+                c["status"] = "expired"
+            elif start and now < start:
+                c["status"] = "scheduled"
+            else:
+                c["status"] = "active"
     return _ok({"conditions": conditions, "count": len(conditions)})
 
 
@@ -1123,7 +1161,8 @@ def create_road_condition():
         "lat": 30.536,
         "radius_m": 50,
         "description": "施工期间禁止通行",
-        "end_time": 1728345600  # 可选，Unix时间戳，0=长期有效
+        "start_time": "2026-09-10T08:00",  # 可选，ISO时间或时间戳，缺省=立即生效
+        "end_time": "2026-09-12T18:00"     # 可选，ISO时间或时间戳，缺省=长期有效
     }
     """
     auth_err = _require_admin()
@@ -1143,6 +1182,10 @@ def create_road_condition():
         return _err("missing_fields", "type, name, lng, lat 必填", 400)
 
     try:
+        start_ts = _parse_time_input(body.get("start_time"))
+        end_ts = _parse_time_input(body.get("end_time"))
+        if start_ts and end_ts and end_ts <= start_ts:
+            return _err("invalid_time", "结束时间必须晚于开始时间", 400)
         condition = add_condition(
             cond_type=cond_type,
             name=name,
@@ -1150,7 +1193,8 @@ def create_road_condition():
             lat=float(lat),
             radius_m=float(body.get("radius_m", 30.0)),
             description=body.get("description", ""),
-            end_time=body.get("end_time"),
+            start_time=start_ts,
+            end_time=end_ts,
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
         return _ok({"condition": condition}, status=201)
