@@ -59,7 +59,7 @@ body {
     background: #1a1a1a;
     height: 100vh;
     display: grid;
-    grid-template-columns: 420px 1fr;
+    grid-template-columns: 360px 1fr;
     grid-template-rows: 1fr;
     overflow: hidden;
 }
@@ -175,8 +175,8 @@ body {
 
 /* ===== Floating Header ===== */
 .floating-header {
-    padding: 18px 22px 14px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+    padding: 10px 18px 8px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
     border-bottom: 0.5px solid rgba(0,0,0,0.06);
     display: flex;
     align-items: center;
@@ -187,42 +187,40 @@ body {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .app-title {
     font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--ink);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     letter-spacing: 0.02em;
 }
 
-.title-icon { font-size: 1.2rem; }
+.title-icon { font-size: 0.9rem; }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
 .header-tagline {
-    font-size: 0.72rem;
-    color: var(--ink-light);
-    white-space: nowrap;
+    display: none;
 }
 
 /* 实时天气徽章 */
 .weather-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 16px;
-    font-size: 0.88rem;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--ink-soft);
     background: rgba(255, 255, 255, 0.75);
@@ -237,7 +235,7 @@ body {
     transform: translateY(-1px);
 }
 .weather-badge #weather-icon {
-    font-size: 1.15rem;
+    font-size: 1rem;
     line-height: 1;
 }
 .weather-badge.weather-slippery {
@@ -253,13 +251,13 @@ body {
 
 .help-btn,
 .reset-btn {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 1.5px solid var(--stone);
     background: var(--surface);
     color: var(--ink-soft);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -277,7 +275,7 @@ body {
 /* ===== Mode bar（出行方式分段选择器，固定不随消息滚动） ===== */
 .mode-bar {
     flex-shrink: 0;
-    padding: 10px 22px 8px;
+    padding: 8px 22px 6px;
     border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
     background: rgba(250, 248, 245, 0.65);
     transition: background 0.3s ease;
@@ -336,9 +334,9 @@ body {
 .bubble-body {
     background: var(--surface);
     border-radius: 16px 16px 16px 4px;
-    padding: 14px 18px;
+    padding: 12px 16px;
     box-shadow: var(--shadow-sm);
-    max-width: 320px;
+    max-width: 340px;
 }
 
 .bubble-greeting {
@@ -900,13 +898,14 @@ body {
    RESPONSIVE: Large desktop (≥1200px)
    ============================== */
 @media (min-width: 1200px) {
-    body { grid-template-columns: 440px 1fr; }
+    body { grid-template-columns: 380px 1fr; }
 
     .mode-bar { padding: 10px 28px 8px; }
 
     .chat-content { padding: 20px 28px; }
 
-    .bubble-body { max-width: 360px; }
+    .bubble-body { max-width: 400px; }
+    .chat-bubble-body { max-width: 400px; }
 }
 
 /* ==============================
@@ -1293,8 +1292,8 @@ body {
     min-height: 16px;
 }
 .road-report-btn {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 1.5px solid var(--stone);
     background: var(--surface);
@@ -1331,9 +1330,9 @@ body {
 .chat-bubble-body {
     background: var(--surface);
     border-radius: 14px 14px 14px 4px;
-    padding: 12px 16px;
+    padding: 10px 14px;
     box-shadow: var(--shadow-sm);
-    max-width: 320px;
+    max-width: 340px;
 }
 
 .chat-bubble-text {
