@@ -247,6 +247,25 @@
         </div>
     </section>
 
+    <!-- ====== 管理员登录弹窗 ====== -->
+    <section class="road-report-section" id="admin-login-section" hidden>
+        <div class="road-report-card">
+            <h3>🔐 管理员登录</h3>
+            <p class="road-report-desc">仅管理员可上报或删除路况事件。</p>
+            <form id="admin-login-form">
+                <label>
+                    <span>管理员口令</span>
+                    <input type="password" id="admin-password" placeholder="请输入口令" required autofocus>
+                </label>
+                <div class="road-report-actions">
+                    <button type="button" class="rr-btn-secondary" id="admin-login-cancel">取消</button>
+                    <button type="submit" class="rr-btn-primary" id="admin-login-submit">登录</button>
+                </div>
+            </form>
+            <div class="road-report-hint" id="admin-login-hint"></div>
+        </div>
+    </section>
+
     <!-- ====== 上报路况弹窗 ====== -->
     <section class="road-report-section" id="road-report-section" hidden>
         <div class="road-report-card">
@@ -277,6 +296,7 @@
                 </label>
                 <div class="road-report-actions">
                     <button type="button" class="rr-btn-secondary" id="rr-pick-btn">📍 在地图上选点</button>
+                    <button type="button" class="rr-btn-secondary" id="rr-logout-btn">退出管理</button>
                     <button type="button" class="rr-btn-secondary" id="rr-cancel-btn">取消</button>
                     <button type="submit" class="rr-btn-primary" id="rr-submit-btn">提交</button>
                 </div>

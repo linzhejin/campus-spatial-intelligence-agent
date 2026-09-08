@@ -36,6 +36,9 @@ def create_app() -> Flask:
         static_url_path="",
     )
 
+    # Session 密钥（管理员登录态用）；生产强烈建议配 SECRET_KEY 环境变量
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "whu-walker-dev-secret-change-me")
+
     if os.getenv("FLASK_ENV", "development") == "production":
         origins_raw = os.getenv("CORS_ORIGINS", "")
         origins = [o.strip() for o in origins_raw.split(",") if o.strip()]

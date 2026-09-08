@@ -18,8 +18,9 @@ import os
 import re
 
 import networkx as nx
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 
+import config
 from agents.parser import parse_query, detect_travel_mode
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
@@ -39,6 +40,19 @@ from spatial.road_conditions import (
 from spatial import weather as weather_mod
 
 logger = logging.getLogger(__name__)
+
+# ===== 管理员鉴权 =====
+def _is_admin() -> bool:
+    return bool(session.get("is_admin"))
+
+def _admin_login_enabled() -> bool:
+    return bool(config.ROAD_CONDITION_ADMIN_PASSWORD)
+
+def _require_admin():
+    """写操作鉴权装饰器（函数式），未登录返回 401。"""
+    if not _is_admin():
+        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    return None
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -353,6 +367,37 @@ def weather():
         "label": snap["impact"]["label"],
         "advice": snap["impact"]["advice"],
     })
+
+
+# ===== 管理员鉴权接口 =====
+@api_bp.route("/admin/status", methods=["GET"])
+def admin_status():
+    """GET /api/admin/status — 是否已登录管理员"""
+    return _ok({
+        "is_admin": _is_admin(),
+        "login_enabled": _admin_login_enabled(),
+    })
+
+
+@api_bp.route("/admin/login", methods=["POST"])
+def admin_login():
+    """POST /api/admin/login — 管理员登录 {password}"""
+    if not _admin_login_enabled():
+        return _err("admin_disabled", "管理员功能未配置", 403)
+    body = request.get_json(silent=True) or {}
+    password = str(body.get("password", "")).strip()
+    if password == config.ROAD_CONDITION_ADMIN_PASSWORD:
+        session["is_admin"] = True
+        session.permanent = True
+        return _ok({"is_admin": True})
+    return _err("invalid_password", "密码错误", 401)
+
+
+@api_bp.route("/admin/logout", methods=["POST"])
+def admin_logout():
+    """POST /api/admin/logout — 退出管理员登录"""
+    session.pop("is_admin", None)
+    return _ok({"is_admin": False})
 
 
 @api_bp.route("/parse", methods=["POST"])
@@ -1069,7 +1114,7 @@ def get_road_conditions():
 
 @api_bp.route("/road-conditions", methods=["POST"])
 def create_road_condition():
-    """POST /api/road-conditions — 新增路况事件
+    """POST /api/road-conditions — 新增路况事件（需管理员登录）
 
     Input: {
         "type": "closure|construction|event|flooding|accident",
@@ -1081,6 +1126,10 @@ def create_road_condition():
         "end_time": 1728345600  # 可选，Unix时间戳，0=长期有效
     }
     """
+    auth_err = _require_admin()
+    if auth_err:
+        return auth_err
+
     body = request.get_json(silent=True)
     if body is None:
         return _err("invalid_json", "请求体必须为合法 JSON", 400)
@@ -1114,7 +1163,10 @@ def create_road_condition():
 
 @api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
 def delete_road_condition(cond_id):
-    """DELETE /api/road-conditions/<id> — 删除路况事件"""
+    """DELETE /api/road-conditions/<id> — 删除路况事件（需管理员登录）"""
+    auth_err = _require_admin()
+    if auth_err:
+        return auth_err
     success = remove_condition(cond_id)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)

@@ -543,11 +543,26 @@
         }).catch(function () { /* 静默失败 */ });
     }
 
-    // ====== 上报路况 ======
+    // ====== 上报路况（需管理员登录）======
     var _pickHandler = null;
     var _pickMarker = null;
+    var _isAdmin = false;
 
     function openRoadReport() {
+        // 先检查管理员登录态
+        apiRequest('/api/admin/status', null, 'GET').then(function (data) {
+            if (data && data.is_admin) {
+                _isAdmin = true;
+                showRoadReportForm();
+            } else {
+                openAdminLogin();
+            }
+        }).catch(function () {
+            openAdminLogin();
+        });
+    }
+
+    function showRoadReportForm() {
         var section = document.getElementById('road-report-section');
         if (section) section.hidden = false;
         var hint = document.getElementById('road-report-hint');
@@ -562,6 +577,52 @@
         if (form) form.reset();
         var loc = document.getElementById('rr-location');
         if (loc) loc.value = '';
+    }
+
+    // ====== 管理员登录 ======
+    function openAdminLogin() {
+        var section = document.getElementById('admin-login-section');
+        if (section) section.hidden = false;
+        var hint = document.getElementById('admin-login-hint');
+        if (hint) hint.textContent = '';
+        var pwd = document.getElementById('admin-password');
+        if (pwd) pwd.value = '';
+        setTimeout(function () { if (pwd) pwd.focus(); }, 100);
+    }
+
+    function closeAdminLogin() {
+        var section = document.getElementById('admin-login-section');
+        if (section) section.hidden = true;
+    }
+
+    function handleAdminLogin(e) {
+        e.preventDefault();
+        var pwd = document.getElementById('admin-password');
+        var password = pwd ? pwd.value : '';
+        var hint = document.getElementById('admin-login-hint');
+        var submitBtn = document.getElementById('admin-login-submit');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '登录中…'; }
+
+        apiRequest('/api/admin/login', { password: password }).then(function () {
+            _isAdmin = true;
+            closeAdminLogin();
+            showRoadReportForm();
+        }).catch(function (err) {
+            if (hint) hint.textContent = (err && err.message) ? err.message : '登录失败，请重试';
+            if (pwd) pwd.select();
+        }).finally(function () {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '登录'; }
+        });
+    }
+
+    function adminLogout() {
+        apiRequest('/api/admin/logout', {}).then(function () {
+            _isAdmin = false;
+            closeRoadReport();
+        }).catch(function () {
+            _isAdmin = false;
+            closeRoadReport();
+        });
     }
 
     function startPickLocation() {
@@ -1438,10 +1499,18 @@
         }
         var rrCancel = document.getElementById('rr-cancel-btn');
         if (rrCancel) rrCancel.addEventListener('click', closeRoadReport);
+        var rrLogout = document.getElementById('rr-logout-btn');
+        if (rrLogout) rrLogout.addEventListener('click', adminLogout);
         var rrPick = document.getElementById('rr-pick-btn');
         if (rrPick) rrPick.addEventListener('click', startPickLocation);
         var rrForm = document.getElementById('road-report-form');
         if (rrForm) rrForm.addEventListener('submit', handleRoadReportSubmit);
+
+        // 管理员登录弹窗
+        var adminLoginCancel = document.getElementById('admin-login-cancel');
+        if (adminLoginCancel) adminLoginCancel.addEventListener('click', closeAdminLogin);
+        var adminLoginForm = document.getElementById('admin-login-form');
+        if (adminLoginForm) adminLoginForm.addEventListener('submit', handleAdminLogin);
 
         // 快捷键帮助弹窗关闭按钮
         var kbdHelpClose = document.getElementById('kbd-help-close');
