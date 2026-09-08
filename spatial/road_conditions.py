@@ -20,10 +20,10 @@ import os
 import threading
 import time
 import uuid
+import math
 from typing import Optional
 
 import networkx as nx
-from shapely.geometry import Point, LineString
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +156,69 @@ def remove_condition(cond_id: str) -> bool:
     return True
 
 
+def _edge_in_radius(G, u, v, k, data, center_lng, center_lat, radius_m):
+    """
+    判断一条边是否落在以 (center_lng, center_lat) 为中心、radius_m 为半径的圆内。
+    坐标均为 WGS-84。
+
+    shapely 可用时：计算事件点到边几何（LineString）的精确距离。
+    shapely 缺失时：降级为事件点到边中点/端点的 haversine 距离（略保守）。
+    """
+    try:
+        from shapely.geometry import Point, LineString
+        center = Point(center_lng, center_lat)
+        geom = data.get("geometry")
+        if geom is not None:
+            line = geom
+        else:
+            ud = G.nodes[u]
+            vd = G.nodes[v]
+            line = LineString([
+                (float(ud.get("x", 0)), float(ud.get("y", 0))),
+                (float(vd.get("x", 0)), float(vd.get("y", 0))),
+            ])
+        radius_deg = radius_m / 111320.0
+        return line.distance(center) <= radius_deg
+    except ImportError:
+        # 降级：用事件点到边端点和中点的最小 haversine 距离
+        def _dist_m(lng, lat):
+            rlat = math.radians(center_lat)
+            dlat = math.radians(lat - center_lat)
+            dlng = math.radians(lng - center_lng)
+            a = math.sin(dlat / 2) ** 2 + math.cos(rlat) * math.cos(math.radians(lat)) * math.sin(dlng / 2) ** 2
+            return 6371000 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        ud = G.nodes[u]
+        vd = G.nodes[v]
+        ux, uy = float(ud.get("x", 0)), float(ud.get("y", 0))
+        vx, vy = float(vd.get("x", 0)), float(vd.get("y", 0))
+        mx, my = (ux + vx) / 2.0, (uy + vy) / 2.0
+        min_dist = min(
+            _dist_m(ux, uy),
+            _dist_m(vx, vy),
+            _dist_m(mx, my),
+        )
+        return min_dist <= radius_m
+
+
+def _iter_affected_edges(G, conditions, types=None):
+    """遍历所有路况事件，产出 (edge_key, condition) 对。types 限定事件类型集合。"""
+    from spatial.coord_transform import gcj02_to_wgs84
+    for cond in conditions:
+        ctype = cond["type"]
+        if types is not None and ctype not in types:
+            continue
+        if CONDITION_PENALTIES.get(ctype) is None:
+            continue
+        lng_wgs, lat_wgs = gcj02_to_wgs84(
+            cond["coordinates"]["lng"], cond["coordinates"]["lat"]
+        )
+        radius_m = cond.get("radius_m", 30.0)
+        for u, v, k, data in G.edges(keys=True, data=True):
+            if _edge_in_radius(G, u, v, k, data, lng_wgs, lat_wgs, radius_m):
+                yield (u, v, k), cond
+
+
 def get_condition_penalties(
     G: nx.MultiDiGraph,
     conditions: Optional[list] = None,
@@ -177,39 +240,13 @@ def get_condition_penalties(
         return {}
 
     penalties = {}
-    for cond in conditions:
-        ctype = cond["type"]
-        penalty = CONDITION_PENALTIES.get(ctype)
-        if penalty is None:
-            continue
-
-        # GCJ-02 → WGS-84（路网用 WGS-84）
-        from spatial.coord_transform import gcj02_to_wgs84
-        lng_wgs, lat_wgs = gcj02_to_wgs84(
-            cond["coordinates"]["lng"], cond["coordinates"]["lat"]
-        )
-        center = Point(lng_wgs, lat_wgs)
-        radius_deg = cond["radius_m"] / 111320.0  # 近似：1度 ≈ 111320米
-
-        for u, v, k, data in G.edges(keys=True, data=True):
-            # 检查边的几何是否与事件圆相交
-            geom = data.get("geometry")
-            if geom is None:
-                # 无边几何，用两端点连线近似
-                ud = G.nodes[u]
-                vd = G.nodes[v]
-                line = LineString([
-                    (float(ud.get("x", 0)), float(ud.get("y", 0))),
-                    (float(vd.get("x", 0)), float(vd.get("y", 0))),
-                ])
-            else:
-                line = geom
-
-            if line.distance(center) <= radius_deg:
-                key = (u, v, k)
-                # 多条路况叠加取最大惩罚
-                if key not in penalties or penalty > penalties[key]:
-                    penalties[key] = penalty
+    non_closure = {t for t in CONDITION_PENALTIES if t != "closure"}
+    for (u, v, k), cond in _iter_affected_edges(G, conditions, types=non_closure):
+        penalty = CONDITION_PENALTIES[cond["type"]]
+        key = (u, v, k)
+        # 多条路况叠加取最大惩罚
+        if key not in penalties or penalty > penalties[key]:
+            penalties[key] = penalty
 
     return penalties
 
@@ -224,32 +261,8 @@ def get_closed_edges(
     if conditions is None:
         conditions = list_conditions()
     closed = set()
-    closure_conditions = [c for c in conditions if c["type"] == "closure"]
-    if not closure_conditions:
-        return closed
-
-    from spatial.coord_transform import gcj02_to_wgs84
-    for cond in closure_conditions:
-        lng_wgs, lat_wgs = gcj02_to_wgs84(
-            cond["coordinates"]["lng"], cond["coordinates"]["lat"]
-        )
-        center = Point(lng_wgs, lat_wgs)
-        radius_deg = cond["radius_m"] / 111320.0
-
-        for u, v, k, data in G.edges(keys=True, data=True):
-            geom = data.get("geometry")
-            if geom is None:
-                ud = G.nodes[u]
-                vd = G.nodes[v]
-                line = LineString([
-                    (float(ud.get("x", 0)), float(ud.get("y", 0))),
-                    (float(vd.get("x", 0)), float(vd.get("y", 0))),
-                ])
-            else:
-                line = geom
-            if line.distance(center) <= radius_deg:
-                closed.add((u, v, k))
-
+    for (u, v, k), _cond in _iter_affected_edges(G, conditions, types={"closure"}):
+        closed.add((u, v, k))
     return closed
 
 

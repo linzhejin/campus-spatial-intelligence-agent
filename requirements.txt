@@ -16,6 +16,9 @@ pydantic>=2.0
 # 图算法（加载 GraphML + Dijkstra）
 networkx>=3.0
 
+# 几何计算（校园多边形裁剪、特殊路况边匹配；缺失时自动降级为近似距离）
+shapely>=2.0
+
 # 环境配置
 python-dotenv>=1.0
 
