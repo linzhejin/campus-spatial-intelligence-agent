@@ -353,6 +353,8 @@
 
             // 加载路况事件标记
             loadAndRenderRoadConditions();
+            // 加载实时天气徽章
+            loadWeatherBadge();
         } catch (e) {
             console.error('地图初始化失败:', e);
             showError('地图加载失败', '无法初始化地图组件，请刷新页面重试');
@@ -509,6 +511,36 @@
         }).catch(function () {
             // 静默失败，不影响主流程
         });
+    }
+
+    // 天气图标映射
+    var WEATHER_ICONS = {
+        '晴': '☀️', '少云': '🌤', '晴间多云': '🌤', '多云': '⛅', '阴': '☁️',
+        '有风': '🌬', '风': '🌬', '霾': '😷', '雾': '🌫',
+        '小雨': '🌦', '中雨': '🌧', '大雨': '🌧', '暴雨': '⛈', '阵雨': '🌦',
+        '雷阵雨': '⛈', '雨': '🌧', '雪': '🌨', '小雪': '🌨', '中雪': '🌨',
+        '大雪': '❄️', '暴雪': '❄️', '雨夹雪': '🌨'
+    };
+
+    // 加载实时天气徽章（真实动态路况来源之一：雨雪避坡、高温走树荫）
+    function loadWeatherBadge() {
+        apiRequest('/api/weather', null, 'GET').then(function (w) {
+            if (!w) return;
+            var badge = document.getElementById('weather-badge');
+            var iconEl = document.getElementById('weather-icon');
+            var textEl = document.getElementById('weather-text');
+            if (!badge) return;
+            var icon = WEATHER_ICONS[w.weather] || '🌡';
+            // 雨/雪/高温 用醒目色提示路况影响
+            var text = w.weather + ' ' + Math.round(w.temperature) + '°';
+            if (w.label) text += ' · ' + w.label;
+            if (iconEl) iconEl.textContent = icon;
+            if (textEl) textEl.textContent = text;
+            badge.title = w.advice || ('当前武汉天气：' + w.weather);
+            badge.hidden = false;
+            if (w.slippery) badge.classList.add('weather-slippery');
+            else if (w.hot) badge.classList.add('weather-hot');
+        }).catch(function () { /* 静默失败 */ });
     }
 
     // 清除路线结果区 + 地图覆盖物（非路径规划响应时调用，避免旧路线残留）

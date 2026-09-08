@@ -36,6 +36,7 @@ from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.road_conditions import (
     list_conditions, add_condition, remove_condition, CONDITION_LABELS,
 )
+from spatial import weather as weather_mod
 
 logger = logging.getLogger(__name__)
 
@@ -303,6 +304,57 @@ def _ensure_network():
         return None, _err("network_load_failed", f"路网加载失败: {e}", 500)
 
 
+def _weather_snapshot():
+    """获取实时天气 + 影响标志（带 30 分钟缓存，失败返回 None 不影响主流程）。"""
+    try:
+        live = weather_mod.fetch_weather_live()
+        if not live:
+            return None
+        impact = weather_mod.classify_weather(live)
+        return {"live": live, "impact": impact}
+    except Exception as e:
+        logger.warning("天气快照获取失败: %s", e)
+        return None
+
+
+def _weather_public(snap):
+    """将天气快照转为前端可用的精简结构（无数据返回 None）。"""
+    if not snap:
+        return None
+    live, impact = snap["live"], snap["impact"]
+    return {
+        "weather": live.get("weather", ""),
+        "temperature": live.get("temperature"),
+        "windpower": live.get("windpower", ""),
+        "slippery": impact["slippery"],
+        "hot": impact["hot"],
+        "low_visibility": impact["low_visibility"],
+        "label": impact["label"],
+        "advice": impact["advice"],
+    }
+
+
+@api_bp.route("/weather", methods=["GET"])
+def weather():
+    """GET /api/weather — 当前武汉实时天气及对步行/骑行的路况影响"""
+    snap = _weather_snapshot()
+    if not snap:
+        return _err("weather_unavailable", "天气暂时获取不到", 503)
+    return _ok({
+        "weather": snap["live"]["weather"],
+        "temperature": snap["live"]["temperature"],
+        "humidity": snap["live"]["humidity"],
+        "winddirection": snap["live"]["winddirection"],
+        "windpower": snap["live"]["windpower"],
+        "reporttime": snap["live"]["reporttime"],
+        "slippery": snap["impact"]["slippery"],
+        "hot": snap["impact"]["hot"],
+        "low_visibility": snap["impact"]["low_visibility"],
+        "label": snap["impact"]["label"],
+        "advice": snap["impact"]["advice"],
+    })
+
+
 @api_bp.route("/parse", methods=["POST"])
 def parse():
     """POST /api/parse — 自然语言 → 任务意图
@@ -448,6 +500,10 @@ def route():
     weights = body.get("weights")
     resolved_weights = resolve_weights(weights)
 
+    # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
+    weather_snap = _weather_snapshot()
+    weather_info = weather_snap["live"] if weather_snap else None
+
     try:
         route_result = compute_route(
             G=G,
@@ -456,6 +512,7 @@ def route():
             constraints=constraints,
             weights=weights,
             mode=final_mode,
+            weather_info=weather_info,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
@@ -500,6 +557,8 @@ def route():
         "shortest_duration_min": route_result["shortest_duration_min"],
         "speed_kmh": route_result["speed_kmh"],
         "road_conditions_applied": route_result.get("road_conditions_applied", 0),
+        "weather_applied": route_result.get("weather_applied", False),
+        "weather": _weather_public(weather_snap),
     }
 
     return _ok(response)
@@ -695,6 +754,10 @@ def chat():
     constraints = intent_data.get("constraints", {})
     weights = intent_data.get("weights")
 
+    # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
+    weather_snap = _weather_snapshot()
+    weather_info = weather_snap["live"] if weather_snap else None
+
     try:
         route_result = compute_route(
             G=G,
@@ -703,6 +766,7 @@ def chat():
             constraints=constraints,
             weights=weights,
             mode=final_mode,
+            weather_info=weather_info,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
@@ -739,6 +803,11 @@ def chat():
     except Exception:
         explanation = "已为您规划好路线。"
 
+    # 天气影响提示：把真实天气对路线的调整说清楚（湿滑避坡/高温走树荫）
+    weather_pub = _weather_public(weather_snap)
+    if weather_pub and weather_pub.get("advice"):
+        explanation = (explanation + " " + weather_pub["advice"]).strip()
+
     # 跟进建议（"可能想问"）：LLM 根据对话上下文动态生成，失败则空列表（前端兜底）
     suggestions = []
     try:
@@ -773,6 +842,9 @@ def chat():
         "duration_min": route_result["duration_min"],
         "shortest_duration_min": route_result["shortest_duration_min"],
         "speed_kmh": route_result["speed_kmh"],
+        "road_conditions_applied": route_result.get("road_conditions_applied", 0),
+        "weather_applied": route_result.get("weather_applied", False),
+        "weather": weather_pub,
         "explanation": explanation,
         "suggestions": suggestions,
     }

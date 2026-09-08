@@ -577,6 +577,7 @@ def compute_route(
     weights: Optional[dict] = None,
     mode: str = "walk",
     road_conditions: Optional[list] = None,
+    weather_info: Optional[dict] = None,
 ) -> dict:
     """
     多因素路径计算主函数。
@@ -633,6 +634,25 @@ def compute_route(
     else:
         resolved_weights = resolve_weights(weights)
 
+    # 天气影响权重：高温时倾向树荫景观路（在归一化/校验后的权重上微调再归一化）
+    weather_penalty = {}
+    weather_applied = False
+    if weather_info:
+        try:
+            from spatial.weather import weather_slope_penalty, adjust_weights_for_weather, classify_weather
+            slope_pen = weather_slope_penalty(weather_info)
+            weather_applied = bool(classify_weather(weather_info).get("label"))
+            if slope_pen:
+                # 湿滑：对陡坡/台阶边按 slope_level 加惩罚（先收集 level→multiplier）
+                # 实际边惩罚在 G_filtered 构建后按 slope_level 注入
+                pass
+            hot_adj = adjust_weights_for_weather(resolved_weights, weather_info)
+            # 高温且 weights 非用户显式锁定时采用；这里仅在发生变化时覆盖
+            if hot_adj != resolved_weights:
+                resolved_weights = resolve_weights(hot_adj)
+        except Exception as e:
+            logger.warning("天气权重调整失败，跳过: %s", e)
+
     max_len, norm_lengths = _normalize_lengths(G)
 
     annotation_degraded = _should_degrade_annotations()
@@ -670,8 +690,23 @@ def compute_route(
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
     G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
 
-    # 方式惩罚 + 路况惩罚 + 约束惩罚合并（同一 key 相乘）
+    # 天气湿滑惩罚：雨雪天对陡坡/台阶边（slope_level 4/5）施加额外成本，智能避坡
+    if weather_info:
+        try:
+            from spatial.weather import weather_slope_penalty
+            slope_pen = weather_slope_penalty(weather_info)
+            if slope_pen:
+                for u, v, k, data in G_filtered.edges(keys=True, data=True):
+                    lvl = data.get("slope_level", 3)
+                    mult = slope_pen.get(lvl)
+                    if mult:
+                        weather_penalty[(u, v, k)] = mult
+        except Exception as e:
+            logger.warning("天气湿滑惩罚应用失败，跳过: %s", e)
+
+    # 方式惩罚 + 路况惩罚 + 天气惩罚 + 约束惩罚合并（同一 key 相乘）
     penalty_map = _merge_penalty_maps(mode_penalty, road_penalty)
+    penalty_map = _merge_penalty_maps(penalty_map, weather_penalty)
     penalty_map = _merge_penalty_maps(penalty_map, constraint_penalty)
 
     # 将 edge key 注入边数据，使 edge_weight 能按 (u, v, k) 查找 norm 和 penalty
@@ -800,6 +835,7 @@ def compute_route(
         "shortest_duration_min": estimate_duration_min(shortest_len, mode),
         "speed_kmh": MODE_SPEEDS_KMH[mode],
         "road_conditions_applied": road_conditions_applied,
+        "weather_applied": weather_applied,
     }
 
 
@@ -812,6 +848,7 @@ def compute_route_with_annotations(
     annotations: Optional[list] = None,
     mode: str = "walk",
     road_conditions: Optional[list] = None,
+    weather_info: Optional[dict] = None,
 ) -> dict:
     """
     带路段标注的路径计算（slope_level / scenery_level 注入路网边属性）。
@@ -852,5 +889,5 @@ def compute_route_with_annotations(
 
     return compute_route(
         G_annotated, start_node, end_node, constraints, weights, mode=mode,
-        road_conditions=road_conditions,
+        road_conditions=road_conditions, weather_info=weather_info,
     )
