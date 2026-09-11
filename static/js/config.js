@@ -1,12 +1,12 @@
 (function () {
     'use strict';
 
-    var DEFAULT_CENTER = [114.3630, 30.5365];  // GCJ-02（app.js 初始化时转为 WGS-84）
+    var DEFAULT_CENTER = [114.3630, 30.5365];  // GCJ-02（与高德瓦片/POI/路径天然对齐）
     var DEFAULT_ZOOM = 16;
     var DEFAULT_API_BASE = '';
     // 天地图 Key（https://console.tianditu.gov.cn/ 申请，免费）。
-    // 留空时默认使用 Esri World Street Map（WGS-84，无需 Key，国内手机端访问稳定）。
-    // 也可在地图右上角图层控件切换 OpenStreetMap / 卫星影像。
+    // 留空时默认使用高德矢量瓦片（GCJ-02，国内手机端秒开，中文标注，高缩放全覆盖，无需 Key）。
+    // 图层控件可切换 OpenStreetMap / 卫星影像 / 天地图（配 Key 后）。
     var DEFAULT_TIANDITU_KEY = '';
 
     var cfg = {

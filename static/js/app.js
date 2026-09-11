@@ -335,11 +335,10 @@
         });
     }
 
-    // 后端所有坐标（POI、路径、路况）均为 GCJ-02；Leaflet 底图为 WGS-84，
-    // 入图前统一用 gcj02ToWgs84 转成 [lat, lng]
+    // 后端所有坐标（POI、路径、路况）均为 GCJ-02；高德瓦片也是 GCJ-02，
+    // 直接用 GCJ-02 坐标入图（[lat, lng]），无需转换
     function gcjToLatLng(lng, lat) {
-        var w = gcj02ToWgs84(lng, lat);
-        return [w[1], w[0]];
+        return [lat, lng];
     }
 
     // Leaflet divIcon 小工具
@@ -380,11 +379,21 @@
                 preferCanvas: false,
             });
 
-            // 底图：配置天地图 Key 时用天地图矢量+注记（CGCS2000≈WGS-84，国内快），
-            // 否则用 OpenStreetMap 标准底图
+            // 底图：高德瓦片（GCJ-02，国内秒开，中文标注，高缩放全覆盖）
+            // 可选：天地图矢量（需 Key，CGCS2000≈GCJ-02）、Esri 卫星影像（WGS-84）
             var baseLayers = {};
             var defaultLayer = null;
 
+            // ===== 高德矢量街道图（GCJ-02，国内手机端秒开，无需 Key）=====
+            var amap = L.tileLayer(
+                'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                { subdomains: ['1', '2', '3', '4'],
+                  maxZoom: 18,
+                  attribution: '© <a href="https://ditu.amap.com/" target="_blank" rel="noopener">高德地图</a>' }
+            );
+            baseLayers['高德矢量'] = amap;
+
+            // 天地图矢量+注记（需 Key，CGCS2000≈GCJ-02，国内最快）
             if (CFG.TIANDITU_KEY) {
                 var tdtAttr = '© <a href="https://www.tianditu.gov.cn/" target="_blank" rel="noopener">天地图</a>';
                 var tdtVec = L.tileLayer(
@@ -407,20 +416,14 @@
                 defaultLayer = tdtVec;
             }
 
+            // OSM（WGS-84，海外可用，国内不稳定）
             var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 贡献者',
             });
             baseLayers['OpenStreetMap'] = osm;
 
-            // Esri 街道底图（WGS-84，无需 Key，国内可访问稳定）
-            var esriStreet = L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-                { maxZoom: 19, attribution: '© Esri World Street Map' }
-            );
-            baseLayers['Esri 街道'] = esriStreet;
-
-            // 影像底图（WGS-84，无需 Key；国内可访问性通常良好）
+            // Esri 影像底图（WGS-84，无需 Key；国内可访问）
             var esriImg = L.tileLayer(
                 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                 { maxZoom: 19, attribution: '© Esri World Imagery' }
@@ -428,9 +431,9 @@
             baseLayers['卫星影像'] = esriImg;
 
             if (!defaultLayer) {
-                // 国内网络（尤其手机端）访问 OSM 瓦片不稳定，默认用 Esri 街道底图
-                esriStreet.addTo(state.map);
-                defaultLayer = esriStreet;
+                // 默认用高德矢量（国内手机端秒开，GCJ-02 与 POI/路径天然对齐）
+                amap.addTo(state.map);
+                defaultLayer = amap;
             }
 
             L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(state.map);
@@ -451,7 +454,7 @@
         }
     }
 
-    // ========== GPS 定位（WGS-84，与 Leaflet 底图/OSM 路网同源） ==========
+    // ========== GPS 定位（WGS-84；高德瓦片 GCJ-02，渲染前需转换） ==========
     function addLocateControl() {
         var LocateCtrl = L.Control.extend({
             options: { position: 'topright' },
@@ -459,7 +462,7 @@
                 var btn = L.DomUtil.create('div', 'whu-locate-btn leaflet-bar');
                 btn.setAttribute('role', 'button');
                 btn.setAttribute('aria-label', '定位我的位置');
-                btn.title = '定位我的位置（WGS-84）';
+                btn.title = '定位我的位置（WGS-84 → GCJ-02 对齐高德瓦片）';
                 btn.innerHTML = '<span class="whu-locate-icon">◎</span>';
                 L.DomEvent.disableClickPropagation(btn);
                 L.DomEvent.disableScrollPropagation(btn);
@@ -504,21 +507,24 @@
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
             );
         } else if (state.userLocation) {
-            // 已有定位：再次点击 = 回到我的位置
+            // 已有定位：再次点击 = 回到我的位置（用 GCJ-02 对齐高德瓦片）
             setLocateBtnState(false);
-            state.map.setView([state.userLocation.lat, state.userLocation.lng], 17);
+            state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
         }
     }
 
     function renderUserLocation(lng, lat, accuracy) {
-        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy };
+        // GPS 给 WGS-84；高德瓦片 GCJ-02，蓝点渲染前转一次
+        var gcj = wgs84ToGcj02(lng, lat);
+        var gcjLng = gcj[0], gcjLat = gcj[1];
+        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy, gcjLng: gcjLng, gcjLat: gcjLat };
         if (!state.map) return;
 
         if (state.userAccuracyCircle) {
-            state.userAccuracyCircle.setLatLng([lat, lng]);
+            state.userAccuracyCircle.setLatLng([gcjLat, gcjLng]);
             if (accuracy) state.userAccuracyCircle.setRadius(accuracy);
         } else {
-            state.userAccuracyCircle = L.circle([lat, lng], {
+            state.userAccuracyCircle = L.circle([gcjLat, gcjLng], {
                 radius: accuracy || 30,
                 color: '#2B7CFF', weight: 1, opacity: 0.5,
                 fillColor: '#2B7CFF', fillOpacity: 0.12,
@@ -527,20 +533,20 @@
         }
 
         if (state.userMarker) {
-            state.userMarker.setLatLng([lat, lng]);
+            state.userMarker.setLatLng([gcjLat, gcjLng]);
         } else {
             var dotHtml = '<div style="position:relative;width:18px;height:18px;">'
                 + '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(43,124,255,0.25);"></div>'
                 + '<div style="position:absolute;left:4px;top:4px;width:10px;height:10px;border-radius:50%;'
                 + 'background:#2B7CFF;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>'
                 + '</div>';
-            state.userMarker = divMarker([lat, lng], dotHtml, [18, 18], [9, 9], '我的位置')
-                .bindTooltip('我的位置（WGS-84）· 可以直接说「从我这到樱顶」', {
+            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [18, 18], [9, 9], '我的位置')
+                .bindTooltip('我的位置（GPS WGS-84，自动对齐高德瓦片）· 说「从我这到樱顶」', {
                     direction: 'top', offset: [0, -10], opacity: 0.95,
                 })
                 .addTo(state.map);
             // 首次定位：居中并提示一次
-            state.map.setView([lat, lng], 17);
+            state.map.setView([gcjLat, gcjLng], 17);
             setTimeout(function () {
                 if (state.userMarker) state.userMarker.openTooltip();
             }, 400);
@@ -556,7 +562,7 @@
         var shortest = routeData.shortest || [];
 
         if (recommended.length > 0) {
-            // 后端返回 GCJ-02，Leaflet 底图是 WGS-84，逐点转换（[lat, lng]）
+            // 后端返回 GCJ-02，高德瓦片也是 GCJ-02，直接入图（[lat, lng]）
             var recPath = recommended.map(function (c) {
                 return gcjToLatLng(c.lng, c.lat);
             });
@@ -657,7 +663,7 @@
             var conditions = (data && data.conditions) || [];
             conditions.forEach(function (cond) {
                 var style = ROAD_CONDITION_STYLES[cond.type] || { icon: '⚠️', color: '#999', label: cond.type };
-                // 路况坐标为 GCJ-02，入 Leaflet 前转 WGS-84
+                // 路况坐标为 GCJ-02，高德瓦片也是 GCJ-02，直接入图
                 var latlng = gcjToLatLng(cond.coordinates.lng, cond.coordinates.lat);
 
                 // 圆形影响范围（也可点击）
@@ -883,28 +889,27 @@
 
         if (_pickHandler) return;
         _pickHandler = function (e) {
-            // Leaflet 点击坐标是 WGS-84；后端路况按 GCJ-02 存储，提交前转回
-            var wgsLng = e.latlng.lng;
-            var wgsLat = e.latlng.lat;
-            var gcj = wgs84ToGcj02(wgsLng, wgsLat);
+            // 高德瓦片是 GCJ-02，Leaflet 点击坐标也是 GCJ-02，直接用
+            var gcjLng = e.latlng.lng;
+            var gcjLat = e.latlng.lat;
 
             if (_pickMarker) {
                 state.map.removeLayer(_pickMarker);
             }
             var pickHtml = '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;'
                 + 'border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>';
-            _pickMarker = divMarker([wgsLat, wgsLng], pickHtml, [16, 16], [8, 8], '上报位置')
+            _pickMarker = divMarker([gcjLat, gcjLng], pickHtml, [16, 16], [8, 8], '上报位置')
                 .addTo(state.map);
 
-            state._pickedLng = gcj[0];
-            state._pickedLat = gcj[1];
+            state._pickedLng = gcjLng;
+            state._pickedLat = gcjLat;
             var loc = document.getElementById('rr-location');
-            if (loc) loc.value = gcj[0].toFixed(6) + ', ' + gcj[1].toFixed(6);
+            if (loc) loc.value = gcjLng.toFixed(6) + ', ' + gcjLat.toFixed(6);
 
             // 选点后重新打开弹窗
             stopPickLocation();
             if (section) section.hidden = false;
-            if (hint) hint.textContent = '已选点：' + gcj[0].toFixed(5) + ', ' + gcj[1].toFixed(5) + '（GCJ-02）';
+            if (hint) hint.textContent = '已选点：' + gcjLng.toFixed(5) + ', ' + gcjLat.toFixed(5) + '（GCJ-02）';
         };
         state.map.on('click', _pickHandler);
     }
