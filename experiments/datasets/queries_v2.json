@@ -1,0 +1,5949 @@
+{
+  "version": "v2-draft",
+  "generated_at": "2026-09-11",
+  "seed": 20260911,
+  "description": "200 条分层测试集草稿（L1-L7）。起终点均解析为 POI 规范名；权重 gold 为 prompt 区间中值约定，需 3 人独立标注平均后定稿；L5 为多轮对话，逐轮 gold 的 key 为 <id>#t<n>。",
+  "queries": [
+    {
+      "id": "L1_001",
+      "query": "从煎百味(信息学部店)到武汉大学化学实验教学中心的步行路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "煎百味(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学化学实验教学中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_002",
+      "query": "武汉大学电力广场出发去重庆小面(弘毅大道店)",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学电力广场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "重庆小面(弘毅大道店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_003",
+      "query": "麻烦问下洪波门去珞珈门的路",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "洪波门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_004",
+      "query": "走着去，武汉大学高等研究院出发去三津汤包(枫园店)",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学高等研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "三津汤包(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_005",
+      "query": "帮我规划一条重庆小面(弘毅大道店)到蔡明纬(工学部店)的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "重庆小面(弘毅大道店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蔡明纬(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_006",
+      "query": "达美乐比萨(枫园店)出发去武汉大学樱园",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "达美乐比萨(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学樱园",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_007",
+      "query": "从凌波门东湖观景点到Greenhouse花房咖啡",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "凌波门东湖观景点",
+          "type": "poi"
+        },
+        "end": {
+          "name": "Greenhouse花房咖啡",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_008",
+      "query": "走着去，武汉大学枫园阅览室到武汉大学经济与管理学院咋走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学枫园阅览室",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学经济与管理学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_009",
+      "query": "我想从瑞幸咖啡(信息学部店)走到武汉大学物理学院报告厅",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学物理学院报告厅",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_010",
+      "query": "从恩施炕小土豆(武大店)到武汉大学教职工活动中心的步行路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "恩施炕小土豆(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学教职工活动中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_011",
+      "query": "帮我规划一条珞珈山庄到老樱园食堂的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈山庄",
+          "type": "poi"
+        },
+        "end": {
+          "name": "老樱园食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_012",
+      "query": "武汉大学周恩来故居到武汉大学新闻与传播学院咋走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学周恩来故居",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学新闻与传播学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_013",
+      "query": "步行，帮我规划一条武汉大学工学部集贸市场到扬波门的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部集贸市场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "扬波门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_014",
+      "query": "走路，弘毅门出发去武汉大学物理学院报告厅",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "弘毅门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学物理学院报告厅",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_015",
+      "query": "步行，农家小炒(桂园一路)出发去武汉大学电力广场",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "农家小炒(桂园一路)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学电力广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_016",
+      "query": "帮我规划一条花焙格各音乐餐吧到茶百道(工学部店)的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "花焙格各音乐餐吧",
+          "type": "poi"
+        },
+        "end": {
+          "name": "茶百道(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_017",
+      "query": "武汉大学早期建筑到武汉大学早期建筑工学院咋走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学早期建筑",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学早期建筑工学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_018",
+      "query": "从库迪咖啡(信息学部店)到二号教学楼",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "库迪咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "二号教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_019",
+      "query": "帮我规划一条武汉大学国家文化发展研究院到茶百道(工学部店)的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学国家文化发展研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "茶百道(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_020",
+      "query": "从武汉大学外国语言文学学院到武汉大学遥感信息工程学院",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学外国语言文学学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学遥感信息工程学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_021",
+      "query": "走路，麻烦问下达美乐比萨(枫园店)去武汉大学电子信息学院的路",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "达美乐比萨(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学电子信息学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_022",
+      "query": "从小肆川(梅园店)去武汉大学人工智能学院怎么走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "小肆川(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学人工智能学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_023",
+      "query": "麻烦问下武汉大学文澜门去武汉大学宋卿体育馆的路",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学文澜门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学宋卿体育馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_024",
+      "query": "步行从武汉大学教育科学学院去武汉大学电力广场怎么走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学教育科学学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学电力广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_025",
+      "query": "麻烦问下朴大叔拌饭(工学部店)去武汉大学樱花大道的路",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "朴大叔拌饭(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学樱花大道",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_026",
+      "query": "从星湖综合实验大楼到武汉大学樱花大道",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星湖综合实验大楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学樱花大道",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_027",
+      "query": "帮我规划一条武汉大学田园食堂到武汉大学信息学部学生三食堂的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学田园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部学生三食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_028",
+      "query": "帮我规划一条武汉大学梅园食堂到瑞幸咖啡(信息学部店)的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_029",
+      "query": "走着去从煎百味(信息学部店)到武汉大学桃园教8楼的步行路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "煎百味(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学桃园教8楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_030",
+      "query": "从茶颜悦色(梅园店)到古茗(信息学部店)",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "茶颜悦色(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "古茗(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_031",
+      "query": "武汉大学电子信息学院到武汉大学足球场咋走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学电子信息学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学足球场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_032",
+      "query": "走着去，帮我规划一条武汉大学信息学部学生一食堂到国立武汉大学日字斋的路线",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部学生一食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "国立武汉大学日字斋",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_033",
+      "query": "柠季手打柠檬茶(信息学部店)到武汉大学周恩来故居咋走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "柠季手打柠檬茶(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学周恩来故居",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_034",
+      "query": "从老樱园食堂去武汉大学信息学部篮球场怎么走",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "老樱园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部篮球场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_035",
+      "query": "武汉大学信息学部学生一食堂出发去瑞幸咖啡(枫园店)",
+      "category": "L1_simple",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部学生一食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_001",
+      "query": "从工学部体育馆到武汉大学城市设计学院，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部体育馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学城市设计学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_002",
+      "query": "帮我规划一条武汉大学足球场到信息学部清真食堂的路线，走平缓一点的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学足球场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "信息学部清真食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_003",
+      "query": "麻烦问下武汉大学人文社会科学研究院去孃孃出川(枫园店)的路，膝盖不好不想爬坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学人文社会科学研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "孃孃出川(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_004",
+      "query": "武汉大学信息学部星湖教3楼到武汉大学珞珈广场咋走，哪条路最短",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部星湖教3楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学珞珈广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_005",
+      "query": "步行从好味道粉面馆(武大店)到布咖啡(武汉大学校园店)，避开陡坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "好味道粉面馆(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "布咖啡(武汉大学校园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_006",
+      "query": "我想从不颠哥港式甜品店(武大店)走到武汉大学早期建筑图书馆，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "不颠哥港式甜品店(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学早期建筑图书馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_007",
+      "query": "走着去，星湖体育馆到遇见小面(工学部店)咋走，膝盖不好不想爬坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星湖体育馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "遇见小面(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_008",
+      "query": "走着去，麻烦问下珞珈山下文创咖啡去爷爷不泡茶(田园店)的路，走风景好的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈山下文创咖啡",
+          "type": "poi"
+        },
+        "end": {
+          "name": "爷爷不泡茶(田园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_009",
+      "query": "步行，麻烦问下有家黄焖鸡(武大店)去茶颜悦色(梅园店)的路，赶时间，要最快的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "有家黄焖鸡(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "茶颜悦色(梅园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_010",
+      "query": "麻烦问下武汉大学文理学部第二教学楼去武汉大学社会学院的路，赶时间，要最快的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学文理学部第二教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学社会学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_011",
+      "query": "走路从皇冠幸福里(工学部店)到武汉大学狮子山(樱园西路)，哪条路最短",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "皇冠幸福里(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学狮子山(樱园西路)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_012",
+      "query": "从蜜雪冰城(枫园店)到星湖体育馆的步行路线，走风景好的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "蜜雪冰城(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "星湖体育馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_013",
+      "query": "走路从星湖体育馆到武汉大学老斋舍的步行路线，哪条路最短",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星湖体育馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学老斋舍",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_014",
+      "query": "从瑞幸咖啡(枫园店)到小伙计(工学部店)的步行路线，走风景好的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "小伙计(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_015",
+      "query": "帮我规划一条蔬三时轻食(武大校内店)到瑞幸咖啡(湖滨店)的路线，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "蔬三时轻食(武大校内店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(湖滨店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_016",
+      "query": "麻烦问下书亦烧仙草(工学部店)去武汉大学科学技术发展研究院的路，膝盖不好不想爬坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "书亦烧仙草(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学科学技术发展研究院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_017",
+      "query": "武汉大学水利水电学院出发去好味道粉面馆(武大店)，走风景好的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学水利水电学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "好味道粉面馆(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_018",
+      "query": "帮我规划一条星湖综合实验大楼到武汉大学信息学部2教学楼的路线，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星湖综合实验大楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部2教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_019",
+      "query": "从武汉大学刘少奇研究中心到蜜雪冰城(枫园店)，赶时间，要最快的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学刘少奇研究中心",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蜜雪冰城(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_020",
+      "query": "从武汉大学社会主义学院去武汉大学城市设计学院怎么走，赶时间，要最快的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学社会主义学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学城市设计学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_021",
+      "query": "步行从武汉大学信息学部1号教学楼到茶百道(工学部店)，走风景好的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部1号教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "茶百道(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_022",
+      "query": "从武汉大学信息学部体育馆去扬波门怎么走，挑景色漂亮的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部体育馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "扬波门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_023",
+      "query": "工学部清真食堂出发去瑞幸咖啡(湖滨店)，不着急，慢慢走",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部清真食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(湖滨店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_024",
+      "query": "武汉大学生命科学学院出发去武汉大学信息学部图书馆，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学生命科学学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部图书馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_025",
+      "query": "走着去从秀味馄饨(工学部店)去孃孃出川(枫园店)怎么走，哪条路最短",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "秀味馄饨(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "孃孃出川(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_026",
+      "query": "走路，麻烦问下老樱园食堂去武汉大学枫园阅览室的路，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "老樱园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学枫园阅览室",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_027",
+      "query": "从小肆川(梅园店)到武汉大学电力广场，避开陡坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "小肆川(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学电力广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_028",
+      "query": "走着去，麻烦问下梅园教工食堂去武汉大学鲲鹏广场的路，走最近的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "梅园教工食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学鲲鹏广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_029",
+      "query": "武汉大学枫园出发去珞南门，走适合拍照的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学枫园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞南门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_030",
+      "query": "麻烦问下武汉大学信息学部2教学楼去周麻婆川式小炒(武大店)的路，时间宽裕，随便逛逛",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部2教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "周麻婆川式小炒(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_031",
+      "query": "我想步行从青柠欢喜咖啡果饮(武大店)走到武汉大学湖滨风味食堂，避开陡坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "青柠欢喜咖啡果饮(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学湖滨风味食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_032",
+      "query": "从信息学部清真食堂到武汉大学狮子山(樱园西路)的步行路线，走最近的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "信息学部清真食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学狮子山(樱园西路)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_033",
+      "query": "武汉大学梅园出发去西教学楼，挑景色漂亮的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "西教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_034",
+      "query": "从武汉大学工学部5教楼到朴大叔拌饭(工学部店)，不着急，慢慢走",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部5教楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "朴大叔拌饭(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_035",
+      "query": "从珞家拾光(工学部店)去武汉大学篮球场(文体路)怎么走，走适合拍照的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞家拾光(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学篮球场(文体路)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_036",
+      "query": "帮我规划一条星湖综合实验大楼到湘菜馆(武汉大学内店)的路线，走适合拍照的路线",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星湖综合实验大楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "湘菜馆(武汉大学内店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_037",
+      "query": "走着去，瑞幸咖啡(信息学部店)到星湖园餐厅咋走，走平缓一点的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "星湖园餐厅",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_038",
+      "query": "武汉大学商学院EMBA中心出发去武汉大学大学生创业俱乐部，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学商学院EMBA中心",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学大学生创业俱乐部",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_039",
+      "query": "步行，帮我规划一条北门到呷哺呷哺(梅园店)的路线，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "北门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "呷哺呷哺(梅园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_040",
+      "query": "走路从武汉大学法学图书馆到沙县小吃(工学部店)的步行路线，时间宽裕，随便逛逛",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学法学图书馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "沙县小吃(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_041",
+      "query": "帮我规划一条工学部清真食堂到武汉大学信息学部学生活动中心的路线，走最近的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部清真食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部学生活动中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_042",
+      "query": "从信息学部西区综合楼去武汉大学物理学院新楼怎么走，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "信息学部西区综合楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学物理学院新楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_043",
+      "query": "从茶百道(工学部店)到武汉大学工学部6教学楼的步行路线，时间宽裕，随便逛逛",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "茶百道(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学工学部6教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_044",
+      "query": "走着去从武汉大学信息学部测绘学院去武汉大学工学部A教学楼怎么走，走平缓一点的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部测绘学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学工学部A教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_045",
+      "query": "麻烦问下武汉大学早期建筑去蜜雪冰城(湖滨店)的路，不着急，慢慢走",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学早期建筑",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蜜雪冰城(湖滨店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_046",
+      "query": "我想步行从信息学部清真食堂走到达美乐比萨(枫园店)，膝盖不好不想爬坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "信息学部清真食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "达美乐比萨(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_047",
+      "query": "步行，麻烦问下武汉大学实验室与设备管理处去丁记炒饭(武大可送校内店)的路，时间宽裕，随便逛逛",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学实验室与设备管理处",
+          "type": "poi"
+        },
+        "end": {
+          "name": "丁记炒饭(武大可送校内店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_048",
+      "query": "从武汉大学信息管理学院到武汉大学刘少奇研究中心，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息管理学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学刘少奇研究中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_049",
+      "query": "麻烦问下武汉大学工学部A教学楼去蔬三时轻食(武大校内店)的路，想一路看风景",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部A教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蔬三时轻食(武大校内店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_050",
+      "query": "从朴大叔拌饭(工学部店)去煎百味(信息学部店)怎么走，膝盖不好不想爬坡",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "朴大叔拌饭(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "煎百味(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_051",
+      "query": "走着去，帮我规划一条武汉大学高等研究院到凌波门栈桥的路线，挑景色漂亮的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学高等研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "凌波门栈桥",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.175,
+          "scenery": 0.65
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_052",
+      "query": "走着去，麻烦问下肯德基(梅园店)去鱼你在一起(信息学部店)的路，哪条路最短",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "肯德基(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "鱼你在一起(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_053",
+      "query": "金闪闪炸鸡腿(武大店)到鱼籽村秘制拌饭(武大店)咋走，时间宽裕，随便逛逛",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "金闪闪炸鸡腿(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "鱼籽村秘制拌饭(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.65,
+          "slope": 0.175,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_054",
+      "query": "武汉大学梅园食堂出发去珞珈饮品(桂园店)，走平缓一点的路",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞珈饮品(桂园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L2_055",
+      "query": "我想从肯德基(信息学部店)走到武汉大学信息学部星湖教3楼，别走台阶",
+      "category": "L2_single_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "肯德基(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部星湖教3楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_001",
+      "query": "从武汉大学信息学部测绘学院到西南门的步行路线，走平缓一点的路，走风景好的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部测绘学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "西南门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_002",
+      "query": "从前沿交叉学科研究院到武汉大学鲲鹏广场的步行路线，避开陡坡，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "前沿交叉学科研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学鲲鹏广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_003",
+      "query": "从武汉大学足球场去武汉大学社会主义学院怎么走，膝盖不好不想爬坡，走风景好的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学足球场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学社会主义学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_004",
+      "query": "从瑞幸咖啡(梅园店)到不颠哥港式甜品店(武大店)的步行路线，避开陡坡，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "不颠哥港式甜品店(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_005",
+      "query": "步行，信息学部西区综合楼出发去珞瑜门，走平缓一点的路，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "信息学部西区综合楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞瑜门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_006",
+      "query": "从武汉大学留学生教育学院到武汉大学工学部10教学楼的步行路线，别走台阶，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学留学生教育学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学工学部10教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_007",
+      "query": "麻烦问下凌波门栈桥去武汉大学人文社会科学研究院的路，走平缓一点的路，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "凌波门栈桥",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学人文社会科学研究院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_008",
+      "query": "从武汉大学社会主义学院到武汉大学六一纪念亭，走平缓一点的路，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学社会主义学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学六一纪念亭",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_009",
+      "query": "我想从农家小炒(桂园一路)走到珞珈自强超市，膝盖不好不想爬坡，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "农家小炒(桂园一路)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞珈自强超市",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_010",
+      "query": "我想从恩施炕小土豆(武大店)走到工学部操场，避开陡坡，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "恩施炕小土豆(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "工学部操场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_011",
+      "query": "从武汉大学工学部5教楼到肯德基(梅园店)，走平缓一点的路，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部5教楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "肯德基(梅园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_012",
+      "query": "帮我规划一条茶颜悦色(梅园店)到武汉大学珞珈广场的路线，别走台阶，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "茶颜悦色(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学珞珈广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_013",
+      "query": "从瑞幸咖啡(梅园店)到古茗(工学部田园店)，哪条路最短，别走台阶",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "古茗(工学部田园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_014",
+      "query": "我想从武汉大学樱园走到武汉大学图书馆工学分馆，走最近的路，膝盖不好不想爬坡",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学樱园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学图书馆工学分馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_015",
+      "query": "肯德基(梅园店)出发去武汉大学新闻与传播学院，越近越好，走平缓一点的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "肯德基(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学新闻与传播学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_016",
+      "query": "青柠欢喜咖啡果饮(武大店)到瑞幸咖啡(工学部店)咋走，越近越好，避开陡坡",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "青柠欢喜咖啡果饮(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_017",
+      "query": "从弘毅门到武汉大学大学生创业俱乐部的步行路线，越近越好，膝盖不好不想爬坡",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "弘毅门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学大学生创业俱乐部",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_018",
+      "query": "从武汉大学人文社会科学研究院到珞家拾光(工学部店)，赶时间，要最快的路线，走平缓一点的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学人文社会科学研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞家拾光(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_019",
+      "query": "走路从WHU1893咖啡馆到武汉大学口腔医院，走最近的路，别走台阶",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "WHU1893咖啡馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学口腔医院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_020",
+      "query": "我想走路从霸王茶姬(信息学部店)走到珞瑜门，走最近的路，走平缓一点的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "霸王茶姬(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞瑜门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_021",
+      "query": "桂圆馄饨(工学部集贸市场)出发去霸王茶姬(信息学部店)，哪条路最短，别走台阶",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂圆馄饨(工学部集贸市场)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "霸王茶姬(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_022",
+      "query": "土黄牛肉面(工学部店)到柠季手打柠檬茶(信息学部店)咋走，走最近的路，别走台阶",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "土黄牛肉面(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "柠季手打柠檬茶(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_023",
+      "query": "从赛百味(工学部店)到武汉大学社会主义学院的步行路线，哪条路最短，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "赛百味(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学社会主义学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_024",
+      "query": "走路从桂园食堂到柚见鲜茶(信息学部三食堂店)，走最近的路，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "柚见鲜茶(信息学部三食堂店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_025",
+      "query": "我想从洪波门走到老樱园食堂，赶时间，要最快的路线，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "洪波门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "老樱园食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_026",
+      "query": "麻烦问下武汉大学湖滨风味食堂去国立武汉大学日字斋的路，赶时间，要最快的路线，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学湖滨风味食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "国立武汉大学日字斋",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_027",
+      "query": "从武汉大学樱园去麦当劳(枫园店)怎么走，越近越好，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学樱园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "麦当劳(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_028",
+      "query": "走路从瑞幸咖啡(信息学部店)去工学部操场怎么走，赶时间，要最快的路线，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "工学部操场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_029",
+      "query": "走着去，帮我规划一条老乡鸡(信息学部店)到桂园二食堂的路线，哪条路最短，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "老乡鸡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "桂园二食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_030",
+      "query": "走路，鱼你在一起(梅园店)出发去武汉大学风雨操场，走最近的路，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "鱼你在一起(梅园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学风雨操场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_031",
+      "query": "步行从武汉大学梅园操场去麦当劳(梅园店)怎么走，不着急，慢慢走，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园操场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "麦当劳(梅园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_032",
+      "query": "金麦坊面包房(武大店)到武汉数学与智能研究院咋走，时间宽裕，随便逛逛，走风景好的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "金麦坊面包房(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉数学与智能研究院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_033",
+      "query": "武汉大学艺术学院出发去珞南门，时间宽裕，随便逛逛，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学艺术学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞南门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_034",
+      "query": "秀味馄饨(工学部店)出发去武汉大学图书馆工学分馆，不着急，慢慢走，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "秀味馄饨(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学图书馆工学分馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_035",
+      "query": "从前沿交叉学科研究院去武汉大学人工智能学院怎么走，时间宽裕，随便逛逛，走风景好的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "前沿交叉学科研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学人工智能学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_036",
+      "query": "从工学部三食堂到宝岛小厨(工学部店)的步行路线，不着急，慢慢走，走适合拍照的路线",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部三食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "宝岛小厨(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "relaxed",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.1,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_037",
+      "query": "麻烦问下扬波门去五洲餐厅(求是大道店)的路，哪条路最短，走平缓一点的路，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "扬波门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "五洲餐厅(求是大道店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.25,
+          "scenery": 0.25
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_038",
+      "query": "麻烦问下匠心卤(枫园食堂店)去1973继光香香鸡(武大店)的路，越近越好，走平缓一点的路，走风景好的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "匠心卤(枫园食堂店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "1973继光香香鸡(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.25,
+          "scenery": 0.25
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_039",
+      "query": "步行从凌波门去武汉大学社会学院怎么走，越近越好，膝盖不好不想爬坡，挑景色漂亮的路",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "凌波门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学社会学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.25,
+          "scenery": 0.25
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L3_040",
+      "query": "从工学部三食堂到蔬三时轻食(武大校内店)的步行路线，越近越好，避开陡坡，想一路看风景",
+      "category": "L3_multi_pref",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部三食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蔬三时轻食(武大校内店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.5,
+          "slope": 0.25,
+          "scenery": 0.25
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_001",
+      "query": "骑车从武汉大学梅园操场到孃孃出川(枫园店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园操场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "孃孃出川(枫园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_002",
+      "query": "我想骑车从武汉大学科技门走到武汉大学物理学院报告厅",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学科技门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学物理学院报告厅",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_003",
+      "query": "扫个共享单车从武汉大学留学生教育学院到中国龙狮运动学院的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学留学生教育学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "中国龙狮运动学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_004",
+      "query": "骑车，凌波门游泳池出发去武汉大学化学实验教学中心",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "凌波门游泳池",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学化学实验教学中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_005",
+      "query": "扫个共享单车，帮我规划一条武汉大学文澜门到沙县小吃(工学部店)的路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学文澜门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "沙县小吃(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_006",
+      "query": "扫个共享单车从瑞幸咖啡(枫园店)到古茗(信息学部店)的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "古茗(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_007",
+      "query": "骑自行车，武汉大学工学部集贸市场到武汉大学雷达与信号处理实验室咋走",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部集贸市场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学雷达与信号处理实验室",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_008",
+      "query": "骑单车从工学部体育馆去五洲餐厅(求是大道店)怎么走",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部体育馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "五洲餐厅(求是大道店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_009",
+      "query": "骑自行车，桂园食堂出发去库迪咖啡(工学部店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "库迪咖啡(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_010",
+      "query": "骑自行车从达美乐比萨(枫园店)到古茗(信息学部店)的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "达美乐比萨(枫园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "古茗(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L4_011",
+      "query": "驾车从匠心卤(枫园食堂店)到武汉大学生命科学学院附楼的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "匠心卤(枫园食堂店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学生命科学学院附楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_012",
+      "query": "驾车，帮我规划一条国际园区2号教学楼到蜜雪冰城(湖滨店)的路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "国际园区2号教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "蜜雪冰城(湖滨店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_013",
+      "query": "驾车，恩施炕小土豆(武大店)出发去武汉大学社会保障研究中心",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "恩施炕小土豆(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学社会保障研究中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_014",
+      "query": "我想驾车从武汉大学社会主义学院走到好味道粉面馆(武大店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学社会主义学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "好味道粉面馆(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_015",
+      "query": "打车，麻烦问下武大动力与机械学院机械工程系去欢喜水果捞(工学部店)的路",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武大动力与机械学院机械工程系",
+          "type": "poi"
+        },
+        "end": {
+          "name": "欢喜水果捞(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_016",
+      "query": "驾车从瑞幸咖啡(信息学部店)到喜茶(工学部店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "瑞幸咖啡(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "喜茶(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_017",
+      "query": "开车从武汉大学口腔医院到凌波门游泳池的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学口腔医院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "凌波门游泳池",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_018",
+      "query": "驾车从武汉大学九一二运动场到工学部清真食堂",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学九一二运动场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "工学部清真食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L4_019",
+      "query": "珞珈饮品(桂园店)到武汉大学力学实验教学中心咋走",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈饮品(桂园店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学力学实验教学中心",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_020",
+      "query": "我想从武汉大学李四光塑像走到好味道粉面馆(武大店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学李四光塑像",
+          "type": "poi"
+        },
+        "end": {
+          "name": "好味道粉面馆(武大店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_021",
+      "query": "麻烦问下武汉大学文学院去武汉大学科技门的路",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学文学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学科技门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_022",
+      "query": "武汉大学发展研究院出发去一品豆花(信息学部店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学发展研究院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "一品豆花(信息学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_023",
+      "query": "从恩施炕小土豆(武大店)到武汉大学教育科学学院的步行路线",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "恩施炕小土豆(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学教育科学学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_024",
+      "query": "走路，麻烦问下工学部篮球场去武汉大学科技门的路",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "工学部篮球场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学科技门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L4_025",
+      "query": "从武汉大学教育科学学院到饱嗝便当(梅园店)",
+      "category": "L4_mode",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学教育科学学院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "饱嗝便当(梅园店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_001",
+      "query": "樱顶在哪里啊",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学老斋舍",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_002",
+      "query": "找一下凌波门",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "凌波门",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_003",
+      "query": "请问老图书馆在哪儿",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学早期建筑图书馆",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_004",
+      "query": "万林艺术博物馆在哪里啊",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学万林艺术博物馆",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_005",
+      "query": "樱花大道在哪里啊",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学樱花大道",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_006",
+      "query": "宋卿体育馆在哪",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学宋卿体育馆",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_007",
+      "query": "总图在哪",
+      "category": "L6_poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "武汉大学图书馆(总馆)",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_008",
+      "query": "你能做什么",
+      "category": "L6_help",
+      "gold": {
+        "task_type": "help",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_009",
+      "query": "这个系统有啥功能",
+      "category": "L6_help",
+      "gold": {
+        "task_type": "help",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_010",
+      "query": "怎么用你",
+      "category": "L6_help",
+      "gold": {
+        "task_type": "help",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_011",
+      "query": "推荐几个景点",
+      "category": "L6_help",
+      "gold": {
+        "task_type": "help",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_012",
+      "query": "今天天气怎么样",
+      "category": "L6_chat",
+      "gold": {
+        "task_type": "chat",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_013",
+      "query": "樱花什么时候开",
+      "category": "L6_chat",
+      "gold": {
+        "task_type": "chat",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_014",
+      "query": "桂园食堂好吃吗",
+      "category": "L6_chat",
+      "gold": {
+        "task_type": "chat",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L6_015",
+      "query": "你是谁",
+      "category": "L6_chat",
+      "gold": {
+        "task_type": "chat",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_001",
+      "query": "从牌坊到樱顶",
+      "category": "L7_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学老斋舍",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_002",
+      "query": "从教五到总图",
+      "category": "L7_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学第五教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学图书馆(总馆)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_003",
+      "query": "从老斋舍到宋卿体育馆",
+      "category": "L7_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学老斋舍",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学宋卿体育馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_004",
+      "query": "从樱花大道到凌波门",
+      "category": "L7_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学樱花大道",
+          "type": "poi"
+        },
+        "end": {
+          "name": "凌波门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_005",
+      "query": "从珞珈门到枫园",
+      "category": "L7_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "枫园",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_006",
+      "query": "嗯…我想问下，星巴克(工学部店)咋去武汉大学医院啊",
+      "category": "L7_colloquial",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "星巴克(工学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学医院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_007",
+      "query": "武汉大学老干部活动中心到武汉大学信息学部1号教学楼远不远，给条好走的道",
+      "category": "L7_colloquial",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学老干部活动中心",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学信息学部1号教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.175,
+          "slope": 0.65,
+          "scenery": 0.175
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_008",
+      "query": "快快快，武汉大学教学楼9号楼去武汉大学鲲鹏广场",
+      "category": "L7_colloquial",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学教学楼9号楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学鲲鹏广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_009",
+      "query": "怎么去华中师范大学",
+      "category": "L7_external",
+      "gold": {
+        "task_type": "unknown",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L7_010",
+      "query": "华中科技大学离这多远",
+      "category": "L7_external",
+      "gold": {
+        "task_type": "unknown",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L5_001",
+      "query": "从西南门出发",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "西南门",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定终点"
+      },
+      "conversation": [
+        {
+          "query": "从西南门出发",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "西南门",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定终点"
+          }
+        },
+        {
+          "query": "去武汉大学教育科学学院",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "西南门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学教育科学学院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "走风景好的路",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "西南门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学教育科学学院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "high"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.175,
+              "scenery": 0.65
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_002",
+      "query": "从武汉大学早期建筑图书馆出发",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学早期建筑图书馆",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定终点"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学早期建筑图书馆出发",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学早期建筑图书馆",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定终点"
+          }
+        },
+        {
+          "query": "去武汉大学工学部11教学楼",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学早期建筑图书馆",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学工学部11教学楼",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "赶时间，要最快的路线",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学早期建筑图书馆",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学工学部11教学楼",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "short",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.8,
+              "slope": 0.1,
+              "scenery": 0.1
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_003",
+      "query": "从武汉大学梅园食堂出发",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园食堂",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定终点"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学梅园食堂出发",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定终点"
+          }
+        },
+        {
+          "query": "去珞珈山下文创咖啡",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "珞珈山下文创咖啡",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "走最近的路",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "珞珈山下文创咖啡",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "short",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.8,
+              "slope": 0.1,
+              "scenery": 0.1
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_004",
+      "query": "从武汉大学当代楼出发",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学当代楼",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定终点"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学当代楼出发",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学当代楼",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定终点"
+          }
+        },
+        {
+          "query": "去珞珈门",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学当代楼",
+              "type": "poi"
+            },
+            "end": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "想一路看风景",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学当代楼",
+              "type": "poi"
+            },
+            "end": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "high"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.175,
+              "scenery": 0.65
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_005",
+      "query": "想去武汉大学电子信息学院",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": null,
+        "end": {
+          "name": "武汉大学电子信息学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定起点"
+      },
+      "conversation": [
+        {
+          "query": "想去武汉大学电子信息学院",
+          "gold": {
+            "task_type": "path_planning",
+            "start": null,
+            "end": {
+              "name": "武汉大学电子信息学院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定起点"
+          }
+        },
+        {
+          "query": "从青柠欢喜咖啡果饮(武大店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "青柠欢喜咖啡果饮(武大店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学电子信息学院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_006",
+      "query": "想去武汉大学梅园",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": null,
+        "end": {
+          "name": "武汉大学梅园",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定起点"
+      },
+      "conversation": [
+        {
+          "query": "想去武汉大学梅园",
+          "gold": {
+            "task_type": "path_planning",
+            "start": null,
+            "end": {
+              "name": "武汉大学梅园",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定起点"
+          }
+        },
+        {
+          "query": "从武汉大学实验室与设备管理处",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学实验室与设备管理处",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学梅园",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_007",
+      "query": "想去武汉大学人文社会科学研究院",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": null,
+        "end": {
+          "name": "武汉大学人文社会科学研究院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk",
+        "ambiguity": "请指定起点"
+      },
+      "conversation": [
+        {
+          "query": "想去武汉大学人文社会科学研究院",
+          "gold": {
+            "task_type": "path_planning",
+            "start": null,
+            "end": {
+              "name": "武汉大学人文社会科学研究院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk",
+            "ambiguity": "请指定起点"
+          }
+        },
+        {
+          "query": "从武汉大学社会主义学院",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学社会主义学院",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学人文社会科学研究院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_008",
+      "query": "从柠季手打柠檬茶(信息学部店)到遇见小面(工学部店)",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "柠季手打柠檬茶(信息学部店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "遇见小面(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从柠季手打柠檬茶(信息学部店)到遇见小面(工学部店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "柠季手打柠檬茶(信息学部店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "遇见小面(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "换成别走台阶的路线",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "柠季手打柠檬茶(信息学部店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "遇见小面(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "avoid",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.65,
+              "scenery": 0.175
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_009",
+      "query": "从武汉大学足球场到武汉大学田园食堂",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学足球场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学田园食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学足球场到武汉大学田园食堂",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学足球场",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学田园食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "换成走风景好的路的路线",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学足球场",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学田园食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "high"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.175,
+              "scenery": 0.65
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_010",
+      "query": "从武汉大学梅园食堂到老樱园食堂",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "老樱园食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学梅园食堂到老樱园食堂",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "老樱园食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "换成哪条路最短的路线",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "老樱园食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "short",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.8,
+              "slope": 0.1,
+              "scenery": 0.1
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_011",
+      "query": "从有家黄焖鸡(武大店)到宝岛小厨(工学部店)",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "有家黄焖鸡(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "宝岛小厨(工学部店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从有家黄焖鸡(武大店)到宝岛小厨(工学部店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "有家黄焖鸡(武大店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "宝岛小厨(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "换成走平缓一点的路，想一路看风景的路线",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "有家黄焖鸡(武大店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "宝岛小厨(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "avoid",
+              "scenery": "high"
+            },
+            "weights": {
+              "distance": 0.1,
+              "slope": 0.45,
+              "scenery": 0.45
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_012",
+      "query": "从珞珈门到武汉大学半山庐",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学半山庐",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从珞珈门到武汉大学半山庐",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学半山庐",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "我想骑单车过去",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学半山庐",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "bike"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_013",
+      "query": "从周麻婆川式小炒(武大店)到武汉大学湖滨风味食堂",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "周麻婆川式小炒(武大店)",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学湖滨风味食堂",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从周麻婆川式小炒(武大店)到武汉大学湖滨风味食堂",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "周麻婆川式小炒(武大店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学湖滨风味食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "我想骑单车过去",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "周麻婆川式小炒(武大店)",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学湖滨风味食堂",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "bike"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_014",
+      "query": "从珞珈门到扬波门",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "扬波门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从珞珈门到扬波门",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "扬波门",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "还是骑车去吧",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "珞珈门",
+              "type": "poi"
+            },
+            "end": {
+              "name": "扬波门",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "bike"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_015",
+      "query": "从武汉大学医院到武汉大学文理学院珞涵屯",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学医院",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学文理学院珞涵屯",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学医院到武汉大学文理学院珞涵屯",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学医院",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学文理学院珞涵屯",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "不对，去珞瑜门",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学医院",
+              "type": "poi"
+            },
+            "end": {
+              "name": "珞瑜门",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_016",
+      "query": "从桂园一食堂到武汉大学水利水电学院",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂园一食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学水利水电学院",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从桂园一食堂到武汉大学水利水电学院",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "桂园一食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学水利水电学院",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "不对，去吉野家(工学部店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "桂园一食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "吉野家(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_017",
+      "query": "从武汉大学梅园食堂到饱嗝食集(工学天地店)",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学梅园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "饱嗝食集(工学天地店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学梅园食堂到饱嗝食集(工学天地店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "饱嗝食集(工学天地店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "不对，去茶百道(工学部店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学梅园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "茶百道(工学部店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_018",
+      "query": "从桂园食堂到武汉大学电力广场",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂园食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学电力广场",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从桂园食堂到武汉大学电力广场",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "桂园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学电力广场",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "樱花大道在哪",
+          "gold": {
+            "task_type": "poi_query",
+            "start": {
+              "name": "武汉大学樱花大道",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "那继续，膝盖不好不想爬坡",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "桂园食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学电力广场",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "avoid",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.65,
+              "scenery": 0.175
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_019",
+      "query": "从武汉大学信息学部学生四食堂到武汉大学火石山",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学信息学部学生四食堂",
+          "type": "poi"
+        },
+        "end": {
+          "name": "武汉大学火石山",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学信息学部学生四食堂到武汉大学火石山",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学信息学部学生四食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学火石山",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "万林艺术博物馆在哪",
+          "gold": {
+            "task_type": "poi_query",
+            "start": {
+              "name": "武汉大学万林艺术博物馆",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "那继续，别走台阶",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学信息学部学生四食堂",
+              "type": "poi"
+            },
+            "end": {
+              "name": "武汉大学火石山",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "avoid",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.65,
+              "scenery": 0.175
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "L5_020",
+      "query": "从武汉大学工学部A教学楼到瑞幸咖啡(田园食堂店)",
+      "category": "L5_multiturn",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部A教学楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "瑞幸咖啡(田园食堂店)",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      },
+      "conversation": [
+        {
+          "query": "从武汉大学工学部A教学楼到瑞幸咖啡(田园食堂店)",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学工学部A教学楼",
+              "type": "poi"
+            },
+            "end": {
+              "name": "瑞幸咖啡(田园食堂店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "万林艺术博物馆在哪",
+          "gold": {
+            "task_type": "poi_query",
+            "start": {
+              "name": "武汉大学万林艺术博物馆",
+              "type": "poi"
+            },
+            "end": null,
+            "constraints": {
+              "distance": "medium",
+              "slope": "normal",
+              "scenery": "normal"
+            },
+            "weights": null,
+            "mode": "walk"
+          }
+        },
+        {
+          "query": "那继续，避开陡坡",
+          "gold": {
+            "task_type": "path_planning",
+            "start": {
+              "name": "武汉大学工学部A教学楼",
+              "type": "poi"
+            },
+            "end": {
+              "name": "瑞幸咖啡(田园食堂店)",
+              "type": "poi"
+            },
+            "constraints": {
+              "distance": "medium",
+              "slope": "avoid",
+              "scenery": "normal"
+            },
+            "weights": {
+              "distance": 0.175,
+              "slope": 0.65,
+              "scenery": 0.175
+            },
+            "mode": "walk"
+          }
+        }
+      ]
+    }
+  ]
+}

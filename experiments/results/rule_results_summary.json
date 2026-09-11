@@ -1,0 +1,17 @@
+{
+  "method": "rule",
+  "metrics": {
+    "n_pairs": 20,
+    "weight_n": 6,
+    "task_type_accuracy": 1.0,
+    "constraint_macro_f1_distance": 1.0,
+    "constraint_macro_f1_slope": 1.0,
+    "constraint_macro_f1_scenery": 1.0,
+    "constraint_macro_f1_avg": 1.0,
+    "weight_mae": 0.0556,
+    "weight_cosine_sim": 0.9864,
+    "poi_f1": 0.5532,
+    "parse_failure_rate": 0.0
+  },
+  "n_queries": 20
+}

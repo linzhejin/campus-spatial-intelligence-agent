@@ -3,14 +3,14 @@
 
     var CFG = (function () {
         var fallback = {
-            AMAP_KEY: '',
+            TIANDITU_KEY: '',
             API_BASE_URL: '',
             DEFAULT_CENTER: [114.3630, 30.5365],
             MAP_ZOOM: 16,
         };
         var w = window.WHU_WALKER_CONFIG || {};
         return {
-            AMAP_KEY: w.AMAP_KEY || w.amapKey || fallback.AMAP_KEY,
+            TIANDITU_KEY: w.TIANDITU_KEY || w.tiandituKey || fallback.TIANDITU_KEY,
             API_BASE_URL: w.API_BASE_URL || w.apiBase || fallback.API_BASE_URL,
             DEFAULT_CENTER: w.DEFAULT_CENTER || w.mapCenter || fallback.DEFAULT_CENTER,
             MAP_ZOOM: w.MAP_ZOOM != null ? w.MAP_ZOOM : (w.mapZoom != null ? w.mapZoom : fallback.MAP_ZOOM),
@@ -38,6 +38,10 @@
         loadingTimer: null,  // 轮播加载语定时器
         requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
         travelMode: 'walk',  // 出行方式：walk / bike / drive（持久化偏好，默认步行）
+        userLocation: null,  // GPS 定位结果（WGS-84）：{lng, lat, accuracy}
+        userMarker: null,    // 蓝点标记
+        userAccuracyCircle: null,  // 定位精度圈
+        locateWatchId: null, // navigator.geolocation.watchPosition 句柄
     };
 
     // ========== 出行方式配置（珞珈秋色：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝） ==========
@@ -217,7 +221,13 @@
         try {
             var raw = localStorage.getItem(getContextKey());
             if (raw) {
-                state.conversationHistory = JSON.parse(raw);
+                var parsed = JSON.parse(raw);
+                // 新结构 {history:[{role,content,...}], routeSlot:{...}}；
+                // 旧结构 [{query,...}] 直接丢弃，避免污染
+                if (parsed && Array.isArray(parsed.history)) {
+                    state.conversationHistory = parsed.history;
+                    state.lastIntent = parsed.routeSlot || null;
+                }
             }
         } catch (e) {
             state.conversationHistory = [];
@@ -226,32 +236,48 @@
 
     function saveContext() {
         try {
-            localStorage.setItem(getContextKey(), JSON.stringify(state.conversationHistory.slice(-3)));
+            // 最近 4 轮（8 条消息）+ 规划槽位
+            localStorage.setItem(getContextKey(), JSON.stringify({
+                history: state.conversationHistory.slice(-8),
+                routeSlot: state.lastIntent,
+            }));
         } catch (e) {}
     }
 
     function addConversationTurn(query, result) {
+        // 对话历史：真实的用户/助手消息流（含回复内容与涉及地点，供指代消解）
+        state.conversationHistory.push({ role: 'user', content: query });
+        var replyText = result.explanation || result.reply || result.message || '';
         state.conversationHistory.push({
-            query: query,
-            parse_result: {
-                constraints: result.constraints,
-                weights: result.weights,
-            },
-            timestamp: Date.now(),
-        });
-        if (state.conversationHistory.length > 10) {
-            state.conversationHistory = state.conversationHistory.slice(-10);
-        }
-        // 保存最近一轮完整意图快照（含起终点/缺失标记/出行方式），供下一轮"补起点/终点"承接
-        state.lastIntent = {
+            role: 'assistant',
+            content: replyText,
             task_type: result.task_type || null,
-            start: result.start || null,
-            end: result.end || null,
-            constraints: result.constraints || null,
-            weights: result.weights || null,
-            ambiguity: result.ambiguity || null,
-            mode: result.mode || state.travelMode,
-        };
+            entities: {
+                start: result.start && result.start.name ? result.start.name : null,
+                end: result.end && result.end.name ? result.end.name : null,
+                poi: result.poi && result.poi.name ? result.poi.name : null,
+                mode: result.mode || null,
+            },
+        });
+        if (state.conversationHistory.length > 20) {
+            state.conversationHistory = state.conversationHistory.slice(-20);
+        }
+        // 规划槽位：只有路径规划 / 补槽位引导轮次才更新。
+        // 闲聊、帮助、景点查询等轮次不得冲掉在途规划的起终点（多轮错乱根因修复）。
+        var isPlanningTurn = result.task_type === 'path_planning'
+            || (result.task_type === 'unknown'
+                && (result.start || result.end || result.ambiguity));
+        if (isPlanningTurn) {
+            state.lastIntent = {
+                task_type: result.task_type || null,
+                start: result.start || null,
+                end: result.end || null,
+                constraints: result.constraints || null,
+                weights: result.weights || null,
+                ambiguity: result.ambiguity || null,
+                mode: result.mode || state.travelMode,
+            };
+        }
         saveContext();
     }
 
@@ -309,8 +335,26 @@
         });
     }
 
+    // 后端所有坐标（POI、路径、路况）均为 GCJ-02；Leaflet 底图为 WGS-84，
+    // 入图前统一用 gcj02ToWgs84 转成 [lat, lng]
+    function gcjToLatLng(lng, lat) {
+        var w = gcj02ToWgs84(lng, lat);
+        return [w[1], w[0]];
+    }
+
+    // Leaflet divIcon 小工具
+    function divMarker(latlng, html, size, anchor, title) {
+        var icon = L.divIcon({
+            className: 'whu-div-icon',
+            html: html,
+            iconSize: size,
+            iconAnchor: anchor,
+        });
+        return L.marker(latlng, { icon: icon, title: title || '', keyboard: false });
+    }
+
     function initMap() {
-        if (typeof AMap === 'undefined') {
+        if (typeof L === 'undefined') {
             setTimeout(initMap, 300);
             return;
         }
@@ -326,25 +370,67 @@
             if (window.innerWidth <= 767) {
                 initialZoom = 14;
             }
-            state.map = new AMap.Map('map-container', {
+            var center = gcjToLatLng(MAP_CENTER[0], MAP_CENTER[1]);
+
+            state.map = L.map('map-container', {
+                center: center,
                 zoom: initialZoom,
-                center: [MAP_CENTER[0], MAP_CENTER[1]],
-                mapStyle: 'amap://styles/whitesar',
-                viewMode: '2D',
+                zoomControl: true,
+                attributionControl: true,
+                preferCanvas: false,
             });
 
-            state.map.addControl(new AMap.Scale());
-            state.map.addControl(new AMap.ToolBar({ position: 'RB' }));
-            // 定位控件：右上角一个小蓝点，点击获取当前位置
-            if (AMap.Geolocation) {
-                state.map.addControl(new AMap.Geolocation({
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    zoomToAccuracy: true,
-                    position: 'RB',
-                    buttonPosition: 'RB',
-                }));
+            // 底图：配置天地图 Key 时用天地图矢量+注记（CGCS2000≈WGS-84，国内快），
+            // 否则用 OpenStreetMap 标准底图
+            var baseLayers = {};
+            var defaultLayer = null;
+
+            if (CFG.TIANDITU_KEY) {
+                var tdtAttr = '© <a href="https://www.tianditu.gov.cn/" target="_blank" rel="noopener">天地图</a>';
+                var tdtVec = L.tileLayer(
+                    'https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
+                    + '&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles'
+                    + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + encodeURIComponent(CFG.TIANDITU_KEY),
+                    { subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+                      maxZoom: 18, attribution: tdtAttr }
+                );
+                var tdtCva = L.tileLayer(
+                    'https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
+                    + '&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles'
+                    + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + encodeURIComponent(CFG.TIANDITU_KEY),
+                    { subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+                      maxZoom: 18, attribution: tdtAttr }
+                );
+                tdtVec.addTo(state.map);
+                tdtCva.addTo(state.map);  // 注记作为固定叠加层
+                baseLayers['天地图矢量'] = tdtVec;
+                defaultLayer = tdtVec;
             }
+
+            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 贡献者',
+            });
+            baseLayers['OpenStreetMap'] = osm;
+            if (!defaultLayer) {
+                osm.addTo(state.map);
+                defaultLayer = osm;
+            }
+
+            // 影像底图（WGS-84，无需 Key；国内可访问性通常良好）
+            var esriImg = L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                { maxZoom: 19, attribution: '© Esri World Imagery' }
+            );
+            baseLayers['卫星影像'] = esriImg;
+
+            L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(state.map);
+            L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(state.map);
+
+            addLocateControl();
+
+            // 容器在隐藏状态下初始化时需要刷新尺寸
+            setTimeout(function () { if (state.map) state.map.invalidateSize(); }, 0);
 
             // 加载路况事件标记
             loadAndRenderRoadConditions();
@@ -353,6 +439,102 @@
         } catch (e) {
             console.error('地图初始化失败:', e);
             showError('地图加载失败', '无法初始化地图组件，请刷新页面重试');
+        }
+    }
+
+    // ========== GPS 定位（WGS-84，与 Leaflet 底图/OSM 路网同源） ==========
+    function addLocateControl() {
+        var LocateCtrl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                var btn = L.DomUtil.create('div', 'whu-locate-btn leaflet-bar');
+                btn.setAttribute('role', 'button');
+                btn.setAttribute('aria-label', '定位我的位置');
+                btn.title = '定位我的位置（WGS-84）';
+                btn.innerHTML = '<span class="whu-locate-icon">◎</span>';
+                L.DomEvent.disableClickPropagation(btn);
+                L.DomEvent.disableScrollPropagation(btn);
+                btn.addEventListener('click', onLocateClick);
+                this._btn = btn;
+                return btn;
+            },
+        });
+        state.locateControl = new LocateCtrl().addTo(state.map);
+    }
+
+    function setLocateBtnState(busy) {
+        var btn = state.locateControl && state.locateControl._btn;
+        if (btn) btn.classList.toggle('is-busy', !!busy);
+    }
+
+    function onLocateClick() {
+        if (!navigator.geolocation) {
+            showError('无法定位', '当前浏览器不支持定位功能，请使用最新版手机浏览器或 Chrome 访问。');
+            return;
+        }
+        if (window.isSecureContext === false) {
+            showError('定位需要安全连接', '浏览器仅允许在 HTTPS（或 localhost）下使用定位。请通过 HTTPS 域名访问本应用。');
+            return;
+        }
+        setLocateBtnState(true);
+        if (state.locateWatchId == null) {
+            state.locateWatchId = navigator.geolocation.watchPosition(
+                function (pos) {
+                    setLocateBtnState(false);
+                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
+                },
+                function (err) {
+                    setLocateBtnState(false);
+                    var msg = '定位失败：';
+                    if (err && err.code === 1) msg += '你拒绝了定位授权，请在浏览器设置中允许定位后重试。';
+                    else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外或靠近窗户的地方再试。';
+                    else if (err && err.code === 3) msg += '定位超时，请再点一次按钮重试。';
+                    else msg += '请稍后再试。';
+                    showError('定位失败', msg);
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+            );
+        } else if (state.userLocation) {
+            // 已有定位：再次点击 = 回到我的位置
+            setLocateBtnState(false);
+            state.map.setView([state.userLocation.lat, state.userLocation.lng], 17);
+        }
+    }
+
+    function renderUserLocation(lng, lat, accuracy) {
+        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy };
+        if (!state.map) return;
+
+        if (state.userAccuracyCircle) {
+            state.userAccuracyCircle.setLatLng([lat, lng]);
+            if (accuracy) state.userAccuracyCircle.setRadius(accuracy);
+        } else {
+            state.userAccuracyCircle = L.circle([lat, lng], {
+                radius: accuracy || 30,
+                color: '#2B7CFF', weight: 1, opacity: 0.5,
+                fillColor: '#2B7CFF', fillOpacity: 0.12,
+                interactive: false,
+            }).addTo(state.map);
+        }
+
+        if (state.userMarker) {
+            state.userMarker.setLatLng([lat, lng]);
+        } else {
+            var dotHtml = '<div style="position:relative;width:18px;height:18px;">'
+                + '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(43,124,255,0.25);"></div>'
+                + '<div style="position:absolute;left:4px;top:4px;width:10px;height:10px;border-radius:50%;'
+                + 'background:#2B7CFF;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>'
+                + '</div>';
+            state.userMarker = divMarker([lat, lng], dotHtml, [18, 18], [9, 9], '我的位置')
+                .bindTooltip('我的位置（WGS-84）· 可以直接说「从我这到樱顶」', {
+                    direction: 'top', offset: [0, -10], opacity: 0.95,
+                })
+                .addTo(state.map);
+            // 首次定位：居中并提示一次
+            state.map.setView([lat, lng], 17);
+            setTimeout(function () {
+                if (state.userMarker) state.userMarker.openTooltip();
+            }, 400);
         }
     }
 
@@ -365,9 +547,9 @@
         var shortest = routeData.shortest || [];
 
         if (recommended.length > 0) {
-            // 后端已将路径坐标从 WGS-84 转成 GCJ-02，前端直接使用即可
+            // 后端返回 GCJ-02，Leaflet 底图是 WGS-84，逐点转换（[lat, lng]）
             var recPath = recommended.map(function (c) {
-                return [c.lng, c.lat];
+                return gcjToLatLng(c.lng, c.lat);
             });
 
             // 推荐线配色按出行方式：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝（响应 mode 优先，兜底当前选择器）
@@ -375,36 +557,29 @@
                 ? routeData.mode : state.travelMode;
             var recColor = (TRAVEL_MODES[routeMode] || TRAVEL_MODES.walk).color;
 
-            state.recommendedLine = new AMap.Polyline({
-                path: recPath,
-                strokeColor: recColor,
-                strokeWeight: 6,
-                strokeOpacity: 0.85,
-                strokeStyle: 'solid',
+            state.recommendedLine = L.polyline(recPath, {
+                color: recColor,
+                weight: 6,
+                opacity: 0.9,
                 lineJoin: 'round',
                 lineCap: 'round',
-                zIndex: 50,
-            });
-            state.recommendedLine.setMap(state.map);
+            }).addTo(state.map);
         }
 
         if (shortest.length > 0) {
-            // 后端已将路径坐标从 WGS-84 转成 GCJ-02，前端直接使用即可
+            // 最短路径：灰色虚线对照
             var shortPath = shortest.map(function (c) {
-                return [c.lng, c.lat];
+                return gcjToLatLng(c.lng, c.lat);
             });
 
-            state.shortestLine = new AMap.Polyline({
-                path: shortPath,
-                strokeColor: '#B5B0AB',
-                strokeWeight: 4,
-                strokeOpacity: 0.6,
-                strokeStyle: 'dashed',
+            state.shortestLine = L.polyline(shortPath, {
+                color: '#B5B0AB',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '6,8',
                 lineJoin: 'round',
                 lineCap: 'round',
-                zIndex: 40,
-            });
-            state.shortestLine.setMap(state.map);
+            }).addTo(state.map);
         }
 
         var pois = routeData.pois || [];
@@ -414,38 +589,35 @@
             var lat = poi.lat;
             if (lng == null || lat == null) return;
 
-            // POI 坐标在 data/pois.json 中存储为 GCJ-02，无需转换
-            var marker = new AMap.Marker({
-                position: [lng, lat],
-                title: poi.name || '',
-                content: '<div style="width:10px;height:10px;border-radius:50%;background:#D4915C;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>',
-                offset: new AMap.Pixel(-7, -7),
-                zIndex: 100,
-            });
-            marker.setMap(state.map);
+            var dotHtml = '<div style="width:10px;height:10px;border-radius:50%;background:#D4915C;'
+                + 'border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>';
+            var marker = divMarker(gcjToLatLng(lng, lat), dotHtml, [10, 10], [5, 5], poi.name || '')
+                .addTo(state.map);
             state.poiMarkers.push(marker);
         });
 
-        var allOverlays = [];
-        if (state.recommendedLine) allOverlays.push(state.recommendedLine);
-        if (state.shortestLine) allOverlays.push(state.shortestLine);
-        state.poiMarkers.forEach(function (m) { allOverlays.push(m); });
+        var bounds = [];
+        if (state.recommendedLine) bounds.push(state.recommendedLine.getBounds());
+        if (state.shortestLine) bounds.push(state.shortestLine.getBounds());
+        state.poiMarkers.forEach(function (m) { bounds.push(m.getLatLng()); });
 
-        if (allOverlays.length > 0) {
-            state.map.setFitView(allOverlays, false, [40, 40, 40, 40]);
+        if (bounds.length > 0) {
+            var b = bounds[0];
+            bounds.slice(1).forEach(function (x) { b.extend(x); });
+            state.map.fitBounds(b, { paddingTopLeft: [40, 90], paddingBottomRight: [40, 40], maxZoom: 17 });
         }
     }
 
     function clearMap() {
         if (state.recommendedLine) {
-            state.recommendedLine.setMap(null);
+            state.map.removeLayer(state.recommendedLine);
             state.recommendedLine = null;
         }
         if (state.shortestLine) {
-            state.shortestLine.setMap(null);
+            state.map.removeLayer(state.shortestLine);
             state.shortestLine = null;
         }
-        state.poiMarkers.forEach(function (m) { m.setMap(null); });
+        state.poiMarkers.forEach(function (m) { state.map.removeLayer(m); });
         state.poiMarkers = [];
     }
 
@@ -462,7 +634,9 @@
 
     // 清除路况标记
     function clearRoadConditionMarkers() {
-        state.roadConditionMarkers.forEach(function (m) { m.setMap(null); });
+        state.roadConditionMarkers.forEach(function (m) {
+            if (state.map) state.map.removeLayer(m);
+        });
         state.roadConditionMarkers = [];
     }
 
@@ -474,41 +648,31 @@
             var conditions = (data && data.conditions) || [];
             conditions.forEach(function (cond) {
                 var style = ROAD_CONDITION_STYLES[cond.type] || { icon: '⚠️', color: '#999', label: cond.type };
-                var lng = cond.coordinates.lng;
-                var lat = cond.coordinates.lat;
+                // 路况坐标为 GCJ-02，入 Leaflet 前转 WGS-84
+                var latlng = gcjToLatLng(cond.coordinates.lng, cond.coordinates.lat);
 
                 // 圆形影响范围（也可点击）
-                var circle = new AMap.Circle({
-                    center: [lng, lat],
+                var circle = L.circle(latlng, {
                     radius: cond.radius_m || 30,
-                    strokeColor: style.color,
-                    strokeOpacity: 0.6,
-                    strokeWeight: 1,
+                    color: style.color,
+                    weight: 1,
+                    opacity: 0.6,
                     fillColor: style.color,
                     fillOpacity: 0.12,
-                    zIndex: 50,
-                    bubble: true,
                 });
-                circle.setMap(state.map);
+                circle.addTo(state.map);
                 state.roadConditionMarkers.push(circle);
 
-                // 标记点（加大点击区域）
-                var marker = new AMap.Marker({
-                    position: [lng, lat],
-                    title: cond.name,
-                    content: '<div style="background:' + style.color + ';color:white;padding:6px 14px;border-radius:16px;font-size:13px;font-weight:600;box-shadow:0 3px 10px rgba(0,0,0,0.35);white-space:nowrap;cursor:pointer;user-select:none;">' +
-                        style.icon + ' ' + (cond.name || style.label) + '</div>',
-                    zIndex: 60,
-                    offset: new AMap.Pixel(0, 0),
-                    bubble: true,
-                });
-                marker.setMap(state.map);
+                // 标记点（胶囊标签，加大点击区域；CSS translate 做动态尺寸居中）
+                var pillHtml = '<div class="whu-map-pill" style="background:' + style.color + ';color:white;">'
+                    + style.icon + ' ' + (cond.name || style.label) + '</div>';
+                var marker = divMarker(latlng, pillHtml, [0, 0], [0, 0], cond.name || style.label);
+                marker.addTo(state.map);
                 state.roadConditionMarkers.push(marker);
 
                 // 点击标记或圆圈弹出信息窗
                 var onClick = function () {
-                    console.log('[路况] 点击:', cond.name, cond.id);
-                    showConditionInfoWindow(cond, style);
+                    showConditionPopup(cond, style, marker, circle);
                 };
                 marker.on('click', onClick);
                 circle.on('click', onClick);
@@ -518,8 +682,8 @@
         });
     }
 
-    // 路况事件信息窗
-    function showConditionInfoWindow(cond, style) {
+    // 路况事件信息窗（Leaflet Popup）
+    function showConditionPopup(cond, style, marker, circle) {
         try {
             var timeLine = '';
             var fmt = function (ts) {
@@ -534,31 +698,35 @@
                 var range = (start ? fmt(start) : '即时') + ' 至 ' + (end ? fmt(end) : '长期有效');
                 timeLine = '<div style="color:#888;font-size:12px;">生效时间：' + range + '</div>';
             }
-            var info = '<div style="padding:8px 6px;font-size:13px;line-height:1.7;min-width:170px;">' +
+            var info = '<div style="padding:4px 2px;font-size:13px;line-height:1.7;min-width:170px;">' +
                 '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;font-size:14px;">' +
                 style.icon + ' ' + (cond.name || style.label) + '</div>' +
                 '<div style="color:#888;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
                 timeLine +
-                '<div id="cond-delete-area" style="margin-top:10px;"></div>' +
+                '<div class="cond-delete-area" style="margin-top:10px;"></div>' +
                 '</div>';
 
-            var infoWindow = new AMap.InfoWindow({
-                content: info,
-                offset: new AMap.Pixel(0, -28),
-            });
-            infoWindow.open(state.map, [cond.coordinates.lng, cond.coordinates.lat]);
+            // 圆圈与标记共享同一个弹窗内容，点哪个都能弹
+            var popup = L.popup({ offset: [0, -6], closeButton: true, autoPan: true })
+                .setContent(info)
+                .setLatLng(gcjToLatLng(cond.coordinates.lng, cond.coordinates.lat));
+            marker.bindPopup(popup);
+            circle.bindPopup(popup);
+            marker.openPopup();
 
             // 检查管理员状态，决定是否显示删除按钮
             apiRequest('/api/admin/status', null, 'GET').then(function (data) {
                 if (!(data && data.is_admin)) return;
                 setTimeout(function () {
-                    var area = document.getElementById('cond-delete-area');
+                    var area = popup.getElement()
+                        ? popup.getElement().querySelector('.cond-delete-area')
+                        : document.querySelector('.leaflet-popup .cond-delete-area');
                     if (!area) return;
-                    area.innerHTML = '<button id="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">🗑 删除此路况</button>';
-                    var btn = document.getElementById('cond-delete-btn');
+                    area.innerHTML = '<button type="button" class="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">🗑 删除此路况</button>';
+                    var btn = area.querySelector('.cond-delete-btn');
                     if (btn) {
                         btn.addEventListener('click', function () {
-                            deleteRoadCondition(cond.id, infoWindow);
+                            deleteRoadCondition(cond.id, popup);
                         });
                     }
                 }, 80);
@@ -569,9 +737,9 @@
     }
 
     // 删除路况事件
-    function deleteRoadCondition(id, infoWindow) {
+    function deleteRoadCondition(id, popup) {
         apiRequest('/api/road-conditions/' + id, null, 'DELETE').then(function () {
-            if (infoWindow) infoWindow.close();
+            if (popup) state.map.closePopup(popup);
             loadAndRenderRoadConditions();
         }).catch(function (err) {
             alert('删除失败：' + (err && err.message ? err.message : '请重试'));
@@ -705,29 +873,31 @@
         if (hint) hint.textContent = '请在地图上点击事件发生位置…';
 
         if (_pickHandler) return;
-        _pickHandler = state.map.on('click', function (e) {
-            var lng = e.lnglat.getLng();
-            var lat = e.lnglat.getLat();
-            if (_pickMarker) {
-                state.map.remove(_pickMarker);
-            }
-            _pickMarker = new AMap.Marker({
-                position: [lng, lat],
-                content: '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
-                zIndex: 200,
-            });
-            _pickMarker.setMap(state.map);
+        _pickHandler = function (e) {
+            // Leaflet 点击坐标是 WGS-84；后端路况按 GCJ-02 存储，提交前转回
+            var wgsLng = e.latlng.lng;
+            var wgsLat = e.latlng.lat;
+            var gcj = wgs84ToGcj02(wgsLng, wgsLat);
 
-            state._pickedLng = lng;
-            state._pickedLat = lat;
+            if (_pickMarker) {
+                state.map.removeLayer(_pickMarker);
+            }
+            var pickHtml = '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;'
+                + 'border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>';
+            _pickMarker = divMarker([wgsLat, wgsLng], pickHtml, [16, 16], [8, 8], '上报位置')
+                .addTo(state.map);
+
+            state._pickedLng = gcj[0];
+            state._pickedLat = gcj[1];
             var loc = document.getElementById('rr-location');
-            if (loc) loc.value = lng.toFixed(6) + ', ' + lat.toFixed(6);
+            if (loc) loc.value = gcj[0].toFixed(6) + ', ' + gcj[1].toFixed(6);
 
             // 选点后重新打开弹窗
             stopPickLocation();
             if (section) section.hidden = false;
-            if (hint) hint.textContent = '已选点：' + lng.toFixed(5) + ', ' + lat.toFixed(5);
-        });
+            if (hint) hint.textContent = '已选点：' + gcj[0].toFixed(5) + ', ' + gcj[1].toFixed(5) + '（GCJ-02）';
+        };
+        state.map.on('click', _pickHandler);
     }
 
     function stopPickLocation() {
@@ -778,7 +948,7 @@
         apiRequest('/api/road-conditions', payload).then(function () {
             if (hint) hint.textContent = '✅ 上报成功！路线将自动绕行。';
             // 清理选点标记
-            if (_pickMarker) { state.map.remove(_pickMarker); _pickMarker = null; }
+            if (_pickMarker) { state.map.removeLayer(_pickMarker); _pickMarker = null; }
             state._pickedLng = null;
             state._pickedLat = null;
             // 刷新路况标记
@@ -809,27 +979,22 @@
         var lat = poi.lat;
         if (lng == null || lat == null) return;
 
-        var marker = new AMap.Marker({
-            position: [lng, lat],
-            title: poi.name || '',
-            content: '<div style="background:#D4915C;color:white;padding:2px 8px;border-radius:10px;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
-                (poi.name || 'POI') + '</div>',
-            zIndex: 100,
-        });
-        marker.setMap(state.map);
+        var pillHtml = '<div class="whu-map-pill whu-map-pill-poi">' + (poi.name || 'POI') + '</div>';
+        var marker = divMarker(gcjToLatLng(lng, lat), pillHtml, [0, 0], [0, 0], poi.name || '')
+            .addTo(state.map);
         state.poiMarkers.push(marker);
-        state.map.setCenter([lng, lat]);
-        state.map.setZoom(16);
+        state.map.setView(gcjToLatLng(lng, lat), 17);
     }
 
     // 返回键：清空路线 + 清空对话 + 复位地图，回到初始欢迎状态
     function handleReset() {
         // 1. 清空地图路线和标记
         clearMap();
-        // 2. 复位地图视角
+        // 2. 复位地图视角（GCJ 中心点转 WGS-84）
         if (state.map) {
-            state.map.setCenter(MAP_CENTER);
-            state.map.setZoom(MAP_ZOOM);
+            var resetCenter = gcjToLatLng(MAP_CENTER[0], MAP_CENTER[1]);
+            var resetZoom = window.innerWidth <= 767 ? 14 : MAP_ZOOM;
+            state.map.setView(resetCenter, resetZoom);
         }
         // 3. 清空对话气泡（保留欢迎元素）
         var chatContent = document.getElementById('chat-content');
@@ -1132,6 +1297,43 @@
         return GUIDEABLE_ERRORS.indexOf(code) !== -1;
     }
 
+    // GPS 指代表达识别
+    // 起点：「从我这/我这里/我的位置/当前位置…去/到/出发」；终点：「到我这(来)/来我的位置」
+    var LOC_START_RE = /从\s*(我这(?:儿|里)?|我的位置|当前位置|我现在的?位置|我这边)/;
+    var LOC_BARE_RE = /^(我这(?:儿|里)?|我的位置|当前位置)[^，。,.]{0,6}(去|到|出发)/;
+    var LOC_END_RE = /(?:到|去)\s*(我这(?:儿|里)?(?:来)?|我的位置|当前位置)(?:来)?$/;
+
+    function detectLocationRefs(text) {
+        return {
+            asStart: LOC_START_RE.test(text) || LOC_BARE_RE.test(text),
+            asEnd: LOC_END_RE.test(text),
+        };
+    }
+
+    // 单次定位（非 watch）：用于用户已说出指代表达但还没点过定位按钮的场景
+    function ensureUserLocation() {
+        if (state.userLocation) return Promise.resolve(state.userLocation);
+        if (!navigator.geolocation || window.isSecureContext === false) {
+            return Promise.reject(new Error('当前环境不支持定位（需要 HTTPS 或 localhost），请先点右上角定位按钮。'));
+        }
+        return new Promise(function (resolve, reject) {
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
+                    resolve(state.userLocation);
+                },
+                function (err) {
+                    var msg = '定位失败：';
+                    if (err && err.code === 1) msg += '你还没有授权定位，请点右上角 ◎ 按钮允许定位后再试。';
+                    else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外再试。';
+                    else msg += '请稍后再试。';
+                    reject(new Error(msg));
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+            );
+        });
+    }
+
     async function handleNlSubmit(query) {
         hideError();
         startLoadingMessages();
@@ -1145,24 +1347,37 @@
         var mySeq = state.requestSeq;
 
         try {
-            var context = state.lastIntent ? {
-                previous_intent: state.lastIntent,
-                last_ambiguity: state.lastIntent.ambiguity,
-                start: state.lastIntent.start,
-                end: state.lastIntent.end,
-                constraints: state.lastIntent.constraints,
-                weights: state.lastIntent.weights,
-                // 最近 3 轮对话历史，供 LLM 处理代词指代（"从这里去那里"）
-                history: state.conversationHistory.slice(-3).map(function (h) {
-                    return { query: h.query };
-                }),
-            } : null;
+            // 上下文 = 真实对话消息流（最近 4 轮）+ 在途规划槽位。
+            // 闲聊/景点查询不会清空规划槽位（见 addConversationTurn）。
+            var context = null;
+            if (state.conversationHistory.length > 0 || state.lastIntent) {
+                context = { history: state.conversationHistory.slice(-8) };
+                if (state.lastIntent) {
+                    context.previous_intent = state.lastIntent;
+                    context.last_ambiguity = state.lastIntent.ambiguity;
+                    context.start = state.lastIntent.start;
+                    context.end = state.lastIntent.end;
+                    context.constraints = state.lastIntent.constraints;
+                    context.weights = state.lastIntent.weights;
+                }
+            }
 
-            var result = await apiRequest('/api/chat', {
+            // GPS 指代表达：识别「从我这到X / 到我这来」，现场补一次定位
+            var requestBody = {
                 query: query,
                 context: context,
                 travel_mode: state.travelMode,
-            });
+            };
+            var locRefs = detectLocationRefs(query);
+            if (locRefs.asStart || locRefs.asEnd) {
+                var loc = await ensureUserLocation();
+                if (mySeq !== state.requestSeq) return;
+                var coordRef = { lng: loc.lng, lat: loc.lat, name: '我的位置' };
+                if (locRefs.asStart) requestBody.coord_start = coordRef;
+                if (locRefs.asEnd) requestBody.coord_end = coordRef;
+            }
+
+            var result = await apiRequest('/api/chat', requestBody);
 
             if (mySeq !== state.requestSeq) return;
 
@@ -1660,7 +1875,7 @@
     var LS_KEY_SEEN = 'whu_welcome_seen';
     var LS_KEY_FOREVER = 'whu_welcome_dont_show_forever';
     var DEBOUNCE_MS = 1500; // shortcut 连点防抖窗口（对应 T-017 14.11：1.5s 内连点只发第一次）
-    var AUTO_SHOW_DELAY_MS = 150; // DOMContentLoaded 后延迟弹卡（不阻塞首屏高德地图加载）
+    var AUTO_SHOW_DELAY_MS = 150; // DOMContentLoaded 后延迟弹卡（不阻塞首屏 Leaflet 地图加载）
     var HIGHLIGHT_PULSE_CLASS = 'highlight';
     var SIDEBAR_HIGHLIGHT_CLASS = 'flash-highlight';
     var ANIM_OUT_DURATION_MS = 200; // 退场动画总时长（略长于 CSS 180ms，保险）
@@ -1936,7 +2151,7 @@
 
         // 按判断结果决定是否自动弹卡
         if (shouldAutoShow()) {
-            // 延迟 AUTO_SHOW_DELAY_MS 再弹：避免卡首屏高德地图的加载（AUTO_SHOW_DELAY_MS = 150ms）
+            // 延迟 AUTO_SHOW_DELAY_MS 再弹：避免卡首屏 Leaflet 地图的加载（AUTO_SHOW_DELAY_MS = 150ms）
             setTimeout(function () { show({ ignoreLocalStorage: false }); }, AUTO_SHOW_DELAY_MS);
         }
 

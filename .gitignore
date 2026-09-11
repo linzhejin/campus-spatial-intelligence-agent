@@ -254,3 +254,6 @@ output/*.bak
 
 # 临时调试脚本
 scripts/_tmp_*.py
+
+# Trae IDE 个人文档
+.trae/

@@ -21,13 +21,10 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://webapi.amap.com" crossorigin>
-    <link rel="preconnect" href="https://webst01.is.autonavi.com" crossorigin>
-    <link rel="preconnect" href="https://webst02.is.autonavi.com" crossorigin>
-    <link rel="preconnect" href="https://webst03.is.autonavi.com" crossorigin>
-    <link rel="preconnect" href="https://webst04.is.autonavi.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css?v=20260908c">
+    <!-- Leaflet 1.9.4（本地化部署，底图与 OSM/天地图同为 WGS-84，消除高德底图偏移） -->
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+    <link rel="stylesheet" href="/css/style.css?v=20260911a">
 </head>
 <body>
 
@@ -397,44 +394,8 @@
     </div>
 
     <script src="/js/config.js"></script>
-    <script>
-        (function () {
-            var cfg = window.WHU_WALKER_CONFIG || {};
-            if (cfg.amapSecurityCode) {
-                window._AMapSecurityConfig = { securityJsCode: cfg.amapSecurityCode };
-            }
-        })();
-    </script>
-    <script>
-        (function () {
-            var cfg = window.WHU_WALKER_CONFIG || {};
-            var key = cfg.amapKey || '';
-            if (!key) {
-                console.warn('高德地图 Key 未配置');
-                return;
-            }
-            var script = document.createElement('script');
-            script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.Scale,AMap.ToolBar,AMap.Geolocation';
-            script.async = true;
-            var loaded = false;
-            script.onload = function () { loaded = true; };
-            script.onerror = function () {
-                var ph = document.getElementById('map-placeholder');
-                if (ph) {
-                    ph.innerHTML = '<p style="color:#E53935;">地图加载失败，请检查网络或 Key 配置</p>';
-                }
-            };
-            setTimeout(function () {
-                if (!loaded) {
-                    var ph = document.getElementById('map-placeholder');
-                    if (ph) {
-                        ph.innerHTML = '<p style="color:#E53935;">地图加载超时，请刷新或稍后重试</p>';
-                    }
-                }
-            }, 8000);
-            document.head.appendChild(script);
-        })();
-    </script>
+    <!-- Leaflet 本地化加载（无需地图厂商 Key；天地图 Key 在 config.js 配置后自动启用矢量底图） -->
+    <script src="/vendor/leaflet/leaflet.js"></script>
     <!-- ====== PWA 安装引导横幅（满足条件时由 app.js 显示） ====== -->
     <div id="install-banner" class="install-banner" hidden>
         <div class="install-banner__icon">🌸</div>
@@ -446,6 +407,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260908c"></script>
+    <script src="/js/app.js?v=20260911a"></script>
 </body>
 </html>

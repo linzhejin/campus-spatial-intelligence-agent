@@ -1,0 +1,16 @@
+{
+  "method": "fixed",
+  "n_queries": 200,
+  "n_path_planning_ok": 157,
+  "n_skipped": 37,
+  "n_unreachable": 6,
+  "n_error": 0,
+  "avg_recommended_length_m": 1503.9318,
+  "avg_shortest_length_m": 1298.6255,
+  "avg_overlap_rate": 0.4324,
+  "avg_slope_recommended": 2.1846,
+  "avg_scenery_recommended": 3.4126,
+  "avg_slope_shortest": 2.4918,
+  "avg_scenery_shortest": 3.375,
+  "avg_duration_min": 18.6102
+}

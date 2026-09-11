@@ -540,6 +540,26 @@ def _path_length(G: nx.MultiDiGraph, path: list) -> float:
     return total
 
 
+def _weighted_avg_attr(G: nx.MultiDiGraph, path: list, attr: str) -> float:
+    """计算路径的长度加权平均属性值（如坡度/景观等级）。
+
+    用于实验评估：Σ(attr(e) × L(e)) / Σ L(e)
+    """
+    total_weighted = 0.0
+    total_length = 0.0
+    for i in range(len(path) - 1):
+        u, v = path[i], path[i + 1]
+        edge_data = G.get_edge_data(u, v)
+        if not edge_data:
+            continue
+        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+        length = data.get("length", 0)
+        attr_val = data.get(attr, 3)  # 默认值 3（中等）
+        total_weighted += float(attr_val) * length
+        total_length += length
+    return total_weighted / total_length if total_length > 0 else 0.0
+
+
 def _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode="walk"):
     """不可达诊断：记录日志并抛出带友好提示的 ValueError。"""
     mode = normalize_mode(mode)
@@ -592,6 +612,7 @@ def compute_route(
     mode: str = "walk",
     road_conditions: Optional[list] = None,
     weather_info: Optional[dict] = None,
+    disable_hard_filter: bool = False,
 ) -> dict:
     """
     多因素路径计算主函数。
@@ -615,6 +636,7 @@ def compute_route(
                  None 时取 MODE_DEFAULT_WEIGHTS[mode]
         mode: 出行方式 "walk" / "bike" / "drive"（默认 "walk"）
         road_conditions: 路况事件列表，None 时自动加载 active 事件
+        disable_hard_filter: 设为 True 时跳过硬约束过滤（消融实验用）
 
     Returns:
         {
@@ -705,7 +727,10 @@ def compute_route(
             _raise_no_path(G, start_node, end_node, f"{mode_status}+road_blocked", G_mode, mode=mode)
 
     # 2) 硬约束过滤（坡度等），在方式过滤图上进行
-    G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
+    if disable_hard_filter:
+        G_filtered, filter_status, constraint_penalty = G_mode, "no_filter", {}
+    else:
+        G_filtered, filter_status, constraint_penalty = _filter_by_constraints(G_mode, constraints)
 
     # 天气湿滑惩罚：雨雪天对陡坡/台阶边（slope_level 4/5）施加额外成本，智能避坡
     if weather_info:
@@ -854,6 +879,12 @@ def compute_route(
                 degraded_count += 1
     is_degraded = degraded_count > 0
 
+    # 计算路径加权平均坡度和景观（用于实验评估）
+    slope_avg_rec = _weighted_avg_attr(G, recommended, "slope_level")
+    scenery_avg_rec = _weighted_avg_attr(G, recommended, "scenery_level")
+    slope_avg_short = _weighted_avg_attr(G, shortest, "slope_level")
+    scenery_avg_short = _weighted_avg_attr(G, shortest, "scenery_level")
+
     return {
         "recommended": recommended,
         "shortest": shortest,
@@ -873,6 +904,10 @@ def compute_route(
         "speed_kmh": MODE_SPEEDS_KMH[mode],
         "road_conditions_applied": road_conditions_applied,
         "weather_applied": weather_applied,
+        "slope_avg_recommended": round(slope_avg_rec, 3),
+        "scenery_avg_recommended": round(scenery_avg_rec, 3),
+        "slope_avg_shortest": round(slope_avg_short, 3),
+        "scenery_avg_shortest": round(scenery_avg_short, 3),
     }
 
 

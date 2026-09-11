@@ -1,0 +1,369 @@
+{
+  "version": "v1",
+  "description": "gold 标注意图（按 query id 索引），与 queries_v1.json 的 gold 字段一一对应",
+  "intents": {
+    "L1_001": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "珞珈门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_002": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "梅园",
+        "type": "poi"
+      },
+      "end": {
+        "name": "图书馆",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_003": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "行政楼",
+        "type": "poi"
+      },
+      "end": {
+        "name": "枫园",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "avoid",
+        "scenery": "normal"
+      },
+      "weights": {
+        "distance": 0.2,
+        "slope": 0.6,
+        "scenery": 0.2
+      },
+      "mode": "walk"
+    },
+    "L1_004": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "总图书馆",
+        "type": "poi"
+      },
+      "end": {
+        "name": "凌波门",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "high"
+      },
+      "weights": {
+        "distance": 0.2,
+        "slope": 0.1,
+        "scenery": 0.7
+      },
+      "mode": "walk"
+    },
+    "L1_005": {
+      "task_type": "path_planning",
+      "start": null,
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "short",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": {
+        "distance": 0.8,
+        "slope": 0.1,
+        "scenery": 0.1
+      },
+      "mode": "walk"
+    },
+    "L1_006": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "教五",
+        "type": "poi"
+      },
+      "end": {
+        "name": "信息学部第一教学楼",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_007": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "牌坊",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "bike"
+    },
+    "L1_008": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "信息学部",
+        "type": "poi"
+      },
+      "end": {
+        "name": "教五",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "drive"
+    },
+    "L1_009": {
+      "task_type": "poi_query",
+      "start": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "end": null,
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_010": {
+      "task_type": "help",
+      "start": null,
+      "end": null,
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_011": {
+      "task_type": "chat",
+      "start": null,
+      "end": null,
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_012": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "老斋舍",
+        "type": "poi"
+      },
+      "end": {
+        "name": "宋卿体育馆",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "avoid",
+        "scenery": "high"
+      },
+      "weights": {
+        "distance": 0.1,
+        "slope": 0.45,
+        "scenery": 0.45
+      },
+      "mode": "walk"
+    },
+    "L1_013": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "珞珈门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "short",
+        "slope": "avoid",
+        "scenery": "normal"
+      },
+      "weights": {
+        "distance": 0.45,
+        "slope": 0.45,
+        "scenery": 0.1
+      },
+      "mode": "walk"
+    },
+    "L1_014": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "珞珈门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱花大道",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_015": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "珞珈门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_016": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "洪波门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "珞瑜门",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_017": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "珞珈门",
+        "type": "poi"
+      },
+      "end": {
+        "name": "樱顶",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "avoid",
+        "scenery": "normal"
+      },
+      "weights": {
+        "distance": 0.2,
+        "slope": 0.6,
+        "scenery": 0.2
+      },
+      "mode": "walk"
+    },
+    "L1_018": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "武汉大学工学部集贸市场",
+        "type": "poi"
+      },
+      "end": {
+        "name": "梅园",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_019": {
+      "task_type": "poi_query",
+      "start": {
+        "name": "万林艺术馆",
+        "type": "poi"
+      },
+      "end": null,
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    },
+    "L1_020": {
+      "task_type": "path_planning",
+      "start": {
+        "name": "桂园",
+        "type": "poi"
+      },
+      "end": {
+        "name": "月湖",
+        "type": "poi"
+      },
+      "constraints": {
+        "distance": "medium",
+        "slope": "normal",
+        "scenery": "normal"
+      },
+      "weights": null,
+      "mode": "walk"
+    }
+  }
+}

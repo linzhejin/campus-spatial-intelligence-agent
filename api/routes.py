@@ -140,6 +140,45 @@ def _mode_filtered_graph(G, mode):
     return filter_graph_for_mode(G, mode)
 
 
+def _apply_coord_override(intent, coord_start, coord_end):
+    """把前端 GPS 定位坐标（WGS-84）覆盖到解析意图的起/终点。
+
+    触发场景：用户说「从我这到樱顶」「到我这来」等，浏览器定位在前端完成，
+    以 coord_start/coord_end 随请求上送，坐标即 WGS-84，与路网同源、无需转换。
+    仅接受数值合法的坐标；静默忽略非法值（不影响其余解析结果）。
+    """
+    from agents.parser import PoiRef
+
+    for role, coord in (("start", coord_start), ("end", coord_end)):
+        if not isinstance(coord, dict):
+            continue
+        try:
+            lng = float(coord.get("lng"))
+            lat = float(coord.get("lat"))
+        except (TypeError, ValueError):
+            continue
+        if not (-180.0 <= lng <= 180.0 and -90.0 <= lat <= 90.0):
+            continue
+        label = str(coord.get("name") or "我的位置")[:20]
+        setattr(intent, role, PoiRef(
+            type="coord",
+            name=label,
+            coordinates={"lng": round(lng, 6), "lat": round(lat, 6)},
+        ))
+
+
+def _endpoint_to_wgs(ref, fallback_poi):
+    """把 PoiRef 解析为 (lon_wgs, lat_wgs) 供 nearest_node 使用。
+
+    - type="coord"：坐标本身即 WGS-84（GPS 定位），直接使用；
+    - type="poi"（默认）：POI 存 GCJ-02，需转 WGS-84。
+    """
+    if isinstance(ref, dict) and ref.get("type") == "coord" and ref.get("coordinates"):
+        c = ref["coordinates"]
+        return float(c["lng"]), float(c["lat"])
+    return gcj02_to_wgs84(fallback_poi["lon"], fallback_poi["lat"])
+
+
 def _haversine(lat1, lon1, lat2, lon2):
     R = 6371000
     dlat = math.radians(lat2 - lat1)
@@ -650,6 +689,8 @@ def chat():
     context = body.get("context")
     try:
         intent = parse_query(query, context)
+        # GPS 坐标覆盖（WGS-84；前端「从我这/到我这」触发），必须在 model_dump 前完成
+        _apply_coord_override(intent, body.get("coord_start"), body.get("coord_end"))
         intent_data = intent.model_dump() if hasattr(intent, "model_dump") else intent.dict()
     except ValueError as e:
         return _err("parse_validation_error", str(e), 400)
@@ -738,39 +779,41 @@ def chat():
             "example_queries": ["从珞珈门到樱顶", "从教五到总图书馆", "去樱顶"],
         })
 
-    start_name = start.get("name")
-    end_name = end.get("name")
-
     G, err = _ensure_network()
     if err:
         return err
 
-    start_poi, start_alts = find_poi_ambiguous(start_name)
-    if start_poi is None:
-        guidance = generate_poi_guidance(query, start_name, alternatives=start_alts)
-        return _ok({
-            "task_type": "unknown",
-            "message": guidance,
-            "start": start,
-            "end": end,
-            "ambiguity": "请指定起点",
-            "example_queries": ["从牌坊出发"],
-        })
+    # type="coord"（GPS「我的位置」）直接使用坐标，不走 POI 模糊匹配；
+    # type="poi" 保持名称解析 + 多候选消歧引导
+    if start.get("type") == "coord" and start.get("coordinates"):
+        start_poi, start_alts = {"name": start.get("name") or "我的位置"}, []
+    else:
+        start_poi, start_alts = find_poi_ambiguous(start.get("name"))
+        if start_poi is None:
+            guidance = generate_poi_guidance(query, start.get("name"), alternatives=start_alts)
+            return _ok({
+                "task_type": "unknown",
+                "message": guidance,
+                "start": start,
+                "end": end,
+                "ambiguity": "请指定起点",
+                "example_queries": ["从牌坊出发"],
+            })
 
-    end_poi, end_alts = find_poi_ambiguous(end_name)
-    if end_poi is None:
-        guidance = generate_poi_guidance(query, end_name, alternatives=end_alts)
-        return _ok({
-            "task_type": "unknown",
-            "message": guidance,
-            "start": start,
-            "end": end,
-            "ambiguity": "请指定终点",
-            "example_queries": ["到樱顶"],
-        })
-
-    if start_poi["name"] == end_poi["name"]:
-        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
+    if end.get("type") == "coord" and end.get("coordinates"):
+        end_poi, end_alts = {"name": end.get("name") or "我的位置"}, []
+    else:
+        end_poi, end_alts = find_poi_ambiguous(end.get("name"))
+        if end_poi is None:
+            guidance = generate_poi_guidance(query, end.get("name"), alternatives=end_alts)
+            return _ok({
+                "task_type": "unknown",
+                "message": guidance,
+                "start": start,
+                "end": end,
+                "ambiguity": "请指定终点",
+                "example_queries": ["到樱顶"],
+            })
 
     # 出行方式优先级：NL 显式关键词（骑车/开车/步行…）> body.travel_mode > intent.mode（含上下文继承）> walk
     final_mode = _resolve_travel_mode(
@@ -783,9 +826,16 @@ def chat():
     # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
     G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
 
-    # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
-    start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
-    end_lon_wgs, end_lat_wgs = gcj02_to_wgs84(end_poi["lon"], end_poi["lat"])
+    # 坐标统一到 WGS-84：GPS coord 本身即 WGS-84；POI 为 GCJ-02 需转换
+    start_lon_wgs, start_lat_wgs = _endpoint_to_wgs(start, start_poi)
+    end_lon_wgs, end_lat_wgs = _endpoint_to_wgs(end, end_poi)
+
+    # 起终点重合判定：含坐标时看球面距离（<10m 视为同点）；POI-POI 看规范名
+    if start.get("type") == "coord" or end.get("type") == "coord":
+        if _haversine(start_lat_wgs, start_lon_wgs, end_lat_wgs, end_lon_wgs) < 10.0:
+            return _err("same_poi", "起点和终点距离太近，换一个目的地试试", 400)
+    elif start_poi.get("name") == end_poi.get("name"):
+        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
     try:
         start_node = get_nearest_node(G_mode, start_lon_wgs, start_lat_wgs)

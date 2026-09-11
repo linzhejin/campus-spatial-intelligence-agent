@@ -127,19 +127,63 @@ def _load_system_prompt() -> str:
     return _system_prompt_cache
 
 
-def _build_messages(query: str, context: Optional[dict] = None) -> list[dict]:
+def _build_messages(query: str, context: Optional[dict] = None, use_few_shot: bool = True) -> list[dict]:
+    """组装 LLM 消息序列。
+
+    多轮上下文（2026-09 重构）以真实 user/assistant 消息流注入，LLM 可据此做
+    指代消解（"那里/那个食堂/第一条"）；规划槽位（start/end/constraints/
+    weights/ambiguity）以结构化 JSON 单独注入，保证槽位承接不依赖模型自由发挥。
+    兼容旧版 context.history=[{query: ...}] 形态。
+    """
     system_prompt = _load_system_prompt()
     messages = [{"role": "system", "content": system_prompt}]
 
-    for shot_query, shot_output in FEW_SHOT_EXAMPLES:
-        messages.append({"role": "user", "content": shot_query})
-        messages.append({"role": "assistant", "content": shot_output})
+    if use_few_shot:
+        for shot_query, shot_output in FEW_SHOT_EXAMPLES:
+            messages.append({"role": "user", "content": shot_query})
+            messages.append({"role": "assistant", "content": shot_output})
 
     if context:
-        messages.append({"role": "user", "content": f"上下文: {json.dumps(context, ensure_ascii=False)}\n当前查询: {query}"})
-    else:
-        messages.append({"role": "user", "content": query})
+        # 1) 历史对话消息流（最近若干轮，按角色还原）
+        history = context.get("history") or []
+        for turn in history:
+            if not isinstance(turn, dict):
+                continue
+            role = turn.get("role")
+            content = turn.get("content")
+            if role == "user" and content:
+                messages.append({"role": "user", "content": str(content)})
+            elif role == "assistant" and content:
+                text = str(content)
+                entities = turn.get("entities")
+                if entities:
+                    text += f"\n[本轮涉及地点/状态: {json.dumps(entities, ensure_ascii=False)}]"
+                messages.append({"role": "assistant", "content": text})
+            elif turn.get("query"):  # 旧版 history 形态兼容
+                messages.append({"role": "user", "content": str(turn["query"])})
 
+        # 2) 当前规划槽位（结构化、确定性，供"换偏好/补起终点"承接）
+        slot = {}
+        for key in ("start", "end", "constraints", "weights", "last_ambiguity"):
+            if context.get(key) is not None:
+                slot[key] = context[key]
+        prev = context.get("previous_intent")
+        if not slot and isinstance(prev, dict):
+            for key in ("start", "end", "constraints", "weights", "ambiguity", "mode"):
+                if prev.get(key) is not None:
+                    slot[key] = prev[key]
+        if slot:
+            messages.append({
+                "role": "user",
+                "content": "当前规划状态（系统记录，仅供本轮承接与指代消解，不要复述）: "
+                           + json.dumps(slot, ensure_ascii=False),
+            })
+            messages.append({
+                "role": "assistant",
+                "content": "好的，我已结合当前规划状态理解你的下一句需求。",
+            })
+
+    messages.append({"role": "user", "content": query})
     return messages
 
 
@@ -178,7 +222,7 @@ def _fallback_task_intent(query: str) -> TaskIntent:
     )
 
 
-def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
+def parse_query(query: str, context: Optional[dict] = None, use_few_shot: bool = True) -> TaskIntent:
     if not DEEPSEEK_API_KEY:
         logger.warning("DEEPSEEK_API_KEY 未配置，使用规则兜底解析")
         return _t011_post_process(
@@ -201,7 +245,7 @@ def parse_query(query: str, context: Optional[dict] = None) -> TaskIntent:
         timeout=httpx.Timeout(connect=5.0, read=25.0, write=10.0, pool=5.0),
     )
 
-    messages = _build_messages(query, context)
+    messages = _build_messages(query, context, use_few_shot=use_few_shot)
 
     last_error = None
     for attempt in range(2):
@@ -598,17 +642,19 @@ def _fuzzy_match_poi_name(candidate: str) -> str | None:
     # 过短/语气词前缀（"想""不对"等）不参与模糊匹配，避免单字子串误命中长名
     if len(cand) < 2 or cand in _NON_PLACE_PREFIXES:
         return None
-    # 宽泛区域词（桂园/信息学部等）是区域而非具体 POI，不做子串/前缀匹配
+    # 精确匹配名称（别名命中时也返回其所属规范名，保证两阶段归一化一致）
+    # 注意：必须先于宽泛区域词保护——片区中心点 POI（如"梅园"区域质心）
+    # 以精确同名入库，精确命中应直接返回；保护只针对子串/前缀扩散匹配。
+    cand_low = cand.lower()
+    if cand in _POI_NAMES_SET or cand_low in _POI_NAMES_LOWER:
+        return _POI_NAMES_LOWER.get(cand_low, cand)
+    # 宽泛区域词（桂园/信息学部等）若非精确区域点，不做子串/前缀匹配
     try:
         from spatial.poi import _BROAD_AREA_TERMS
         if cand in _BROAD_AREA_TERMS:
             return None
     except Exception:
         pass
-    # 精确匹配名称（别名命中时也返回其所属规范名，保证两阶段归一化一致）
-    cand_low = cand.lower()
-    if cand in _POI_NAMES_SET or cand_low in _POI_NAMES_LOWER:
-        return _POI_NAMES_LOWER.get(cand_low, cand)
     # 分级模糊匹配（确定性排序）
     prefix_matches = []
     substring_matches = []

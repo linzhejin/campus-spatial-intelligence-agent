@@ -1,0 +1,19 @@
+{
+  "method": "rule",
+  "metrics": {
+    "n_pairs": 227,
+    "weight_n": 108,
+    "task_type_accuracy": 1.0,
+    "constraint_macro_f1_distance": 0.5435,
+    "constraint_macro_f1_slope": 0.7467,
+    "constraint_macro_f1_scenery": 0.6406,
+    "constraint_macro_f1_avg": 0.6436,
+    "weight_mae": 0.2426,
+    "weight_cosine_sim": 0.4235,
+    "poi_f1": 0.8954,
+    "parse_failure_rate": 0.1057
+  },
+  "n_queries": 200,
+  "n_conversations": 20,
+  "n_conversation_turns": 47
+}

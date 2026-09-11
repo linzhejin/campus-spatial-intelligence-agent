@@ -1,0 +1,469 @@
+{
+  "version": "v1",
+  "description": "种子查询集 (20 条)：覆盖简单路径/单维度偏好/多维度组合/出行方式/POI查询/帮助/闲聊/多轮/边界(别名/错字)",
+  "queries": [
+    {
+      "id": "L1_001",
+      "query": "从珞珈门到樱顶",
+      "category": "simple_path",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_002",
+      "query": "从梅园去图书馆",
+      "category": "simple_path",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "梅园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "图书馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_003",
+      "query": "我想避开陡坡，从行政楼到枫园",
+      "category": "single_slope",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "行政楼",
+          "type": "poi"
+        },
+        "end": {
+          "name": "枫园",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.2,
+          "slope": 0.6,
+          "scenery": 0.2
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_004",
+      "query": "从总图书馆到凌波门，走风景好的路线",
+      "category": "single_scenery",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "总图书馆",
+          "type": "poi"
+        },
+        "end": {
+          "name": "凌波门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.2,
+          "slope": 0.1,
+          "scenery": 0.7
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_005",
+      "query": "哪条路去樱顶最近",
+      "category": "single_distance",
+      "gold": {
+        "task_type": "path_planning",
+        "start": null,
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.8,
+          "slope": 0.1,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_006",
+      "query": "从教五到信息学部第一教学楼",
+      "category": "simple_path",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "教五",
+          "type": "poi"
+        },
+        "end": {
+          "name": "信息学部第一教学楼",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_007",
+      "query": "从牌坊骑车到樱顶",
+      "category": "mode_bike",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "牌坊",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "bike"
+      }
+    },
+    {
+      "id": "L1_008",
+      "query": "开车从信息学部到文理学部教五",
+      "category": "mode_drive",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "信息学部",
+          "type": "poi"
+        },
+        "end": {
+          "name": "教五",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "drive"
+      }
+    },
+    {
+      "id": "L1_009",
+      "query": "樱顶在哪里",
+      "category": "poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_010",
+      "query": "你能做什么",
+      "category": "help",
+      "gold": {
+        "task_type": "help",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_011",
+      "query": "今天天气怎么样",
+      "category": "chat",
+      "gold": {
+        "task_type": "chat",
+        "start": null,
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_012",
+      "query": "从老斋舍到宋卿体育馆，避开爬坡，走风景好的路",
+      "category": "multi_slope_scenery",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "老斋舍",
+          "type": "poi"
+        },
+        "end": {
+          "name": "宋卿体育馆",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "high"
+        },
+        "weights": {
+          "distance": 0.1,
+          "slope": 0.45,
+          "scenery": 0.45
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_013",
+      "query": "从珞珈门到樱顶，走最短且避开陡坡的路",
+      "category": "multi_distance_slope",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "short",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.45,
+          "slope": 0.45,
+          "scenery": 0.1
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_014",
+      "query": "从珞珈门到樱花大道",
+      "category": "edge_alias",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱花大道",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_015",
+      "query": "从珞珈们到樱顶",
+      "category": "edge_typo",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_016",
+      "query": "我想从洪波门走到珞瑜门",
+      "category": "mode_walk_explicit",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "洪波门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "珞瑜门",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_017",
+      "query": "从珞珈门到樱顶，换条避开陡坡的路",
+      "category": "multi_turn_continuation",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "珞珈门",
+          "type": "poi"
+        },
+        "end": {
+          "name": "樱顶",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "avoid",
+          "scenery": "normal"
+        },
+        "weights": {
+          "distance": 0.2,
+          "slope": 0.6,
+          "scenery": 0.2
+        },
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_018",
+      "query": "从工学部集贸市场到梅园",
+      "category": "simple_path",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "武汉大学工学部集贸市场",
+          "type": "poi"
+        },
+        "end": {
+          "name": "梅园",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_019",
+      "query": "万林艺术馆怎么去",
+      "category": "poi_query",
+      "gold": {
+        "task_type": "poi_query",
+        "start": {
+          "name": "万林艺术馆",
+          "type": "poi"
+        },
+        "end": null,
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    },
+    {
+      "id": "L1_020",
+      "query": "从桂园到月湖怎么走",
+      "category": "simple_path",
+      "gold": {
+        "task_type": "path_planning",
+        "start": {
+          "name": "桂园",
+          "type": "poi"
+        },
+        "end": {
+          "name": "月湖",
+          "type": "poi"
+        },
+        "constraints": {
+          "distance": "medium",
+          "slope": "normal",
+          "scenery": "normal"
+        },
+        "weights": null,
+        "mode": "walk"
+      }
+    }
+  ]
+}

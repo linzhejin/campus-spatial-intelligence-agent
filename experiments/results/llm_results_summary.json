@@ -1,0 +1,16 @@
+{
+  "method": "llm",
+  "metrics": {
+    "n_pairs": 20,
+    "task_type_accuracy": 1.0,
+    "constraint_macro_f1_distance": 0.4737,
+    "constraint_macro_f1_slope": 0.4444,
+    "constraint_macro_f1_scenery": 0.4737,
+    "constraint_macro_f1_avg": 0.4639,
+    "weight_mae": 1.0,
+    "weight_cosine_sim": 0.0,
+    "poi_f1": 0.5532,
+    "parse_failure_rate": 0.0
+  },
+  "n_queries": 20
+}

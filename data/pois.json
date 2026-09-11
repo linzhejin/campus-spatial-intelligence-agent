@@ -1,6 +1,6 @@
 {
   "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/餐饮/景点/校内服务（410条）",
-  "count": 413,
+  "count": 421,
   "pois": [
     {
       "id": "poi_001",
@@ -9031,6 +9031,140 @@
         "all"
       ],
       "scenery_score": 3
+    },
+    {
+      "id": "area_梅园",
+      "name": "梅园",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.364664,
+        "lat": 30.536032
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "梅园片区中心（由 24 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_枫园",
+      "name": "枫园",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.372035,
+        "lat": 30.537495
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "枫园片区中心（由 32 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_桂园",
+      "name": "桂园",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.358785,
+        "lat": 30.539671
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "桂园片区中心（由 18 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_樱园",
+      "name": "樱园",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.363379,
+        "lat": 30.539646
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "樱园片区中心（由 6 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_湖滨",
+      "name": "湖滨",
+      "aliases": [],
+      "coordinates": {
+        "lng": 114.370072,
+        "lat": 30.541979
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "湖滨片区中心（由 19 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_信息学部",
+      "name": "信息学部",
+      "aliases": [
+        "信息学部"
+      ],
+      "coordinates": {
+        "lng": 114.359126,
+        "lat": 30.528042
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "信息学部片区中心（由 67 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_工学部",
+      "name": "工学部",
+      "aliases": [
+        "工学部"
+      ],
+      "coordinates": {
+        "lng": 114.362953,
+        "lat": 30.542603
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "工学部片区中心（由 60 个片区设施坐标聚合）",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
+    },
+    {
+      "id": "area_文理学部",
+      "name": "文理学部",
+      "aliases": [
+        "文理学部"
+      ],
+      "coordinates": {
+        "lng": 114.3628,
+        "lat": 30.5388
+      },
+      "type": "area",
+      "campus": "whu",
+      "category": "片区中心点",
+      "description": "文理学部片区中心（樱园片区中心（老斋舍-樱花大道一带））",
+      "season_tags": [],
+      "scenery_score": 3,
+      "rating": null
     }
   ]
 }

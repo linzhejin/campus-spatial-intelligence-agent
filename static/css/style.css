@@ -1463,3 +1463,78 @@ body {
     padding-left: calc(22px + env(safe-area-inset-left, 0px));
     padding-right: calc(22px + env(safe-area-inset-right, 0px));
 }
+
+/* ================= Leaflet 地图适配（2026-09 高德→Leaflet 迁移） ================= */
+
+/* divIcon 容器去掉 Leaflet 默认白底边框 */
+.whu-div-icon {
+    background: none;
+    border: none;
+}
+
+/* 地图上的胶囊标签：动态尺寸，用 transform 居中到锚点上方 */
+.whu-map-pill {
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transform: translate(-50%, -120%);
+}
+.whu-map-pill-poi {
+    background: #D4915C;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transform: translate(-50%, -120%);
+}
+
+/* GPS 定位按钮 */
+.whu-locate-btn {
+    width: 38px;
+    height: 38px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-top: 10px;  /* 与上方图层切换控件留缝 */
+    transition: background 0.15s ease;
+}
+.whu-locate-btn:hover {
+    background: #f5f2ee;
+}
+.whu-locate-icon {
+    font-size: 20px;
+    line-height: 1;
+    color: #2B7CFF;
+}
+.whu-locate-btn.is-busy .whu-locate-icon {
+    animation: whu-locate-pulse 1s ease-in-out infinite;
+}
+@keyframes whu-locate-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.82); }
+}
+
+/* Leaflet 控件与弹窗：圆角统一珞珈风格 */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+}
+.leaflet-control-layers {
+    border-radius: 10px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+/* 地图容器明确尺寸（Leaflet 初始化依赖），与高德时期视觉一致 */
+#map-container {
+    width: 100%;
+    height: 100%;
+}

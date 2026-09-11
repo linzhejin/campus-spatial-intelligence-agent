@@ -325,9 +325,80 @@ class TestTravelModeDetection:
         assert merged.mode == "walk"
 
     def test_parse_query_bike_keyword_fallback(self):
-        """无 API key 规则兜底：含"骑车"的路径 query 解析出 mode=bike。"""
+        """无 API key 规则兜底：含"骑车"的 query 解析出 mode=bike。"""
         with patch("agents.parser.DEEPSEEK_API_KEY", ""):
             from agents.parser import parse_query
             result = parse_query("骑车从牌坊到樱顶")
             assert result.task_type == "path_planning"
             assert result.mode == "bike"
+
+
+class TestBuildMessagesMultiturn:
+    """多轮消息流组装（2026-09 上下文记忆重构）。"""
+
+    def test_no_context_minimal(self):
+        from agents.parser import _build_messages
+        msgs = _build_messages("从珞珈门到樱顶", context=None, use_few_shot=False)
+        assert msgs[0]["role"] == "system"
+        assert msgs[-1] == {"role": "user", "content": "从珞珈门到樱顶"}
+
+    def test_history_rendered_as_real_message_flow(self):
+        """history 中的 user/assistant 消息按角色、按顺序还原。"""
+        from agents.parser import _build_messages
+        context = {
+            "history": [
+                {"role": "user", "content": "从珞珈门到枫园"},
+                {"role": "assistant", "content": "已为你规划",
+                 "entities": {"start": "珞珈门", "end": "枫园", "poi": None, "mode": "walk"}},
+                {"role": "user", "content": "樱花什么时候开"},
+                {"role": "assistant", "content": "三月中旬"},
+            ],
+            "start": {"name": "珞珈门", "type": "poi"},
+            "end": {"name": "枫园", "type": "poi"},
+        }
+        msgs = _build_messages("那改骑车去", context=context, use_few_shot=False)
+        roles = [m["role"] for m in msgs]
+        # 历史 4 条消息存在且角色交替
+        assert roles.count("user") >= 3
+        assert "assistant" in roles
+        hist_msgs = [m for m in msgs[1:-1] if m["role"] in ("user", "assistant")]
+        hist_texts = [m["content"] for m in hist_msgs]
+        assert "从珞珈门到枫园" in hist_texts
+        assert any("已为你规划" in t and "枫园" in t for t in hist_texts)
+        assert "樱花什么时候开" in hist_texts
+        # 当前 query 永远是最后一条
+        assert msgs[-1] == {"role": "user", "content": "那改骑车去"}
+
+    def test_planning_slot_injected_as_state(self):
+        """规划槽位以结构化状态注入，且 start/end 名称出现在消息中。"""
+        from agents.parser import _build_messages
+        context = {
+            "history": [],
+            "start": {"name": "珞珈门", "type": "poi"},
+            "end": {"name": "枫园", "type": "poi"},
+            "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
+        }
+        msgs = _build_messages("换风景好的", context=context, use_few_shot=False)
+        joined = "\n".join(m["content"] for m in msgs)
+        assert "当前规划状态" in joined
+        assert "珞珈门" in joined and "枫园" in joined
+        assert msgs[-1]["content"] == "换风景好的"
+
+    def test_legacy_history_shape_compatible(self):
+        """旧版 history=[{query: ...}] 形态仍可渲染，不报错。"""
+        from agents.parser import _build_messages
+        context = {"history": [{"query": "从珞珈门到樱顶"}]}
+        msgs = _build_messages("避开陡坡", context=context, use_few_shot=False)
+        hist_texts = [m["content"] for m in msgs[1:-1] if m["role"] == "user"]
+        assert "从珞珈门到樱顶" in hist_texts
+        assert msgs[-1]["content"] == "避开陡坡"
+
+    def test_fewshot_then_history_order(self):
+        """few-shot 在前、历史在中、当前 query 在末尾。"""
+        from agents.parser import FEW_SHOT_EXAMPLES, _build_messages
+        context = {"history": [{"role": "user", "content": "你好"}]}
+        msgs = _build_messages("去樱顶", context=context, use_few_shot=True)
+        # 第一个 few-shot 的 user 消息紧随 system
+        assert msgs[1]["content"] == FEW_SHOT_EXAMPLES[0][0]
+        assert msgs[-1]["content"] == "去樱顶"
+        assert any(m["content"] == "你好" for m in msgs)
