@@ -5,7 +5,8 @@
     var DEFAULT_ZOOM = 16;
     var DEFAULT_API_BASE = '';
     // 天地图 Key（https://console.tianditu.gov.cn/ 申请，免费）。
-    // 留空时使用 OpenStreetMap 标准底图（WGS-84，开发与国内访问均可）。
+    // 留空时默认使用 Esri World Street Map（WGS-84，无需 Key，国内手机端访问稳定）。
+    // 也可在地图右上角图层控件切换 OpenStreetMap / 卫星影像。
     var DEFAULT_TIANDITU_KEY = '';
 
     var cfg = {

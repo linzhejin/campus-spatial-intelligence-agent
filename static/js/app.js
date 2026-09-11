@@ -412,10 +412,13 @@
                 attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 贡献者',
             });
             baseLayers['OpenStreetMap'] = osm;
-            if (!defaultLayer) {
-                osm.addTo(state.map);
-                defaultLayer = osm;
-            }
+
+            // Esri 街道底图（WGS-84，无需 Key，国内可访问稳定）
+            var esriStreet = L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                { maxZoom: 19, attribution: '© Esri World Street Map' }
+            );
+            baseLayers['Esri 街道'] = esriStreet;
 
             // 影像底图（WGS-84，无需 Key；国内可访问性通常良好）
             var esriImg = L.tileLayer(
@@ -423,6 +426,12 @@
                 { maxZoom: 19, attribution: '© Esri World Imagery' }
             );
             baseLayers['卫星影像'] = esriImg;
+
+            if (!defaultLayer) {
+                // 国内网络（尤其手机端）访问 OSM 瓦片不稳定，默认用 Esri 街道底图
+                esriStreet.addTo(state.map);
+                defaultLayer = esriStreet;
+            }
 
             L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(state.map);
             L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(state.map);
