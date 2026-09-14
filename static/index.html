@@ -271,8 +271,8 @@
                     <input type="text" id="rr-name" placeholder="如：樱花大道路面维修" required maxlength="30">
                 </label>
                 <label>
-                    <span>影响半径（米）</span>
-                    <input type="number" id="rr-radius" value="30" min="5" max="200" required>
+                    <span>补充说明（选填）</span>
+                    <input type="text" id="rr-desc" placeholder="如：围挡占满整幅路面" maxlength="60">
                 </label>
                 <div class="rr-time-row">
                     <label class="rr-time-item">
@@ -284,10 +284,10 @@
                         <input type="datetime-local" id="rr-end-time">
                     </label>
                 </div>
-                <p class="rr-time-hint">不填时间 = 立即生效、长期有效，直到手动删除；到期自动失效。</p>
+                <p class="rr-time-hint">不填时间 = 立即生效、长期有效；到期自动失效，也可随时手动结束。</p>
                 <label>
-                    <span>位置（点击地图选点）</span>
-                    <input type="text" id="rr-location" placeholder="点下方按钮在地图上选点" readonly required>
+                    <span>事发路段（点下方按钮，在地图上点道路）</span>
+                    <input type="text" id="rr-location" placeholder="点下方按钮在地图上选点，自动吸附到道路" readonly required>
                 </label>
                 <div class="road-report-actions">
                     <button type="button" class="rr-btn-secondary" id="rr-pick-btn">📍 在地图上选点</button>
@@ -397,6 +397,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260911a"></script>
+    <script src="/js/app.js?v=20260915a"></script>
 </body>
 </html>

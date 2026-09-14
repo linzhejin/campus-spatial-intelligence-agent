@@ -719,16 +719,17 @@
 
     // ===================== 路况事件 =====================
 
-    // 路况类型对应的图标和颜色
+    // 路况类型对应的图标、颜色、线型（实线=硬封，虚线=软影响）
     var ROAD_CONDITION_STYLES = {
-        closure:     { icon: '🚫', color: '#C0392B', label: '封闭' },
-        construction:{ icon: '🚧', color: '#E67E22', label: '施工' },
-        event:       { icon: '🎉', color: '#9B59B6', label: '活动' },
-        flooding:    { icon: '🌊', color: '#2980B9', label: '积水' },
-        accident:    { icon: '⚠️', color: '#F39C12', label: '事故' },
+        closure:     { icon: '🚫', color: '#C0392B', label: '封闭', dash: null },
+        construction:{ icon: '🚧', color: '#E67E22', label: '施工', dash: '10 7' },
+        event:       { icon: '🎉', color: '#9B59B6', label: '活动', dash: '4 7' },
+        flooding:    { icon: '🌊', color: '#2980B9', label: '积水', dash: '7 5' },
+        accident:    { icon: '⚠️', color: '#F39C12', label: '事故', dash: '12 7' },
     };
+    var COND_STATUS_LABELS = { active: '生效中', scheduled: '未开始', expired: '已结束' };
 
-    // 清除路况标记
+    // 清除路况标记（线段 + 胶囊）
     function clearRoadConditionMarkers() {
         state.roadConditionMarkers.forEach(function (m) {
             if (state.map) state.map.removeLayer(m);
@@ -736,95 +737,133 @@
         state.roadConditionMarkers = [];
     }
 
-    // 拉取并渲染路况事件标记
-    function loadAndRenderRoadConditions() {
+    // 拉取并渲染路况。includeAll=true 为管理员视图（含未开始/已结束，灰显）
+    function loadAndRenderRoadConditions(includeAll) {
         if (!state.map) return;
-        apiRequest('/api/road-conditions', null, 'GET').then(function (data) {
+        var url = '/api/road-conditions' + (includeAll ? '?all=1' : '');
+        apiRequest(url, null, 'GET').then(function (data) {
             clearRoadConditionMarkers();
+            state.roadConditionAdminView = !!includeAll;
             var conditions = (data && data.conditions) || [];
             conditions.forEach(function (cond) {
-                var style = ROAD_CONDITION_STYLES[cond.type] || { icon: '⚠️', color: '#999', label: cond.type };
-                // 路况坐标为 GCJ-02，高德瓦片也是 GCJ-02，直接入图
-                var latlng = gcjToLatLng(cond.coordinates.lng, cond.coordinates.lat);
-
-                // 圆形影响范围（也可点击）
-                var circle = L.circle(latlng, {
-                    radius: cond.radius_m || 30,
-                    color: style.color,
-                    weight: 1,
-                    opacity: 0.6,
-                    fillColor: style.color,
-                    fillOpacity: 0.12,
-                });
-                circle.addTo(state.map);
-                state.roadConditionMarkers.push(circle);
-
-                // 标记点（胶囊标签，加大点击区域；CSS translate 做动态尺寸居中）
-                var pillHtml = '<div class="whu-map-pill" style="background:' + style.color + ';color:white;">'
-                    + style.icon + ' ' + (cond.name || style.label) + '</div>';
-                var marker = divMarker(latlng, pillHtml, [0, 0], [0, 0], cond.name || style.label);
-                marker.addTo(state.map);
-                state.roadConditionMarkers.push(marker);
-
-                // 点击标记或圆圈弹出信息窗
-                var onClick = function () {
-                    showConditionPopup(cond, style, marker, circle);
-                };
-                marker.on('click', onClick);
-                circle.on('click', onClick);
+                try {
+                    renderRoadCondition(cond, !!includeAll);
+                } catch (err) {
+                    console.warn('[路况] 单条事件渲染失败，跳过:', err, cond && cond.id);
+                }
             });
         }).catch(function (e) {
             console.warn('[路况] 加载失败:', e);
         });
     }
 
-    // 路况事件信息窗（Leaflet Popup）
-    function showConditionPopup(cond, style, marker, circle) {
+    function renderRoadCondition(cond, adminView) {
+        var style = ROAD_CONDITION_STYLES[cond.type]
+            || { icon: '⚠️', color: '#999', label: cond.type, dash: null };
+        var inactive = adminView && cond.status && cond.status !== 'active';
+        var color = inactive ? '#9AA5B1' : style.color;
+        var edge = cond.edge || {};
+        var anchor = edge.snap || cond.coordinates || null;
+        if (!anchor) return;
+        var latlng = gcjToLatLng(anchor.lng, anchor.lat);
+        var layers = [];
+
+        // 沿真实路段画高亮线
+        var geom = edge.geometry_gcj || [];
+        if (geom.length >= 2) {
+            var lineLatLngs = geom.map(function (p) { return gcjToLatLng(p[0], p[1]); });
+            var lineOpt = { color: color, weight: 6, opacity: inactive ? 0.4 : 0.9, lineCap: 'round' };
+            if (style.dash && !inactive) lineOpt.dashArray = style.dash;
+            if (inactive) lineOpt.dashArray = '3 8';
+            var line = L.polyline(lineLatLngs, lineOpt);
+            line.addTo(state.map);
+            layers.push(line);
+        } else if (cond.radius_m) {
+            // 兼容旧版半径圆数据
+            var circle = L.circle(latlng, {
+                radius: cond.radius_m, color: color, weight: 1, opacity: 0.6,
+                fillColor: color, fillOpacity: 0.12,
+            });
+            circle.addTo(state.map);
+            layers.push(circle);
+        }
+
+        // 吸附点胶囊（加大点击区域）
+        var label = cond.name || style.label;
+        if (inactive && cond.status) label = label + '（' + COND_STATUS_LABELS[cond.status] + '）';
+        var pillHtml = '<div class="whu-map-pill" style="background:' + color + ';color:white;'
+            + (inactive ? 'opacity:0.65;' : '') + '">'
+            + style.icon + ' ' + escapeHTML(label) + '</div>';
+        var marker = divMarker(latlng, pillHtml, [0, 0], [0, 0], label);
+        marker.addTo(state.map);
+        layers.push(marker);
+
+        var onClick = function () { showConditionPopup(cond, style, color, inactive, layers); };
+        layers.forEach(function (ly) { ly.on('click', onClick); });
+        state.roadConditionMarkers = state.roadConditionMarkers.concat(layers);
+    }
+
+    // 路况事件信息窗
+    function showConditionPopup(cond, style, color, inactive, layers) {
         try {
-            var timeLine = '';
+            var edge = cond.edge || {};
+            var anchor = edge.snap || cond.coordinates;
             var fmt = function (ts) {
                 var d = new Date(ts * 1000);
                 var p = function (n) { return (n < 10 ? '0' : '') + n; };
                 return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
                     ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
             };
-            var start = cond.start_time || 0;
-            var end = cond.end_time || 0;
+            var rows = [];
+            if (edge.road_name) rows.push('<div style="font-size:12px;">📍 路段：<b>' + escapeHTML(edge.road_name) + '</b></div>');
+            var start = cond.start_time || 0, end = cond.end_time || 0;
             if (start || end) {
-                var range = (start ? fmt(start) : '即时') + ' 至 ' + (end ? fmt(end) : '长期有效');
-                timeLine = '<div style="color:#888;font-size:12px;">生效时间：' + range + '</div>';
+                rows.push('<div style="color:#888;font-size:12px;">⏱ '
+                    + (start ? fmt(start) : '即时') + ' 至 ' + (end ? fmt(end) : '长期有效') + '</div>');
             }
-            var info = '<div style="padding:4px 2px;font-size:13px;line-height:1.7;min-width:170px;">' +
-                '<div style="font-weight:600;color:' + style.color + ';margin-bottom:4px;font-size:14px;">' +
-                style.icon + ' ' + (cond.name || style.label) + '</div>' +
-                '<div style="color:#888;font-size:12px;">影响半径：' + (cond.radius_m || 30) + ' 米</div>' +
-                timeLine +
-                '<div class="cond-delete-area" style="margin-top:10px;"></div>' +
+            if (cond.status && cond.status !== 'active') {
+                rows.push('<div style="font-size:12px;color:#9AA5B1;">状态：'
+                    + (COND_STATUS_LABELS[cond.status] || cond.status) + '</div>');
+            }
+            if (cond.description) {
+                rows.push('<div style="font-size:12px;color:#555;">' + escapeHTML(cond.description) + '</div>');
+            }
+            var info = '<div style="padding:4px 2px;font-size:13px;line-height:1.7;min-width:180px;max-width:240px;">' +
+                '<div style="font-weight:600;color:' + color + ';margin-bottom:4px;font-size:14px;">' +
+                style.icon + ' ' + escapeHTML(cond.name || style.label) + '</div>' +
+                rows.join('') +
+                '<div class="cond-actions" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"></div>' +
                 '</div>';
 
-            // 圆圈与标记共享同一个弹窗内容，点哪个都能弹
             var popup = L.popup({ offset: [0, -6], closeButton: true, autoPan: true })
                 .setContent(info)
-                .setLatLng(gcjToLatLng(cond.coordinates.lng, cond.coordinates.lat));
-            marker.bindPopup(popup);
-            circle.bindPopup(popup);
-            marker.openPopup();
+                .setLatLng(gcjToLatLng(anchor.lng, anchor.lat));
+            layers.forEach(function (ly) { ly.bindPopup(popup); });
+            popup.openOn(state.map);
 
-            // 检查管理员状态，决定是否显示删除按钮
+            // 已登录管理员才注入操作按钮
             apiRequest('/api/admin/status', null, 'GET').then(function (data) {
                 if (!(data && data.is_admin)) return;
                 setTimeout(function () {
                     var area = popup.getElement()
-                        ? popup.getElement().querySelector('.cond-delete-area')
-                        : document.querySelector('.leaflet-popup .cond-delete-area');
+                        ? popup.getElement().querySelector('.cond-actions')
+                        : document.querySelector('.leaflet-popup .cond-actions');
                     if (!area) return;
-                    area.innerHTML = '<button type="button" class="cond-delete-btn" style="background:#e74c3c;color:white;border:none;padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">🗑 删除此路况</button>';
-                    var btn = area.querySelector('.cond-delete-btn');
-                    if (btn) {
-                        btn.addEventListener('click', function () {
-                            deleteRoadCondition(cond.id, popup);
-                        });
+                    var btnStyle = 'border:none;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;color:white;';
+                    if (!cond.end_time && !inactive) {
+                        var endBtn = document.createElement('button');
+                        endBtn.type = 'button';
+                        endBtn.textContent = '⏹ 结束';
+                        endBtn.style.cssText = btnStyle + 'background:#7F8C8D;';
+                        endBtn.addEventListener('click', function () { endRoadCondition(cond.id, popup); });
+                        area.appendChild(endBtn);
                     }
+                    var delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.textContent = '🗑 删除';
+                    delBtn.style.cssText = btnStyle + 'background:#e74c3c;';
+                    delBtn.addEventListener('click', function () { deleteRoadCondition(cond.id, popup); });
+                    area.appendChild(delBtn);
                 }, 80);
             }).catch(function () {});
         } catch (e) {
@@ -832,11 +871,22 @@
         }
     }
 
+    // 结束路况（保留记录，end_time=now）
+    function endRoadCondition(id, popup) {
+        apiRequest('/api/road-conditions/' + id, { action: 'end' }, 'PATCH').then(function () {
+            if (popup) state.map.closePopup();
+            loadAndRenderRoadConditions(state.roadConditionAdminView);
+        }).catch(function (err) {
+            alert('结束失败：' + (err && err.message ? err.message : '请重试'));
+        });
+    }
+
     // 删除路况事件
     function deleteRoadCondition(id, popup) {
+        if (!window.confirm('确定删除这条路况？删除后不可恢复（若只需让它失效，建议用「结束」保留记录）。')) return;
         apiRequest('/api/road-conditions/' + id, null, 'DELETE').then(function () {
-            if (popup) state.map.closePopup(popup);
-            loadAndRenderRoadConditions();
+            if (popup) state.map.closePopup();
+            loadAndRenderRoadConditions(state.roadConditionAdminView);
         }).catch(function (err) {
             alert('删除失败：' + (err && err.message ? err.message : '请重试'));
         });
@@ -874,8 +924,18 @@
     }
 
     // ====== 上报路况（需管理员登录）======
+    // HTML 转义（主 IIFE 内的本地工具；候选面板 IIFE 内另有同名函数，作用域独立）
+    function escapeHTML(str) {
+        if (str == null) return '';
+        return String(str).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
     var _pickHandler = null;
-    var _pickMarker = null;
+    var _pickMarker = null;      // 吸附后的红点
+    var _pickEdgeLine = null;    // 吸附路段的高亮预览线
+    var _pickBanner = null;      // 选点模式地图顶部浮层提示
     var _isAdmin = false;
 
     function openRoadReport() {
@@ -884,6 +944,7 @@
             if (data && data.is_admin) {
                 _isAdmin = true;
                 showRoadReportForm();
+                loadAndRenderRoadConditions(true);  // 管理员视图：含未开始/已结束
             } else {
                 openAdminLogin();
             }
@@ -899,14 +960,50 @@
         if (hint) hint.textContent = '';
     }
 
+    // 彻底清理选点状态：解绑点击、移除红点与路段预览、清浮层与已选坐标。
+    // 取消 / 退出管理 / 提交完成 都必须走这里（修复旧版红点残留在点击位置的 bug）。
+    function clearPickState() {
+        stopPickLocation();
+        if (_pickMarker && state.map) { state.map.removeLayer(_pickMarker); _pickMarker = null; }
+        if (_pickEdgeLine && state.map) { state.map.removeLayer(_pickEdgeLine); _pickEdgeLine = null; }
+        hidePickBanner();
+        state._pickedLng = null;
+        state._pickedLat = null;
+    }
+
     function closeRoadReport() {
         var section = document.getElementById('road-report-section');
         if (section) section.hidden = true;
-        stopPickLocation();
+        clearPickState();
         var form = document.getElementById('road-report-form');
         if (form) form.reset();
         var loc = document.getElementById('rr-location');
         if (loc) loc.value = '';
+    }
+
+    function showPickBanner(text, isError) {
+        hidePickBanner();
+        if (!state.map) return;
+        var el = document.createElement('div');
+        el.textContent = text;
+        el.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;'
+            + 'background:' + (isError ? 'rgba(192,57,43,0.95)' : 'rgba(33,33,33,0.9)')
+            + ';color:white;padding:9px 18px;border-radius:20px;font-size:13px;max-width:86%;text-align:center;'
+            + 'box-shadow:0 2px 10px rgba(0,0,0,0.25);pointer-events:auto;cursor:pointer;';
+        // 点击浮层可取消选点
+        el.addEventListener('click', function () {
+            stopPickLocation();
+            hidePickBanner();
+            var section = document.getElementById('road-report-section');
+            if (section) section.hidden = false;
+        });
+        state.map.getContainer().appendChild(el);
+        _pickBanner = el;
+    }
+
+    function hidePickBanner() {
+        if (_pickBanner && _pickBanner.parentNode) _pickBanner.parentNode.removeChild(_pickBanner);
+        _pickBanner = null;
     }
 
     // ====== 管理员登录 ======
@@ -937,6 +1034,7 @@
             _isAdmin = true;
             closeAdminLogin();
             showRoadReportForm();
+            loadAndRenderRoadConditions(true);  // 进入管理视图
         }).catch(function (err) {
             if (hint) hint.textContent = (err && err.message) ? err.message : '登录失败，请重试';
             if (pwd) pwd.select();
@@ -946,51 +1044,79 @@
     }
 
     function adminLogout() {
-        apiRequest('/api/admin/logout', {}).then(function () {
+        apiRequest('/api/admin/logout', {}).catch(function () {}).then(function () {
             _isAdmin = false;
-            closeRoadReport();
-        }).catch(function () {
-            _isAdmin = false;
-            closeRoadReport();
+            closeRoadReport();               // 内含 clearPickState，红点必被移除
+            loadAndRenderRoadConditions(false);  // 回到普通用户视图
         });
     }
 
     function startPickLocation() {
         if (!state.map) {
-            var hint = document.getElementById('road-report-hint');
-            if (hint) hint.textContent = '地图尚未加载，请稍后再试';
+            var hint0 = document.getElementById('road-report-hint');
+            if (hint0) hint0.textContent = '地图尚未加载，请稍后再试';
             return;
         }
-        // 关闭弹窗，进入地图选点模式
+        // 重置上一次选择，进入地图选点模式
+        if (_pickMarker) { state.map.removeLayer(_pickMarker); _pickMarker = null; }
+        if (_pickEdgeLine) { state.map.removeLayer(_pickEdgeLine); _pickEdgeLine = null; }
+        state._pickedLng = null;
+        state._pickedLat = null;
+        var loc0 = document.getElementById('rr-location');
+        if (loc0) loc0.value = '';
+
         var section = document.getElementById('road-report-section');
         if (section) section.hidden = true;
-
-        var hint = document.getElementById('road-report-hint');
-        if (hint) hint.textContent = '请在地图上点击事件发生位置…';
+        showPickBanner('📍 请直接点击事发路段，系统会自动吸附到道路上（点此取消）');
 
         if (_pickHandler) return;
         _pickHandler = function (e) {
-            // 高德瓦片是 GCJ-02，Leaflet 点击坐标也是 GCJ-02，直接用
-            var gcjLng = e.latlng.lng;
-            var gcjLat = e.latlng.lat;
-
-            if (_pickMarker) {
-                state.map.removeLayer(_pickMarker);
-            }
-            var pickHtml = '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;'
-                + 'border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>';
-            _pickMarker = divMarker([gcjLat, gcjLng], pickHtml, [16, 16], [8, 8], '上报位置')
-                .addTo(state.map);
-
-            state._pickedLng = gcjLng;
-            state._pickedLat = gcjLat;
-            var loc = document.getElementById('rr-location');
-            if (loc) loc.value = gcjLng.toFixed(6) + ', ' + gcjLat.toFixed(6);
-
-            // 选点后重新打开弹窗
-            stopPickLocation();
-            if (section) section.hidden = false;
-            if (hint) hint.textContent = '已选点：' + gcjLng.toFixed(5) + ', ' + gcjLat.toFixed(5) + '（GCJ-02）';
+            var gcjLng = e.latlng.lng, gcjLat = e.latlng.lat;
+            showPickBanner('⏳ 正在吸附到道路…');
+            apiRequest('/api/road-conditions/snap?lng=' + encodeURIComponent(gcjLng)
+                + '&lat=' + encodeURIComponent(gcjLat), null, 'GET')
+                .then(function (data) {
+                    var snap = data && data.snap;
+                    if (!snap) {
+                        showPickBanner('⚠️ 吸附失败，请再点一次道路', true);
+                        return;
+                    }
+                    // 吸附成功：红点落到路上，并高亮该路段
+                    if (_pickMarker) state.map.removeLayer(_pickMarker);
+                    if (_pickEdgeLine) state.map.removeLayer(_pickEdgeLine);
+                    var snapLatLng = gcjToLatLng(snap.snap_lng_gcj, snap.snap_lat_gcj);
+                    var pickHtml = '<div style="width:16px;height:16px;background:#e74c3c;border-radius:50%;'
+                        + 'border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>';
+                    _pickMarker = divMarker(snapLatLng, pickHtml, [16, 16], [8, 8], '事发位置')
+                        .addTo(state.map);
+                    if ((snap.geometry_gcj || []).length >= 2) {
+                        var edgeLatLngs = snap.geometry_gcj.map(function (p) {
+                            return gcjToLatLng(p[0], p[1]);
+                        });
+                        _pickEdgeLine = L.polyline(edgeLatLngs, {
+                            color: '#FFD400', weight: 8, opacity: 0.75, lineCap: 'round',
+                        }).addTo(state.map);
+                    }
+                    // 提交时仍发原始点击点，服务端重新吸附（不信任前端）
+                    state._pickedLng = gcjLng;
+                    state._pickedLat = gcjLat;
+                    stopPickLocation();
+                    hidePickBanner();
+                    if (section) section.hidden = false;
+                    var loc = document.getElementById('rr-location');
+                    if (loc) loc.value = (snap.road_name || '未命名道路')
+                        + '（吸附偏移 ' + (snap.dist_m != null ? snap.dist_m : '?') + ' 米）';
+                    var hint = document.getElementById('road-report-hint');
+                    if (hint) {
+                        hint.style.color = '#27AE60';
+                        hint.textContent = '✅ 已吸附到「' + (snap.road_name || '未命名道路')
+                            + '」，偏移 ' + (snap.dist_m != null ? snap.dist_m : '?') + ' 米';
+                    }
+                })
+                .catch(function (err) {
+                    var msg = err && err.message ? err.message : '吸附失败';
+                    showPickBanner('⚠️ ' + msg + '，请点在道路上重试', true);
+                });
         };
         state.map.on('click', _pickHandler);
     }
@@ -1006,13 +1132,15 @@
         e.preventDefault();
         var type = document.getElementById('rr-type').value;
         var name = document.getElementById('rr-name').value.trim();
-        var radius = parseInt(document.getElementById('rr-radius').value, 10);
+        var descEl = document.getElementById('rr-desc');
+        var desc = descEl ? descEl.value.trim() : '';
         var lng = state._pickedLng;
         var lat = state._pickedLat;
 
         var hint = document.getElementById('road-report-hint');
+        if (hint) hint.style.color = '';
         if (lng == null || lat == null) {
-            if (hint) hint.textContent = '请先在地图上选点';
+            if (hint) hint.textContent = '请先在地图上选择事发路段';
             return;
         }
         if (!name) {
@@ -1030,31 +1158,23 @@
         var submitBtn = document.getElementById('rr-submit-btn');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
 
-        var payload = {
-            type: type,
-            name: name,
-            lng: lng,
-            lat: lat,
-            radius_m: radius,
-        };
+        var payload = { type: type, name: name, lng: lng, lat: lat, description: desc };
         if (startTime) payload.start_time = startTime;
         if (endTime) payload.end_time = endTime;
 
         apiRequest('/api/road-conditions', payload).then(function () {
-            if (hint) hint.textContent = '✅ 上报成功！路线将自动绕行。';
-            // 清理选点标记
-            if (_pickMarker) { state.map.removeLayer(_pickMarker); _pickMarker = null; }
-            state._pickedLng = null;
-            state._pickedLat = null;
-            // 刷新路况标记
-            loadAndRenderRoadConditions();
-            // 2 秒后关闭弹窗
+            if (hint) { hint.style.color = '#27AE60'; hint.textContent = '✅ 上报成功！路线将自动绕行。'; }
+            clearPickState();
+            loadAndRenderRoadConditions(true);  // 保持管理员视图刷新
             setTimeout(function () {
                 closeRoadReport();
                 if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '提交'; }
             }, 1200);
         }).catch(function (err) {
-            if (hint) hint.textContent = '提交失败：' + (err && err.message ? err.message : '请重试');
+            if (hint) {
+                hint.style.color = '#C0392B';
+                hint.textContent = '提交失败：' + (err && err.message ? err.message : '请重试');
+            }
             if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '提交'; }
         });
     }

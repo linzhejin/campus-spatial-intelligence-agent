@@ -38,7 +38,8 @@ from spatial.routing import (
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.road_conditions import (
-    list_conditions, add_condition, remove_condition, CONDITION_LABELS,
+    list_conditions, add_condition, remove_condition, update_condition,
+    snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS, SNAP_MAX_DIST_M,
 )
 from spatial import weather as weather_mod
 
@@ -46,14 +47,33 @@ logger = logging.getLogger(__name__)
 
 # ===== 管理员鉴权 =====
 def _is_admin() -> bool:
-    return bool(session.get("is_admin"))
+    return _admin_identity() is not None
+
+
+def _admin_identity():
+    """返回管理员来源标识：'web'（网页 session）/ 'token'（保卫部系统 Token）/ None。"""
+    if session.get("is_admin"):
+        return "web"
+    token = request.headers.get("X-Admin-Token", "").strip()
+    if not token:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:].strip()
+    if token and config.ROAD_CONDITION_ADMIN_TOKEN:
+        import hmac as _hmac
+        if _hmac.compare_digest(token, config.ROAD_CONDITION_ADMIN_TOKEN):
+            return "token"
+    return None
+
 
 def _admin_login_enabled() -> bool:
     return bool(config.ROAD_CONDITION_ADMIN_PASSWORD)
 
+
 def _require_admin():
-    """写操作鉴权装饰器（函数式），未登录返回 401。"""
-    if not _is_admin():
+    """写操作鉴权（函数式），未登录返回 (err_response, None)；成功返回 (None, identity)。"""
+    identity = _admin_identity()
+    if identity is None:
         return _err("unauthorized", "需要管理员权限，请先登录", 401)
     return None
 
@@ -1267,7 +1287,7 @@ def _parse_time_input(value):
 def get_road_conditions():
     """GET /api/road-conditions — 返回当前生效的路况事件列表
 
-    管理员带 ?all=1 时返回全部事件（含未开始/已过期），并附加 status 字段。
+    管理员（session 或 Token）带 ?all=1 时返回全部事件（含未开始/已过期），并附加 status。
     """
     include_all = request.args.get("all") in ("1", "true", "yes")
     is_admin = _is_admin() if include_all else False
@@ -1287,67 +1307,146 @@ def get_road_conditions():
     return _ok({"conditions": conditions, "count": len(conditions)})
 
 
+@api_bp.route("/road-conditions/snap", methods=["GET"])
+def snap_road_condition():
+    """GET /api/road-conditions/snap?lng=&lat= — 管理员选点预览：把点击点吸附到最近路段。
+
+    返回边标识、吸附点(GCJ-02)、道路名、距离与边几何，供前端把标记移到路上并画线。
+    """
+    if _require_admin():
+        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    try:
+        lng = float(request.args.get("lng"))
+        lat = float(request.args.get("lat"))
+    except (TypeError, ValueError):
+        return _err("invalid_lnglat", "lng/lat 必须是数字", 400)
+
+    G, err = _ensure_network()
+    if err:
+        return err
+    snap = snap_to_edge(G, lng, lat)
+    if snap is None:
+        return _err(
+            "too_far_from_road",
+            f"点击位置离最近道路超过 {int(SNAP_MAX_DIST_M)} 米，请放大地图点在道路上",
+            400,
+        )
+    return _ok({"snap": snap, "max_dist_m": SNAP_MAX_DIST_M})
+
+
 @api_bp.route("/road-conditions", methods=["POST"])
 def create_road_condition():
-    """POST /api/road-conditions — 新增路况事件（需管理员登录）
+    """POST /api/road-conditions — 新增路况事件（需管理员 session 或 Token）
 
+    事件由服务端吸附到最近路段，不接受"半径"参数：
     Input: {
         "type": "closure|construction|event|flooding|accident",
         "name": "樱花大道施工",
-        "lng": 114.365,
+        "lng": 114.365,          # 管理员点击点（GCJ-02）
         "lat": 30.536,
-        "radius_m": 50,
         "description": "施工期间禁止通行",
-        "start_time": "2026-09-10T08:00",  # 可选，ISO时间或时间戳，缺省=立即生效
-        "end_time": "2026-09-12T18:00"     # 可选，ISO时间或时间戳，缺省=长期有效
+        "start_time": "2026-09-10T08:00",  # 可选，缺省=立即生效
+        "end_time": "2026-09-12T18:00"     # 可选，缺省=长期有效
     }
     """
-    auth_err = _require_admin()
-    if auth_err:
-        return auth_err
+    identity = _admin_identity()
+    if identity is None:
+        return _err("unauthorized", "需要管理员权限，请先登录", 401)
 
     body = request.get_json(silent=True)
     if body is None:
         return _err("invalid_json", "请求体必须为合法 JSON", 400)
 
     cond_type = body.get("type")
-    name = body.get("name")
+    name = (body.get("name") or "").strip()
     lng = body.get("lng")
     lat = body.get("lat")
 
     if not cond_type or not name or lng is None or lat is None:
         return _err("missing_fields", "type, name, lng, lat 必填", 400)
+    if cond_type not in CONDITION_EFFECTS:
+        return _err("invalid_type", f"未知路况类型: {cond_type}", 400)
 
     try:
+        lng_f, lat_f = float(lng), float(lat)
         start_ts = _parse_time_input(body.get("start_time"))
         end_ts = _parse_time_input(body.get("end_time"))
         if start_ts and end_ts and end_ts <= start_ts:
             return _err("invalid_time", "结束时间必须晚于开始时间", 400)
+
+        G, err = _ensure_network()
+        if err:
+            return err
+        # 服务端重新吸附，不信任前端坐标
+        snap = snap_to_edge(G, lng_f, lat_f)
+        if snap is None:
+            return _err(
+                "too_far_from_road",
+                f"点击位置离最近道路超过 {int(SNAP_MAX_DIST_M)} 米，请放大地图点在道路上",
+                400,
+            )
+
         condition = add_condition(
             cond_type=cond_type,
-            name=name,
-            lng=float(lng),
-            lat=float(lat),
-            radius_m=float(body.get("radius_m", 30.0)),
-            description=body.get("description", ""),
+            name=name[:30],
+            edge=snap,
+            click_point={"lng": lng_f, "lat": lat_f},
+            description=(body.get("description") or "").strip()[:200],
             start_time=start_ts,
             end_time=end_ts,
+            created_by=identity if identity == "web" else "token",
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
-        return _ok({"condition": condition}, status=201)
+        return _ok({"condition": condition, "snap": snap}, status=201)
     except ValueError as e:
-        return _err("invalid_type", str(e), 400)
+        return _err("invalid_field", str(e), 400)
     except Exception as e:
         logger.exception("新增路况失败")
         return _err("create_failed", f"新增失败: {e}", 500)
 
 
+@api_bp.route("/road-conditions/<cond_id>", methods=["PATCH"])
+def patch_road_condition(cond_id):
+    """PATCH /api/road-conditions/<id> — 更新路况（需管理员）
+
+    支持：
+      {"action": "end"}                         立即结束（end_time=now，保留记录可审计）
+      {"name": "..."} / {"description": "..."}  改名/补充描述
+      {"start_time": ..., "end_time": ...}      调整生效时段（ISO 或时间戳）
+    """
+    if _require_admin():
+        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    body = request.get_json(silent=True) or {}
+
+    changes = {}
+    if body.get("action") == "end":
+        changes["end_time"] = time.time()
+    else:
+        for field in ("name", "description"):
+            if body.get(field) is not None:
+                changes[field] = str(body[field])[:200]
+        start_ts = _parse_time_input(body.get("start_time")) if body.get("start_time") is not None else None
+        end_ts = _parse_time_input(body.get("end_time")) if body.get("end_time") is not None else None
+        if start_ts is not None:
+            changes["start_time"] = start_ts
+        if end_ts is not None:
+            changes["end_time"] = end_ts
+
+    if not changes:
+        return _err("empty_changes", "没有可更新的字段", 400)
+
+    updated = update_condition(cond_id, changes)
+    if updated is None:
+        return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
+    updated["type_label"] = CONDITION_LABELS.get(updated.get("type"), updated.get("type"))
+    return _ok({"condition": updated})
+
+
 @api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
 def delete_road_condition(cond_id):
-    """DELETE /api/road-conditions/<id> — 删除路况事件（需管理员登录）"""
-    auth_err = _require_admin()
-    if auth_err:
-        return auth_err
+    """DELETE /api/road-conditions/<id> — 删除路况事件（需管理员 session 或 Token）"""
+    if _require_admin():
+        return _err("unauthorized", "需要管理员权限，请先登录", 401)
     success = remove_condition(cond_id)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)

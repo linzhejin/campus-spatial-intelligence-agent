@@ -6,7 +6,7 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v9';
+var CACHE_NAME = 'whu-walker-v12';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -74,6 +74,15 @@ self.addEventListener('fetch', function (event) {
     var isApiCall = url.pathname.startsWith('/api/');
 
     if (isApiCall) {
+        /* 路况管制 / 管理员接口：NETWORK-ONLY（强一致）。
+           管理者结束/删除事件后立即刷新列表，SWR 会返回旧快照导致"删了还在"；
+           管制信息时效性高，宁可离线不可用（前端已静默 catch），也不展示过期状态。 */
+        var isRealtimeApi = url.pathname.indexOf('/api/road-conditions') === 0 ||
+                           url.pathname.indexOf('/api/admin') === 0;
+        if (isRealtimeApi) {
+            event.respondWith(fetch(request));
+            return;
+        }
         event.respondWith(
             caches.open(CACHE_NAME).then(function (cache) {
                 return cache.match(request).then(function (cached) {

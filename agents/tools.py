@@ -191,7 +191,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "list_road_conditions",
-            "description": "查询当前生效的封路/施工/积水等路况事件。用户问'哪里在修路''哪段封了'时必须调用。",
+            "description": "查询当前生效的封路/施工/积水/事故/活动管制等路况事件（绑定具体路段，步行也会绕封路）。用户问'哪里在修路''哪段封了''能不能走'时必须调用。",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -692,11 +692,13 @@ def _tool_list_road_conditions(args, ctx):
     now = time.time()
     out = []
     for c in conds:
+        road = (c.get("edge") or {}).get("road_name", "")
         out.append({
             "name": c.get("name", ""),
             "type_label": CONDITION_LABELS.get(c.get("type"), c.get("type", "")),
+            "road_name": road,
+            "location": (road + "路段") if road else "",
             "description": (c.get("description") or "")[:100],
-            "radius_m": c.get("radius_m"),
             "end_time": c.get("end_time"),
         })
     return {"conditions": out, "count": len(out),

@@ -34,6 +34,9 @@ AMAP_SECURITY_CODE = os.getenv("AMAP_SECURITY_CODE", "")  # 高德 JS API 2.0 �
 # ===== 管理员口令（上报/删除路况需登录）=====
 # 不设置时禁止所有路况写操作（更安全）；生产环境务必配置
 ROAD_CONDITION_ADMIN_PASSWORD = os.getenv("ROAD_CONDITION_ADMIN_PASSWORD", "")
+# 管理者系统对接 Token（如保卫部后台）：请求头 X-Admin-Token 或 Authorization: Bearer
+# 不设置时仅允许网页 session 登录
+ROAD_CONDITION_ADMIN_TOKEN = os.getenv("ROAD_CONDITION_ADMIN_TOKEN", "")
 
 # ===== 武汉大学校园范围 (经纬度边界) — .env 可覆盖 =====
 WHU_BBOX = {
