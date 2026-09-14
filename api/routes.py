@@ -12,11 +12,13 @@
   POST /api/road-conditions — 新增路况事件
   DELETE /api/road-conditions/<id> — 删除路况事件
 """
+import json
 import logging
 import math
 import os
 import re
 import time
+from pathlib import Path
 
 import networkx as nx
 from flask import Blueprint, request, jsonify, session
@@ -388,6 +390,72 @@ def _weather_public(snap):
     }
 
 
+def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> dict:
+    """Agent 循环响应 → 前端兼容结构（P4 前端再按 response_kind 细分渲染）。
+
+    response_kind:
+      route      → task_type=path_planning，透传路径包（含 via/tour 扩展字段）
+      candidates → task_type=candidates，携带候选 POI 列表（P4 渲染卡片）
+      clarify    → task_type=unknown，message 为澄清问题，附 clarify.options
+      chat       → task_type=chat，reply 为答复
+    """
+    kind = resp.get("response_kind", "chat")
+    route = resp.get("route")
+
+    if kind == "route" and route:
+        out = {
+            "task_type": "path_planning",
+            "response_kind": kind,
+            "route_kind": resp.get("route_kind", "direct"),
+            "explanation": resp.get("message", ""),
+            "start": {"name": route.get("start_name", ""), "type": "coord" if coord_start else "poi"},
+            "end": {"name": route.get("end_name", ""), "type": "coord" if coord_end else "poi"},
+        }
+        # 坐标端点：透传原始 GPS 坐标（前端地图聚焦用）
+        if coord_start:
+            out["start"]["coordinates"] = {"lng": coord_start.get("lng"), "lat": coord_start.get("lat")}
+        if coord_end:
+            out["end"]["coordinates"] = {"lng": coord_end.get("lng"), "lat": coord_end.get("lat")}
+        for k in ("recommended", "shortest", "pois", "filter_status", "overlap_rate",
+                  "recommended_length_m", "shortest_length_m", "length_capped", "degraded",
+                  "distance_m", "shortest_distance_m", "applied_weights", "mode",
+                  "duration_min", "shortest_duration_min", "speed_kmh",
+                  "legs", "via", "tour", "detour_ratio"):
+            if k in route:
+                out[k] = route[k]
+        out.setdefault("shortest", out.get("recommended", []))
+        out.setdefault("costs", {})
+        if resp.get("suggestions"):
+            out["suggestions"] = resp["suggestions"]
+        else:
+            out.setdefault("suggestions", [])
+        return out
+
+    if kind == "candidates":
+        return {
+            "task_type": "candidates",
+            "response_kind": kind,
+            "message": resp.get("message", ""),
+            "candidates": resp.get("candidates") or [],
+        }
+
+    if kind == "clarify":
+        clarify = resp.get("clarify") or {}
+        return {
+            "task_type": "unknown",
+            "response_kind": kind,
+            "message": clarify.get("question") or resp.get("message", ""),
+            "clarify": clarify,
+        }
+
+    return {
+        "task_type": "chat",
+        "response_kind": kind,
+        "query": "",
+        "reply": resp.get("message", ""),
+    }
+
+
 @api_bp.route("/weather", methods=["GET"])
 def weather():
     """GET /api/weather — 当前武汉实时天气及对步行/骑行的路况影响"""
@@ -687,6 +755,25 @@ def chat():
         query = query[:500]
 
     context = body.get("context")
+
+    # v2 全 Agent 架构：所有输入优先进入 Agent 循环（LLM 决策 + 工具执行）。
+    # LLM 本身故障（断网/鉴权/超时）时落回旧管道——停电保险，不是备用通道。
+    try:
+        from agents.planner import run_agent
+        agent_resp = run_agent(
+            query,
+            context=context,
+            coord_start=body.get("coord_start"),
+            coord_end=body.get("coord_end"),
+            uid=body.get("whu_uid") or body.get("uid"),
+            travel_mode=body.get("travel_mode"),
+        )
+        return _ok(_agent_response_to_legacy(agent_resp,
+                    coord_start=body.get("coord_start"),
+                    coord_end=body.get("coord_end")))
+    except Exception as e:
+        logger.warning("Agent 规划器不可用（%s: %s），落回旧管道", type(e).__name__, e)
+
     try:
         intent = parse_query(query, context)
         # GPS 坐标覆盖（WGS-84；前端「从我这/到我这」触发），必须在 model_dump 前完成
@@ -1265,3 +1352,55 @@ def delete_road_condition(cond_id):
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
     return _ok({"message": "已删除", "id": cond_id})
+
+
+# ===== 行为埋点（P4：用户画像学习 + 产品观测）=====
+
+_TELEMETRY_PATH = Path(__file__).parent.parent / "data" / "telemetry.jsonl"
+_TELEMETRY_EVENTS = {
+    "route_shown", "route_accept", "candidate_click",
+    "clarify_answer", "chat", "error",
+}
+
+
+@api_bp.route("/telemetry", methods=["POST"])
+def telemetry():
+    """POST /api/telemetry — 前端行为埋点。
+
+    入参: {"uid": "whu_uid", "event": "route_accept", ...事件字段}
+    - route_shown:  路径曝光（记 exposure，不学权重）
+    - route_accept: 路径采纳（EMA 更新用户画像，需带 applied_weights）
+    所有事件追加写入 data/telemetry.jsonl 供离线分析。
+    埋点是锦上添花：任何失败都返回 ok，绝不影响前端主流程。
+    """
+    body = request.get_json(silent=True) or {}
+    uid = body.get("uid") or body.get("whu_uid")
+    event = body.get("event")
+
+    if not uid or event not in _TELEMETRY_EVENTS:
+        return _ok({"recorded": False})
+
+    record = {
+        "ts": time.time(),
+        "uid": uid,
+        "event": event,
+        "payload": {k: v for k, v in body.items() if k not in ("uid", "whu_uid", "event")},
+    }
+    try:
+        with open(_TELEMETRY_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.warning("埋点写入失败: %s", e)
+
+    # 画像学习：曝光/采纳反馈
+    try:
+        from agents import profile
+        weights = body.get("applied_weights")
+        if event == "route_shown":
+            profile.record_route_feedback(uid, weights, accepted=False)
+        elif event == "route_accept":
+            profile.record_route_feedback(uid, weights, accepted=True)
+    except Exception as e:
+        logger.warning("画像更新失败: %s", e)
+
+    return _ok({"recorded": True})

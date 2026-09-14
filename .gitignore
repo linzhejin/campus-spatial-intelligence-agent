@@ -257,3 +257,17 @@ scripts/_tmp_*.py
 
 # Trae IDE 个人文档
 .trae/
+
+# ===== v2 Agent 架构 & 方案书构建产物 =====
+# npm 依赖（仅用于本地生成方案书 docx，非运行时依赖）
+node_modules/
+package-lock.json
+
+# 东方航天港杯竞赛材料（方案书 docx/pdf、参考资料）
+东方航天港杯/
+
+# 设计文档（SDD specs，本地工作产物）
+docs/superpowers/
+
+# 子类别审核 CSV（人工标注中间产物）
+data/pois_subcategory_review.csv

@@ -132,3 +132,69 @@ class TestGetPoi:
     def test_get_poi_wrong_name_returns_none(self, mock_pois):
         result = poi_module.get_poi("某某某不存在的地点", fuzzy=False)
         assert result is None
+
+
+MOCK_POIS_WITH_SUB = [
+    {
+        "id": "c1", "name": "桂园食堂", "aliases": [],
+        "coordinates": {"lng": 114.36, "lat": 30.53},
+        "type": "dining", "subcategory": "canteen", "is_minor": False,
+        "scenery_score": 2,
+    },
+    {
+        "id": "c2", "name": "瑞幸咖啡(梅园店)", "aliases": [],
+        "coordinates": {"lng": 114.361, "lat": 30.531},
+        "type": "dining", "subcategory": "coffee", "is_minor": True,
+        "scenery_score": 1,
+    },
+    {
+        "id": "c3", "name": "WHU1893咖啡馆", "aliases": [],
+        "coordinates": {"lng": 114.362, "lat": 30.532},
+        "type": "dining", "subcategory": "coffee", "is_minor": True,
+        "scenery_score": 3,
+    },
+    {
+        "id": "c4", "name": "珞珈自强超市", "aliases": [],
+        "coordinates": {"lng": 114.363, "lat": 30.533},
+        "type": "service", "subcategory": "supermarket", "is_minor": False,
+        "scenery_score": 1,
+    },
+]
+
+
+@pytest.fixture
+def mock_sub_pois():
+    with patch.object(poi_module, "_load_from_json", return_value=MOCK_POIS_WITH_SUB), \
+         patch.object(poi_module, "_load_from_config", return_value=[]):
+        yield
+
+
+class TestSubcategory:
+    def test_flatten_poi_passthrough(self, mock_sub_pois):
+        flat = poi_module.get_poi("桂园食堂", fuzzy=False)
+        assert flat["subcategory"] == "canteen"
+        assert flat["is_minor"] is False
+        assert flat["category"] == "dining"
+
+    def test_flatten_poi_defaults_when_missing(self, mock_pois):
+        """旧数据无 subcategory/is_minor 字段时给默认值，不报错。"""
+        flat = poi_module.get_poi("牌坊")
+        assert flat["subcategory"] == ""
+        assert flat["is_minor"] is False
+
+    def test_search_by_category_hits(self, mock_sub_pois):
+        results = poi_module.search_by_category(subcategory="coffee")
+        names = [p["name"] for p in results]
+        assert set(names) == {"瑞幸咖啡(梅园店)", "WHU1893咖啡馆"}
+
+    def test_search_by_category_include_minor_false(self, mock_sub_pois):
+        """泛推荐场景过滤小店铺：coffee 全是 is_minor，应返回空。"""
+        assert poi_module.search_by_category(
+            subcategory="coffee", include_minor=False
+        ) == []
+        results = poi_module.search_by_category(poi_type="dining", include_minor=False)
+        assert [p["name"] for p in results] == ["桂园食堂"]
+
+    def test_search_pois_subcategory_filter(self, mock_sub_pois):
+        results = poi_module.search_pois("咖啡", subcategory="coffee")
+        assert results and all(p["subcategory"] == "coffee" for p in results)

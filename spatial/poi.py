@@ -339,6 +339,9 @@ def _flatten_poi(poi: dict) -> dict:
         "id": poi.get("id", ""),
         "name": poi.get("name", ""),
         "type": poi.get("type", "landmark"),
+        "category": poi.get("category", poi.get("type", "landmark")),
+        "subcategory": poi.get("subcategory", ""),
+        "is_minor": bool(poi.get("is_minor", False)),
         "campus": poi.get("campus", ""),
         "lat": coords.get("lat", 0),
         "lon": coords.get("lng", 0),
@@ -393,17 +396,48 @@ def find_poi_ambiguous(name: str, min_score: float = 0.6):
     return _flatten_poi(scored[0][0]), []
 
 
-def search_pois(keyword: str, poi_type: str = None, season: str = None) -> list:
+def search_pois(keyword: str, poi_type: str = None, season: str = None,
+                subcategory: str = None, include_minor: bool = True) -> list:
+    """模糊检索 POI，支持 type / subcategory / season 筛选。
+
+    include_minor=False 时过滤小店铺（is_minor 标记），用于泛推荐场景；
+    用户明确按类别检索时保持 True，保证"想喝咖啡"能命中瑞幸等小店。
+    """
     candidates = find_poi_candidates(keyword, limit=50, min_score=0.3)
     results = []
     for poi, score in candidates:
         flat = _flatten_poi(poi)
         if poi_type and flat["type"] != poi_type:
             continue
+        if subcategory and flat["subcategory"] != subcategory:
+            continue
+        if not include_minor and flat["is_minor"]:
+            continue
         if season and season not in flat.get("season_tags", []):
             continue
         results.append(flat)
     return results
+
+
+def search_by_category(subcategory: str = None, poi_type: str = None,
+                       season: str = None, include_minor: bool = True,
+                       limit: int = 20) -> list:
+    """按类别全量检索（目标型需求"想吃饭/想喝咖啡"用），按重要度降序。"""
+    pois = load_pois()
+    results = []
+    for poi in pois:
+        flat = _flatten_poi(poi)
+        if poi_type and flat["type"] != poi_type:
+            continue
+        if subcategory and flat["subcategory"] != subcategory:
+            continue
+        if not include_minor and flat["is_minor"]:
+            continue
+        if season and season not in flat.get("season_tags", []):
+            continue
+        results.append((flat, importance_score(flat)))
+    results.sort(key=lambda x: x[1], reverse=True)
+    return [flat for flat, _ in results[:limit]]
 
 
 def list_all_pois(poi_type: str = None, season: str = None) -> list:

@@ -362,3 +362,90 @@ class TestComputeRouteModes:
         result = compute_route_with_annotations(mode_graph, 0, 7, mode="bike")
         assert result["mode"] == "bike"
         assert result["speed_kmh"] == 14.0
+
+
+# ---------------------------------------------------------------------------
+# 途经点（via）与游览环线（tour）测试
+# ---------------------------------------------------------------------------
+
+from spatial.routing import (  # noqa: E402
+    VIA_MAX_DETOUR_RATIO,
+    rank_via_candidates,
+    compute_via_route,
+    compute_tour_route,
+)
+
+
+class TestViaRoute:
+    """mock_graph 拓扑：0→3 最短 450m（0-1-2-3）；
+    节点 1 在路上（ratio=1.0），节点 5 显著绕路（ratio≈2.04）。"""
+
+    def test_rank_via_on_the_way(self, mock_graph):
+        cands = [({"name": "途经点A"}, 1), ({"name": "绕路点B"}, 5)]
+        on, off = rank_via_candidates(mock_graph, 0, 3, cands)
+        assert [p["name"] for p, _, _ in on] == ["途经点A"]
+        assert on[0][2] == pytest.approx(1.0, abs=0.01)
+        assert [p["name"] for p, _, _ in off] == ["绕路点B"]
+        assert off[0][2] > VIA_MAX_DETOUR_RATIO
+
+    def test_rank_via_unreachable_dropped(self, mock_graph):
+        mock_graph.add_node(99)  # 孤立点：不可达候选直接丢弃
+        mock_graph.nodes[99]["x"] = 114.360
+        mock_graph.nodes[99]["y"] = 30.535
+        on, off = rank_via_candidates(mock_graph, 0, 3, [({"name": "孤岛"}, 99)])
+        assert on == [] and off == []
+
+    def test_compute_via_route_two_legs(self, mock_graph):
+        result = compute_via_route(mock_graph, 0, 1, 3)
+        assert result["leg1"]["recommended"][0] == 0
+        assert result["leg1"]["recommended"][-1] == 1
+        assert result["leg2"]["recommended"][-1] == 3
+        assert result["detour_ratio"] == pytest.approx(1.0, abs=0.05)
+        assert result["total_length_m"] > 0
+
+
+class TestTourRoute:
+    def _pois(self):
+        return [
+            ({"name": "A", "importance": 1.0}, 1),
+            ({"name": "B", "importance": 2.0}, 3),
+            ({"name": "C", "importance": 3.0}, 5),
+        ]
+
+    def test_tour_open_order_and_legs(self, mock_graph):
+        """开放游览：从 0 出发按最近邻 0→1→3→5，三段 leg。"""
+        result = compute_tour_route(mock_graph, self._pois(), start_node=0, loop=False)
+        assert [p["name"] for p in result["ordered_pois"]] == ["A", "B", "C"]
+        assert len(result["legs"]) == 3
+        assert result["dropped"] == []
+        assert result["total_length_m"] == pytest.approx(
+            sum(l["recommended_length_m"] for l in result["legs"]), abs=0.1
+        )
+
+    def test_tour_loop_returns_to_start(self, mock_graph):
+        result = compute_tour_route(mock_graph, self._pois(), start_node=0, loop=True)
+        assert len(result["legs"]) == 4  # 多一段返回起点
+        first = result["legs"][0]["recommended"][0]
+        last = result["legs"][-1]["recommended"][-1]
+        assert first == last
+
+    def test_tour_drops_unreachable(self, mock_graph):
+        mock_graph.add_node(99)
+        mock_graph.nodes[99]["x"] = 114.360
+        mock_graph.nodes[99]["y"] = 30.535
+        pois = self._pois() + [({"name": "孤岛", "importance": 9.0}, 99)]
+        result = compute_tour_route(mock_graph, pois, start_node=0, loop=False)
+        assert [p["name"] for p in result["dropped"]] == ["孤岛"]
+        assert "孤岛" not in [p["name"] for p in result["ordered_pois"]]
+
+    def test_tour_trims_lowest_importance_when_over_cap(self, mock_graph):
+        """总长上限 200m：依次剔 importance 最低的 A、B，直到只剩终点 C。"""
+        result = compute_tour_route(
+            mock_graph, self._pois(), start_node=0, loop=False, max_total_m=200.0
+        )
+        assert [p["name"] for p in result["ordered_pois"]] == ["C"]
+        assert sorted(p["name"] for p in result["dropped"]) == ["A", "B"]
+
+    def test_tour_empty_pois(self, mock_graph):
+        result = compute_tour_route(mock_graph, [], start_node=0)
+        assert result["ordered_pois"] == [] and result["legs"] == []

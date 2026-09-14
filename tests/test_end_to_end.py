@@ -654,8 +654,8 @@ class TestTravelModeEndToEnd:
         assert data["duration_min"] is not None
         assert data["shortest_duration_min"] is not None
         assert data["speed_kmh"] == 14.0
-        # 模板解释（无 LLM key）应包含出行方式
-        assert "骑行" in data["explanation"]
+        # Agent LLM 解释应包含出行方式关键词（骑行/骑车 均可）
+        assert any(w in data["explanation"] for w in ("骑行", "骑车")), data["explanation"]
 
     def test_chat_travel_mode_drive(self):
         """/api/chat 带 travel_mode=drive（驾车可达 POI 对）：mode=drive 且含 duration_min。"""
@@ -669,7 +669,7 @@ class TestTravelModeEndToEnd:
         assert data["mode"] == "drive"
         assert data["duration_min"] is not None
         assert data["speed_kmh"] == 25.0
-        assert "驾车" in data["explanation"]
+        assert any(w in data["explanation"] for w in ("驾车", "开车")), data["explanation"]
 
     def test_chat_nl_keyword_mode_overrides_body(self):
         """优先级：NL 显式关键词（开车）> body.travel_mode（bike）。"""

@@ -963,3 +963,291 @@ def compute_route_with_annotations(
         G_annotated, start_node, end_node, constraints, weights, mode=mode,
         road_conditions=road_conditions, weather_info=weather_info,
     )
+
+
+# ============================================================================
+# 途经点路径规划（via）
+# ============================================================================
+
+# 顺路性阈值：绕行比 = (起点→途经点 + 途经点→终点) / 起点→终点（最短路径口径）
+# 超过该比值的途经点判定为"不顺路"，不推荐。可在 config 中覆盖。
+VIA_MAX_DETOUR_RATIO = 1.5
+
+
+def _shortest_distance(G_mode: nx.MultiDiGraph, u: int, v: int) -> float:
+    """两点最短路径长度（米），不可达返回 inf。"""
+    try:
+        return nx.shortest_path_length(G_mode, u, v, weight="length")
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        return float("inf")
+
+
+def rank_via_candidates(
+    G: nx.MultiDiGraph,
+    start_node: int,
+    end_node: int,
+    candidates: list,
+    max_detour_ratio: float = VIA_MAX_DETOUR_RATIO,
+    top_k: int = 3,
+    mode: str = "walk",
+) -> tuple:
+    """对途经点候选按顺路性排序。
+
+    Args:
+        candidates: [(poi_dict, node_id), ...]，poi_dict 至少含 name；
+                    node_id 由调用方用 get_nearest_node 解析（WGS-84）。
+        max_detour_ratio: 绕行比上限，超过即判不顺路。
+        top_k: 返回的顺路候选数量。
+
+    Returns:
+        (on_the_way, off_the_way)：
+          on_the_way = [(poi_dict, node_id, detour_ratio), ...] 按绕行比升序
+          off_the_way = 同上结构，全部超阈值（供"都不顺路"时说明）
+    """
+    G_mode, _, _ = filter_graph_for_mode(G, mode)
+    direct = _shortest_distance(G_mode, start_node, end_node)
+    if direct <= 0 or direct == float("inf"):
+        return [], []
+
+    on_the_way, off_the_way = [], []
+    for poi, node in candidates:
+        if node in (start_node, end_node):
+            ratio = 1.0  # 途经点就是起终点本身，零绕行
+        else:
+            d1 = _shortest_distance(G_mode, start_node, node)
+            d2 = _shortest_distance(G_mode, node, end_node)
+            if d1 == float("inf") or d2 == float("inf"):
+                continue  # 不可达候选直接丢弃
+            ratio = (d1 + d2) / direct
+        entry = (poi, node, round(ratio, 3))
+        (on_the_way if ratio <= max_detour_ratio else off_the_way).append(entry)
+
+    on_the_way.sort(key=lambda x: x[2])
+    off_the_way.sort(key=lambda x: x[2])
+    return on_the_way[:top_k], off_the_way
+
+
+def compute_via_route(
+    G: nx.MultiDiGraph,
+    start_node: int,
+    via_node: int,
+    end_node: int,
+    constraints: Optional[dict] = None,
+    weights: Optional[dict] = None,
+    mode: str = "walk",
+    road_conditions: Optional[list] = None,
+    weather_info: Optional[dict] = None,
+) -> dict:
+    """起点 → 途经点 → 终点两段路径拼接。
+
+    Returns:
+        {
+            "leg1": compute_route 结果（start→via）,
+            "leg2": compute_route 结果（via→end）,
+            "direct": compute_route 结果（start→end 直达基线）,
+            "total_length_m": float,
+            "detour_ratio": float,   # 两段合计 / 直达（推荐路径口径）
+            "via_node": int,
+        }
+    """
+    kwargs = dict(mode=mode, road_conditions=road_conditions, weather_info=weather_info)
+    leg1 = compute_route(G, start_node, via_node, constraints, weights, **kwargs)
+    leg2 = compute_route(G, via_node, end_node, constraints, weights, **kwargs)
+    direct = compute_route(G, start_node, end_node, constraints, weights, **kwargs)
+
+    total = leg1["recommended_length_m"] + leg2["recommended_length_m"]
+    base = direct["recommended_length_m"] or direct["shortest_length_m"]
+    detour_ratio = total / base if base > 0 else float("inf")
+
+    return {
+        "leg1": leg1,
+        "leg2": leg2,
+        "direct": direct,
+        "total_length_m": round(total, 1),
+        "detour_ratio": round(detour_ratio, 3),
+        "via_node": via_node,
+    }
+
+
+# ============================================================================
+# 多 POI 游览环线（tour）
+# ============================================================================
+
+TOUR_MAX_POIS = 8                 # 游览点数量上限（全对距离矩阵 28 次 Dijkstra 以内）
+TOUR_MAX_TOTAL_M = 6000.0         # 环线总长上限（游客步行为参照）
+_2OPT_MAX_ROUNDS = 200            # 2-opt 最大迭代轮次
+
+
+def _tour_distance_matrix(G_mode: nx.MultiDiGraph, nodes: list) -> dict:
+    """全对最短距离矩阵：{ (i, j): 米 }，不可达为 inf。"""
+    matrix = {}
+    for i, u in enumerate(nodes):
+        try:
+            lengths = nx.single_source_dijkstra_path_length(G_mode, u, weight="length")
+        except nx.NodeNotFound:
+            lengths = {}
+        for j, v in enumerate(nodes):
+            if i != j:
+                matrix[(i, j)] = lengths.get(v, float("inf"))
+    return matrix
+
+
+def _greedy_nn_order(matrix: dict, n: int, start_idx: int = 0) -> list:
+    """贪心最近邻初解。"""
+    unvisited = set(range(n)) - {start_idx}
+    order = [start_idx]
+    while unvisited:
+        cur = order[-1]
+        nxt = min(unvisited, key=lambda j: matrix.get((cur, j), float("inf")))
+        if matrix.get((cur, nxt), float("inf")) == float("inf"):
+            break  # 剩余点不可达，留给调用方剔除
+        order.append(nxt)
+        unvisited.remove(nxt)
+    return order
+
+
+def _order_length(matrix: dict, order: list, loop: bool) -> float:
+    total = 0.0
+    for i in range(len(order) - 1):
+        d = matrix.get((order[i], order[i + 1]), float("inf"))
+        if d == float("inf"):
+            return float("inf")
+        total += d
+    if loop and len(order) > 2:
+        d = matrix.get((order[-1], order[0]), float("inf"))
+        if d == float("inf"):
+            return float("inf")
+        total += d
+    return total
+
+
+def _two_opt(matrix: dict, order: list, loop: bool) -> list:
+    """2-opt 改进游览顺序（固定起点在 order[0]）。"""
+    best = order[:]
+    best_len = _order_length(matrix, best, loop)
+    improved = True
+    rounds = 0
+    while improved and rounds < _2OPT_MAX_ROUNDS:
+        improved = False
+        rounds += 1
+        for i in range(1, len(best) - 1):
+            for j in range(i + 1, len(best)):
+                cand = best[:i] + best[i:j + 1][::-1] + best[j + 1:]
+                cand_len = _order_length(matrix, cand, loop)
+                if cand_len < best_len - 1e-6:
+                    best, best_len = cand, cand_len
+                    improved = True
+    return best
+
+
+def compute_tour_route(
+    G: nx.MultiDiGraph,
+    poi_nodes: list,
+    start_node: Optional[int] = None,
+    loop: bool = True,
+    constraints: Optional[dict] = None,
+    weights: Optional[dict] = None,
+    mode: str = "walk",
+    max_total_m: float = TOUR_MAX_TOTAL_M,
+    road_conditions: Optional[list] = None,
+    weather_info: Optional[dict] = None,
+) -> dict:
+    """多 POI 游览环线：贪心最近邻 + 2-opt 排序，逐段生成真实加权路径。
+
+    Args:
+        poi_nodes: [(poi_dict, node_id), ...]，poi_dict 至少含 name/importance 信息；
+                   数量 ≤ TOUR_MAX_POIS，超出部分按列表顺序截断前的由调用方筛选。
+        start_node: 游览起点（如"我的位置"/校门）；None 时以第一个 POI 为起点。
+        loop: True 回到起点（环线），False 开放路径。
+        max_total_m: 总长上限，超出时按 poi_dict["importance"] 从低到高剔点。
+
+    Returns:
+        {
+            "ordered_pois": [poi_dict, ...] 游览顺序,
+            "ordered_nodes": [node_id, ...],
+            "legs": [compute_route 结果, ...] 每段路径,
+            "total_length_m": float,
+            "dropped": [poi_dict, ...] 被剔除的点（不可达或超长）,
+            "loop": bool,
+        }
+    """
+    if not poi_nodes:
+        return {"ordered_pois": [], "ordered_nodes": [], "legs": [],
+                "total_length_m": 0.0, "dropped": [], "loop": loop}
+
+    poi_nodes = poi_nodes[:TOUR_MAX_POIS]
+    G_mode, _, _ = filter_graph_for_mode(G, mode)
+
+    # 起点固定为顺序首位：有 start_node 时把它作为 0 号节点加入矩阵
+    nodes = [n for _, n in poi_nodes]
+    anchor_first = False
+    if start_node is not None:
+        nodes = [start_node] + nodes
+        anchor_first = True
+
+    matrix = _tour_distance_matrix(G_mode, nodes)
+
+    # 剔除不可达点（到任何其他点都不可达的孤立点）
+    keep = list(range(len(nodes)))
+    if anchor_first:
+        keep.remove(0)
+    connected = []
+    for i in keep:
+        if any(matrix.get((i, j), float("inf")) < float("inf") for j in range(len(nodes)) if j != i):
+            connected.append(i)
+    dropped = [poi_nodes[i - 1][0] for i in keep if i not in connected] if anchor_first \
+        else [poi_nodes[i][0] for i in keep if i not in connected]
+
+    if anchor_first:
+        sub = [0] + connected
+    else:
+        sub = connected
+    if len(sub) < (2 if anchor_first else 1):
+        return {"ordered_pois": [], "ordered_nodes": [], "legs": [],
+                "total_length_m": 0.0, "dropped": dropped, "loop": loop}
+
+    order = _greedy_nn_order(matrix, len(nodes), start_idx=0)
+    order = [i for i in order if i in sub]
+    order = _two_opt(matrix, order, loop and not anchor_first)
+
+    # 总长超限：按重要度从低到高剔点（不动起点锚）
+    def _imp(idx):
+        if anchor_first and idx == 0:
+            return float("inf")
+        poi = poi_nodes[idx - 1][0] if anchor_first else poi_nodes[idx][0]
+        return float(poi.get("importance", 0))
+
+    while len(order) > 2 and _order_length(matrix, order, loop) > max_total_m:
+        victim = min(order[1:], key=_imp)
+        order.remove(victim)
+        dropped.append(poi_nodes[victim - 1][0] if anchor_first else poi_nodes[victim][0])
+
+    # 逐段生成真实加权路径；某段加权不可达时退化为最短路径
+    ordered_nodes = [nodes[i] for i in order]
+    ordered_pois = [poi_nodes[i - 1][0] if anchor_first else poi_nodes[i][0]
+                    for i in order if not (anchor_first and i == 0)]
+    seq = ordered_nodes + ([ordered_nodes[0]] if loop and len(ordered_nodes) > 2 else [])
+    legs = []
+    total = 0.0
+    for a, b in zip(seq, seq[1:]):
+        if a == b:
+            continue
+        try:
+            leg = compute_route(G, a, b, constraints, weights, mode=mode,
+                                road_conditions=road_conditions, weather_info=weather_info)
+        except ValueError:
+            path = nx.dijkstra_path(G_mode, a, b, weight="length")
+            leg = {"recommended": path, "shortest": path,
+                   "recommended_length_m": _path_length(G, path),
+                   "filter_status": "tour_leg_fallback", "mode": mode}
+        legs.append(leg)
+        total += leg["recommended_length_m"]
+
+    return {
+        "ordered_pois": ordered_pois,
+        "ordered_nodes": ordered_nodes,
+        "legs": legs,
+        "total_length_m": round(total, 1),
+        "dropped": dropped,
+        "loop": loop,
+    }

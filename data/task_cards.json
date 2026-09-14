@@ -1,0 +1,77 @@
+{
+  "cards": [
+    {
+      "id": "sakura_viewing",
+      "name": "赏樱",
+      "triggers": ["樱花", "赏樱", "看花", "樱花大道", "樱顶"],
+      "season_hint": "spring",
+      "applies_to": ["plan_tour", "search_poi_candidates", "plan_route"],
+      "advice": "赏樱首选 subcategory=sakura 的地点（樱花大道/老斋舍/樱园/日字斋）。樱花季（3 月中下旬）人流密集，樱花大道可能临时管制，规划前先调 list_road_conditions 确认。从珞珈门（牌坊）进校沿自强大道上樱顶是经典动线。",
+      "default_weights": {"distance": 0.15, "slope": 0.15, "scenery": 0.7}
+    },
+    {
+      "id": "campus_tour",
+      "name": "游客逛校园",
+      "triggers": ["逛", "参观", "游客", "第一次来", "转转", "逛逛", "游览", "玩"],
+      "applies_to": ["plan_tour"],
+      "advice": "游客想逛全校时直接调 plan_tour（theme=scenery，loop=true），不要逐个问用户想去哪。若用户在校门口说'我的位置'，用它做 start。总长控制在 6km 内，讲解时突出地标故事感（老斋舍、樱顶、凌波门东湖）。",
+      "default_weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}
+    },
+    {
+      "id": "meal_run",
+      "name": "觅食",
+      "triggers": ["吃饭", "饿", "食堂", "吃什么", "干饭", "午饭", "晚饭", "早餐"],
+      "applies_to": ["search_poi_candidates"],
+      "advice": "想吃饭先 search_poi_candidates(subcategory=canteen, near_poi=用户位置或常去地)。食堂便宜量大，餐厅（subcategory=restaurant）适合聚餐，快餐（fastfood）适合赶时间。推荐时说清类别差异，给 2~3 个不同距离的选项。",
+      "default_weights": {"distance": 0.7, "slope": 0.15, "scenery": 0.15}
+    },
+    {
+      "id": "coffee_tea",
+      "name": "咖啡茶饮",
+      "triggers": ["咖啡", "奶茶", "喝", "果茶", "柠檬茶"],
+      "applies_to": ["search_poi_candidates"],
+      "advice": "咖啡调 search_poi_candidates(subcategory=coffee)，奶茶果茶用 tea_drink。校内连锁小店密集，直接按 near_poi 距离排序推荐最近的即可。",
+      "default_weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}
+    },
+    {
+      "id": "class_commute",
+      "name": "上课通勤",
+      "triggers": ["上课", "下课", "教室", "教学楼", "赶时间", "迟到", "教一", "教二", "教三", "教四", "教五"],
+      "applies_to": ["plan_route", "plan_via_route"],
+      "advice": "上课通勤以时间优先：weights 距离占主导（如 0.7/0.15/0.15）。带'顺便/路上买/路过'时用 plan_via_route。别推荐绕远的风景路。",
+      "default_weights": {"distance": 0.7, "slope": 0.2, "scenery": 0.1}
+    },
+    {
+      "id": "errand_shopping",
+      "name": "办事购物",
+      "triggers": ["买", "超市", "打印", "取快递", "银行", "邮局", "医院", "文具", "笔记本"],
+      "applies_to": ["search_poi_candidates", "plan_via_route"],
+      "advice": "买东西优先 supermarket（自强超市是校内最大综合超市，文具/日用品都有）；打印查 keyword=打印；取快递查 keyword=快递。作为途经点时用 plan_via_route 的 via_subcategory 自动选最顺路的。",
+      "default_weights": {"distance": 0.7, "slope": 0.2, "scenery": 0.1}
+    },
+    {
+      "id": "exercise",
+      "name": "运动锻炼",
+      "triggers": ["跑步", "锻炼", "运动", "健身", "打球", "游泳", "操场"],
+      "applies_to": ["search_poi_candidates", "plan_route"],
+      "advice": "跑步/散步推荐 field（操场）或 plan_tour 景观环线；打球游泳用对应 subcategory（field/gym/pool）。九一二运动场和梅园操场是跑步热门地。",
+      "default_weights": {"distance": 0.5, "slope": 0.2, "scenery": 0.3}
+    },
+    {
+      "id": "accessibility",
+      "name": "无障碍出行",
+      "triggers": ["膝盖", "轮椅", "推车", "婴儿车", "行李", "爬坡", "台阶", "平路", "腿"],
+      "applies_to": ["plan_route", "plan_via_route", "plan_tour"],
+      "advice": "涉及膝盖不好/轮椅/婴儿车/大件行李：必须 constraints.slope='avoid' 且 weights 提高 slope（如 0.2/0.6/0.2）。珞珈山片区（樱顶/老斋舍）台阶密集，主动提醒用户并给平地替代方案。",
+      "default_weights": {"distance": 0.25, "slope": 0.6, "scenery": 0.15}
+    },
+    {
+      "id": "weather_adaptive",
+      "name": "恶劣天气出行",
+      "triggers": ["下雨", "下雪", "暴雨", "淋雨", "伞"],
+      "applies_to": ["plan_route", "plan_via_route"],
+      "advice": "雨雪天先 get_weather 确认，系统会自动对陡坡/台阶加惩罚。答复时提醒路面湿滑，建议缩短步行距离（weights 距离占主导）。",
+      "default_weights": {"distance": 0.7, "slope": 0.2, "scenery": 0.1}
+    }
+  ]
+}
