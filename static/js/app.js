@@ -459,7 +459,8 @@
             });
 
             // 底图：高德瓦片（GCJ-02，国内秒开，中文标注，高缩放全覆盖）
-            // 可选：天地图矢量（需 Key，CGCS2000≈GCJ-02）、Esri 卫星影像（WGS-84）
+            // 全站统一 GCJ-02：POI/路线/GPS 均按 GCJ-02 渲染，底图不可混入 WGS-84 源
+            // （OSM/Esri 为 WGS-84 且国内不可达/会串位约 500m，已移除）
             var baseLayers = {};
             var defaultLayer = null;
 
@@ -495,19 +496,20 @@
                 defaultLayer = tdtVec;
             }
 
-            // OSM（WGS-84，海外可用，国内不稳定）
-            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 贡献者',
-            });
-            baseLayers['OpenStreetMap'] = osm;
-
-            // Esri 影像底图（WGS-84，无需 Key；国内可访问）
-            var esriImg = L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                { maxZoom: 19, attribution: '© Esri World Imagery' }
-            );
-            baseLayers['卫星影像'] = esriImg;
+            // 高德卫星影像 + 路网注记（GCJ-02，无需 Key；与 POI/路线同坐标系，天然对齐）
+            var amapSat = L.layerGroup([
+                L.tileLayer(
+                    'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+                    { subdomains: ['1', '2', '3', '4'],
+                      maxZoom: 18,
+                      attribution: '© <a href="https://ditu.amap.com/" target="_blank" rel="noopener">高德地图</a>' }
+                ),
+                L.tileLayer(
+                    'https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',
+                    { subdomains: ['1', '2', '3', '4'], maxZoom: 18 }
+                ),
+            ]);
+            baseLayers['卫星影像'] = amapSat;
 
             if (!defaultLayer) {
                 // 默认用高德矢量（国内手机端秒开，GCJ-02 与 POI/路径天然对齐）
