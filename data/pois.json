@@ -1,6 +1,6 @@
 {
  "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/餐饮/景点/校内服务（410条）",
- "count": 421,
+ "count": 420,
  "pois": [
   {
    "id": "poi_001",
@@ -7322,29 +7322,6 @@
    "campus": "文理学部",
    "category": "gate",
    "description": "文理学部校内地点。东门，武大最东侧，珞珈山脚下东湖湖岸线，校外可达一棵树进入东湖绿道（高德核实）。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "gate",
-   "is_minor": false
-  },
-  {
-   "id": "poi_304",
-   "name": "西南门",
-   "aliases": [
-    "武汉大学西南门",
-    "武大西南门"
-   ],
-   "coordinates": {
-    "lng": 114.3565,
-    "lat": 30.5325
-   },
-   "type": "gate",
-   "campus": "文理学部",
-   "category": "gate",
-   "description": "文理学部校内地点。校园西南侧出入口（高德地图有此门，坐标为珞珈山路附近近似值，待精确核实）。",
    "season_tags": [
     "all"
    ],
