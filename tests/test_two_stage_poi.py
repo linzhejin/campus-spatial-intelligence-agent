@@ -311,6 +311,24 @@ class TestGateCoordinates:
         assert find_poi("武大东门")["name"] == "扬波门"
         assert find_poi("牌坊")["name"] == "珞珈门"
 
+    def test_chagang_gate_belongs_arts_campus(self, gates):
+        """茶港门属文理学部（茶港路-天鹅路一线），不是工学部。"""
+        p = gates["武汉大学茶港门"]
+        assert p["campus"] == "文理学部"
+        assert "文理学部茶港门" in p["aliases"]
+        assert "工学部茶港门" not in p["aliases"]
+
+    def test_shuisheng_alias_points_to_wenlan(self, gates):
+        """「水生所旁校门」是文澜门，曾误挂洪波门。"""
+        assert "水生所旁校门" in gates["武汉大学文澜门"]["aliases"]
+        assert "水生所旁校门" not in gates["洪波门"]["aliases"]
+        assert find_poi("水生所旁校门")["name"] == "武汉大学文澜门"
+
+    def test_nan_damen_is_luoyu_gate(self):
+        """「南大门」＝信息学部珞瑜门；而「南门」仍是珞南门，两者不可混。"""
+        assert find_poi("南大门")["name"] == "珞瑜门"
+        assert find_poi("南门")["name"] == "珞南门"
+
 
 # ===== 7. 校园文化 prompt 边界（直答授权 + 易变事实护栏） =====
 
