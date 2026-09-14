@@ -266,3 +266,77 @@ class TestMatchingQuality:
 
     def test_garbage_returns_none(self):
         assert find_poi("zzz不存在的地点qqq") is None
+
+
+# ===== 6. 校门坐标与别名契约（2026-09 高德 API + 卫星图逐门核对） =====
+
+class TestGateCoordinates:
+    GATE_NAMES = {
+        "凌波门", "珞南门", "武汉大学科技门", "珞珈门", "武汉大学茶港门",
+        "洪波门", "武汉大学文澜门", "珞瑜二门", "珞瑜门", "弘毅门",
+        "北门", "扬波门", "西南门",
+    }
+
+    @pytest.fixture(scope="class")
+    def gates(self):
+        with open(POIS_PATH, encoding="utf-8") as f:
+            pois = json.load(f)["pois"]
+        return {p["name"]: p for p in pois if p.get("subcategory") == "gate"}
+
+    def test_all_13_gates_present(self, gates):
+        missing = self.GATE_NAMES - set(gates)
+        assert not missing, f"缺少校门 POI: {missing}"
+        assert len(gates) == 13
+
+    def test_luoyu_gate_on_luoyu_road(self, gates):
+        """珞瑜门（信息学部正门）必须压在珞瑜路一侧：纬度 < 30.525。
+        历史上该点曾错放在门内友谊广场中央（30.5254，偏北约 87m）。"""
+        p = gates["珞瑜门"]
+        assert p["coordinates"]["lat"] < 30.525, p["coordinates"]
+        assert abs(p["coordinates"]["lng"] - 114.36116) < 0.0003
+
+    def test_lingbo_and_yangbo_distinct(self, gates):
+        """凌波门（东湖南路栈桥地标）与扬波门（东门）相距 1km 左右，
+        不得混为一点。"""
+        a = gates["凌波门"]["coordinates"]
+        b = gates["扬波门"]["coordinates"]
+        dlat = (a["lat"] - b["lat"]) * 111000
+        dlng = (a["lng"] - b["lng"]) * 96000
+        assert (dlat ** 2 + dlng ** 2) ** 0.5 > 800
+
+    def test_gate_colloquial_aliases_resolve(self):
+        """学生/游客常用俗称必须解析到正确的校门。"""
+        assert find_poi("广埠屯校门")["name"] == "珞瑜门"
+        assert find_poi("附中门")["name"] == "珞南门"
+        assert find_poi("武大东门")["name"] == "扬波门"
+        assert find_poi("牌坊")["name"] == "珞珈门"
+
+
+# ===== 7. 校园文化 prompt 边界（直答授权 + 易变事实护栏） =====
+
+class TestCulturePrompt:
+    PROMPT_PATH = os.path.join(
+        PROJECT_ROOT, "agents", "prompts", "agent_system.txt"
+    )
+
+    @pytest.fixture(scope="class")
+    def prompt(self):
+        with open(self.PROMPT_PATH, encoding="utf-8") as f:
+            return f.read()
+
+    def test_culture_qa_authorized(self, prompt):
+        assert "校园文化常识" in prompt
+
+    def test_sixteen_dorms_anchor_present(self, prompt):
+        """十六斋序列是高错率锚点，缺失会让模型乱排。"""
+        for seq in ("天、地、玄、黄", "宇、宙、洪、荒", "日、月、盈、昃", "辰、宿、列、张"):
+            assert seq in prompt
+
+    def test_gate_disambiguation_present(self, prompt):
+        assert "扬波门" in prompt and "凌波门" in prompt
+        assert "珞瑜门" in prompt and "珞珈门" in prompt
+
+    def test_mutable_rules_guardrail_present(self, prompt):
+        """易变规则不许凭记忆答，必须导向"看最新通知"。"""
+        assert "最新通知" in prompt
+        assert "禁止凭记忆作答" in prompt
