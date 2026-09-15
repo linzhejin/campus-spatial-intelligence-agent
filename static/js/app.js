@@ -886,9 +886,17 @@
                 else if (err && err.code === 3) msg += '定位超时';
                 else msg += '请稍后再试';
                 if (!silent) { setLocateBtnState(false); showError('定位失败', msg); }
-                _setLocStatus(msg, 'error');
                 console.warn('[TRACK] 原生 watch 错误:', err && err.code, err && err.message);
-                if (onError) onError(err);
+                // 句柄已失效，置空（否则降级判断和 _clearWatch 会拿到死句柄）
+                state.locateWatchId = null;
+                // 防重入：watch 的 error 可能连续触发多次，降级只做一次
+                if (onError && !state._amapFallbackStarted) {
+                    state._amapFallbackStarted = true;
+                    _setLocStatus(msg + '，切换 WiFi 定位…', 'warn');
+                    onError(err);
+                } else if (!onError) {
+                    _setLocStatus(msg, 'error');
+                }
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 3000 }
         );
@@ -917,8 +925,10 @@
                         console.log('[TRACK] AMap 位置更新, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
                     } else {
                         console.warn('[TRACK] AMap watch 状态:', status);
-                        // AMap watch 失败 → 切原生
-                        if (!state.locateWatchId) _startNativeWatch(silent);
+                        // AMap 是最后一道兜底（原生已失败才会走到这里），失败就只能报错
+                        if (!state.locateWatchId && !state._amapWatchListener) {
+                            _setLocStatus('定位失败：GPS 和 WiFi 定位都不可用', 'error');
+                        }
                     }
                 });
                 _setLocStatus('已启动 AMap 跟踪', 'success');
@@ -932,46 +942,46 @@
         return true;
     }
 
-    // 对外：启动持续跟踪（AMap 优先 + 原生 fallback）
+    // 对外：启动持续跟踪（原生 GPS 优先，0 等待；AMap 仅作为台式机等无 GPS 环境的兜底）
+    // 原生 GPS 手机上通常 1-3 秒出首个定位点，比等 AMap SDK 加载 + 服务器 WiFi 定位快
     function startTracking(silent) {
         _clearWatch();
-        _setLocStatus('准备定位…', 'info');
-        // 微信内置浏览器：AMap 定位插件不可靠，直接用原生
-        var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
-        if (isWeChat) {
-            _setLocStatus('定位中…（原生 GPS）', 'info');
-            _startNativeWatch(silent);
-            return;
-        }
-        if (window.AMap && window.AMap.plugin) {
+        state._amapFallbackStarted = false;
+        _setLocStatus('定位中…（原生 GPS）', 'info');
+        // 原生启动失败（不支持/非HTTPS）或定位出错（超时/无信号）→ 降级 AMap WiFi 定位
+        var fallbackFn = function (err) {
+            // code 1 = 用户拒绝授权，AMap 高精度定位同样需要授权，降级无意义
+            if (err && err.code === 1) return;
+            console.warn('[TRACK] 原生定位失败 code:', err && err.code, '→ 降级 AMap SDK');
             _startAmapWatch(silent);
-        } else {
-            // SDK 还在加载，等最多 1.5 秒（原 3 秒太慢）
-            _setLocStatus('等待 AMap SDK 加载…', 'info');
-            var waited = 0, interval = 150, maxWait = 1500;
-            var tick = setInterval(function () {
-                waited += interval;
-                if (window.AMap && window.AMap.plugin) {
-                    clearInterval(tick);
-                    _startAmapWatch(silent);
-                } else if (waited >= maxWait) {
-                    clearInterval(tick);
-                    console.warn('[TRACK] AMap 1.5 秒未加载 → fallback 原生');
-                    _setLocStatus('AMap 未加载，切换原生', 'warn');
-                    _startNativeWatch(silent);
-                }
-            }, interval);
+        };
+        if (!_startNativeWatch(silent, fallbackFn)) {
+            // 环境根本不支持原生定位 → 直接 AMap（其自带 WiFi/IP 定位，不依赖浏览器权限）
+            console.warn('[TRACK] 原生定位不可用 → 降级 AMap SDK');
+            _startAmapWatch(silent);
         }
     }
 
     // ===== 页面加载自动定位（静默版，持续跟踪） =====
     function autoLocateSilent() {
         if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); _setLocStatus('地图未就绪，跳过自动定位', 'warn'); return; }
+        // 先画上次的位置（10 分钟内有效）：感知秒出，GPS 在后台继续精修
+        try {
+            var raw = localStorage.getItem('whu_last_pos');
+            if (raw) {
+                var c = JSON.parse(raw);
+                var ageMin = (Date.now() - (c.ts || 0)) / 60000;
+                if (c.lng && c.lat && ageMin >= 0 && ageMin <= 10) {
+                    renderUserLocation(c.lng, c.lat, c.accuracy || 0, false, true);
+                    console.log('[AUTO_LOC] 使用缓存位置（' + Math.round(ageMin) + ' 分钟前），等待 GPS 精修');
+                }
+            }
+        } catch (e) { /* 缓存损坏忽略 */ }
         _setLocStatus('自动定位中…', 'info');
         startTracking(true);
     }
 
-    function renderUserLocation(lng, lat, accuracy, isManual) {
+    function renderUserLocation(lng, lat, accuracy, isManual, isCached) {
         // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
         var gcjLng = gcj[0], gcjLat = gcj[1];
@@ -981,6 +991,14 @@
             accuracy: accuracy || 0,
             manual: !!isManual,
         };
+        // 缓存 GPS 修复（非手动点位、精度可信时），供下次打开秒显
+        if (!isManual && !isCached && accuracy > 0 && accuracy <= 300) {
+            try {
+                localStorage.setItem('whu_last_pos', JSON.stringify({
+                    lng: lng, lat: lat, accuracy: Math.round(accuracy), ts: Date.now()
+                }));
+            } catch (e) { /* 隐私模式等场景忽略 */ }
+        }
         // 只有首次定位或手动设点才更新可见状态条（持续跟踪时不要反复闪）
         var isFirstFix = !state._hadUserLocation;
         state._hadUserLocation = true;
@@ -988,11 +1006,14 @@
             var accText = accuracy > 0 ? '（精度约 ' + Math.round(accuracy) + 'm）' : '';
             _setLocStatus('已定位' + accText, 'success');
         }
+        if (isCached) {
+            _setLocStatus('已显示上次位置，正在精确刷新…', 'info');
+        }
         if (!state.map) return;
 
-        // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner
+        // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner（缓存点位跳过，等真实修复再判）
         var acc = accuracy || 0;
-        if (!isManual && (acc > 500 || acc === 0)) {
+        if (!isManual && !isCached && (acc > 500 || acc === 0)) {
             showLowAccuracyWarning(acc);
         } else {
             hideLowAccuracyWarning();
