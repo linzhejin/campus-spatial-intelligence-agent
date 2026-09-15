@@ -537,24 +537,61 @@
         }
     }
 
-    // ========== GPS 定位（WGS-84；高德瓦片 GCJ-02，渲染前需转换） ==========
+    // ========== GPS 定位 + 手动设起点 ==========
     function addLocateControl() {
+        var container = L.DomUtil.create('div', 'whu-locate-group');
+        container.style.display = 'flex';
+        container.style.gap = '4px';
+        container.style.flexDirection = 'column';
+
+        // GPS 定位按钮
+        var btn = L.DomUtil.create('div', 'whu-locate-btn leaflet-bar', container);
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('aria-label', 'GPS定位我的位置');
+        btn.title = 'GPS定位（手机精度高；桌面IP定位可能不准，建议手动选点）';
+        btn.innerHTML = '<span class="whu-locate-icon">◎</span>';
+        L.DomEvent.disableClickPropagation(btn);
+        L.DomEvent.disableScrollPropagation(btn);
+        btn.addEventListener('click', onLocateClick);
+        btn.style.cursor = 'pointer';
+        btn.style.width = '30px';
+        btn.style.height = '30px';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.background = '#fff';
+        btn.style.borderRadius = '4px';
+        btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+        btn.style.fontSize = '16px';
+        btn.style.fontWeight = 'bold';
+        btn.style.color = '#2B7CFF';
+        this._btn = btn;
+
+        // 手动设起点按钮
+        var manualBtn = L.DomUtil.create('div', 'whu-manual-locate-btn leaflet-bar', container);
+        manualBtn.setAttribute('role', 'button');
+        manualBtn.setAttribute('aria-label', '手动点击地图设我的位置');
+        manualBtn.title = '手动选点：点击地图任意位置作为「我的位置」';
+        manualBtn.innerHTML = '<span style="font-size:16px;">📌</span>';
+        L.DomEvent.disableClickPropagation(manualBtn);
+        L.DomEvent.disableScrollPropagation(manualBtn);
+        manualBtn.addEventListener('click', toggleManualLocateMode);
+        manualBtn.style.cursor = 'pointer';
+        manualBtn.style.width = '30px';
+        manualBtn.style.height = '30px';
+        manualBtn.style.display = 'flex';
+        manualBtn.style.alignItems = 'center';
+        manualBtn.style.justifyContent = 'center';
+        manualBtn.style.background = '#fff';
+        manualBtn.style.borderRadius = '4px';
+        manualBtn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+
         var LocateCtrl = L.Control.extend({
             options: { position: 'topright' },
-            onAdd: function () {
-                var btn = L.DomUtil.create('div', 'whu-locate-btn leaflet-bar');
-                btn.setAttribute('role', 'button');
-                btn.setAttribute('aria-label', '定位我的位置');
-                btn.title = '定位我的位置（WGS-84 → GCJ-02 对齐高德瓦片）';
-                btn.innerHTML = '<span class="whu-locate-icon">◎</span>';
-                L.DomEvent.disableClickPropagation(btn);
-                L.DomEvent.disableScrollPropagation(btn);
-                btn.addEventListener('click', onLocateClick);
-                this._btn = btn;
-                return btn;
-            },
+            onAdd: function () { return container; },
         });
         state.locateControl = new LocateCtrl().addTo(state.map);
+        state.manualLocateBtn = manualBtn;
     }
 
     function setLocateBtnState(busy) {
@@ -596,65 +633,137 @@
         }
     }
 
-    function renderUserLocation(lng, lat, accuracy) {
-        // 诊断：把原始 GPS 坐标和转换后都打出来，判断浏览器给的到底是啥坐标
+    function renderUserLocation(lng, lat, accuracy, isManual) {
+        // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
         var gcjLng = gcj[0], gcjLat = gcj[1];
-        console.log('[LOC-DEBUG] 浏览器原始坐标 lng=' + lng + ' lat=' + lat + ' accuracy=' + accuracy + 'm');
-        console.log('[LOC-DEBUG] wgs84→gcj02 转换后 lng=' + gcjLng + ' lat=' + gcjLat);
-        console.log('[LOC-DEBUG] 偏移量 Δlng=' + (gcjLng - lng).toFixed(6) + ' Δlat=' + (gcjLat - lat).toFixed(6));
-        // 临时：如果浏览器给的已经是 GCJ-02，再转一遍会偏出约 500-1000m
-        // 如果原始坐标直接画到高德瓦片上很准，那浏览器给的就是 GCJ-02，跳过转换
-        var dblCheck = wgs84ToGcj02(gcjLng, gcjLat);
-        console.log('[LOC-DEBUG] 双重转换后 lng=' + dblCheck[0].toFixed(6) + ' lat=' + dblCheck[1].toFixed(6) + ' (如果这个反而近，说明浏览器给的就是GCJ)');
-        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy, gcjLng: gcjLng, gcjLat: gcjLat, rawLng: lng, rawLat: lat };
+        state.userLocation = {
+            lng: lng, lat: lat,
+            gcjLng: gcjLng, gcjLat: gcjLat,
+            accuracy: accuracy || 0,
+            manual: !!isManual,
+        };
         if (!state.map) return;
 
+        // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner
+        var acc = accuracy || 0;
+        if (!isManual && (acc > 500 || acc === 0)) {
+            showLowAccuracyWarning(acc);
+        } else {
+            hideLowAccuracyWarning();
+        }
+
+        // 精度圈
         if (state.userAccuracyCircle) {
             state.userAccuracyCircle.setLatLng([gcjLat, gcjLng]);
-            if (accuracy) state.userAccuracyCircle.setRadius(accuracy);
-        } else {
+            if (acc > 0) state.userAccuracyCircle.setRadius(acc);
+            state.userAccuracyCircle.setStyle({
+                opacity: isManual ? 0.3 : 0.5,
+                fillOpacity: isManual ? 0.08 : 0.12,
+            });
+        } else if (acc > 0) {
             state.userAccuracyCircle = L.circle([gcjLat, gcjLng], {
-                radius: accuracy || 30,
-                color: '#2B7CFF', weight: 1, opacity: 0.5,
-                fillColor: '#2B7CFF', fillOpacity: 0.12,
+                radius: acc,
+                color: isManual ? '#E67E22' : '#2B7CFF',
+                weight: 1, opacity: 0.5,
+                fillColor: isManual ? '#E67E22' : '#2B7CFF',
+                fillOpacity: isManual ? 0.08 : 0.12,
                 interactive: false,
             }).addTo(state.map);
         }
 
+        // 蓝点标记
+        var dotColor = isManual ? '#E67E22' : '#2B7CFF';  // 手动=橙，GPS=蓝
+        var dotHtml = '<div style="position:relative;width:20px;height:20px;">'
+            + '<div style="position:absolute;inset:0;border-radius:50%;background:' + dotColor + ';opacity:0.25;"></div>'
+            + '<div style="position:absolute;left:5px;top:5px;width:10px;height:10px;border-radius:50%;'
+            + 'background:' + dotColor + ';border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>'
+            + '</div>';
+        var tooltipTxt = isManual
+            ? '我的位置（手动设置）· 说「从我这到樱顶」'
+            : '我的位置' + (acc > 0 ? '（精度约 ' + Math.round(acc) + 'm）' : '（IP定位精度可能低）') + ' · 说「从我这到樱顶」';
+
         if (state.userMarker) {
-            state.userMarker.setLatLng([gcjLat, gcjLng]);
+            state.map.removeLayer(state.userMarker);
+            state.userMarker = null;
+        }
+        if (state.userMarkerRaw) { state.map.removeLayer(state.userMarkerRaw); state.userMarkerRaw = null; }
+
+        state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置')
+            .bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
+            .addTo(state.map);
+
+        // 首次定位：居中
+        state.map.setView([gcjLat, gcjLng], 17);
+    }
+
+    // 精度警告 banner（桌面 Chrome IP 定位精度差时弹）
+    var _lowAccBanner = null;
+    function showLowAccuracyWarning(acc) {
+        if (_lowAccBanner) return;
+        var msg = acc === 0
+            ? '⚠️ 当前位置由 IP 推断，精度差。点右上角 📌 手动选点更准。'
+            : '⚠️ 定位精度约 ' + Math.round(acc) + 'm（' + (acc > 1000 ? '误差较大' : '可能不够准') + '）。点 📌 手动选点。';
+        _lowAccBanner = showTopBanner(msg, 'warning');
+    }
+    function hideLowAccuracyWarning() {
+        if (_lowAccBanner) {
+            _lowAccBanner.remove();
+            _lowAccBanner = null;
+        }
+    }
+
+    // 轻量顶部 banner（精度警告 / 手动选点提示）
+    function showTopBanner(msg, type) {
+        var el = document.createElement('div');
+        var bg = type === 'warning' ? '#FFF3CD' : type === 'success' ? '#D4EDDA' : '#D1ECF1';
+        var color = type === 'warning' ? '#856404' : type === 'success' ? '#155724' : '#0C5460';
+        var border = type === 'warning' ? '#FFC107' : type === 'success' ? '#28A745' : '#17A2B8';
+        el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1000;'
+            + 'padding:8px 16px;background:' + bg + ';color:' + color + ';border:1px solid ' + border + ';'
+            + 'border-radius:6px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.15);'
+            + 'max-width:90%;text-align:center;pointer-events:auto;cursor:pointer;';
+        el.textContent = msg;
+        el.addEventListener('click', function () { el.remove(); });
+        document.body.appendChild(el);
+        setTimeout(function () { if (el.parentNode) el.remove(); }, 10000);  // 10 秒自动消失
+        return el;
+    }
+
+    // ====== 手动设起点（点 📌 按钮 → 点击地图任意位置） ======
+    var _manualLocateActive = false;
+    var _manualLocateHandler = null;
+    function toggleManualLocateMode() {
+        if (_manualLocateActive) {
+            // 退出模式
+            if (_manualLocateHandler && state.map) state.map.off('click', _manualLocateHandler);
+            _manualLocateActive = false;
+            _manualLocateHandler = null;
+            if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '';
+            showTopBanner('手动选点已退出', 'info');
+            state.map.getContainer().style.cursor = '';
         } else {
-            var dotHtml = '<div style="position:relative;width:18px;height:18px;">'
-                + '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(43,124,255,0.25);"></div>'
-                + '<div style="position:absolute;left:4px;top:4px;width:10px;height:10px;border-radius:50%;'
-                + 'background:#2B7CFF;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>'
-                + '</div>';
-            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [18, 18], [9, 9], '我的位置')
-                .bindTooltip('我的位置（GPS WGS-84，自动对齐高德瓦片）· 说「从我这到樱顶」', {
-                    direction: 'top', offset: [0, -10], opacity: 0.95,
-                })
-                .addTo(state.map);
-
-            // ====== 临时诊断：画一个红色叉表示"浏览器原始坐标直接画到瓦片上" ======
-            // 如果这个红点反而在信图上，说明浏览器给的已经是 GCJ-02，我们多转了一次
-            if (state.userMarkerRaw) state.userMarkerRaw.remove();
-            var rawHtml = '<div style="width:16px;height:16px;background:#E74C3C;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(231,76,60,0.3);"></div>';
-            state.userMarkerRaw = divMarker([lat, lng], rawHtml, [16, 16], [8, 8], '浏览器原始坐标（未转换）')
-                .bindTooltip('浏览器原始坐标（未做 WGS→GCJ 转换）', { direction: 'right', offset: [8, 0], opacity: 0.95 })
-                .addTo(state.map);
-            // 把"转换后"的蓝点变成绿色，方便和红色原始点区分
-            state.userMarker = divMarker([gcjLat, gcjLng],
-                '<div style="width:16px;height:16px;background:#27AE60;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(39,174,96,0.3);"></div>',
-                [16, 16], [8, 8], '转换后 GCJ-02')
-                .bindTooltip('wgs84→gcj02 转换后坐标 · 如果我偏了说明浏览器给的不是 WGS-84', { direction: 'right', offset: [8, 0], opacity: 0.95 })
-                .addTo(state.map);
-
-            // 首次定位：居中并提示一次
-            state.map.setView([gcjLat, gcjLng], 17);
-            setTimeout(function () {
-                if (state.userMarker) state.userMarker.openTooltip();
-            }, 400);
+            // 进入选点模式
+            _manualLocateActive = true;
+            showTopBanner('📌 点击地图任意位置设为「我的位置」', 'info');
+            if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '2px solid #E67E22';
+            state.map.getContainer().style.cursor = 'crosshair';
+            _manualLocateHandler = function (e) {
+                // leaflet event 里 latlng 是 GCJ-02（高德瓦片坐标系）
+                var gcjLat = e.latlng.lat;
+                var gcjLng = e.latlng.lng;
+                // 反向转成 WGS-84 存起来（跟 GPS 流程一致，存 WGS-84，渲染再转 GCJ）
+                var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                var wgsLng = wgs[0], wgsLat = wgs[1];
+                hideLowAccuracyWarning();
+                renderUserLocation(wgsLng, wgsLat, 5, true);  // accuracy 随便给，手动设的不准也准
+                showTopBanner('✅ 已设为「我的位置」', 'success');
+                // 退出选点模式
+                _manualLocateActive = false;
+                if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '';
+                state.map.getContainer().style.cursor = '';
+            };
+            state.map.on('click', _manualLocateHandler);
         }
     }
 
