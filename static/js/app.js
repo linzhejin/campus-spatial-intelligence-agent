@@ -3498,6 +3498,9 @@
     var deferredPrompt = null;
     var banner = null, btn = null, sub = null;
 
+    // 已在安卓壳应用（WebView UA 带 WHUWalkerApp）内：无需引导安装，整个模块关闭
+    if (/WHUWalkerApp\//.test(navigator.userAgent)) return;
+
     function isStandalone() {
         return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
             || window.navigator.standalone === true;

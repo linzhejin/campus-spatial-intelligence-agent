@@ -271,3 +271,10 @@ docs/superpowers/
 
 # 子类别审核 CSV（人工标注中间产物）
 data/pois_subcategory_review.csv
+
+# ===== Android 壳应用（本地构建产物与签名密钥，绝不入库）=====
+tools/
+android-app/build/
+android-app/whu-walker.keystore
+android-app/keystore-password.txt
+*.apk
