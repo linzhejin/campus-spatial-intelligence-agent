@@ -3554,6 +3554,9 @@
                 if (sub) sub.textContent = '点底部分享图标「□↑」→ 选「添加到主屏幕」';
                 btn.textContent = '知道了';
                 btn.addEventListener('click', function () { hideBanner(true); }, { once: true });
+            } else {
+                // QQ/夸克/UC 等：无安装事件，按钮当"知道了"用
+                hideBanner(true);
             }
         });
 
@@ -3579,6 +3582,21 @@
             setTimeout(function () {
                 showBanner('点底部分享图标「□↑」→「添加到主屏幕」');
             }, 3000);
+        }
+
+        // 安卓非 Chromium 浏览器（QQ/夸克/UC/华为/小米等）：只会有"添加到桌面"快捷方式，
+        // 引导用户改用 Chrome/Edge 获得真正的应用安装（WebAPK）
+        if (!isIos() && !isWeChat() && !isStandalone()) {
+            setTimeout(function () {
+                if (deferredPrompt || isStandalone()) return;  // Chromium 内核已捕获安装事件
+                var ua = navigator.userAgent;
+                var isChromium = /Chrome\/|Edg\//.test(ua)
+                    && !/QQBrowser|Quark|UCBrowser|HuaweiBrowser|HeyTapBrowser|VivoBrowser|MiuiBrowser|XiaoMi|OppoBrowser|baiduboxapp|BIDUBrowser/i.test(ua);
+                if (!isChromium) {
+                    showBanner('此浏览器仅能创建快捷方式。复制网址用 Chrome 打开 → 点「安装应用」，即成真 App');
+                    if (btn) btn.textContent = '知道了';
+                }
+            }, 3500);
         }
     });
 })();
