@@ -916,39 +916,56 @@
     }
 
     function _startAmapWatch(silent) {
-        if (!window.AMap || !window.AMap.plugin) return false;
-        _setLocStatus('加载 AMap 定位插件…', 'info');
-        AMap.plugin('AMap.Geolocation', function () {
-            try {
-                _clearWatch();
-                var geo = new AMap.Geolocation({
-                    enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
-                });
-                state._amapGeolocation = geo;
-                _setLocStatus('定位中…（AMap WiFi+GPS）', 'info');
-                state._amapWatchListener = geo.watchPosition(function (status, result) {
-                    if (status === 'complete' && result && result.position) {
-                        var gcjLng = result.position.lng, gcjLat = result.position.lat;
-                        var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                        if (!silent) setLocateBtnState(false);
-                        renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
-                        console.log('[TRACK] AMap 位置更新, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
-                    } else {
-                        console.warn('[TRACK] AMap watch 状态:', status);
-                        // AMap 是最后一道兜底（原生已失败才会走到这里），失败就只能报错
-                        if (!state.locateWatchId && !state._amapWatchListener) {
-                            _setLocStatus('定位失败：GPS 和 WiFi 定位都不可用', 'error');
+        _setLocStatus('切换 WiFi 定位…', 'info');
+        // SDK 异步加载，最多等 4 秒——原生失败后它是唯一兜底，绝不能静默放弃
+        // （旧版 SDK 未就绪时直接 return false，定位链整个死亡，蓝点消失）
+        var waited = 0, interval = 150, maxWait = 4000;
+        var tick = setInterval(function () {
+            waited += interval;
+            if (window.AMap && window.AMap.plugin) {
+                clearInterval(tick);
+                try {
+                    AMap.plugin('AMap.Geolocation', function () {
+                        try {
+                            // 不要 _clearWatch()：原生 watch 报错后仍可能自愈出点，
+                            // 两条流并存谁先到用谁，renderUserLocation 幂等
+                            var geo = new AMap.Geolocation({
+                                enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
+                            });
+                            state._amapGeolocation = geo;
+                            state._amapWatchListener = geo.watchPosition(function (status, result) {
+                                if (status === 'complete' && result && result.position) {
+                                    var gcjLng = result.position.lng, gcjLat = result.position.lat;
+                                    var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                                    if (!silent) setLocateBtnState(false);
+                                    renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
+                                    console.log('[TRACK] AMap 位置更新, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
+                                } else {
+                                    console.warn('[TRACK] AMap watch 状态:', status);
+                                    if (!state.locateWatchId) {
+                                        _setLocStatus('定位失败：GPS 和 WiFi 定位都不可用', 'error');
+                                    }
+                                }
+                            });
+                            _setLocStatus('已切换 AMap WiFi 定位', 'success');
+                            console.log('[TRACK] AMap watch 已启动');
+                        } catch (e) {
+                            console.warn('[TRACK] AMap watch 异常:', e.message, '→ 重试原生');
+                            _setLocStatus('WiFi 定位异常，重试 GPS…', 'warn');
+                            _startNativeWatch(silent);
                         }
-                    }
-                });
-                _setLocStatus('已启动 AMap 跟踪', 'success');
-                console.log('[TRACK] AMap watch 已启动');
-            } catch (e) {
-                console.warn('[TRACK] AMap watch 异常:', e.message, '→ fallback 原生');
-                _setLocStatus('AMap 异常，切换原生', 'warn');
+                    });
+                } catch (e) {
+                    console.warn('[TRACK] AMap.plugin 异常:', e.message, '→ 重试原生');
+                    _startNativeWatch(silent);
+                }
+            } else if (waited >= maxWait) {
+                clearInterval(tick);
+                console.warn('[TRACK] AMap SDK 4 秒未加载 → 回退原生 GPS 重试');
+                _setLocStatus('WiFi 定位不可用，重试 GPS…', 'warn');
                 _startNativeWatch(silent);
             }
-        });
+        }, interval);
         return true;
     }
 
@@ -1000,22 +1017,41 @@
         //      连续钉住 10 次后强制校准一次，防止慢速漂移让蓝点永久滞后
         var disp = state._dispFix;
         if (!isManual && !isCached && disp) {
-            var dtSec = Math.max(0.3, (Date.now() - disp.ts) / 1000);
+            var dtSec = (Date.now() - disp.ts) / 1000;
             var jump = _haversineMeters(disp.lat, disp.lng, lat, lng);
-            var noise = Math.max(disp.acc || 0, accuracy || 0);
-            if (jump / dtSec > 25) {
-                console.log('[TRACK] 丢弃异常跳变点: ' + Math.round(jump) + 'm/' + dtSec.toFixed(1) + 's');
-                return;
+            // 缓存/手动点位只是"临时占位"（provisional），真实 GPS 一到就无条件接管——
+            // 否则换了个地方打开页面，GPS 会被判"隐含速度异常"永久丢弃，蓝点卡在旧位置
+            var provisional = !!disp.provisional;
+            var fresh = dtSec > 0 && dtSec <= 5;  // 速度检测只对新鲜基线有意义
+            var reject = false;
+            if (!provisional && fresh) {
+                if (jump / dtSec > 25) {
+                    reject = true;  // 多径反射/基站切换造成的异常跳变
+                } else if (jump <= Math.max(disp.acc || 0, accuracy || 0) * 0.7 && (disp.holds || 0) < 10) {
+                    // 噪声内漂移：蓝点钉住不动，只收紧精度圈；10 次后强制校准防滞后
+                    lng = disp.lng; lat = disp.lat;
+                    accuracy = Math.min(accuracy || 1e9, disp.acc || 1e9);
+                    disp.holds = (disp.holds || 0) + 1;
+                } else {
+                    disp.holds = 0;
+                }
             }
-            if (jump <= noise * 0.7 && (disp.holds || 0) < 10) {
-                lng = disp.lng; lat = disp.lat;
-                accuracy = Math.min(accuracy || 1e9, disp.acc || 1e9);
-                disp.holds = (disp.holds || 0) + 1;
-            } else {
-                disp.holds = 0;
+            if (reject) {
+                state._rejects = (state._rejects || 0) + 1;
+                if (state._rejects < 5) {
+                    console.log('[TRACK] 丢弃异常跳变点(' + state._rejects + '/5): ' + Math.round(jump) + 'm/' + dtSec.toFixed(1) + 's');
+                    return;  // 蓝点保持原位不动
+                }
+                // 连续 5 次被拒 → 基线本身坏了，强制接受本次修复
+                console.warn('[TRACK] 连续丢弃 5 次，强制接受修复');
             }
+            state._rejects = 0;
         }
-        state._dispFix = { lat: lat, lng: lng, acc: accuracy || 0, ts: Date.now(), holds: (disp && disp.holds) || 0 };
+        state._dispFix = {
+            lat: lat, lng: lng, acc: accuracy || 0, ts: Date.now(),
+            holds: (disp && disp.holds) || 0,
+            provisional: !!(isManual || isCached),
+        };
 
         // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
@@ -1096,10 +1132,13 @@
         }
         if (!state.userMarker) {
             if (state.userMarkerRaw) { state.map.removeLayer(state.userMarkerRaw); state.userMarkerRaw = null; }
-            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置', 'user-dot-smooth');
+            // 创建时不带过渡类：首次放置会从地图原点(0,0)飞入，落稳后再启用平滑
+            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置');
             state.userMarker._dotColor = dotColor;
             state.userMarker.bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
                 .addTo(state.map);
+            var dotEl = state.userMarker.getElement && state.userMarker.getElement();
+            if (dotEl) setTimeout(function () { dotEl.classList.add('user-dot-smooth'); }, 150);
         }
 
         // 首次定位或手动设点时居中
