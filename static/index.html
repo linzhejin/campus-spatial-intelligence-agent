@@ -392,8 +392,27 @@
     </div>
 
     <script src="/js/config.js"></script>
-    <!-- Leaflet 本地化加载（无需地图厂商 Key；天地图 Key 在 config.js 配置后自动启用矢量底图） -->
+    <!-- Leaflet 本地化加载（高德瓦片 GCJ-02，与后端坐标统一） -->
     <script src="/vendor/leaflet/leaflet.js"></script>
+    <!-- 高德 JS SDK（仅用于 Geolocation 插件：WiFi+基站+GPS 混合定位，国内精度远超浏览器原生） -->
+    <!-- config.amapKey / config.amapSecurityCode 在 /js/config.js 由后端注入 -->
+    <script>
+        (function () {
+            var cfg = window.WHU_CONFIG || {};
+            var key = cfg.amapKey;
+            var scode = cfg.amapSecurityCode;
+            if (!key) { console.warn('[AMap] 未配置 AMAP_KEY，将降级为浏览器原生定位'); return; }
+            // 高德 JS API v2.0 必须先设 security code（如果配了的话）
+            if (scode) {
+                window._AMapSecurityConfig = { securityJsCode: scode };
+            }
+            var s = document.createElement('script');
+            s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + key + '&plugin=AMap.Geolocation';
+            s.onload = function () { window.__AMAP_READY__ = true; };
+            s.onerror = function () { console.warn('[AMap] SDK 加载失败，降级为浏览器原生定位'); };
+            document.head.appendChild(s);
+        })();
+    </script>
     <!-- ====== PWA 安装引导横幅（满足条件时由 app.js 显示） ====== -->
     <div id="install-banner" class="install-banner" hidden>
         <div class="install-banner__icon">🌸</div>
@@ -405,6 +424,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260915f"></script>
+    <script src="/js/app.js?v=20260915g"></script>
 </body>
 </html>
