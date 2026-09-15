@@ -21,6 +21,8 @@
     }
 
     var muted = safeLsGet(MUTE_KEY) === '1';
+    var nativeBroken = false;   // 原生 TTS 引擎确认不可用/连续失败后，不再走桥
+    var warnedOnce = {};        // 各类提示每会话最多弹一次
 
     // 提前挑一个中文语音（Chrome 语音表异步加载，需要 onvoiceschanged）
     function pickZhVoice() {
@@ -54,6 +56,48 @@
         return null;
     }
 
+    // 自绘轻提示（不依赖 app.js，避免循环耦合）：3.5s 自动消失，可点关
+    function showVoiceHint(msg) {
+        try {
+            var el = document.createElement('div');
+            el.textContent = msg;
+            el.style.cssText = 'position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:1400;'
+                + 'max-width:88%;padding:10px 14px;background:rgba(33,33,33,0.92);color:#fff;'
+                + 'font-size:13px;line-height:1.5;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);'
+                + 'pointer-events:auto;cursor:pointer;text-align:center;';
+            document.body.appendChild(el);
+            var timer = setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+            el.addEventListener('click', function () {
+                clearTimeout(timer);
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    function notifyTtsProblem(kind) {
+        if (warnedOnce[kind]) return;
+        warnedOnce[kind] = true;
+        if (kind === 'volume0') {
+            showVoiceHint('手机媒体音量为 0，调高音量即可听到导航播报');
+        } else {
+            nativeBroken = true;
+            showVoiceHint('系统语音引擎不可用，本次导航请看屏幕上的转向提示；'
+                + '可在系统「设置 → 语言和输入法 → 文字转语音」中启用语音引擎');
+        }
+    }
+
+    // 原生引擎状态回调（MainActivity.emitTtsStatus 注入）
+    // event: 'unavailable' 无中文语音数据/init 失败；'error' 连续播报失败；'volume0' 媒体音量为零
+    window.__whuWalkerTtsCallback = function (d) {
+        if (!d || !d.event) return;
+        console.warn('[TTS] 原生引擎状态:', d.event);
+        if (d.event === 'volume0') {
+            notifyTtsProblem('volume0');
+        } else {
+            notifyTtsProblem('engine');
+        }
+    };
+
     function speakViaBrowser(text) {
         if (!synth) return false;
         try {
@@ -81,11 +125,17 @@
         speak: function (text, opts) {
             if (!text) return;
             if (muted) return;
-            var bridge = apkBridge();
+            var msg = String(text);
+            var bridge = nativeBroken ? null : apkBridge();
             if (bridge) {
-                try { bridge.speak(String(text)); return; } catch (e) { /* 桥异常降级浏览器 */ }
+                try {
+                    // 桥返回 false = 未受理（静音/引擎不可用）→ 尝试浏览器 synth 兜底
+                    var accepted = bridge.speak(msg);
+                    if (accepted === false) speakViaBrowser(msg);
+                    return;
+                } catch (e) { /* 桥异常降级浏览器 */ }
             }
-            speakViaBrowser(String(text));
+            speakViaBrowser(msg);
         },
 
         stop: function () {

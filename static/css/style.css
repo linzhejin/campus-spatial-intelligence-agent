@@ -1744,15 +1744,18 @@ body {
 .nav-overlay {
     position: absolute;
     inset: 0;
-    z-index: 900;
+    /* 必须高于 Leaflet 内部控件（zoom/选点组 z-index 1000），
+       否则右上角「起点/途经/终点」会压在指令卡和退出按钮上 */
+    z-index: 1200;
     pointer-events: none;
 }
 .nav-overlay[hidden] { display: none; }
 .nav-overlay > * { pointer-events: auto; }
 
-/* 导航中收起地图杂物：图例 / 缩放 / 图层 / 定位按钮 */
+/* 导航中收起地图杂物：图例 / 缩放 / 图层 / 选点控件组 / 定位按钮 */
 body.nav-running .map-legend { display: none; }
 body.nav-running .leaflet-top.leaflet-left { opacity: 0; pointer-events: none; }
+body.nav-running .leaflet-top.leaflet-right { opacity: 0; pointer-events: none; }
 body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
 
 /* ---------- 顶部大指令卡 ---------- */
@@ -1820,24 +1823,27 @@ body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
 }
 .nav-card__exit {
     flex: 0 0 auto;
-    width: 36px;
-    height: 36px;
+    /* 44px：移动端推荐最小触摸目标，右上角退出必须好按 */
+    width: 44px;
+    height: 44px;
     border: none;
     border-radius: 50%;
     background: var(--cherry-soft);
     color: var(--cherry-deep);
-    font-size: 15px;
+    font-size: 17px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 .nav-card__exit:active { background: var(--cherry-tint); }
 
 /* ---------- GPS 弱网黄条 ---------- */
 .nav-gps-warn {
     position: absolute;
-    top: calc(96px + env(safe-area-inset-top, 0px));
+    top: calc(106px + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     padding: 6px 16px;

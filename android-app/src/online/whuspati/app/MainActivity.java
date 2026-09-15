@@ -3,9 +3,19 @@ package online.whuspati.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.hardware.GeomagneticField;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -16,6 +26,7 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Surface;
 import android.view.WindowManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -52,6 +63,9 @@ import java.util.Locale;
  *   WhuWalkerVoice.start(lang)/stop()               — Android 原生语音识别，
  *       结果经 window.__whuWalkerVoiceCallback(json) 回传
  *   WhuWalkerScreen.setKeepScreenOn(bool)           — 导航中屏幕常亮
+ *   WhuWalkerLocation.start()/stop()               — 原生定位+罗盘融合：
+ *       window.__whuWalkerLocationCallback(json) 回传
+ *       {lat,lng,heading,accuracy,speed,src,ts}（WGS-84，heading 0北90东）
  *
  * 应用内更新（原生，无 JS 桥）：启动数秒后拉取 /app/latest.json，
  * versionCode 更高时弹窗 → 后台下载 APK（SHA-256 校验）→ 授权安装未知来源
@@ -61,6 +75,7 @@ public class MainActivity extends Activity {
 
     private static final int LOC_PERM_REQ = 1;
     private static final int RECORD_PERM_REQ = 2;
+    private static final int ASR_INTENT_REQ = 3;
     private static final String TAG = "WhuWalker";
 
     private static final String UPDATE_MANIFEST_URL =
@@ -73,8 +88,14 @@ public class MainActivity extends Activity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private TextToSpeech tts;
     private boolean ttsMuted = false;
+    private boolean ttsReady = false;        // init 完成且语言可用前，speak 只会被丢弃
+    private String pendingSpeak = null;     // init 完成前最后一条待播指令
+    private int ttsErrorCount = 0;
+    private boolean volumeWarned = false;   // 媒体音量为 0 的提示每次运行只发一次
     private SpeechRecognizer recognizer;
     private boolean pendingVoiceStart = false;  // 等麦克风授权后自动开识别
+    private boolean voiceFallbackUsed = false;  // 本轮会话是否已降级过系统语音面板，防循环
+    private boolean voiceIntentActive = false;  // 正在使用 ACTION_RECOGNIZE_SPEECH 面板
 
     // 应用内更新状态
     private boolean updatePromptShown = false;          // 一次运行最多弹一次
@@ -96,19 +117,35 @@ public class MainActivity extends Activity {
             }, LOC_PERM_REQ);
         }
 
-        // 原生 TTS：init 回调里设普通话；任何状态下 speak 都入队，init 未完成时系统会等待
+        // 原生 TTS：init 回调里设普通话；未 ready 时的播报进入 pending，ready 后补播
         tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
                     int r = tts.setLanguage(Locale.SIMPLIFIED_CHINESE);
                     if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        tts.setLanguage(Locale.getDefault());
+                        r = tts.setLanguage(Locale.CHINA);
+                    }
+                    if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        r = tts.setLanguage(Locale.getDefault());
                     }
                     tts.setSpeechRate(1.0f);
                     tts.setPitch(1.0f);
+                    if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.w(TAG, "TTS no Chinese voice data: " + r);
+                        emitTtsStatus("unavailable");
+                        return;
+                    }
+                    attachTtsProgressListener();
+                    ttsReady = true;
+                    if (pendingSpeak != null) {
+                        String t = pendingSpeak;
+                        pendingSpeak = null;
+                        speakInternal(t);
+                    }
                 } else {
                     Log.w(TAG, "TTS init failed: " + status);
+                    emitTtsStatus("unavailable");
                 }
             }
         });
@@ -123,11 +160,12 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         // UA 追加标识：网页据此抑制"安装到主屏幕"横幅（已在 App 内无需再装）
-        s.setUserAgentString(s.getUserAgentString() + " WHUWalkerApp/1.2");
+        s.setUserAgentString(s.getUserAgentString() + " WHUWalkerApp/1.3");
 
         webView.addJavascriptInterface(new TtsBridge(), "WhuWalkerTts");
         webView.addJavascriptInterface(new VoiceBridge(), "WhuWalkerVoice");
         webView.addJavascriptInterface(new ScreenBridge(), "WhuWalkerScreen");
+        webView.addJavascriptInterface(new LocationBridge(), "WhuWalkerLocation");
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient() {
@@ -554,19 +592,95 @@ public class MainActivity extends Activity {
         });
     }
 
+    // ============ TTS 引擎状态回调（通知网页降级/提示） ============
+    private void emitTtsStatus(final String status) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (webView == null) return;
+                try {
+                    JSONObject j = new JSONObject();
+                    j.put("event", status);   // 'unavailable' | 'error'
+                    String json = j.toString();
+                    webView.evaluateJavascript(
+                            "window.__whuWalkerTtsCallback && window.__whuWalkerTtsCallback(" + json + ");",
+                            null);
+                } catch (Exception e) {
+                    Log.w(TAG, "emitTtsStatus failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void attachTtsProgressListener() {
+        try {
+            tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
+                @Override public void onStart(String utteranceId) {
+                    ttsErrorCount = 0;
+                }
+                @Override public void onDone(String utteranceId) { }
+                @Override
+                public void onError(String utteranceId) {
+                    onError(utteranceId, -1);
+                }
+                @Override
+                public void onError(String utteranceId, int errorCode) {
+                    ttsErrorCount++;
+                    Log.w(TAG, "TTS utterance error code=" + errorCode);
+                    // 连续 3 次失败：引擎大概率缺语音数据，通知网页提示一次
+                    if (ttsErrorCount >= 3) {
+                        ttsErrorCount = 0;
+                        emitTtsStatus("error");
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Log.w(TAG, "attachTtsProgressListener failed: " + e.getMessage());
+        }
+    }
+
+    /** 真正调用系统 TTS（必须在主线程、ttsReady 后） */
+    private void speakInternal(String text) {
+        if (tts == null || !ttsReady) return;
+        maybeWarnMediaVolume();  // "没声音"最常见原因：媒体音量为 0（与铃声音量独立）
+        int r = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "whu-nav-" + System.nanoTime());
+        if (r == TextToSpeech.ERROR) {
+            ttsErrorCount++;
+            if (ttsErrorCount >= 3) emitTtsStatus("error");
+        }
+    }
+
+    /** TTS 走 STREAM_MUSIC；媒体音量为 0 时提示一次（铃声音量满也没声音） */
+    private void maybeWarnMediaVolume() {
+        if (volumeWarned) return;
+        try {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && am.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+                volumeWarned = true;
+                emitTtsStatus("volume0");
+            }
+        } catch (Exception e) { /* ignore */ }
+    }
+
     // ============ ① TTS 桥 ============
     private class TtsBridge {
+        /** @return true 已受理（含 init 未完成时缓存）；false 静音或引擎不可用，网页应降级 */
         @JavascriptInterface
-        public void speak(final String text) {
-            if (ttsMuted || text == null) return;
+        public boolean speak(final String text) {
+            if (ttsMuted || text == null) return false;
             mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
                     if (tts == null) return;
-                    // QUEUE_FLUSH：新导航指令打断旧播报
-                    tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "whu-nav-" + System.nanoTime());
+                    if (ttsReady) {
+                        speakInternal(text);
+                    } else {
+                        // init 未完成：TextToSpeech 此时调用会直接丢弃，缓存最新一条待播
+                        pendingSpeak = text;
+                    }
                 }
             });
+            return true;
         }
 
         @JavascriptInterface
@@ -574,6 +688,7 @@ public class MainActivity extends Activity {
             mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    pendingSpeak = null;
                     if (tts != null) tts.stop();
                 }
             });
@@ -583,6 +698,12 @@ public class MainActivity extends Activity {
         public void setMuted(boolean muted) {
             ttsMuted = muted;
             if (muted) stop();
+        }
+
+        /** 网页查询引擎是否就绪（未就绪时可选择浏览器语音兜底） */
+        @JavascriptInterface
+        public boolean isReady() {
+            return ttsReady;
         }
     }
 
@@ -599,7 +720,7 @@ public class MainActivity extends Activity {
                         requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, RECORD_PERM_REQ);
                         return;
                     }
-                    startRecognition();
+                    beginVoiceInput();
                 }
             });
         }
@@ -611,16 +732,74 @@ public class MainActivity extends Activity {
                 public void run() {
                     pendingVoiceStart = false;
                     destroyRecognizer();
+                    // 系统语音面板无法代码关闭：仅标记忽略其返回结果
+                    voiceIntentActive = false;
                     emitVoiceEvent("end", null, null);
                 }
             });
         }
     }
 
+    /**
+     * 选路：优先 SpeechRecognizer（流式、体验好）；
+     * 国产 ROM 无 Google 语音服务时（华为等）降级到系统 ACTION_RECOGNIZE_SPEECH 面板
+     * （系统输入法/厂商语音引擎支持，全屏听写一整句）。
+     */
+    private void beginVoiceInput() {
+        voiceFallbackUsed = false;
+        boolean streamAvailable = false;
+        try {
+            streamAvailable = SpeechRecognizer.isRecognitionAvailable(this);
+        } catch (Exception e) {
+            streamAvailable = false;
+        }
+        if (streamAvailable) {
+            startRecognition();
+        } else {
+            launchSystemVoicePanel();
+        }
+    }
+
+    private void launchSystemVoicePanel() {
+        try {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说话，例如：避开陡坡，从牌坊到樱顶");
+            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+            voiceIntentActive = true;
+            startActivityForResult(intent, ASR_INTENT_REQ);
+        } catch (Exception e) {
+            voiceIntentActive = false;
+            // 设备上没有任何能处理语音识别的 Activity（极简 ROM）
+            emitVoiceEvent("error", null, "这台设备没有可用的语音识别服务，可改用系统键盘的语音输入或打字");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != ASR_INTENT_REQ) return;
+        boolean active = voiceIntentActive;
+        voiceIntentActive = false;
+        if (!active) return;  // 用户已点停止，结果作废
+        if (resultCode == RESULT_OK && data != null) {
+            ArrayList<String> list = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String text = (list != null && !list.isEmpty()) ? list.get(0) : "";
+            if (!TextUtils.isEmpty(text)) {
+                emitVoiceEvent("final", text, null);
+            } else {
+                emitVoiceEvent("end", null, null);
+            }
+        } else {
+            emitVoiceEvent("end", null, null);
+        }
+    }
+
     private void startRecognition() {
         destroyRecognizer();
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            emitVoiceEvent("error", null, "这台设备没有可用的语音识别服务");
+            launchSystemVoicePanel();
             return;
         }
         recognizer = SpeechRecognizer.createSpeechRecognizer(this);
@@ -633,12 +812,26 @@ public class MainActivity extends Activity {
 
             @Override
             public void onError(int error) {
-                // ERROR_NO_MATCH(7)：没识别到内容，按正常结束处理，不报错打扰
+                // ERROR_NO_MATCH(7)/SPEECH_TIMEOUT(6)：没识别到内容，按正常结束处理，不报错打扰
                 if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
                     emitVoiceEvent("end", null, null);
-                } else {
-                    emitVoiceEvent("error", null, asrErrorMessage(error));
+                    return;
                 }
+                // 服务级不可用（国产 ROM 无 Google 语音服务时典型 ERROR_CLIENT=5）
+                // 且本轮还没降级过 → 改走系统语音面板，避免直接把错误甩给用户
+                boolean serviceDead = error == SpeechRecognizer.ERROR_CLIENT
+                        || error == SpeechRecognizer.ERROR_SERVER
+                        || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
+                        || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
+                        || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED;
+                if (serviceDead && !voiceFallbackUsed) {
+                    voiceFallbackUsed = true;
+                    destroyRecognizer();
+                    Log.i(TAG, "SpeechRecognizer dead (" + error + "), fallback to system voice panel");
+                    launchSystemVoicePanel();
+                    return;
+                }
+                emitVoiceEvent("error", null, asrErrorMessage(error));
             }
 
             @Override
@@ -673,6 +866,10 @@ public class MainActivity extends Activity {
             case SpeechRecognizer.ERROR_AUDIO: return "录音设备异常";
             case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: return "麦克风权限被拒绝";
             case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "语音服务忙，请稍候再试";
+            case SpeechRecognizer.ERROR_CLIENT: return "本机语音服务不可用，请尝试输入法语音输入";
+            case SpeechRecognizer.ERROR_SERVER: return "语音服务未响应";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED:
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "语音语言包不可用";
             case SpeechRecognizer.ERROR_NETWORK:
             case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: return "语音服务网络异常";
             default: return "语音识别失败，请重试";
@@ -687,6 +884,311 @@ public class MainActivity extends Activity {
             } catch (Exception e) { /* ignore */ }
             recognizer = null;
         }
+    }
+
+    // ============ ④ 原生定位 + 罗盘融合 ============
+    // WebView 内 navigator.geolocation 在部分国产 ROM 上存在授权时序问题
+    // （页面加载即 watch，授权弹窗尚未返回，句柄拿到 PERMISSION_DENIED 后死亡，
+    //   授权返回也不会恢复）。改用原生桥后，权限授予 -> 立即启动定位，时序确定。
+    // 航向融合：步行速度 >=0.6m/s 且 GPS bearing 新鲜（3s 内）用 GPS 航向；
+    // 否则用 ROTATION_VECTOR（或加速度+磁力计）算出的磁罗盘航向 + 磁偏角修正。
+    private LocationManager locationManager;
+    private SensorManager sensorManager;
+    private LocationListener gpsLocationListener;
+    private LocationListener netLocationListener;
+    private SensorEventListener rotationListener;
+    private SensorEventListener accMagListener;
+    private final float[] lastAccel = new float[3];
+    private final float[] lastMag = new float[3];
+    private boolean hasAccel = false, hasMag = false;
+    private volatile Location lastFix;
+    private float gpsBearing = Float.NaN;
+    private long gpsBearingTs = 0L;
+    private float compassBearing = Float.NaN;
+    private float fusedHeading = Float.NaN;
+    private float declinationDeg = 0f;
+    private boolean locRunning = false;
+    private boolean pendingLocationStart = false;
+    private final Handler locHandler = new Handler(Looper.getMainLooper());
+    private static final long LOC_EMIT_INTERVAL_MS = 500L;
+    private static final float GPS_BEARING_MIN_SPEED = 0.6f;   // m/s
+    private static final long GPS_BEARING_FRESH_MS = 3000L;
+
+    private final Runnable locEmitTask = new Runnable() {
+        @Override
+        public void run() {
+            emitLocation();
+            if (locRunning) locHandler.postDelayed(this, LOC_EMIT_INTERVAL_MS);
+        }
+    };
+
+    private class LocationBridge {
+        @JavascriptInterface
+        public void start() {
+            mainHandler.post(new Runnable() {
+                @Override public void run() { startNativeLocation(); }
+            });
+        }
+
+        @JavascriptInterface
+        public void stop() {
+            mainHandler.post(new Runnable() {
+                @Override public void run() { stopNativeLocation(); }
+            });
+        }
+    }
+
+    private boolean hasLocationPermission() {
+        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void startNativeLocation() {
+        if (locRunning) return;
+        if (!hasLocationPermission()) {
+            // 权限弹窗尚未返回；授权成功回调里自动真正启动（解决 WebView 时序死亡）
+            pendingLocationStart = true;
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            }, LOC_PERM_REQ);
+            return;
+        }
+        pendingLocationStart = false;
+        ensureLocObjects();
+
+        boolean anyProvider = false;
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                        1000L, 0f, gpsLocationListener, Looper.getMainLooper());
+                Location last = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (last != null) lastFix = last;
+                anyProvider = true;
+            }
+        } catch (SecurityException se) {
+            Log.w(TAG, "gps provider register failed: " + se.getMessage());
+        }
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                        2000L, 0f, netLocationListener, Looper.getMainLooper());
+                Location last = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (last != null && (lastFix == null || last.getTime() > lastFix.getTime())) lastFix = last;
+                anyProvider = true;
+            }
+        } catch (SecurityException se) {
+            Log.w(TAG, "network provider register failed: " + se.getMessage());
+        }
+        if (!anyProvider) {
+            emitLocStatus("error", "系统定位服务未开启，请打开位置信息（GPS），或在地图上手动选点");
+        }
+
+        if (sensorManager == null) {
+            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        }
+        if (sensorManager != null) {
+            Sensor rot = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+            if (rot != null) {
+                sensorManager.registerListener(rotationListener, rot, SensorManager.SENSOR_DELAY_UI, locHandler);
+            } else {
+                // 少数设备无旋转矢量：加速度 + 磁力计组合算方位
+                Sensor acc = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                Sensor mag = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+                if (acc != null) sensorManager.registerListener(accMagListener, acc, SensorManager.SENSOR_DELAY_UI, locHandler);
+                if (mag != null) sensorManager.registerListener(accMagListener, mag, SensorManager.SENSOR_DELAY_UI, locHandler);
+            }
+        }
+
+        locRunning = true;
+        fusedHeading = Float.NaN;
+        locHandler.removeCallbacks(locEmitTask);
+        locHandler.post(locEmitTask);
+    }
+
+    private void stopNativeLocation() {
+        locRunning = false;
+        pendingLocationStart = false;
+        locHandler.removeCallbacks(locEmitTask);
+        if (locationManager != null) {
+            try {
+                if (gpsLocationListener != null) locationManager.removeUpdates(gpsLocationListener);
+                if (netLocationListener != null) locationManager.removeUpdates(netLocationListener);
+            } catch (Exception e) { /* ignore */ }
+        }
+        if (sensorManager != null) {
+            if (rotationListener != null) sensorManager.unregisterListener(rotationListener);
+            if (accMagListener != null) sensorManager.unregisterListener(accMagListener);
+        }
+        gpsBearing = Float.NaN;
+        fusedHeading = Float.NaN;
+    }
+
+    private void ensureLocObjects() {
+        if (locationManager == null) {
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        }
+        if (gpsLocationListener == null) {
+            gpsLocationListener = new NativeLocationListener();
+            netLocationListener = new NativeLocationListener();
+        }
+        if (rotationListener == null) {
+            rotationListener = new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent event) {
+                    float[] r = new float[9];
+                    SensorManager.getRotationMatrixFromVector(r, event.values);
+                    updateCompass(r);
+                }
+                @Override public void onAccuracyChanged(Sensor sensor, int accuracy) { }
+            };
+        }
+        if (accMagListener == null) {
+            accMagListener = new SensorEventListener() {
+                @Override
+                public void onSensorChanged(SensorEvent event) {
+                    if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                        System.arraycopy(event.values, 0, lastAccel, 0, 3);
+                        hasAccel = true;
+                    } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                        System.arraycopy(event.values, 0, lastMag, 0, 3);
+                        hasMag = true;
+                    }
+                    if (hasAccel && hasMag) {
+                        float[] r = new float[9];
+                        if (SensorManager.getRotationMatrix(r, null, lastAccel, lastMag)) updateCompass(r);
+                    }
+                }
+                @Override public void onAccuracyChanged(Sensor sensor, int accuracy) { }
+            };
+        }
+    }
+
+    private class NativeLocationListener implements LocationListener {
+        @Override
+        public void onLocationChanged(Location loc) {
+            lastFix = loc;
+            // 磁偏角随位置变化（武汉约 -3.7°）
+            try {
+                GeomagneticField gf = new GeomagneticField(
+                        (float) loc.getLatitude(), (float) loc.getLongitude(),
+                        loc.hasAltitude() ? (float) loc.getAltitude() : 0f,
+                        loc.getTime());
+                declinationDeg = gf.getDeclination();
+            } catch (Exception e) { /* 保留旧磁偏角 */ }
+            // 静止时 GPS bearing 会漂/归零，必须用速度门控
+            if (loc.hasBearing() && loc.hasSpeed() && loc.getSpeed() >= GPS_BEARING_MIN_SPEED) {
+                gpsBearing = loc.getBearing();
+                gpsBearingTs = loc.getTime();
+            }
+            emitLocation();
+        }
+        @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+        @Override public void onProviderEnabled(String provider) { }
+        @Override public void onProviderDisabled(String provider) { }
+    }
+
+    /** 由旋转矩阵求设备朝向（屏幕顶部指向的方位角，0=北，顺时针），含屏幕旋转补偿与磁偏角修正 */
+    private void updateCompass(float[] r) {
+        int axisX = SensorManager.AXIS_X;
+        int axisY = SensorManager.AXIS_Y;
+        int rotation = ((WindowManager) getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getRotation();
+        switch (rotation) {
+            case Surface.ROTATION_90:  axisX = SensorManager.AXIS_Y;        axisY = SensorManager.AXIS_MINUS_X; break;
+            case Surface.ROTATION_180: axisX = SensorManager.AXIS_MINUS_X;  axisY = SensorManager.AXIS_MINUS_Y; break;
+            case Surface.ROTATION_270: axisX = SensorManager.AXIS_MINUS_Y;  axisY = SensorManager.AXIS_X;       break;
+            default: break;
+        }
+        float[] adjusted = new float[9];
+        SensorManager.remapCoordinateSystem(r, axisX, axisY, adjusted);
+        float[] orient = new float[3];
+        SensorManager.getOrientation(adjusted, orient);
+        double trueDeg = (Math.toDegrees(orient[0]) + declinationDeg + 360.0) % 360.0;
+        // 罗盘噪声大：重低通；NaN 时直接初始化
+        if (Float.isNaN(compassBearing)) {
+            compassBearing = (float) trueDeg;
+        } else {
+            float diff = (float) wrapAngle(trueDeg - compassBearing, -180.0, 180.0);
+            compassBearing = (float) wrapAngle(compassBearing + diff * 0.25f, 0.0, 360.0);
+        }
+    }
+
+    private static double wrapAngle(double a, double min, double max) {
+        double range = max - min;
+        a = (a - min) % range;
+        if (a < 0) a += range;
+        return a + min;
+    }
+
+    private void emitLocation() {
+        Location fix = lastFix;
+        if (fix == null || webView == null) return;
+        long now = System.currentTimeMillis();
+        float heading = Float.NaN;
+        // 步行运动时用 GPS 航向（转向响应快），静止/低速用罗盘（原地转身也能动）
+        if (!Float.isNaN(gpsBearing) && now - gpsBearingTs <= GPS_BEARING_FRESH_MS
+                && fix.hasSpeed() && fix.getSpeed() >= GPS_BEARING_MIN_SPEED) {
+            heading = gpsBearing;
+        } else if (!Float.isNaN(compassBearing)) {
+            heading = compassBearing;
+        }
+        if (!Float.isNaN(heading)) {
+            if (Float.isNaN(fusedHeading)) {
+                fusedHeading = heading;
+            } else {
+                float d = (float) wrapAngle(heading - fusedHeading, -180.0, 180.0);
+                fusedHeading = (float) wrapAngle(fusedHeading + d * 0.4f, 0.0, 360.0);
+            }
+        }
+        final double lat = fix.getLatitude();
+        final double lng = fix.getLongitude();
+        final float acc = fix.hasAccuracy() ? fix.getAccuracy() : -1f;
+        final float speed = fix.hasSpeed() ? fix.getSpeed() : 0f;
+        final String src = fix.getProvider() != null ? fix.getProvider() : "gps";
+        final float outHeading = fusedHeading;
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (webView == null) return;
+                try {
+                    JSONObject j = new JSONObject();
+                    j.put("event", "fix");
+                    j.put("lat", lat);
+                    j.put("lng", lng);
+                    j.put("accuracy", acc);
+                    j.put("speed", speed);
+                    j.put("src", src);
+                    j.put("ts", System.currentTimeMillis());
+                    if (Float.isNaN(outHeading)) j.put("heading", JSONObject.NULL);
+                    else j.put("heading", Math.round(outHeading * 10) / 10.0);
+                    String json = j.toString();
+                    webView.evaluateJavascript(
+                            "window.__whuWalkerLocationCallback && window.__whuWalkerLocationCallback(" + json + ");",
+                            null);
+                } catch (Exception e) {
+                    Log.w(TAG, "emitLocation failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void emitLocStatus(final String event, final String message) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (webView == null) return;
+                try {
+                    JSONObject j = new JSONObject();
+                    j.put("event", event);
+                    j.put("message", message);
+                    String json = j.toString();
+                    webView.evaluateJavascript(
+                            "window.__whuWalkerLocationCallback && window.__whuWalkerLocationCallback(" + json + ");",
+                            null);
+                } catch (Exception e) { /* ignore */ }
+            }
+        });
     }
 
     // ============ ③ 屏幕常亮桥（导航中开启，退出导航恢复） ============
@@ -726,10 +1228,23 @@ public class MainActivity extends Activity {
             boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
             if (granted && pendingVoiceStart) {
                 pendingVoiceStart = false;
-                startRecognition();
+                beginVoiceInput();
             } else if (!granted) {
                 pendingVoiceStart = false;
                 emitVoiceEvent("error", null, "麦克风权限被拒绝，可在系统设置中开启");
+            }
+        } else if (requestCode == LOC_PERM_REQ) {
+            boolean granted = false;
+            for (int g : grantResults) {
+                if (g == PackageManager.PERMISSION_GRANTED) { granted = true; break; }
+            }
+            // 关键修复：授权一返回立即启动原生定位（旧 WebView 链路此时 watch 句柄已死）
+            if (granted) {
+                pendingLocationStart = false;
+                if (!locRunning) startNativeLocation();
+            } else if (pendingLocationStart) {
+                pendingLocationStart = false;
+                emitLocStatus("error", "定位权限被拒绝，可在系统设置中开启，或直接在地图上手动选点");
             }
         }
     }
@@ -743,6 +1258,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         destroyRecognizer();
+        stopNativeLocation();
         if (tts != null) {
             tts.stop();
             tts.shutdown();

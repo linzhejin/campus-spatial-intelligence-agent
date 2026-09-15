@@ -847,9 +847,47 @@
             try { navigator.geolocation.clearWatch(state.locateWatchId); } catch(e) {}
             state.locateWatchId = null;
         }
+        if (state._nativeLocActive) {
+            try { window.WhuWalkerLocation && window.WhuWalkerLocation.stop(); } catch(e) {}
+            state._nativeLocActive = false;
+        }
         if (state._amapWatchListener) {
             try { state._amapGeolocation && state._amapGeolocation.clearWatch(state._amapWatchListener); } catch(e) {}
             state._amapWatchListener = null;
+        }
+    }
+
+    // ===== APK 原生定位桥（LocationManager + 罗盘融合） =====
+    // 国产 ROM WebView 的 navigator.geolocation 存在授权时序问题：页面加载即 watch，
+    // 授权弹窗未返回时拿到 PERMISSION_DENIED，句柄死亡且授权返回后不会恢复。
+    // 原生桥在"权限授予成功"回调里才启动定位，时序确定；同时回传设备航向（罗盘/GPS bearing）。
+    function _startAppNativeWatch(silent) {
+        state._nativeLocActive = true;
+        window.__whuWalkerLocationCallback = function (d) {
+            if (!d) return;
+            if (d.event === 'error') {
+                // 权限拒绝 / 系统定位服务关闭 → AMap WiFi 定位（服务端基站/WiFi 定位）仍可能可用
+                if (!state._amapFallbackStarted) {
+                    state._amapFallbackStarted = true;
+                    console.warn('[TRACK] 原生桥定位失败:', d.message, '→ 降级 AMap');
+                    _setLocStatus((d.message || '定位失败') + '，切换 WiFi 定位…', 'warn');
+                    _startAmapWatch(silent);
+                }
+                return;
+            }
+            if (d.event !== 'fix') return;
+            if (!silent) setLocateBtnState(false);
+            var hd = (d.heading == null) ? null : d.heading;
+            renderUserLocation(d.lng, d.lat, d.accuracy > 0 ? d.accuracy : 0, false, false, hd, d.speed || 0);
+        };
+        _setLocStatus('定位中…（原生 GPS）', 'info');
+        try {
+            window.WhuWalkerLocation.start();
+            console.log('[TRACK] APP 原生定位桥已启动');
+        } catch (e) {
+            console.warn('[TRACK] 原生桥调用异常 → 降级网页定位:', e);
+            state._nativeLocActive = false;
+            _startAmapWatch(silent);
         }
     }
 
@@ -866,8 +904,13 @@
         state.locateWatchId = navigator.geolocation.watchPosition(
             function (pos) {
                 if (!silent) setLocateBtnState(false);
-                renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
-                console.log('[TRACK] 原生位置更新:', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4));
+                var c = pos.coords;
+                // 系统航向/速度（手机浏览器一般支持；静止时 heading 常为 null）
+                var hd = (c.heading != null && isFinite(c.heading)) ? c.heading : null;
+                var sp = (c.speed != null && isFinite(c.speed)) ? c.speed : null;
+                renderUserLocation(c.longitude, c.latitude, c.accuracy, false, false, hd, sp);
+                console.log('[TRACK] 原生位置更新:', c.latitude.toFixed(4), c.longitude.toFixed(4),
+                    hd != null ? 'heading=' + Math.round(hd) : '');
             },
             function (err) {
                 var msg = '定位失败：';
@@ -977,6 +1020,11 @@
     function startTracking(silent) {
         _clearWatch();
         state._amapFallbackStarted = false;
+        // APK 内走原生定位桥：无授权时序问题，且带罗盘/GPS 融合航向
+        if (window.WhuWalkerLocation && typeof window.WhuWalkerLocation.start === 'function') {
+            _startAppNativeWatch(silent);
+            return;
+        }
         _setLocStatus('定位中…（原生 GPS）', 'info');
         _quickFix();  // 并行：网络粗定位秒出占位点，GPS 随后精修
         // 原生启动失败（不支持/非HTTPS）或定位出错（超时/无信号）→ 降级 AMap WiFi 定位
@@ -1014,7 +1062,11 @@
         startTracking(true);
     }
 
-    function renderUserLocation(lng, lat, accuracy, isManual, isCached) {
+    function renderUserLocation(lng, lat, accuracy, isManual, isCached, heading, speed) {
+        // heading/speed：设备航向（°，0北90东）。独立于坐标——坐标被噪声抑制钉住时，
+        // 原地转身航向仍然要透传给导航箭头
+        var hasHeading = heading != null && isFinite(heading);
+        if (hasHeading) heading = ((heading % 360) + 360) % 360;
         // ===== GPS 抖动抑制 =====
         // 高德 App 定位稳是因为有传感器融合（GPS+WiFi+惯导）+ 卡尔曼滤波 + 路网吸附；
         // 网页只能拿到操作系统吐出的原始定位流（±10-50m 噪声），蓝点稳不稳全靠前端自己滤：
@@ -1044,6 +1096,16 @@
             }
             if (reject) {
                 state._rejects = (state._rejects || 0) + 1;
+                // 位置点丢弃，但设备航向（罗盘/GPS bearing）仍然有效：原地转身时箭头必须能动
+                if (state.userLocation && hasHeading) {
+                    state.userLocation.heading = heading;
+                    state.userLocation.speed = speed || 0;
+                    if (state.locSubscribers.length) {
+                        state.locSubscribers.slice().forEach(function (fn) {
+                            try { fn(state.userLocation); } catch (e) { console.warn('[LOC] 订阅者异常:', e); }
+                        });
+                    }
+                }
                 if (state._rejects < 5) {
                     console.log('[TRACK] 丢弃异常跳变点(' + state._rejects + '/5): ' + Math.round(jump) + 'm/' + dtSec.toFixed(1) + 's');
                     return;  // 蓝点保持原位不动
@@ -1062,11 +1124,15 @@
         // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
         var gcjLng = gcj[0], gcjLat = gcj[1];
+        var prevLoc = state.userLocation;
         state.userLocation = {
             lng: lng, lat: lat,
             gcjLng: gcjLng, gcjLat: gcjLat,
             accuracy: accuracy || 0,
             manual: !!isManual,
+            // 本次无航向（如 AMap/WiFi 源）时保留上一次航向，避免箭头突然朝北
+            heading: hasHeading ? heading : (prevLoc ? prevLoc.heading : null),
+            speed: (speed != null && isFinite(speed)) ? speed : (prevLoc ? prevLoc.speed : 0),
         };
         // 定位订阅者（实时导航引擎）：只推送，不干预蓝点逻辑
         if (state.locSubscribers.length) {
@@ -1095,10 +1161,12 @@
         if (!state.map) return;
 
         // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner（缓存点位跳过，等真实修复再判）
+        // 导航中不弹：它固定在顶部 12px，会与导航指令卡重叠；导航态有专属 #nav-gps-warn 黄条
         var acc = accuracy || 0;
-        if (!isManual && !isCached && (acc > 500 || acc === 0)) {
+        var inNavigation = document.body.classList.contains('nav-running');
+        if (!isManual && !isCached && (acc > 500 || acc === 0) && !inNavigation) {
             showLowAccuracyWarning(acc);
-        } else {
+        } else if (isManual || acc <= 500 || inNavigation) {
             hideLowAccuracyWarning();
         }
 

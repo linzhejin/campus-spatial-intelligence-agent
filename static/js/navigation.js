@@ -302,8 +302,20 @@
         var gcjLng = loc.gcjLng, gcjLat = loc.gcjLat;
         if (gcjLng == null || gcjLat == null) return;
 
-        // heading：与上一点位移 >3m 才更新（避免静止时乱转）
-        if (nav.lastFixGcj) {
+        // 航向优先级：
+        //   1) 设备航向（原生桥融合罗盘+GPS bearing，或浏览器 coords.heading）——
+        //      静止时罗盘也能动，运动时 GPS bearing 响应快
+        //   2) 相邻点位移 >=3m 用 atan2 推算（无传感器的桌面/降级 AMap 定位兜底）
+        var deviceHeading = (loc.heading != null && isFinite(loc.heading)) ? loc.heading : null;
+        if (deviceHeading !== null) {
+            if (nav.heading == null) {
+                nav.heading = deviceHeading;  // 首次直接采用，避免从北慢慢转过去
+            } else {
+                // 角度最短路径低通：抑制罗盘抖动，同时 0.5s 一次的更新下转向跟手
+                var dh = ((deviceHeading - nav.heading + 540) % 360) - 180;
+                nav.heading = (nav.heading + dh * 0.5 + 360) % 360;
+            }
+        } else if (nav.lastFixGcj) {
             var moved = haversine(nav.lastFixGcj.lat, nav.lastFixGcj.lng, gcjLat, gcjLng);
             if (moved >= 3) {
                 var h = Math.atan2(
@@ -491,7 +503,7 @@
                 endName: endName,
                 arrow: null,
                 follow: true,
-                heading: 0,
+                heading: null,  // 首个设备航向到来前不绘制方向（避免误导性地朝北）
                 speed: MODE_SPEED_MS[opts.routeData.mode || 'walk'] || MODE_SPEED_MS.walk,
                 progress: 0,
                 offCount: 0,
