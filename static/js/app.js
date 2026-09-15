@@ -42,6 +42,7 @@
         userMarker: null,    // 蓝点标记
         userAccuracyCircle: null,  // 定位精度圈
         locateWatchId: null, // navigator.geolocation.watchPosition 句柄
+        locateBtn: null,     // ◎ GPS 定位按钮 DOM（setLocateBtnState 用）
         routeAcceptTimer: null,  // 路线采纳判定定时器（20s 未覆盖视为采纳）
     };
 
@@ -565,7 +566,9 @@
         btn.style.fontSize = '16px';
         btn.style.fontWeight = 'bold';
         btn.style.color = '#2B7CFF';
-        this._btn = btn;
+        // 注意：本函数是普通调用（严格模式下 this 为 undefined），
+        // 按钮引用必须挂到 state，不能写 this._btn（曾导致 TypeError、定位按钮整块不渲染）
+        state.locateBtn = btn;
 
         // 手动设起点按钮
         var manualBtn = L.DomUtil.create('div', 'whu-manual-locate-btn leaflet-bar', container);
@@ -595,7 +598,7 @@
     }
 
     function setLocateBtnState(busy) {
-        var btn = state.locateControl && state.locateControl._btn;
+        var btn = state.locateBtn;
         if (btn) btn.classList.toggle('is-busy', !!busy);
     }
 
