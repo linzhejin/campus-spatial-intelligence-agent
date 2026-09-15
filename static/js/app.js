@@ -3494,7 +3494,8 @@
 })();
 /* =============== PWA 安装引导（独立模块） =============== */
 (function () {
-    var LS_DISMISS = 'whu_walker:install_dismissed_at';
+    // v2：横幅改版（APK 直下载）后重置历史"已关闭"记录，让被旧版关掉的用户重新看到
+    var LS_DISMISS = 'whu_walker:install_dismissed_at_v2';
     var deferredPrompt = null;
     var banner = null, btn = null, sub = null;
 
@@ -3558,8 +3559,11 @@
                 btn.textContent = '知道了';
                 btn.addEventListener('click', function () { hideBanner(true); }, { once: true });
             } else {
-                // QQ/夸克/UC 等：无安装事件，按钮当"知道了"用
-                hideBanner(true);
+                // QQ/夸克/UC 等：无安装事件 → 按钮直接下载 APK 安装包
+                window.location.href = '/app/whu-walker.apk';
+                if (sub) sub.textContent = '已开始下载，完成后在通知栏点开即可安装';
+                btn.textContent = '知道了';
+                btn.addEventListener('click', function () { hideBanner(false); }, { once: true });
             }
         });
 
@@ -3587,8 +3591,8 @@
             }, 3000);
         }
 
-        // 安卓非 Chromium 浏览器（QQ/夸克/UC/华为/小米等）：只会有"添加到桌面"快捷方式，
-        // 引导用户改用 Chrome/Edge 获得真正的应用安装（WebAPK）
+        // 安卓非 Chromium 浏览器（QQ/夸克/UC/华为/小米等）：无 PWA 安装能力，
+        // 横幅直接提供 APK 下载入口（任何浏览器都能下载安装）
         if (!isIos() && !isWeChat() && !isStandalone()) {
             setTimeout(function () {
                 if (deferredPrompt || isStandalone()) return;  // Chromium 内核已捕获安装事件
@@ -3597,9 +3601,9 @@
                     && !/QQBrowser|Quark|UCBrowser|HuaweiBrowser|HeyTapBrowser|VivoBrowser|MiuiBrowser|XiaoMi|OppoBrowser|baiduboxapp|BIDUBrowser/i.test(ua);
                 if (!isChromium) {
                     var t = document.querySelector('.install-banner__title');
-                    if (t) t.textContent = '用 Chrome 安装完整应用';
-                    showBanner('当前浏览器仅能创建快捷方式；复制网址在 Chrome 打开 → 菜单「安装应用」');
-                    if (btn) btn.textContent = '知道了';
+                    if (t) t.textContent = '下载珞珈智行 APP';
+                    showBanner('安卓安装包仅 49KB · 下载后点开安装，无需应用商店');
+                    if (btn) btn.textContent = '下载 APP';
                 }
             }, 3500);
         }
