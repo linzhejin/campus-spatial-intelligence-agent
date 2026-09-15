@@ -157,20 +157,23 @@ from spatial.routing import (  # noqa: E402
 def _build_mode_mock_graph():
     """含 footway/steps/service/residential/corridor/path/混合标签 的小图（双向边）。"""
     G = nx.MultiDiGraph()
-    G.add_nodes_from(range(8))
+    G.add_nodes_from(range(10))
     _set_campus_coords(G)
     edges = [
         # (u, v, highway, length, slope_level)
         (0, 1, "footway", 100.0, 2),
         (1, 2, "steps", 100.0, 3),                     # 纯台阶：bike/drive 均移除
-        (2, 3, "['steps', 'footway']", 100.0, 3),      # 混合：bike 保留、drive 移除
+        (2, 3, "['steps', 'footway']", 100.0, 3),      # 多标签台阶：bike/drive 均移除
         (3, 4, "service", 100.0, 2),
         (4, 5, "residential", 100.0, 5),               # slope5：bike penalty 3.0
-        (5, 6, "corridor", 100.0, 3),                  # 纯走廊：drive 移除
-        (6, 7, "path", 100.0, 3),                      # 步行小径：drive 移除
-        (0, 7, "['service', 'footway']", 500.0, 2),   # 混合：drive 保留
+        (5, 6, "corridor", 100.0, 3),                  # 纯走廊：bike/drive 均移除
+        (6, 7, "path", 100.0, 3),                      # 步行小径：bike 保留、drive 移除
+        (0, 7, "['service', 'footway']", 500.0, 2),    # 人车共存：bike/drive 均保留
         (1, 6, "primary", 600.0, 2),
         (2, 6, "service", 250.0, 4),                   # slope4：bike penalty 1.5
+        (3, 8, "['service', 'steps']", 90.0, 3),       # 线上漏网原型：drive 旧逻辑保留，新逻辑移除
+        (4, 9, "['residential', 'steps']", 90.0, 3),   # 同上：车行道标签+台阶也必须否决
+        (8, 9, "['corridor', 'footway']", 80.0, 3),    # 楼内连廊：bike/drive 均移除
     ]
     for u, v, highway, length, slope in edges:
         data = {
@@ -264,19 +267,29 @@ class TestFilterGraphForMode:
         assert (0, 1, 0) not in penalty
         assert (3, 4, 0) not in penalty
 
-    def test_bike_removes_pure_steps_keeps_mixed(self, mode_graph):
+    def test_bike_removes_all_steps_and_corridors(self, mode_graph):
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "bike")
         assert status == "mode_bike"
 
         # 纯台阶边双向移除
         assert not Gf.has_edge(1, 2)
         assert not Gf.has_edge(2, 1)
-        # 含 footway 的混合台阶边保留
-        assert Gf.has_edge(2, 3)
-        assert Gf.has_edge(3, 2)
+        # 多标签台阶边同样移除（['steps','footway'] / ['service','steps']
+        # / ['residential','steps']）——杜绝"车上台阶"，含台阶标签一律否决
+        assert not Gf.has_edge(2, 3)
+        assert not Gf.has_edge(3, 2)
+        assert not Gf.has_edge(3, 8)
+        assert not Gf.has_edge(8, 3)
+        assert not Gf.has_edge(4, 9)
+        assert not Gf.has_edge(9, 4)
+        # 楼内走廊/连廊骑行不可用（即使混了 footway 标签）
+        assert not Gf.has_edge(5, 6)
+        assert not Gf.has_edge(8, 9)
         # 普通边保留
         assert Gf.has_edge(0, 1)   # footway
         assert Gf.has_edge(3, 4)   # service
+        assert Gf.has_edge(6, 7)   # path
+        assert Gf.has_edge(0, 7)   # ['service','footway'] 人车共存
 
         # 陡坡软惩罚（双向）
         assert penalty[(4, 5, 0)] == 3.0
@@ -286,6 +299,7 @@ class TestFilterGraphForMode:
 
         # 原图不被修改
         assert mode_graph.has_edge(1, 2)
+        assert mode_graph.has_edge(5, 6)
 
     def test_drive_keeps_only_road_edges(self, mode_graph):
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "drive")
@@ -303,6 +317,12 @@ class TestFilterGraphForMode:
         assert not Gf.has_edge(2, 3)
         assert not Gf.has_edge(5, 6)
         assert not Gf.has_edge(6, 7)
+        # 多标签台阶即使带车行道标签也必须移除（线上"车上台阶"回归保护）
+        assert not Gf.has_edge(3, 8)
+        assert not Gf.has_edge(8, 3)
+        assert not Gf.has_edge(4, 9)
+        assert not Gf.has_edge(9, 4)
+        assert not Gf.has_edge(8, 9)
 
         # 原图不被修改
         assert mode_graph.has_edge(0, 1)

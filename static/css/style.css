@@ -1650,45 +1650,6 @@ body {
     cursor: default;
 }
 
-/* ===== 站点页脚：ICP 备案号（静态硬写，供腾讯安全爬虫识别） ===== */
-.site-footer {
-    position: fixed;
-    left: 0; right: 0;
-    bottom: calc(0px + env(safe-area-inset-bottom, 0px));
-    z-index: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 11px;
-    line-height: 1;
-    color: rgba(107, 40, 40, 0.55);
-    pointer-events: none;  /* 默认不抢点击，链接单独开启 */
-    text-shadow: 0 1px 3px rgba(255,255,255,0.8);
-}
-.site-footer a {
-    color: rgba(107, 40, 40, 0.55);
-    text-decoration: none;
-    border-bottom: none;
-    pointer-events: auto;
-    transition: color 0.15s ease;
-}
-.site-footer a:hover,
-.site-footer a:focus {
-    color: rgba(107, 40, 40, 0.85);
-    text-decoration: underline;
-}
-.footer-dot { opacity: 0.4; }
-.footer-copy { white-space: nowrap; }
-
-/* 桌面端页脚位置略高，避开 Leaflet 缩放控件 */
-@media (min-width: 768px) {
-    .site-footer {
-        bottom: 18px;
-    }
-}
-
 /* ===== 定位状态指示器（页面上可见，排查微信环境问题） ===== */
 .loc-status {
     position: fixed;
@@ -1719,4 +1680,371 @@ body {
 .loc-status--error {
     background: #EF4444;
     color: #fff;
+}
+
+/* =====================================================================
+   2026-09 实时导航 + 语音（珞珈秋色 · 高德同款沉浸导航态）
+   ===================================================================== */
+
+/* ---------- 结果区「开始导航」主按钮 ---------- */
+.start-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 50px;
+    margin: 12px 0 4px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(107, 40, 40, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.start-nav-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(107, 40, 40, 0.38);
+}
+.start-nav-btn:active { transform: translateY(0); }
+
+/* ---------- 输入栏语音麦克风 ---------- */
+.voice-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--stone);
+    background: var(--surface);
+    color: var(--cherry);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.voice-btn:hover { border-color: var(--cherry); }
+.voice-btn.listening {
+    background: #C0392B;
+    border-color: #C0392B;
+    color: #fff;
+    animation: voice-pulse 1.2s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.45); }
+    50% { box-shadow: 0 0 0 10px rgba(192, 57, 43, 0); }
+}
+
+/* ---------- 导航浮层容器（贴地图面板，不抢聊天面板） ---------- */
+.nav-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 900;
+    pointer-events: none;
+}
+.nav-overlay[hidden] { display: none; }
+.nav-overlay > * { pointer-events: auto; }
+
+/* 导航中收起地图杂物：图例 / 缩放 / 图层 / 定位按钮 */
+body.nav-running .map-legend { display: none; }
+body.nav-running .leaflet-top.leaflet-left { opacity: 0; pointer-events: none; }
+body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
+
+/* ---------- 顶部大指令卡 ---------- */
+.nav-card {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 14px 14px 16px;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(30, 20, 15, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.nav-card__icon {
+    position: relative;
+    flex: 0 0 auto;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(107, 40, 40, 0.35);
+}
+.nav-card__arrow {
+    width: 32px;
+    height: 32px;
+    fill: #fff;
+    transition: transform 0.25s ease;
+}
+.nav-card__emoji {
+    font-size: 28px;
+    line-height: 1;
+}
+.nav-card__body { flex: 1 1 auto; min-width: 0; }
+.nav-card__dist {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cherry);
+    line-height: 1.3;
+    min-height: 17px;
+}
+.nav-card__main {
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nav-card__sub {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nav-card__exit {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-card__exit:active { background: var(--cherry-tint); }
+
+/* ---------- GPS 弱网黄条 ---------- */
+.nav-gps-warn {
+    position: absolute;
+    top: calc(96px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    background: rgba(245, 158, 11, 0.95);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    white-space: nowrap;
+    box-shadow: 0 3px 12px rgba(180, 110, 0, 0.35);
+}
+.nav-gps-warn[hidden] { display: none; }
+
+/* ---------- 重居中按钮 ---------- */
+.nav-recenter {
+    position: absolute;
+    right: 14px;
+    bottom: 108px;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--cherry);
+    box-shadow: 0 4px 16px rgba(30, 20, 15, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: recenter-in 0.2s ease;
+}
+@keyframes recenter-in {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- 轻提示 toast ---------- */
+.nav-toast {
+    position: absolute;
+    top: 32%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 9px 20px;
+    background: rgba(30, 25, 20, 0.82);
+    color: #fff;
+    font-size: 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+.nav-toast[hidden] { display: none; }
+
+/* ---------- 到达卡片 ---------- */
+.nav-arrive {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 78%;
+    max-width: 300px;
+    padding: 28px 22px 24px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(30, 20, 15, 0.28);
+    text-align: center;
+    animation: arrive-pop 0.3s ease;
+}
+@keyframes arrive-pop {
+    from { opacity: 0; transform: translate(-50%, -46%) scale(0.92); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.nav-arrive[hidden] { display: none; }
+.nav-arrive__emoji { font-size: 44px; line-height: 1; }
+.nav-arrive__title {
+    margin-top: 10px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+.nav-arrive__name {
+    margin-top: 4px;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+}
+.nav-arrive__btn {
+    margin-top: 18px;
+    width: 100%;
+    min-height: 46px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-deep));
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+/* ---------- 底部信息条 ---------- */
+.nav-bottom {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(30, 20, 15, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.nav-bottom__remain {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+.nav-bottom__dist {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--cherry);
+    line-height: 1.1;
+}
+.nav-bottom__time {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
+.nav-bottom__road {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    padding-right: 2px;
+}
+.nav-bottom__actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.nav-icon-btn {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: var(--cherry-soft);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-end-btn {
+    min-height: 42px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 21px;
+    background: var(--cherry);
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+.nav-end-btn:active { background: var(--cherry-deep); }
+
+/* ---------- 地图上的导航箭头（北朝上，箭头随 heading 旋转） ---------- */
+.nav-arrow-icon {
+    background: none;
+    border: none;
+}
+.nav-arrow-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.35s ease;
+}
+.nav-arrow-marker svg {
+    width: 22px;
+    height: 22px;
+}
+.nav-arrow-marker svg path { fill: var(--cherry); }
+.leaflet-zoom-anim .nav-arrow-marker { transition: none; }
+
+/* ---------- 移动端微调 ---------- */
+@media (max-width: 767px) {
+    .nav-card__main { font-size: 1.15rem; }
+    .nav-card__icon { width: 52px; height: 52px; }
+    .nav-bottom__dist { font-size: 1.2rem; }
+    .nav-bottom__road { display: none; }  /* 窄屏路名让位给距离/操作 */
+    .nav-arrive { width: 82%; }
+
+    /* 导航中：地图占满整屏（高德同款沉浸态），退出导航恢复 */
+    body.nav-running { grid-template-rows: 1fr; }
+    body.nav-running .chat-panel { display: none; }
 }

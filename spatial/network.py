@@ -105,6 +105,15 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
         _annotation_coverage_rate = 0.0
         logger.info("未找到路段标注文件: %s (覆盖率=0.0)", ann_path)
 
+    # 人工路网覆盖（穿楼边封禁/软惩罚等），在标注之后叠加
+    ov_path = _overrides_path()
+    if os.path.exists(ov_path):
+        try:
+            n = _merge_overrides(_G, ov_path)
+            logger.info("路网人工覆盖 merge 完成: %d 条边 (%s)", n, ov_path)
+        except Exception as e:
+            logger.warning("路网人工覆盖 merge 失败（不影响运行）: %s", e)
+
     return _G
 
 
@@ -352,3 +361,69 @@ def get_annotation_coverage_rate() -> float:
     if _annotation_coverage_rate is None:
         return 0.0
     return float(_annotation_coverage_rate)
+
+
+def _overrides_path() -> str:
+    try:
+        from config import EDGE_OVERRIDES_PATH
+        return EDGE_OVERRIDES_PATH
+    except ImportError:
+        return os.path.join(os.path.dirname(__file__), "..", "data", "edge_overrides.json")
+
+
+def _merge_overrides(G: nx.MultiDiGraph, overrides_path: str) -> int:
+    """
+    合并人工路网覆盖到边属性（不写 GraphML，每次加载叠加）：
+      - blocked_modes: ["bike","drive"] / ["all"]，filter_graph_for_mode 读取后硬删
+      - walk_penalty: 步行软惩罚倍数（与 road_annotations 同机制，可叠加相乘）
+    匹配规则与 _merge_annotations 一致：edge_id 优先，否则 u/v + 最小 key。
+    """
+    with open(overrides_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    edges_ov = data.get("edges", []) or []
+    graph_uv_to_keys = {}
+    key_to_orig = {}
+    for u, v, k in G.edges(keys=True):
+        graph_uv_to_keys.setdefault((str(u), str(v)), []).append(int(k))
+        key_to_orig[(str(u), str(v), int(k))] = (u, v, k)
+
+    applied = 0
+    for ov in edges_ov:
+        edge_id = _parse_edge_id(ov.get("edge_id"))
+        target = None
+        if edge_id is not None and edge_id in key_to_orig:
+            target = edge_id
+        if target is None and ov.get("u") is not None and ov.get("v") is not None:
+            cands = graph_uv_to_keys.get((str(ov["u"]), str(ov["v"])), [])
+            want_k = int(ov.get("k", 0))
+            if want_k in cands:
+                target = (str(ov["u"]), str(ov["v"]), want_k)
+            elif cands:
+                target = (str(ov["u"]), str(ov["v"]), cands[0])
+        if target is None:
+            continue
+
+        ou, ov_, ok = key_to_orig[target]
+        edge_data = G[ou][ov_][ok]
+
+        modes = ov.get("blocked_modes")
+        if modes:
+            if isinstance(modes, str):
+                modes = [modes]
+            modes = [str(m) for m in modes]
+            if modes:
+                edge_data["blocked_modes"] = modes
+
+        wp = ov.get("walk_penalty")
+        if wp is not None:
+            try:
+                wp_f = float(wp)
+                if wp_f > 0:
+                    edge_data["walk_penalty"] = wp_f
+            except (TypeError, ValueError):
+                pass
+
+        applied += 1
+
+    return applied

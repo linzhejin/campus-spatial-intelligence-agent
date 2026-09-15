@@ -23,7 +23,7 @@ from spatial.network import get_network, load_or_download_network, get_nearest_n
 from spatial.routing import (
     compute_route, compute_via_route, compute_tour_route,
     rank_via_candidates, resolve_weights, filter_graph_for_mode,
-    estimate_duration_min, MODE_SPEEDS_KMH,
+    estimate_duration_min, MODE_SPEEDS_KMH, build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.road_conditions import list_conditions, CONDITION_LABELS
@@ -309,6 +309,51 @@ def _coords_wgs_to_gcj(coords_list):
             for gcj_lng, gcj_lat in [wgs84_to_gcj02(c["lng"], c["lat"])]]
 
 
+def _build_steps_gcj(G, route_nodes, mode, end_name=""):
+    """逐步转向指令（动作点转 GCJ-02）。失败返回 []，不阻断路径规划。"""
+    if not route_nodes or len(route_nodes) < 2:
+        return []
+    try:
+        steps = build_turn_by_turn(G, route_nodes, mode=mode, end_name=end_name or "")
+    except Exception:
+        logger.warning("转向指令生成失败 mode=%s", mode, exc_info=True)
+        return []
+    for s in steps:
+        p = s.get("point")
+        if p:
+            g_lng, g_lat = wgs84_to_gcj02(p["lng"], p["lat"])
+            s["point"] = {"lng": round(g_lng, 6), "lat": round(g_lat, 6)}
+    return steps
+
+
+def _merge_leg_steps(legs):
+    """合并多段（途经/环线）指令：中间到达点转为"途经点"提示，去掉后续段的出发指令，
+    累计距离整体平移并重排 seq。"""
+    merged = []
+    cum_offset = 0.0
+    valid = [leg.get("steps") or [] for leg in legs]
+    valid = [(i, st) for i, st in enumerate(valid) if st]
+    for idx, (leg_i, steps) in enumerate(valid):
+        is_last = idx == len(valid) - 1
+        for s in steps:
+            t = s.get("type")
+            if idx > 0 and t == "depart":
+                continue
+            ns = dict(s)
+            if t == "arrive" and not is_last:
+                ns["type"] = "via"
+                ns["action"] = "via"
+                via_name = legs[leg_i].get("end_name") or "途经点"
+                ns["text"] = f"到达途经点（{via_name}），继续前行"
+            ns["cumulative_m"] = round(cum_offset + float(s.get("cumulative_m", 0) or 0), 1)
+            merged.append(ns)
+        # 下一段的累计距离偏移 = 本段最后一条累计值（本段总长）
+        cum_offset += float(steps[-1].get("cumulative_m", 0) or 0)
+    for i, s in enumerate(merged):
+        s["seq"] = i
+    return merged
+
+
 def _haversine(lat1, lon1, lat2, lon2):
     R = 6371000
     dlat = math.radians(lat2 - lat1)
@@ -435,6 +480,7 @@ def _route_payload(G, route_result, start_name, end_name, mode):
         "end_name": end_name,
         "recommended": _coords_wgs_to_gcj(_path_to_coords(G, recommended_nodes)),
         "shortest": _coords_wgs_to_gcj(_path_to_coords(G, shortest_nodes)),
+        "steps": _build_steps_gcj(G, recommended_nodes, mode, end_name=end_name),
         "pois": _pois_along_route(G, recommended_nodes),
         "filter_status": route_result["filter_status"],
         "overlap_rate": route_result["overlap_rate"],
@@ -611,6 +657,7 @@ def _tool_plan_via_route(args, ctx):
         "start_name": start_name,
         "end_name": end_name,
         "recommended": leg1["recommended"] + leg2["recommended"],
+        "steps": _merge_leg_steps([leg1, leg2]),
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
         "detour_ratio": result["detour_ratio"],
@@ -693,6 +740,7 @@ def _tool_plan_tour(args, ctx):
         # 前端兼容：整条环线作为 recommended 返回
         "start_name": seq_names[0] if seq_names else "",
         "recommended": [c for leg in legs_payload for c in leg["recommended"]],
+        "steps": _merge_leg_steps(legs_payload),
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
     }
@@ -786,10 +834,13 @@ def result_to_json(result: dict, max_len: int = 4000) -> str:
     for k, v in result.items():
         if k in ("recommended", "shortest"):
             compact[k] = f"[{len(v)} 个坐标点]" if isinstance(v, list) else v
+        elif k == "steps":
+            compact[k] = f"[{len(v)} 条转向指令]" if isinstance(v, list) else v
         elif k == "legs":
             compact[k] = [
                 {kk: (f"[{len(vv)} 个坐标点]" if kk in ("recommended", "shortest") and isinstance(vv, list)
-                      else ("[略]" if kk == "pois" else vv))
+                      else (f"[{len(vv)} 条转向指令]" if kk == "steps" and isinstance(vv, list)
+                            else ("[略]" if kk == "pois" else vv)))
                  for kk, vv in leg.items()}
                 for leg in v
             ] if isinstance(v, list) else v

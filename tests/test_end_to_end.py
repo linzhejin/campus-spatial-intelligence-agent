@@ -719,6 +719,39 @@ class TestTravelModeEndToEnd:
         assert data["speed_kmh"] == 25.0
         assert len(data["recommended"]) >= 2
 
+    def test_route_returns_turn_by_turn_steps(self):
+        """/api/route 返回 steps：首条 depart、末条 arrive，动作点为 GCJ-02 且字段完整。"""
+        code, body = self._post("/api/route", {
+            "start": {"name": "牌坊", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "travel_mode": "walk",
+        })
+        assert code == 200, body
+        steps = body["data"].get("steps")
+        assert isinstance(steps, list) and len(steps) >= 2, steps
+        assert steps[0]["type"] == "depart"
+        assert steps[-1]["type"] == "arrive"
+        for i, s in enumerate(steps):
+            assert s["seq"] == i
+            assert s["action"]
+            assert s["text"]
+            assert "distance_m" in s and "cumulative_m" in s
+            p = s["point"]
+            assert 114.0 < p["lng"] < 114.6 and 30.4 < p["lat"] < 30.7
+        # 累计距离单调不减
+        cums = [s["cumulative_m"] for s in steps]
+        assert cums == sorted(cums)
+
+    def test_chat_route_response_passes_steps(self):
+        """/chat 路径响应透传 steps（agent artifact → legacy 结构）。"""
+        code, body = self._post("/api/chat", {"query": "从牌坊走路到樱顶"})
+        assert code == 200, body
+        data = body["data"]
+        if data.get("task_type") == "path_planning":
+            steps = data.get("steps")
+            assert isinstance(steps, list) and len(steps) >= 2
+            assert steps[0]["type"] == "depart" and steps[-1]["type"] == "arrive"
+
     def test_route_mode_field_compat(self):
         """兼容 /api/parse 返回体的 mode 字段：值为 bike 时采纳；distance_first 等预设不采纳。"""
         code, body = self._post("/api/route", {

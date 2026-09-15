@@ -226,6 +226,8 @@ __pycache__/
 venv/
 *.pyc
 .playwright-mcp/
+# 路网审计产物（HTML 内含全量坐标、截图体积大，仅本地核查）
+scripts/audit_output/
 prototype/
 .pytest_tmp/
 
@@ -278,3 +280,9 @@ android-app/build/
 android-app/whu-walker.keystore
 android-app/keystore-password.txt
 *.apk
+# 官方发布 APK 随仓库分发（/app/whu-walker.apk 下载入口）
+!static/app/whu-walker.apk
+
+# ===== 运行时数据（本地产生，不入库）=====
+data/telemetry.jsonl
+data/user_profiles.json

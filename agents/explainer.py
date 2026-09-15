@@ -153,12 +153,12 @@ def _build_template_explanation(
 
     if distance and shortest_distance:
         diff = distance - shortest_distance
-        if diff > 0:
-            segments.append(f"比最短路径多 {diff} 米")
-        elif diff < 0:
-            segments.append(f"比最短路径少 {-diff} 米")
+        if diff > 0.5:
+            segments.append(f"比最短路径多 {int(round(diff))} 米")
+        elif diff < -0.5:
+            segments.append(f"比最短路径少 {int(round(-diff))} 米")
         else:
-            segments.append("与最短路径一致")
+            segments.append("与最短路径基本一致")
 
     if not segments:
         return "已为您规划好路线，祝您游览愉快。"

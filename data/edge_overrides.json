@@ -1,0 +1,1725 @@
+{
+ "_comment": "人工路网覆盖：blocked_modes 硬封禁模式；walk_penalty 步行软惩罚倍数。由 scripts/build_edge_overrides.py 依据 OSM 建筑轮廓相交检测生成，命名道路不自动封禁。",
+ "edges": [
+  {
+   "u": 1146763175,
+   "v": 1408369118,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 1146763175-1408369118",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 1408369118,
+   "v": 1146763175,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 1408369118-1146763175",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 2123379579,
+   "v": 3631666803,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 2123379579-3631666803"
+  },
+  {
+   "u": 3631666803,
+   "v": 2123379579,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 3631666803-2123379579"
+  },
+  {
+   "u": 3631666842,
+   "v": 13251027334,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 3631666842-13251027334"
+  },
+  {
+   "u": 3631666842,
+   "v": 13251027440,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 3631666842-13251027440"
+  },
+  {
+   "u": 3842096760,
+   "v": 3842096761,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 3842096760-3842096761",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 3842096761,
+   "v": 3842096760,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 3842096761-3842096760",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 4320485432,
+   "v": 4320485468,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 4320485432-4320485468"
+  },
+  {
+   "u": 4320485468,
+   "v": 4320485432,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 4320485468-4320485432"
+  },
+  {
+   "u": 5285129263,
+   "v": 11793760749,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 5285129263-11793760749"
+  },
+  {
+   "u": 8512203970,
+   "v": 13685932103,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 8512203970-13685932103"
+  },
+  {
+   "u": 11793760726,
+   "v": 11793760728,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760726-11793760728"
+  },
+  {
+   "u": 11793760726,
+   "v": 11793760749,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760726-11793760749"
+  },
+  {
+   "u": 11793760727,
+   "v": 11793760728,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760727-11793760728"
+  },
+  {
+   "u": 11793760728,
+   "v": 11793760726,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760728-11793760726"
+  },
+  {
+   "u": 11793760728,
+   "v": 11793760727,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760728-11793760727"
+  },
+  {
+   "u": 11793760728,
+   "v": 11793760733,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760728-11793760733"
+  },
+  {
+   "u": 11793760729,
+   "v": 11793760749,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760729-11793760749"
+  },
+  {
+   "u": 11793760733,
+   "v": 11793760728,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760733-11793760728"
+  },
+  {
+   "u": 11793760749,
+   "v": 5285129263,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760749-5285129263"
+  },
+  {
+   "u": 11793760749,
+   "v": 11793760726,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760749-11793760726"
+  },
+  {
+   "u": 11793760749,
+   "v": 11793760729,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11793760749-11793760729"
+  },
+  {
+   "u": 11795227479,
+   "v": 11795227481,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11795227479-11795227481"
+  },
+  {
+   "u": 11795227481,
+   "v": 11795227479,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11795227481-11795227479"
+  },
+  {
+   "u": 11795251506,
+   "v": 11795251507,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11795251506-11795251507"
+  },
+  {
+   "u": 11795251507,
+   "v": 11795251506,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 11795251507-11795251506"
+  },
+  {
+   "u": 12802032875,
+   "v": 13613500883,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 12802032875-13613500883"
+  },
+  {
+   "u": 13227038583,
+   "v": 13227038591,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227038583-13227038591"
+  },
+  {
+   "u": 13227038589,
+   "v": 13227038590,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227038589-13227038590"
+  },
+  {
+   "u": 13227038590,
+   "v": 13227038589,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227038590-13227038589"
+  },
+  {
+   "u": 13227038591,
+   "v": 13227038583,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227038591-13227038583"
+  },
+  {
+   "u": 13227634451,
+   "v": 13227634453,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227634451-13227634453"
+  },
+  {
+   "u": 13227634453,
+   "v": 13227634451,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227634453-13227634451"
+  },
+  {
+   "u": 13227634453,
+   "v": 13239990094,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227634453-13239990094"
+  },
+  {
+   "u": 13227634453,
+   "v": 13563537496,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13227634453-13563537496"
+  },
+  {
+   "u": 13239742852,
+   "v": 13239742868,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239742852-13239742868"
+  },
+  {
+   "u": 13239742868,
+   "v": 13239742852,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239742868-13239742852"
+  },
+  {
+   "u": 13239742868,
+   "v": 13241415879,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239742868-13241415879"
+  },
+  {
+   "u": 13239742873,
+   "v": 13240921538,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239742873-13240921538"
+  },
+  {
+   "u": 13239742873,
+   "v": 13647688057,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239742873-13647688057"
+  },
+  {
+   "u": 13239758327,
+   "v": 13239758344,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239758327-13239758344"
+  },
+  {
+   "u": 13239758344,
+   "v": 13239758327,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239758344-13239758327"
+  },
+  {
+   "u": 13239990094,
+   "v": 13227634453,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13239990094-13227634453"
+  },
+  {
+   "u": 13240030419,
+   "v": 13240030428,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13240030419-13240030428"
+  },
+  {
+   "u": 13240030428,
+   "v": 13240030419,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13240030428-13240030419"
+  },
+  {
+   "u": 13240030428,
+   "v": 13240030432,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13240030428-13240030432"
+  },
+  {
+   "u": 13240030432,
+   "v": 13240030428,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13240030432-13240030428"
+  },
+  {
+   "u": 13240921538,
+   "v": 13239742873,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13240921538-13239742873"
+  },
+  {
+   "u": 13241415879,
+   "v": 13239742868,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13241415879-13239742868"
+  },
+  {
+   "u": 13242138399,
+   "v": 13505885419,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13242138399-13505885419"
+  },
+  {
+   "u": 13243704602,
+   "v": 13243704603,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13243704602-13243704603"
+  },
+  {
+   "u": 13243704603,
+   "v": 13243704602,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13243704603-13243704602"
+  },
+  {
+   "u": 13247000151,
+   "v": 13247000162,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000151-13247000162"
+  },
+  {
+   "u": 13247000154,
+   "v": 13247000155,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000154-13247000155"
+  },
+  {
+   "u": 13247000154,
+   "v": 13247000156,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000154-13247000156"
+  },
+  {
+   "u": 13247000154,
+   "v": 13250395818,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000154-13250395818"
+  },
+  {
+   "u": 13247000155,
+   "v": 13247000154,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000155-13247000154"
+  },
+  {
+   "u": 13247000155,
+   "v": 13247000157,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000155-13247000157"
+  },
+  {
+   "u": 13247000155,
+   "v": 13250395809,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000155-13250395809"
+  },
+  {
+   "u": 13247000156,
+   "v": 13247000154,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000156-13247000154"
+  },
+  {
+   "u": 13247000156,
+   "v": 13247000157,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000156-13247000157"
+  },
+  {
+   "u": 13247000157,
+   "v": 13247000155,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000157-13247000155"
+  },
+  {
+   "u": 13247000157,
+   "v": 13247000156,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000157-13247000156"
+  },
+  {
+   "u": 13247000160,
+   "v": 13247000161,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000160-13247000161"
+  },
+  {
+   "u": 13247000160,
+   "v": 13247000162,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000160-13247000162"
+  },
+  {
+   "u": 13247000161,
+   "v": 13247000160,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000161-13247000160"
+  },
+  {
+   "u": 13247000161,
+   "v": 13247000163,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000161-13247000163"
+  },
+  {
+   "u": 13247000162,
+   "v": 13247000151,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000162-13247000151"
+  },
+  {
+   "u": 13247000162,
+   "v": 13247000160,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000162-13247000160"
+  },
+  {
+   "u": 13247000162,
+   "v": 13247000163,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000162-13247000163"
+  },
+  {
+   "u": 13247000163,
+   "v": 13247000161,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000163-13247000161"
+  },
+  {
+   "u": 13247000163,
+   "v": 13247000162,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000163-13247000162"
+  },
+  {
+   "u": 13247000163,
+   "v": 13250395812,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000163-13250395812"
+  },
+  {
+   "u": 13247000166,
+   "v": 13247000168,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000166-13247000168"
+  },
+  {
+   "u": 13247000166,
+   "v": 13247000170,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000166-13247000170"
+  },
+  {
+   "u": 13247000167,
+   "v": 13247000170,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000167-13247000170"
+  },
+  {
+   "u": 13247000168,
+   "v": 13247000166,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000168-13247000166"
+  },
+  {
+   "u": 13247000168,
+   "v": 13247000169,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000168-13247000169"
+  },
+  {
+   "u": 13247000169,
+   "v": 13247000168,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000169-13247000168"
+  },
+  {
+   "u": 13247000169,
+   "v": 13247000170,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000169-13247000170"
+  },
+  {
+   "u": 13247000169,
+   "v": 13250395814,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000169-13250395814"
+  },
+  {
+   "u": 13247000170,
+   "v": 13247000166,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000170-13247000166"
+  },
+  {
+   "u": 13247000170,
+   "v": 13247000167,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000170-13247000167"
+  },
+  {
+   "u": 13247000170,
+   "v": 13247000169,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000170-13247000169"
+  },
+  {
+   "u": 13247000172,
+   "v": 13247000178,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000172-13247000178"
+  },
+  {
+   "u": 13247000176,
+   "v": 13247000177,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000176-13247000177"
+  },
+  {
+   "u": 13247000176,
+   "v": 13247000178,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000176-13247000178"
+  },
+  {
+   "u": 13247000177,
+   "v": 13247000176,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000177-13247000176"
+  },
+  {
+   "u": 13247000177,
+   "v": 13247000179,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000177-13247000179"
+  },
+  {
+   "u": 13247000178,
+   "v": 13247000172,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000178-13247000172"
+  },
+  {
+   "u": 13247000178,
+   "v": 13247000176,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000178-13247000176"
+  },
+  {
+   "u": 13247000178,
+   "v": 13247000179,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000178-13247000179"
+  },
+  {
+   "u": 13247000179,
+   "v": 13247000177,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000179-13247000177"
+  },
+  {
+   "u": 13247000179,
+   "v": 13247000178,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000179-13247000178"
+  },
+  {
+   "u": 13247000179,
+   "v": 13250395816,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13247000179-13250395816"
+  },
+  {
+   "u": 13249113645,
+   "v": 13250395860,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13249113645-13250395860"
+  },
+  {
+   "u": 13250395809,
+   "v": 13247000155,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395809-13247000155"
+  },
+  {
+   "u": 13250395812,
+   "v": 13247000163,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395812-13247000163"
+  },
+  {
+   "u": 13250395814,
+   "v": 13247000169,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395814-13247000169"
+  },
+  {
+   "u": 13250395816,
+   "v": 13247000179,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395816-13247000179"
+  },
+  {
+   "u": 13250395818,
+   "v": 13247000154,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395818-13247000154"
+  },
+  {
+   "u": 13250395860,
+   "v": 13249113645,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13250395860-13249113645"
+  },
+  {
+   "u": 13251027329,
+   "v": 13251027338,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027329-13251027338"
+  },
+  {
+   "u": 13251027329,
+   "v": 13251027440,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027329-13251027440"
+  },
+  {
+   "u": 13251027334,
+   "v": 3631666842,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027334-3631666842"
+  },
+  {
+   "u": 13251027334,
+   "v": 13251027429,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027334-13251027429"
+  },
+  {
+   "u": 13251027334,
+   "v": 13251027439,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027334-13251027439"
+  },
+  {
+   "u": 13251027335,
+   "v": 13251027338,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027335-13251027338"
+  },
+  {
+   "u": 13251027335,
+   "v": 13251027437,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027335-13251027437"
+  },
+  {
+   "u": 13251027338,
+   "v": 13251027329,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027338-13251027329"
+  },
+  {
+   "u": 13251027338,
+   "v": 13251027335,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027338-13251027335"
+  },
+  {
+   "u": 13251027338,
+   "v": 13251027428,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027338-13251027428"
+  },
+  {
+   "u": 13251027428,
+   "v": 13251027338,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027428-13251027338"
+  },
+  {
+   "u": 13251027428,
+   "v": 13251027437,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027428-13251027437"
+  },
+  {
+   "u": 13251027429,
+   "v": 13251027334,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027429-13251027334"
+  },
+  {
+   "u": 13251027429,
+   "v": 13251027439,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027429-13251027439"
+  },
+  {
+   "u": 13251027429,
+   "v": 13251027439,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027429-13251027439"
+  },
+  {
+   "u": 13251027437,
+   "v": 13251027335,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027437-13251027335"
+  },
+  {
+   "u": 13251027437,
+   "v": 13251027428,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027437-13251027428"
+  },
+  {
+   "u": 13251027439,
+   "v": 13251027334,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027439-13251027334"
+  },
+  {
+   "u": 13251027439,
+   "v": 13251027429,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027439-13251027429"
+  },
+  {
+   "u": 13251027439,
+   "v": 13251027429,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027439-13251027429"
+  },
+  {
+   "u": 13251027440,
+   "v": 3631666842,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027440-3631666842"
+  },
+  {
+   "u": 13251027440,
+   "v": 13251027329,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13251027440-13251027329"
+  },
+  {
+   "u": 13505885419,
+   "v": 13242138399,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13505885419-13242138399"
+  },
+  {
+   "u": 13518537635,
+   "v": 13704300575,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13518537635-13704300575"
+  },
+  {
+   "u": 13545293354,
+   "v": 13545293356,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13545293354-13545293356"
+  },
+  {
+   "u": 13545293356,
+   "v": 13545293354,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13545293356-13545293354"
+  },
+  {
+   "u": 13550957414,
+   "v": 13550957419,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13550957414-13550957419",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13550957414,
+   "v": 13550957419,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13550957414-13550957419",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13550957419,
+   "v": 13550957414,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13550957419-13550957414",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13550957419,
+   "v": 13550957414,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13550957419-13550957414",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13556596324,
+   "v": 13613500814,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13556596324-13613500814",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13556596326,
+   "v": 13613500919,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13556596326-13613500919",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13563537496,
+   "v": 13227634453,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13563537496-13227634453"
+  },
+  {
+   "u": 13563537496,
+   "v": 13563537498,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13563537496-13563537498"
+  },
+  {
+   "u": 13563537498,
+   "v": 13563537496,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13563537498-13563537496"
+  },
+  {
+   "u": 13576370723,
+   "v": 13704406753,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13576370723-13704406753"
+  },
+  {
+   "u": 13578080780,
+   "v": 13578080783,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080780-13578080783"
+  },
+  {
+   "u": 13578080781,
+   "v": 13578080782,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080781-13578080782"
+  },
+  {
+   "u": 13578080781,
+   "v": 13578080783,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080781-13578080783"
+  },
+  {
+   "u": 13578080781,
+   "v": 13704644534,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080781-13704644534"
+  },
+  {
+   "u": 13578080782,
+   "v": 13578080781,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080782-13578080781"
+  },
+  {
+   "u": 13578080782,
+   "v": 13704644545,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080782-13704644545"
+  },
+  {
+   "u": 13578080783,
+   "v": 13578080780,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080783-13578080780"
+  },
+  {
+   "u": 13578080783,
+   "v": 13578080781,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080783-13578080781"
+  },
+  {
+   "u": 13578080789,
+   "v": 13578080791,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080789-13578080791"
+  },
+  {
+   "u": 13578080791,
+   "v": 13578080789,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080791-13578080789"
+  },
+  {
+   "u": 13578080791,
+   "v": 13704644540,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080791-13704644540"
+  },
+  {
+   "u": 13578080796,
+   "v": 13578192193,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578080796-13578192193"
+  },
+  {
+   "u": 13578192193,
+   "v": 13578080796,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578192193-13578080796"
+  },
+  {
+   "u": 13578192193,
+   "v": 13704644534,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578192193-13704644534"
+  },
+  {
+   "u": 13578192193,
+   "v": 13704644547,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578192193-13704644547"
+  },
+  {
+   "u": 13578233817,
+   "v": 13583237950,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578233817-13583237950"
+  },
+  {
+   "u": 13578233955,
+   "v": 13686545769,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13578233955-13686545769"
+  },
+  {
+   "u": 13583237950,
+   "v": 13578233817,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13583237950-13578233817"
+  },
+  {
+   "u": 13599683860,
+   "v": 13599683874,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13599683860-13599683874"
+  },
+  {
+   "u": 13599683874,
+   "v": 13599683860,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13599683874-13599683860"
+  },
+  {
+   "u": 13613500814,
+   "v": 13556596324,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13613500814-13556596324",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13613500883,
+   "v": 12802032875,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13613500883-12802032875"
+  },
+  {
+   "u": 13613500919,
+   "v": 13556596326,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13613500919-13556596326",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13647688057,
+   "v": 13239742873,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13647688057-13239742873"
+  },
+  {
+   "u": 13676300892,
+   "v": 13676300899,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300892-13676300899"
+  },
+  {
+   "u": 13676300899,
+   "v": 13676300892,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300899-13676300892"
+  },
+  {
+   "u": 13676300899,
+   "v": 13676300901,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300899-13676300901"
+  },
+  {
+   "u": 13676300899,
+   "v": 13676300902,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300899-13676300902"
+  },
+  {
+   "u": 13676300901,
+   "v": 13676300899,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300901-13676300899"
+  },
+  {
+   "u": 13676300901,
+   "v": 13676300902,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300901-13676300902"
+  },
+  {
+   "u": 13676300901,
+   "v": 13676300902,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300901-13676300902"
+  },
+  {
+   "u": 13676300902,
+   "v": 13676300899,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300902-13676300899"
+  },
+  {
+   "u": 13676300902,
+   "v": 13676300901,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300902-13676300901"
+  },
+  {
+   "u": 13676300902,
+   "v": 13676300901,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13676300902-13676300901"
+  },
+  {
+   "u": 13680519562,
+   "v": 13680519567,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13680519562-13680519567",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13680519567,
+   "v": 13680519562,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13680519567-13680519562",
+   "blocked_modes": [
+    "bike",
+    "drive"
+   ]
+  },
+  {
+   "u": 13683936043,
+   "v": 13683936046,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13683936043-13683936046"
+  },
+  {
+   "u": 13683936046,
+   "v": 13683936043,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13683936046-13683936043"
+  },
+  {
+   "u": 13685932103,
+   "v": 8512203970,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13685932103-8512203970"
+  },
+  {
+   "u": 13686545769,
+   "v": 13578233955,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13686545769-13578233955"
+  },
+  {
+   "u": 13704300409,
+   "v": 13704300438,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300409-13704300438"
+  },
+  {
+   "u": 13704300430,
+   "v": 13704300431,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300430-13704300431"
+  },
+  {
+   "u": 13704300431,
+   "v": 13704300430,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300431-13704300430"
+  },
+  {
+   "u": 13704300438,
+   "v": 13704300409,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300438-13704300409"
+  },
+  {
+   "u": 13704300498,
+   "v": 13704300505,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300498-13704300505"
+  },
+  {
+   "u": 13704300505,
+   "v": 13704300498,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300505-13704300498"
+  },
+  {
+   "u": 13704300563,
+   "v": 13704300572,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300563-13704300572"
+  },
+  {
+   "u": 13704300572,
+   "v": 13704300563,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300572-13704300563"
+  },
+  {
+   "u": 13704300572,
+   "v": 13704300575,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300572-13704300575"
+  },
+  {
+   "u": 13704300575,
+   "v": 13518537635,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300575-13518537635"
+  },
+  {
+   "u": 13704300575,
+   "v": 13704300572,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704300575-13704300572"
+  },
+  {
+   "u": 13704406750,
+   "v": 13704406753,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704406750-13704406753"
+  },
+  {
+   "u": 13704406753,
+   "v": 13576370723,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704406753-13576370723"
+  },
+  {
+   "u": 13704406753,
+   "v": 13704406750,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704406753-13704406750"
+  },
+  {
+   "u": 13704616276,
+   "v": 13704616286,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704616276-13704616286"
+  },
+  {
+   "u": 13704616286,
+   "v": 13704616276,
+   "k": 1,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704616286-13704616276"
+  },
+  {
+   "u": 13704644534,
+   "v": 13578080781,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644534-13578080781"
+  },
+  {
+   "u": 13704644534,
+   "v": 13578192193,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644534-13578192193"
+  },
+  {
+   "u": 13704644534,
+   "v": 13704644542,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644534-13704644542"
+  },
+  {
+   "u": 13704644538,
+   "v": 13704644542,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644538-13704644542"
+  },
+  {
+   "u": 13704644540,
+   "v": 13578080791,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644540-13578080791"
+  },
+  {
+   "u": 13704644542,
+   "v": 13704644534,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644542-13704644534"
+  },
+  {
+   "u": 13704644542,
+   "v": 13704644538,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644542-13704644538"
+  },
+  {
+   "u": 13704644542,
+   "v": 13704644547,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644542-13704644547"
+  },
+  {
+   "u": 13704644545,
+   "v": 13578080782,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644545-13578080782"
+  },
+  {
+   "u": 13704644547,
+   "v": 13578192193,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644547-13578192193"
+  },
+  {
+   "u": 13704644547,
+   "v": 13704644542,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13704644547-13704644542"
+  },
+  {
+   "u": 13723351597,
+   "v": 13723351598,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13723351597-13723351598"
+  },
+  {
+   "u": 13723351598,
+   "v": 13723351597,
+   "k": 0,
+   "walk_penalty": 10.0,
+   "reason": "crosses_building",
+   "name_hint": "未命名路 13723351598-13723351597"
+  }
+ ]
+}

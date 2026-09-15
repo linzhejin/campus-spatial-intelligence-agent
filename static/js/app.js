@@ -45,6 +45,9 @@
         locateWatchId: null, // navigator.geolocation.watchPosition 句柄
         _hadUserLocation: false,  // 是否已获得过定位（首次居中用）
         routeAcceptTimer: null,  // 路线采纳判定定时器（20s 未覆盖视为采纳）
+        latestRoute: null,       // 最近一次路径响应完整数据（含 steps，供开始导航）
+        locSubscribers: [],      // 定位更新订阅者（导航引擎用），不干预蓝点渲染
+        _navUnsubscribe: null,   // 导航引擎的定位订阅注销函数
     };
 
     // ========== 用户标识与行为埋点（P4：画像学习 + 产品观测） ==========
@@ -532,7 +535,7 @@
 
             // 底图：高德瓦片（GCJ-02，国内秒开，中文标注，高缩放全覆盖）
             // 全站统一 GCJ-02：POI/路线/GPS 均按 GCJ-02 渲染，底图不可混入 WGS-84 源
-            // （OSM/Esri 为 WGS-84 且国内不可达/会串位约 500m，已移除）
+            // （OSM/Esri/天地图 vec_w 为 WGS-84/CGCS2000，与 GCJ-02 路线串位约 500m，禁止接入）
             var baseLayers = {};
             var defaultLayer = null;
 
@@ -544,29 +547,6 @@
                   attribution: '© <a href="https://ditu.amap.com/" target="_blank" rel="noopener">高德地图</a>' }
             );
             baseLayers['高德矢量'] = amap;
-
-            // 天地图矢量+注记（需 Key，CGCS2000≈GCJ-02，国内最快）
-            if (CFG.TIANDITU_KEY) {
-                var tdtAttr = '© <a href="https://www.tianditu.gov.cn/" target="_blank" rel="noopener">天地图</a>';
-                var tdtVec = L.tileLayer(
-                    'https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
-                    + '&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles'
-                    + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + encodeURIComponent(CFG.TIANDITU_KEY),
-                    { subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
-                      maxZoom: 18, attribution: tdtAttr }
-                );
-                var tdtCva = L.tileLayer(
-                    'https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
-                    + '&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles'
-                    + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + encodeURIComponent(CFG.TIANDITU_KEY),
-                    { subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
-                      maxZoom: 18, attribution: tdtAttr }
-                );
-                tdtVec.addTo(state.map);
-                tdtCva.addTo(state.map);  // 注记作为固定叠加层
-                baseLayers['天地图矢量'] = tdtVec;
-                defaultLayer = tdtVec;
-            }
 
             // 高德卫星影像 + 路网注记（GCJ-02，无需 Key；与 POI/路线同坐标系，天然对齐）
             var amapSat = L.layerGroup([
@@ -1088,6 +1068,12 @@
             accuracy: accuracy || 0,
             manual: !!isManual,
         };
+        // 定位订阅者（实时导航引擎）：只推送，不干预蓝点逻辑
+        if (state.locSubscribers.length) {
+            state.locSubscribers.slice().forEach(function (fn) {
+                try { fn(state.userLocation); } catch (e) { console.warn('[LOC] 订阅者异常:', e); }
+            });
+        }
         // 缓存 GPS 修复（非手动点位、精度可信时），供下次打开秒显
         if (!isManual && !isCached && accuracy > 0 && accuracy <= 300) {
             try {
@@ -1209,6 +1195,10 @@
     function renderRoute(routeData) {
         if (!state.map) return;
 
+        state.latestRoute = routeData;
+        // 导航态：隐藏最短路径对照线、不 fitBounds（地图由导航引擎北朝上跟随）
+        var navActive = window.WhuWalkerNavigation && window.WhuWalkerNavigation.isActive();
+
         clearMap();
 
         var recommended = routeData.recommended || [];
@@ -1227,14 +1217,14 @@
 
             state.recommendedLine = L.polyline(recPath, {
                 color: recColor,
-                weight: 6,
+                weight: navActive ? 7 : 6,
                 opacity: 0.9,
                 lineJoin: 'round',
                 lineCap: 'round',
             }).addTo(state.map);
         }
 
-        if (shortest.length > 0) {
+        if (!navActive && shortest.length > 0) {
             // 最短路径：灰色虚线对照
             var shortPath = shortest.map(function (c) {
                 return gcjToLatLng(c.lng, c.lat);
@@ -1269,7 +1259,10 @@
         if (state.shortestLine) bounds.push(state.shortestLine.getBounds());
         state.poiMarkers.forEach(function (m) { bounds.push(m.getLatLng()); });
 
-        if (bounds.length > 0) {
+        if (navActive) {
+            // 导航中：新路线（偏航重算/切方式）交给引擎重建投影，视角保持北朝上跟随
+            if (window.WhuWalkerNavigation) window.WhuWalkerNavigation.update(routeData);
+        } else if (bounds.length > 0) {
             var b = bounds[0];
             bounds.slice(1).forEach(function (x) { b.extend(x); });
             state.map.fitBounds(b, { paddingTopLeft: [40, 90], paddingBottomRight: [40, 40], maxZoom: 17 });
@@ -1795,8 +1788,197 @@
         });
     }
 
-    // 清除路线结果区 + 地图覆盖物（非路径规划响应时调用，避免旧路线残留）
+    // ===================== 实时导航（高德同款沉浸态） =====================
+
+    function subscribeLocation(fn) {
+        state.locSubscribers.push(fn);
+        return function () {
+            var i = state.locSubscribers.indexOf(fn);
+            if (i >= 0) state.locSubscribers.splice(i, 1);
+        };
+    }
+
+    var _navToastTimer = null;
+    function showNavToast(msg) {
+        var t = document.getElementById('nav-toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.hidden = false;
+        if (_navToastTimer) clearTimeout(_navToastTimer);
+        _navToastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+    }
+
+    function renderNavCard(d) {
+        var iconBox = document.getElementById('nav-card-icon');
+        var arrow = iconBox ? iconBox.querySelector('.nav-card__arrow') : null;
+        var emoji = document.getElementById('nav-card-emoji');
+        if (iconBox && arrow && emoji) {
+            if (d.icon === 'arrow') {
+                arrow.hidden = false;
+                emoji.hidden = true;
+                arrow.style.transform = 'rotate(' + (d.angle || 0) + 'deg)';
+            } else {
+                arrow.hidden = true;
+                emoji.hidden = false;
+                emoji.textContent = d.icon === 'arrive' ? '🏁' : '⭐';
+            }
+        }
+        var distEl = document.getElementById('nav-maneuver-dist');
+        if (distEl) distEl.textContent = d.maneuverDist || '';
+        var mainEl = document.getElementById('nav-instruction');
+        if (mainEl) mainEl.textContent = d.main || '';
+        var subEl = document.getElementById('nav-sub');
+        if (subEl) subEl.textContent = d.sub || '';
+        var rdEl = document.getElementById('nav-remain-dist');
+        if (rdEl) rdEl.textContent = d.remainingText || '—';
+        var tmEl = document.getElementById('nav-remain-time');
+        if (tmEl) tmEl.textContent = d.remainingMin ? '约 ' + d.remainingMin + ' 分钟' : '';
+        var roadEl = document.getElementById('nav-remain-road');
+        if (roadEl) roadEl.textContent = d.roadName || '';
+    }
+
+    function syncMuteIcon() {
+        var ic = document.getElementById('nav-mute-icon');
+        if (ic && window.WhuWalkerVoiceOutput) {
+            ic.textContent = WhuWalkerVoiceOutput.isMuted() ? '🔇' : '🔊';
+        }
+    }
+
+    function startNavigation() {
+        var route = state.latestRoute;
+        var Nav = window.WhuWalkerNavigation;
+        if (!Nav || !state.map) return;
+        if (!route || !(route.recommended || []).length) {
+            showError('还没有路线', '先规划一条路线，再开始导航吧～');
+            return;
+        }
+        // 导航态不显示最短路径灰线（等下引擎接管后重绘）
+        if (state.shortestLine) {
+            state.map.removeLayer(state.shortestLine);
+            state.shortestLine = null;
+        }
+
+        var overlay = document.getElementById('nav-overlay');
+        var arriveBox = document.getElementById('nav-arrive');
+        if (arriveBox) arriveBox.hidden = true;
+        syncMuteIcon();
+
+        var ok = Nav.start({
+            map: state.map,
+            routeData: route,
+            request: state.lastRouteRequest || { end: route.end || null },
+            onCard: renderNavCard,
+            onGps: function (stale) {
+                var w = document.getElementById('nav-gps-warn');
+                if (w) w.hidden = !stale;
+            },
+            onArrive: function (endName) {
+                var box = document.getElementById('nav-arrive');
+                var nm = document.getElementById('nav-arrive-name');
+                if (nm) nm.textContent = endName || '';
+                if (box) box.hidden = false;
+                trackEvent('nav_arrive', { mode: route.mode || 'walk' });
+            },
+            onToast: showNavToast,
+            onFollowChange: function (following) {
+                var btn = document.getElementById('nav-recenter');
+                if (btn) btn.hidden = following;
+            },
+            onStateChange: function (active) {
+                if (!active) {
+                    document.body.classList.remove('nav-running');
+                    if (overlay) overlay.hidden = true;
+                    if (state._navUnsubscribe) { state._navUnsubscribe(); state._navUnsubscribe = null; }
+                }
+            },
+            renderRoute: function (data) { renderRoute(data); },
+        });
+        if (!ok) {
+            showError('导航启动失败', '路线数据不完整，重新规划一次试试～');
+            return;
+        }
+
+        document.body.classList.add('nav-running');
+        if (overlay) overlay.hidden = false;
+        state._navUnsubscribe = subscribeLocation(function (loc) { Nav.onFix(loc); });
+
+        // 立即推一次已有位置（避免等下一个 GPS 回调）
+        if (state.userLocation) Nav.onFix(state.userLocation);
+        // 后台补定位（已有 watch 在跑则几乎立即回调）
+        try { startTracking(true); } catch (e) { /* ignore */ }
+
+        // 移动端点地图面板可见（桌面端无影响）
+        var mapPanel = document.getElementById('map-panel');
+        if (mapPanel && window.innerWidth <= 767 && mapPanel.scrollIntoView) {
+            mapPanel.scrollIntoView({ block: 'start' });
+        }
+        trackEvent('nav_start', { mode: route.mode || state.travelMode });
+    }
+
+    function stopNavigation() {
+        var Nav = window.WhuWalkerNavigation;
+        if (Nav && Nav.isActive()) Nav.stop();  // onStateChange(false) 里收 UI
+        var w = document.getElementById('nav-gps-warn');
+        if (w) w.hidden = true;
+        var t = document.getElementById('nav-toast');
+        if (t) t.hidden = true;
+        var btn = document.getElementById('nav-recenter');
+        if (btn) btn.hidden = true;
+    }
+
+    // ===================== 语音输入 =====================
+
+    function setVoiceBtnState(listening) {
+        var btn = document.getElementById('voice-btn');
+        if (btn) btn.classList.toggle('listening', !!listening);
+    }
+
+    function showVoiceUnsupported(reason) {
+        if (reason === 'wechat') {
+            showTopBanner('微信里语音用不了：点右上角「⋯」→「在浏览器打开」就能语音输入啦', 'info');
+        } else if (reason === 'permission') {
+            showTopBanner('麦克风权限被拒绝，可在浏览器设置里开启后重试', 'warning');
+        } else {
+            showTopBanner('当前浏览器不支持语音输入，换 Chrome / Edge，或安装珞珈智行 App', 'info');
+        }
+    }
+
+    function handleVoiceBtn() {
+        var VI = window.WhuWalkerVoiceInput;
+        var input = document.getElementById('nl-input');
+        var submitBtn = document.getElementById('submit-btn');
+        if (!VI || !input) return;
+        if (VI.isListening()) { VI.stop(); setVoiceBtnState(false); return; }
+
+        var cap = VI.capability();
+        if (!cap.ok) { showVoiceUnsupported(cap.reason); return; }
+
+        var baseText = input.value.trim();
+        VI.start({
+            onStateChange: function (s) { setVoiceBtnState(s === 'listening'); },
+            onInterim: function (text) {
+                input.value = baseText ? (baseText + ' ' + text) : text;
+                input.dispatchEvent(new Event('input'));
+            },
+            onFinal: function (text) {
+                input.value = baseText ? (baseText + ' ' + text) : text;
+                input.dispatchEvent(new Event('input'));
+                setVoiceBtnState(false);
+                if (submitBtn && text.trim()) submitBtn.click();
+            },
+            onUnsupported: function (reason) {
+                setVoiceBtnState(false);
+                showVoiceUnsupported(reason);
+            },
+            onError: function (msg) {
+                setVoiceBtnState(false);
+                showTopBanner('🎤 ' + msg, 'info');
+            },
+        });
+    }
+
     function clearRouteResult() {
+        stopNavigation();
         clearMap();
         var section = document.getElementById('results-section');
         if (section) section.hidden = true;
@@ -1820,6 +2002,7 @@
     // 返回键：清空路线 + 清空对话 + 复位地图，回到初始欢迎状态
     function handleReset() {
         cancelRouteAccept();  // 重置 → 当前路线不计为采纳
+        stopNavigation();     // 退出实时导航
         // 1. 清空地图路线和标记
         clearMap();
         // 2. 复位地图视角（GCJ 中心点转 WGS-84）
@@ -2812,6 +2995,39 @@
         if (resetBtn) {
             resetBtn.addEventListener('click', handleReset);
         }
+
+        // ===== 实时导航按钮 =====
+        var startNavBtn = document.getElementById('start-nav-btn');
+        if (startNavBtn) startNavBtn.addEventListener('click', startNavigation);
+
+        function bindNavStop(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', stopNavigation);
+        }
+        bindNavStop('nav-exit-top');
+        bindNavStop('nav-stop');
+        bindNavStop('nav-arrive-close');
+
+        var navMuteBtn = document.getElementById('nav-mute');
+        if (navMuteBtn) {
+            navMuteBtn.addEventListener('click', function () {
+                if (window.WhuWalkerVoiceOutput) {
+                    var muted = WhuWalkerVoiceOutput.toggleMuted();
+                    syncMuteIcon();
+                    if (!muted) WhuWalkerVoiceOutput.speak('语音已开启');
+                }
+            });
+        }
+        var navRecenterBtn = document.getElementById('nav-recenter');
+        if (navRecenterBtn) {
+            navRecenterBtn.addEventListener('click', function () {
+                if (window.WhuWalkerNavigation) WhuWalkerNavigation.setFollow(true);
+            });
+        }
+
+        // ===== 语音输入 =====
+        var voiceBtn = document.getElementById('voice-btn');
+        if (voiceBtn) voiceBtn.addEventListener('click', handleVoiceBtn);
 
         // 帮助按钮 → 快捷键帮助弹窗
         var helpBtn = document.getElementById('help-btn');

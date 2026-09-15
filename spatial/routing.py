@@ -150,8 +150,13 @@ MODE_OUTSIDE_ROAD_PENALTY = {"walk": _OUTSIDE_ROAD_PENALTY, "bike": 3.0, "drive"
 # （如信息学部学生四食堂，长边全是 steps，125 对起终点曾穿楼而过）。
 _WALK_STEPS_PENALTY = 2.5
 
-# 骑行不可通行：纯台阶/垂直交通标签（边只要还含 footway/path 等可骑行标签即保留）
-_BIKE_BLOCKED_HIGHWAY = {"steps", "elevator", "escalator"}
+# 非机动车设施"一票否决"标签：边只要含其中任意一个，骑行/驾车一律剔除。
+# 背景：OSMnx simplify 会把平行的车行道与台阶/走廊合并成同一条多标签边
+# （实测 ['service','steps'] 54 条、['footway','steps'] 360 条、
+# ['residential','steps'] 8 条等，共 462 条）。旧逻辑下 drive"白名单任一命中
+# 即保留"、bike"全部标签都不可通行才删"，导致 80 条台阶边在驾车图中漏网、
+# 几乎全部台阶边在骑行图中漏网（线上"车上台阶/车穿楼"问题根因）。
+_NON_VEHICULAR_HIGHWAY = {"steps", "elevator", "escalator", "corridor"}
 
 # 驾车白名单：边的 highway 标签中任意一个命中即视为车行道
 _DRIVE_ALLOWED_HIGHWAY = {
@@ -174,6 +179,21 @@ def _edge_highway_tags(edge_data: dict) -> list:
     if not edge_data:
         return []
     return _road_name_list(edge_data.get("highway"))
+
+
+def _edge_blocked_modes(edge_data: dict) -> set:
+    """读取人工覆盖的硬封禁模式集合（edge_overrides.json 合并到边属性）。"""
+    if not edge_data:
+        return set()
+    raw = edge_data.get("blocked_modes")
+    if not raw:
+        return set()
+    if isinstance(raw, str):
+        raw = _road_name_list(raw)
+    try:
+        return {str(x) for x in raw}
+    except TypeError:
+        return set()
 
 
 def _merge_penalty_maps(*maps: dict) -> dict:
@@ -224,6 +244,7 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
         # 台阶软惩罚：不封死（台阶本身可走，且可能是唯一通道），但不让它成为穿楼捷径。
         # 人工标注 walk_penalty（建筑内连廊等）与台阶惩罚叠加。
         steps_penalty = {}
+        hard_blocked = []
         for u, v, k, data in G_mode.edges(keys=True, data=True):
             mult = 1.0
             if "steps" in _edge_highway_tags(data):
@@ -236,6 +257,16 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
                     pass
             if mult > 1.0:
                 steps_penalty[(u, v, k)] = mult
+            bm = _edge_blocked_modes(data)
+            if "all" in bm or "walk" in bm:
+                hard_blocked.append((u, v, k))
+        if hard_blocked:
+            # 有人工封禁（"all"）边时才复制图，避免常态下整图拷贝
+            G_mode = G_mode.copy()
+            G_mode.remove_edges_from(hard_blocked)
+            isolated = [n for n, deg in G_mode.degree() if deg == 0]
+            if isolated:
+                G_mode.remove_nodes_from(isolated)
         return G_mode, outside_status, steps_penalty
 
     # bike/drive：在已剔校外边的图副本上继续删边（绝不能改原图）
@@ -245,13 +276,23 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     if mode == "bike":
         for u, v, k, data in list(G_mode.edges(keys=True, data=True)):
             tags = _edge_highway_tags(data)
-            if tags and all(tag in _BIKE_BLOCKED_HIGHWAY for tag in tags):
+            bm = _edge_blocked_modes(data)
+            # 一票否决：只要含台阶/电梯/走廊等非机动车设施标签即剔除
+            # （多标签边 ['service','steps'] 同样剔除，杜绝"车上台阶"）；
+            # 人工覆盖 blocked_modes 命中本模式同样剔除
+            if (any(tag in _NON_VEHICULAR_HIGHWAY for tag in tags)
+                    or mode in bm or "all" in bm):
                 edges_to_remove.append((u, v, k))
         base_status = "mode_bike"
     else:  # drive
         for u, v, k, data in list(G_mode.edges(keys=True, data=True)):
             tags = _edge_highway_tags(data)
-            if not any(tag in _DRIVE_ALLOWED_HIGHWAY for tag in tags):
+            bm = _edge_blocked_modes(data)
+            # 双重条件：含非机动车设施标签一票否决；否则要求至少一个车行道标签；
+            # 人工覆盖（如穿楼车行道）命中同样剔除
+            if (any(tag in _NON_VEHICULAR_HIGHWAY for tag in tags)
+                    or mode in bm or "all" in bm
+                    or not any(tag in _DRIVE_ALLOWED_HIGHWAY for tag in tags)):
                 edges_to_remove.append((u, v, k))
         base_status = "mode_drive"
 
@@ -296,6 +337,195 @@ def estimate_duration_min(length_m, mode) -> float:
     mode = normalize_mode(mode)
     meters_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
     return round(length_m / meters_per_min, 1)
+
+
+# ---------------------------------------------------------------------------
+# 转向指令（turn-by-turn）
+# ---------------------------------------------------------------------------
+
+
+def _bearing(p1, p2) -> float:
+    """线段方位角（度）：0=正北，顺时针到 360。p=(lng,lat)。"""
+    import math
+    dx = p2[0] - p1[0]
+    dy = p2[1] - p1[1]
+    if abs(dx) < 1e-12 and abs(dy) < 1e-12:
+        return 0.0
+    return math.degrees(math.atan2(dx, dy)) % 360.0
+
+
+def _classify_turn(in_bearing: float, out_bearing: float) -> tuple:
+    """根据进入/离开方位角返回 (action, 中文口令)。"""
+    import math
+    # 带符号夹角：[-180, 180)，正=右转
+    delta = (out_bearing - in_bearing + 540.0) % 360.0 - 180.0
+    a = abs(delta)
+    if a < 10:
+        return "straight", "直行"
+    if a < 25:
+        return ("slight_right", "靠右") if delta > 0 else ("slight_left", "靠左")
+    if a < 120:
+        return ("right", "右转") if delta > 0 else ("left", "左转")
+    if a < 170:
+        return ("sharp_right", "向右急转") if delta > 0 else ("sharp_left", "向左急转")
+    return "uturn", "掉头"
+
+
+def _edge_points(G, u, v, data) -> list:
+    """取边的几何点序列 [(lng,lat),...]；无 geometry 时用节点连线。"""
+    raw = data.get("geometry") if data else None
+    if raw and isinstance(raw, str):
+        try:
+            from shapely.wkt import loads as wkt_loads
+            g = wkt_loads(raw)
+            return list(g.coords)
+        except Exception:
+            pass
+    xu = float(G.nodes[u].get("x", 0))
+    yu = float(G.nodes[u].get("y", 0))
+    xv = float(G.nodes[v].get("x", 0))
+    yv = float(G.nodes[v].get("y", 0))
+    return [(xu, yu), (xv, yv)]
+
+
+def _edge_road_name(data) -> str:
+    """取路名；无名（含 OSM 占位"未命名路 u-v"）返回空串。"""
+    nm = str(data.get("name", "") or "").strip()
+    if not nm or "未命名" in nm:
+        return ""
+    return nm
+
+
+def _human_distance(m: float) -> str:
+    """距离口语化：≥100m 按 10m 取整，其余按 5m 取整，<15m 用"马上"。"""
+    if m < 15:
+        return "马上"
+    step = 10 if m >= 100 else 5
+    d = int(round(m / step) * step)
+    return f"约{d}米"
+
+
+def build_turn_by_turn(G, route_nodes: list, mode: str = "walk",
+                       end_name: str = "") -> list:
+    """
+    由路径节点序列生成转向指令（坐标 WGS-84，与路网一致）。
+
+    连续同名道路的边先合并成"路段"，再在每个路段边界（拐点/路名变化点）
+    生成一条指令。指令 point 为动作发生点（拐点坐标）。
+
+    Returns:
+        list[dict]：
+          {seq, type(depart|turn|arrive), action, distance_m, cumulative_m,
+           road_name, next_road_name, text, point:{lng,lat}}
+    """
+    if not route_nodes:
+        return []
+
+    # ---------- 1. 逐边取几何/路名/长度 ----------
+    raw_edges = []
+    for a, b in zip(route_nodes, route_nodes[1:]):
+        data = G.get_edge_data(a, b)
+        if not data:
+            # 回退：尝试反向边（理论上路径有向不会发生）
+            data = G.get_edge_data(b, a) or {}
+            k0 = sorted(data.keys())[0] if data else 0
+        else:
+            k0 = sorted(data.keys())[0]
+        d = data.get(k0, {})
+        pts = _edge_points(G, a, b, d)
+        if len(pts) < 2:
+            continue
+        try:
+            length = float(d.get("length", 0) or 0)
+        except (TypeError, ValueError):
+            length = 0.0
+        raw_edges.append({
+            "name": _edge_road_name(d), "points": pts, "length": length,
+        })
+
+    if not raw_edges:
+        return []
+
+    # ---------- 2. 同名连续边合并成路段 ----------
+    segments = []
+    for e in raw_edges:
+        if segments and segments[-1]["name"] == e["name"]:
+            seg = segments[-1]
+            # 拼接几何：跳过重复首点
+            seg["points"].extend(e["points"][1:])
+            seg["length"] += e["length"]
+        else:
+            segments.append({
+                "name": e["name"],
+                "points": list(e["points"]),
+                "length": e["length"],
+            })
+
+    def seg_bearing(seg, at_start: bool) -> float:
+        pts = seg["points"]
+        return _bearing(pts[0], pts[1]) if at_start else _bearing(pts[-2], pts[-1])
+
+    # ---------- 3. 生成指令 ----------
+    steps = []
+    cum = 0.0
+    first_name = segments[0]["name"] or "小路"
+
+    # 出发指令：动作点在第一个拐点（只有一段时直接是终点）
+    first_point = segments[0]["points"][-1]
+    depart_text = f"出发，沿{first_name}前行"
+    steps.append({
+        "seq": 0, "type": "depart", "action": "depart",
+        "distance_m": round(segments[0]["length"], 1),
+        "cumulative_m": round(cum + segments[0]["length"], 1),
+        "road_name": first_name, "next_road_name": "",
+        "text": depart_text,
+        "point": {"lng": round(first_point[0], 6), "lat": round(first_point[1], 6)},
+    })
+
+    # 拐点指令：segments[i] → segments[i+1]
+    for i in range(len(segments) - 1):
+        cur, nxt = segments[i], segments[i + 1]
+        cum += cur["length"]
+        in_b = seg_bearing(cur, at_start=False)
+        out_b = seg_bearing(nxt, at_start=True)
+        action, zh = _classify_turn(in_b, out_b)
+        d_text = _human_distance(cur["length"])
+        nxt_name = nxt["name"] or "小路"
+        if action == "straight":
+            text = f"继续直行{('，进入' + nxt_name) if nxt['name'] else ''}".rstrip("，")
+        else:
+            text = f"{d_text}{zh}"
+            if nxt["name"]:
+                text += f"，进入{nxt_name}"
+        point = cur["points"][-1]
+        steps.append({
+            "seq": len(steps), "type": "turn", "action": action,
+            "distance_m": round(cur["length"], 1),
+            "cumulative_m": round(cum, 1),
+            "road_name": cur["name"] or "小路",
+            "next_road_name": nxt_name,
+            "text": text,
+            "point": {"lng": round(point[0], 6), "lat": round(point[1], 6)},
+        })
+
+    # 到达指令：动作点在路径终点，距离取最后一段长度
+    last_seg = segments[-1]
+    cum_total = cum + last_seg["length"]
+    end_p = last_seg["points"][-1]
+    arrive_text = "到达终点"
+    if end_name:
+        arrive_text += f"（{end_name}）"
+    arrive_text += "，导航结束"
+    steps.append({
+        "seq": len(steps), "type": "arrive", "action": "arrive",
+        "distance_m": round(last_seg["length"], 1),
+        "cumulative_m": round(cum_total, 1),
+        "road_name": last_seg["name"] or "小路", "next_road_name": "",
+        "text": arrive_text,
+        "point": {"lng": round(end_p[0], 6), "lat": round(end_p[1], 6)},
+    })
+
+    return steps
 
 
 def resolve_weights(llm_weights: Optional[dict]) -> dict:

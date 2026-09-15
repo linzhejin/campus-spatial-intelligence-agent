@@ -10,8 +10,8 @@ $jdkBin  = Join-Path $tools "jdk-17.0.20.1+1\bin"
 $env:JAVA_HOME = Join-Path $tools "jdk-17.0.20.1+1"
 $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
-$verCode = 1
-$verName = "1.0.0"
+$verCode = 2
+$verName = "1.1.0"
 $build = Join-Path $proj "build"
 Remove-Item -Recurse -Force $build -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path "$build\classes", "$build\dex" | Out-Null

@@ -36,6 +36,7 @@ from spatial.routing import (
     normalize_mode,
     filter_graph_for_mode,
     MODE_DEFAULT_WEIGHTS,
+    build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.road_conditions import (
@@ -118,6 +119,26 @@ def _coords_wgs_to_gcj(coords_list):
     return [{"lng": round(gcj_lng, 6), "lat": round(gcj_lat, 6)}
             for c in coords_list
             for gcj_lng, gcj_lat in [wgs84_to_gcj02(c["lng"], c["lat"])]]
+
+
+def _build_steps_gcj(G, route_nodes, mode, end_name=""):
+    """生成逐步转向指令，并把动作点坐标从 WGS-84 转成 GCJ-02（前端高德底图）。
+
+    任何异常都不应阻断路径规划主流程，失败时返回空列表（前端降级为无指令导航）。
+    """
+    if not route_nodes or len(route_nodes) < 2:
+        return []
+    try:
+        steps = build_turn_by_turn(G, route_nodes, mode=mode, end_name=end_name or "")
+    except Exception:
+        logger.warning("转向指令生成失败 mode=%s", mode, exc_info=True)
+        return []
+    for s in steps:
+        p = s.get("point")
+        if p:
+            g_lng, g_lat = wgs84_to_gcj02(p["lng"], p["lat"])
+            s["point"] = {"lng": round(g_lng, 6), "lat": round(g_lat, 6)}
+    return steps
 
 
 def _pois_wgs_to_gcj(pois_list):
@@ -490,7 +511,7 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
             out["start"]["coordinates"] = {"lng": coord_start.get("lng"), "lat": coord_start.get("lat")}
         if coord_end:
             out["end"]["coordinates"] = {"lng": coord_end.get("lng"), "lat": coord_end.get("lat")}
-        for k in ("recommended", "shortest", "pois", "filter_status", "overlap_rate",
+        for k in ("recommended", "shortest", "steps", "pois", "filter_status", "overlap_rate",
                   "recommended_length_m", "shortest_length_m", "length_capped", "degraded",
                   "distance_m", "shortest_distance_m", "applied_weights", "mode",
                   "duration_min", "shortest_duration_min", "speed_kmh",
@@ -782,9 +803,13 @@ def route():
     recommended_coords = _coords_wgs_to_gcj(recommended_coords)
     shortest_coords = _coords_wgs_to_gcj(shortest_coords)
 
+    # 逐步转向指令（动作点同步转 GCJ-02），供前端实时导航与语音播报
+    steps = _build_steps_gcj(G, recommended_nodes, final_mode, end_name=end_name)
+
     response = {
         "recommended": recommended_coords,
         "shortest": shortest_coords,
+        "steps": steps,
         "costs": costs,
         "pois": pois_along,
         "filter_status": route_result["filter_status"],
@@ -1104,6 +1129,10 @@ def chat():
         # 注意：pois_along 里的 POI 本身来自 pois.json(GCJ-02)，不需要再转！
         "recommended": _coords_wgs_to_gcj(recommended_coords),
         "shortest": _coords_wgs_to_gcj(shortest_coords),
+        "steps": _build_steps_gcj(
+            G, recommended_nodes, final_mode,
+            end_name=(end_poi.get("name") if end_poi else end.get("name")) or "",
+        ),
         "costs": costs,
         "pois": pois_along,
         "filter_status": route_result["filter_status"],

@@ -22,9 +22,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet 1.9.4（本地化部署，底图与 OSM/天地图同为 WGS-84，消除高德底图偏移） -->
+    <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260915e">
+    <link rel="stylesheet" href="/css/style.css?v=20260916b">
 </head>
 <body>
 
@@ -57,6 +57,65 @@
             <div class="legend-item" id="legend-slow-item" hidden>
                 <span class="legend-line road-slow"></span>
                 <span>管制缓行（可通行）</span>
+            </div>
+        </div>
+
+        <!-- ====== 沉浸导航浮层（开始导航后显示，北朝上跟随） ====== -->
+        <div class="nav-overlay" id="nav-overlay" hidden>
+            <!-- 顶部大指令卡 -->
+            <div class="nav-card" id="nav-card">
+                <div class="nav-card__icon" id="nav-card-icon">
+                    <svg class="nav-card__arrow" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2 L18 21 L12 17 L6 21 Z"></path>
+                    </svg>
+                    <span class="nav-card__emoji" id="nav-card-emoji" hidden></span>
+                </div>
+                <div class="nav-card__body">
+                    <div class="nav-card__dist" id="nav-maneuver-dist">准备出发</div>
+                    <div class="nav-card__main" id="nav-instruction">沿道路前行</div>
+                    <div class="nav-card__sub" id="nav-sub"></div>
+                </div>
+                <button type="button" class="nav-card__exit" id="nav-exit-top" aria-label="退出导航">✕</button>
+            </div>
+
+            <!-- GPS 弱网提示 -->
+            <div class="nav-gps-warn" id="nav-gps-warn" hidden>📡 GPS 信号弱，位置更新可能延迟</div>
+
+            <!-- 重居中按钮（拖拽地图后出现） -->
+            <button type="button" class="nav-recenter" id="nav-recenter" hidden aria-label="回到我的位置">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3.5"></circle>
+                    <line x1="12" y1="2.5" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="21.5"></line>
+                    <line x1="2.5" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="21.5" y2="12"></line>
+                </svg>
+            </button>
+
+            <!-- 导航中轻提示（偏航重算等） -->
+            <div class="nav-toast" id="nav-toast" hidden></div>
+
+            <!-- 到达卡片 -->
+            <div class="nav-arrive" id="nav-arrive" hidden>
+                <div class="nav-arrive__emoji">🎉</div>
+                <div class="nav-arrive__title">到达目的地</div>
+                <div class="nav-arrive__name" id="nav-arrive-name"></div>
+                <button type="button" class="nav-arrive__btn" id="nav-arrive-close">完成导航</button>
+            </div>
+
+            <!-- 底部信息条：剩余距离/时间 + 静音 + 结束 -->
+            <div class="nav-bottom" id="nav-bottom">
+                <div class="nav-bottom__remain">
+                    <span class="nav-bottom__dist" id="nav-remain-dist">—</span>
+                    <span class="nav-bottom__time" id="nav-remain-time">—</span>
+                </div>
+                <div class="nav-bottom__road" id="nav-remain-road"></div>
+                <div class="nav-bottom__actions">
+                    <button type="button" class="nav-icon-btn" id="nav-mute" aria-label="语音播报开关" title="语音播报">
+                        <span id="nav-mute-icon">🔊</span>
+                    </button>
+                    <button type="button" class="nav-end-btn" id="nav-stop">结束导航</button>
+                </div>
             </div>
         </div>
     </div>
@@ -146,6 +205,14 @@
                     </div>
                 </div>
 
+                <!-- 开始实时导航（语音播报 + 偏航重算） -->
+                <button type="button" class="start-nav-btn" id="start-nav-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    开始导航
+                </button>
+
                 <!-- 途经景点 -->
                 <div class="poi-section">
                     <h3 class="section-label">途经景点</h3>
@@ -175,6 +242,14 @@
                 maxlength="200"
                 rows="1"
             ></textarea>
+            <button id="voice-btn" class="voice-btn" type="button" title="语音输入" aria-label="语音输入">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
             <button id="submit-btn" class="submit-btn" type="button" title="发送 (Enter)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="19" x2="12" y2="5"></line>
@@ -427,15 +502,12 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <!-- ====== 页脚：ICP 备案号（静态硬写，供腾讯安全爬虫识别） ====== -->
-    <footer class="site-footer" role="contentinfo">
-        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener nofollow">鄂ICP备2026050719号</a>
-        <span class="footer-dot">·</span>
-        <span class="footer-copy">© 珞珈智行 WHU-Walker</span>
-        <span class="footer-dot">·</span>
-        <a href="/app/whu-walker.apk" download="珞珈智行.apk">安卓 APP 下载</a>
-    </footer>
-
-    <script src="/js/app.js?v=20260915ae"></script>
+    <!-- 语音播报：APK 原生 TTS 优先，浏览器降级 speechSynthesis -->
+    <script src="/js/voice-output.js?v=20260916b"></script>
+    <!-- 语音输入：Web Speech API / APK 原生 ASR -->
+    <script src="/js/voice-input.js?v=20260916b"></script>
+    <!-- 实时导航引擎：投影/偏航重算/指令状态机/北朝上跟随 -->
+    <script src="/js/navigation.js?v=20260916b"></script>
+    <script src="/js/app.js?v=20260916b"></script>
 </body>
 </html>
