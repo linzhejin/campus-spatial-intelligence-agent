@@ -471,6 +471,16 @@
         });
     }
 
+    // 两点球面距离（米），用于 GPS 抖动抑制
+    function _haversineMeters(lat1, lng1, lat2, lng2) {
+        var rad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1 * rad) * Math.cos(lat2 * rad)
+            * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
     // 后端所有坐标（POI、路径、路况）均为 GCJ-02；高德瓦片也是 GCJ-02，
     // 直接用 GCJ-02 坐标入图（[lat, lng]），无需转换
     function gcjToLatLng(lng, lat) {
@@ -478,9 +488,9 @@
     }
 
     // Leaflet divIcon 小工具
-    function divMarker(latlng, html, size, anchor, title) {
+    function divMarker(latlng, html, size, anchor, title, extraCls) {
         var icon = L.divIcon({
-            className: 'whu-div-icon',
+            className: 'whu-div-icon' + (extraCls ? ' ' + extraCls : ''),
             html: html,
             iconSize: size,
             iconAnchor: anchor,
@@ -982,6 +992,31 @@
     }
 
     function renderUserLocation(lng, lat, accuracy, isManual, isCached) {
+        // ===== GPS 抖动抑制 =====
+        // 高德 App 定位稳是因为有传感器融合（GPS+WiFi+惯导）+ 卡尔曼滤波 + 路网吸附；
+        // 网页只能拿到操作系统吐出的原始定位流（±10-50m 噪声），蓝点稳不稳全靠前端自己滤：
+        //   1) 隐含速度 > 25 m/s → 异常跳变（多径反射/基站切换），直接丢弃
+        //   2) 新点落在旧点精度圈噪声内 → 蓝点钉住不动，只收紧精度圈
+        //      连续钉住 10 次后强制校准一次，防止慢速漂移让蓝点永久滞后
+        var disp = state._dispFix;
+        if (!isManual && !isCached && disp) {
+            var dtSec = Math.max(0.3, (Date.now() - disp.ts) / 1000);
+            var jump = _haversineMeters(disp.lat, disp.lng, lat, lng);
+            var noise = Math.max(disp.acc || 0, accuracy || 0);
+            if (jump / dtSec > 25) {
+                console.log('[TRACK] 丢弃异常跳变点: ' + Math.round(jump) + 'm/' + dtSec.toFixed(1) + 's');
+                return;
+            }
+            if (jump <= noise * 0.7 && (disp.holds || 0) < 10) {
+                lng = disp.lng; lat = disp.lat;
+                accuracy = Math.min(accuracy || 1e9, disp.acc || 1e9);
+                disp.holds = (disp.holds || 0) + 1;
+            } else {
+                disp.holds = 0;
+            }
+        }
+        state._dispFix = { lat: lat, lng: lng, acc: accuracy || 0, ts: Date.now(), holds: (disp && disp.holds) || 0 };
+
         // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
         var gcjLng = gcj[0], gcjLat = gcj[1];
@@ -1061,7 +1096,7 @@
         }
         if (!state.userMarker) {
             if (state.userMarkerRaw) { state.map.removeLayer(state.userMarkerRaw); state.userMarkerRaw = null; }
-            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置');
+            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置', 'user-dot-smooth');
             state.userMarker._dotColor = dotColor;
             state.userMarker.bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
                 .addTo(state.map);

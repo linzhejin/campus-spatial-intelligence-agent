@@ -1490,6 +1490,15 @@ body {
     border: none;
 }
 
+/* 蓝点平滑移动：GPS 更新时滑行到新位置而非瞬移（高德式"稳"的观感） */
+/* 地图缩放动画期间必须禁用，否则 transform 被过渡拖住产生拖影 */
+.leaflet-marker-icon.user-dot-smooth {
+    transition: transform 0.7s ease-out;
+}
+.leaflet-zoom-anim .leaflet-marker-icon.user-dot-smooth {
+    transition: none;
+}
+
 /* 地图上的胶囊标签：动态尺寸，用 transform 居中到锚点上方 */
 .whu-map-pill {
     padding: 6px 14px;
