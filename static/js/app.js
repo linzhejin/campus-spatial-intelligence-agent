@@ -1861,6 +1861,7 @@
     async function handleNlSubmit(query) {
         hideError();
         cancelRouteAccept();  // 新请求到来 → 上一条路线不再计为采纳
+        state._autoLocated = false;  // 每轮新查询重置自动定位标记
         startLoadingMessages(query);
         hideWelcomeElements();
         showUserBubble(query);
@@ -1902,6 +1903,13 @@
                 if (locRefs.asStart) requestBody.coord_start = coordRef;
                 if (locRefs.asEnd) requestBody.coord_end = coordRef;
             }
+            // 兜底：用户之前已定位过（点过◎或之前轮次），且没显式说起点 → 自动附起点
+            // 这样用户说"去珞珈山"时，如果之前已定位过，后端直接拿到坐标，不再追问
+            if (!requestBody.coord_start && state.userLocation && !query._auto_located) {
+                requestBody.coord_start = {
+                    lng: state.userLocation.lng, lat: state.userLocation.lat, name: '我的位置',
+                };
+            }
 
             var result = await apiRequest('/api/chat', requestBody);
 
@@ -1921,9 +1929,27 @@
 
             // clarify（response_kind）：Agent 主动追问 → 渲染可点选项
             if (result.response_kind === 'clarify' && result.clarify) {
+                // 层 2：如果后端追问的是起点（"从哪出发""你在哪儿"等），且没标记过自动定位 → 自动定位后重发
+                var clarifyMsg = (result.clarify && result.clarify.question) || result.message || '';
+                var NEED_START_RE = /起点|从哪|你在哪|在哪儿|哪里出发|告诉我起点|出发地/;
+                if (NEED_START_RE.test(clarifyMsg) && !state._autoLocated) {
+                    try {
+                        console.log('[AUTO_LOC] clarify 追问起点 → 自动定位并重发');
+                        state._autoLocated = true;
+                        var autoLoc = await ensureUserLocation();
+                        if (mySeq !== state.requestSeq) return;
+                        // 重发原始 query
+                        handleNlSubmit(query);
+                        return;  // 已重发，不再往下渲染
+                    } catch (autoErr) {
+                        console.warn('[AUTO_LOC] 自动定位失败，显示 clarify 让用户手动选:', autoErr.message);
+                        state._autoLocated = false;  // 失败重置，下次还能再试
+                        // fallthrough 渲染 clarify 选项
+                    }
+                }
                 hideWelcomeElements();
                 clearRouteResult();
-                updateChatBubble(thinkingBubble, result.message || result.clarify.question || '能再具体一点吗？');
+                updateChatBubble(thinkingBubble, clarifyMsg || '能再具体一点吗？');
                 renderClarifyOptions(result.clarify.options || []);
                 addConversationTurn(query, result);
                 stopLoadingMessages();
