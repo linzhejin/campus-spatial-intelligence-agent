@@ -161,7 +161,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
     final_message = ""
     turns = 0
 
-    logger.info("[TIMING] Agent 开始, query=%r", query[:40])
+    print(f"[TIMING] Agent 开始, query={query[:40]!r}", flush=True)
     for _ in range(MAX_TURNS):
         if time.monotonic() - started > TIME_BUDGET_S:
             logger.warning("Agent 循环超时（%.1fs），基于已有结果收尾", time.monotonic() - started)
@@ -179,7 +179,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
             )
         except Exception as e:
             raise PlannerError(f"LLM 调用失败: {type(e).__name__}: {e}") from e
-        logger.info("[TIMING] turn %d LLM=%.2fs", turns, time.monotonic() - t_llm)
+        print(f"[TIMING] turn {turns} LLM={time.monotonic() - t_llm:.2f}s", flush=True)
 
         msg = response.choices[0].message
         tool_calls = getattr(msg, "tool_calls", None)
@@ -201,7 +201,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
             else:
                 t_tool = time.monotonic()
                 result, artifact = agent_tools.execute_tool(name, args)
-                logger.info("[TIMING] tool %s=%.2fs", name, time.monotonic() - t_tool)
+                print(f"[TIMING] tool {name}={time.monotonic() - t_tool:.2f}s", flush=True)
 
             if artifact:
                 if "route" in artifact:
