@@ -1,4 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <rect width="512" height="512" rx="80" fill="#1976D2"/>
-    <text x="256" y="320" font-size="280" text-anchor="middle" fill="white" font-family="sans-serif">🚶</text>
+  <defs>
+    <!-- Lao Zhaishe green glazed-tile roof: concave slope with upturned eaves -->
+    <path id="roof-slope" d="
+      M102 298
+      C 112 282 130 278 150 286
+      L 230 252
+      C 247 244 265 244 282 252
+      L 362 286
+      C 382 278 400 282 410 298
+      C 402 306 386 307 368 302
+      L 144 302
+      C 126 307 110 306 102 298 Z"/>
+  </defs>
+
+  <!-- Sky: Republican-era paper cream -->
+  <rect width="512" height="512" rx="112" fill="#F5F1E8"/>
+
+  <!-- Warm sun -->
+  <circle cx="382" cy="124" r="52" fill="#E7C98E" opacity="0.4"/>
+
+  <!-- Distant Luojia hills, two value-separated layers -->
+  <path d="M0 312 C 56 256 104 272 168 244 C 236 214 294 262 358 232
+           C 420 204 472 242 512 226 L512 512 L0 512 Z" fill="#93B396"/>
+  <path d="M0 352 C 70 300 134 324 202 296 C 270 268 324 314 394 290
+           C 450 271 488 290 512 284 L512 512 L0 512 Z" fill="#4A7C52"/>
+
+  <!-- Lao Zhaishe -->
+  <!-- Central pavilion roof behind main ridge, with gold finial -->
+  <path d="M224 260 L238 256 L274 256 L288 260
+           Q 281 246 274 244 L 263 219 Q 256 212 249 219 L 238 244
+           Q 231 246 224 260 Z"
+        fill="#234A25" stroke="#1A3A1C" stroke-width="2.5"/>
+  <rect x="253.5" y="199" width="5" height="17" fill="#B68948"/>
+  <circle cx="256" cy="196" r="7.5" fill="#B68948"/>
+
+  <!-- Brick wall: flat high-contrast mass for small-size silhouette -->
+  <rect x="148" y="318" width="216" height="78" fill="#8B3A3A"/>
+  <rect x="148" y="372" width="216" height="24" fill="#6B2828" opacity="0.28"/>
+  <!-- Warm lit windows, no mullions -->
+  <g fill="#F2DFAE">
+    <path d="M170 364 L170 338 Q170 326 184 326 Q198 326 198 338 L198 364 Z"/>
+    <path d="M212 364 L212 338 Q212 326 226 326 Q240 326 240 338 L240 364 Z"/>
+    <path d="M272 364 L272 338 Q272 326 286 326 Q300 326 300 338 L300 364 Z"/>
+    <path d="M314 364 L314 338 Q314 326 328 326 Q342 326 342 338 L342 364 Z"/>
+  </g>
+  <!-- Arched door -->
+  <path d="M244 396 L244 356 Q244 338 256 338 Q268 338 268 356 L268 396 Z" fill="#4E1F1F"/>
+
+  <!-- Main green glazed roof -->
+  <use href="#roof-slope" fill="#2C5F2D"/>
+  <use href="#roof-slope" fill="none" stroke="#1A3A1C" stroke-width="3.5"/>
+  <!-- Eave beam + gold trim -->
+  <rect x="116" y="300" width="280" height="20" fill="#1F4520"/>
+  <rect x="116" y="318" width="280" height="4" fill="#B68948"/>
+  <!-- Three tile ribs only -->
+  <g stroke="#44804A" stroke-width="3" opacity="0.8" fill="none" stroke-linecap="round">
+    <path d="M186 288 L178 301"/>
+    <path d="M256 266 L256 300"/>
+    <path d="M326 288 L334 301"/>
+  </g>
+  <!-- Main ridge -->
+  <path d="M230 252 C 247 244 265 244 282 252" fill="none"
+        stroke="#B68948" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Foreground hills -->
+  <path d="M0 440 C 86 398 168 412 256 402 C 348 392 432 386 512 408
+           L512 512 L0 512 Z" fill="#204823"/>
+  <path d="M0 440 C 86 398 168 412 256 402 C 348 392 432 386 512 408"
+        fill="none" stroke="#3A6B3E" stroke-width="4" opacity="0.85"/>
+
+  <!-- Winding mountain path (navigation semantics) -->
+  <path d="M256 514 C 204 472 310 452 258 416 C 234 400 246 394 256 392"
+        fill="none" stroke="#8C7443" stroke-width="18" stroke-linecap="round" opacity="0.5"/>
+  <path d="M256 514 C 204 472 310 452 258 416 C 234 400 246 394 256 392"
+        fill="none" stroke="#EDE4D0" stroke-width="11" stroke-linecap="round"/>
+
+  <!-- Cherry blossom, brand mark: rounded petals with shallow cleft -->
+  <g transform="translate(122 112) scale(0.86)">
+    <g fill="#F6C3CE" stroke="#CF667C" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
+               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(0)"/>
+      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
+               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(72)"/>
+      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
+               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(144)"/>
+      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
+               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(216)"/>
+      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
+               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(288)"/>
+    </g>
+    <circle r="11" fill="#B68948"/>
+    <g fill="#6B2828">
+      <circle cx="0" cy="-5.5" r="2.8"/>
+      <circle cx="5.2" cy="-1.8" r="2.8"/>
+      <circle cx="3.2" cy="4.4" r="2.8"/>
+      <circle cx="-3.2" cy="4.4" r="2.8"/>
+      <circle cx="-5.2" cy="-1.8" r="2.8"/>
+    </g>
+  </g>
+  <!-- One falling petal -->
+  <ellipse cx="0" cy="0" rx="5" ry="9" fill="#F6C3CE" opacity="0.7"
+           transform="translate(312 200) rotate(28)"/>
 </svg>

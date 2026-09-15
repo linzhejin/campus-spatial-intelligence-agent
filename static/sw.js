@@ -6,7 +6,7 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v33';
+var CACHE_NAME = 'whu-walker-v34';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -16,6 +16,8 @@ var PRECACHE_URLS = [
     '/manifest.json',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
+    '/icons/icon-maskable-192.png',
+    '/icons/icon-maskable-512.png',
     '/icons/apple-touch-icon.png',
 ];
 
