@@ -6,7 +6,7 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v43';
+var CACHE_NAME = 'whu-walker-v44';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -109,6 +109,18 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
+        return;
+    }
+
+    /* ───────────────────────────────────────────────
+     * 安装包 / 版本清单：NETWORK-ONLY
+     *   · APK 以同名 URL 覆盖发版，若走 cache-first，浏览器横幅一旦下载过，
+     *     以后拿到的永远是缓存里的旧包；版本清单同理必须实时
+     *   · 原生 App 的更新检查走 HttpURLConnection，不经过 SW，
+     *     这里保护的是浏览器/网页内的下载入口与未来可能的网页侧检测
+     * ─────────────────────────────────────────────── */
+    if (url.pathname.indexOf('/app/') === 0) {
+        event.respondWith(fetch(request));
         return;
     }
 

@@ -1,0 +1,11 @@
+{
+  "versionCode": 3,
+  "versionName": "1.2.0",
+  "apkUrl": "https://whuspati.online/app/whu-walker.apk",
+  "sha256": "1b44d47c34fbbf3fce4eabf2a291cee0a20bd16d14e7a9770a8e7e09d09596c9",
+  "publishedAt": "2026-09-16",
+  "changelog": [
+    "新增应用内自动更新：发现新版一键下载安装，以后无需再手动传包",
+    "语音输入、语音播报与导航中屏幕常亮（v1.1 起原生支持）"
+  ]
+}

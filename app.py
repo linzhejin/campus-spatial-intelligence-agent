@@ -5,11 +5,15 @@
 """
 import json
 import logging
+import mimetypes
 import os
 import threading
 import time
 from flask import Flask, send_from_directory, jsonify, Response, request
 from flask_cors import CORS
+
+# 部分系统（含 Linux 生产机）的 mimetypes 表不识别 .apk，浏览器下载时会变成未知文件
+mimetypes.add_type("application/vnd.android.package-archive", ".apk")
 
 import config
 
