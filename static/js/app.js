@@ -819,8 +819,13 @@
             .bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
             .addTo(state.map);
 
-        // 首次定位：居中
-        state.map.setView([gcjLat, gcjLng], 17);
+        // 只有首次定位（之前没有 userLocation）或手动设点时才居中
+        // 持续跟踪更新时不动地图，避免用户看路线/地图时被拉走
+        var isFirstFix = !state._hadUserLocation;
+        state._hadUserLocation = true;
+        if (isFirstFix || isManual) {
+            state.map.setView([gcjLat, gcjLng], 17);
+        }
     }
 
     // 精度警告 banner（桌面 Chrome IP 定位精度差时弹）
