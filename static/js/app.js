@@ -659,7 +659,11 @@
             showError('定位需要 HTTPS', '请通过 https://whuspati.online 访问。');
             return;
         }
-        navigator.geolocation.watchPosition(
+        // 用 getCurrentPosition（单次）而非 watchPosition（持续追踪）：
+        // 1. 用户点◎ 只是要"现在的位置"，不需要持续追踪
+        // 2. 之前 watchPosition 返回值丢了导致多次叠加 → 用户感觉一直在自动定位
+        // 3. 持续追踪在用户不需要时浪费电量/网络
+        navigator.geolocation.getCurrentPosition(
             function (pos) {
                 setLocateBtnState(false);
                 renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
@@ -667,13 +671,13 @@
             function (err) {
                 setLocateBtnState(false);
                 var msg = '定位失败：';
-                if (err && err.code === 1) msg += '你拒绝了定位授权';
-                else if (err && err.code === 2) msg += '获取不到位置信号';
-                else if (err && err.code === 3) msg += '定位超时';
-                else msg += '请稍后再试';
-                showError('定位失败', msg + '。桌面浏览器可能只能 IP 定位，建议用手机或点 📌 手动选点。');
+                if (err && err.code === 1) msg += '你拒绝了定位授权，请点 ◎ 按钮允许定位后再试。';
+                else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外或开阔地带再试。';
+                else if (err && err.code === 3) msg += '定位超时，请检查 GPS 或到开阔地带再试。';
+                else msg += '请稍后再试；桌面浏览器可能只能 IP 定位，建议用手机或点 📌 手动选点。';
+                showError('定位失败', msg);
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
         );
     }
 

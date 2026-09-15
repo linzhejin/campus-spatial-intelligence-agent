@@ -407,7 +407,7 @@
                 var s = document.createElement('script');
                 s.async = true;
                 s.defer = true;
-                s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + key + '&plugin=AMap.Geolocation';
+                s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + key;
                 s.onerror = function () { console.warn('[AMap] SDK 加载失败，降级浏览器原生定位'); };
                 document.head.appendChild(s);
             } catch (e) { /* 忽略异常 */ }
@@ -431,6 +431,6 @@
         <span class="footer-copy">© 珞珈智行 WHU-Walker</span>
     </footer>
 
-    <script src="/js/app.js?v=20260915k"></script>
+    <script src="/js/app.js?v=20260915m"></script>
 </body>
 </html>
