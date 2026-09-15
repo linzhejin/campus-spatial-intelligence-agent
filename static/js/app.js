@@ -3593,7 +3593,9 @@
                 var isChromium = /Chrome\/|Edg\//.test(ua)
                     && !/QQBrowser|Quark|UCBrowser|HuaweiBrowser|HeyTapBrowser|VivoBrowser|MiuiBrowser|XiaoMi|OppoBrowser|baiduboxapp|BIDUBrowser/i.test(ua);
                 if (!isChromium) {
-                    showBanner('此浏览器仅能创建快捷方式。复制网址用 Chrome 打开 → 点「安装应用」，即成真 App');
+                    var t = document.querySelector('.install-banner__title');
+                    if (t) t.textContent = '用 Chrome 安装完整应用';
+                    showBanner('当前浏览器仅能创建快捷方式；复制网址在 Chrome 打开 → 菜单「安装应用」');
                     if (btn) btn.textContent = '知道了';
                 }
             }, 3500);
