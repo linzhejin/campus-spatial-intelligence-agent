@@ -161,7 +161,6 @@ def run_agent(query: str, context: dict = None, history: list = None,
     final_message = ""
     turns = 0
 
-    print(f"[TIMING] Agent 开始, query={query[:40]!r}", flush=True)
     for _ in range(MAX_TURNS):
         if time.monotonic() - started > TIME_BUDGET_S:
             logger.warning("Agent 循环超时（%.1fs），基于已有结果收尾", time.monotonic() - started)
@@ -171,7 +170,6 @@ def run_agent(query: str, context: dict = None, history: list = None,
         # 已有路线：关掉工具 schema，强制 LLM 直接给最终答复
         turn_tools = None if artifact_route else agent_tools.TOOL_SCHEMAS
 
-        t_llm = time.monotonic()
         try:
             response = client.chat.completions.create(
                 model=config.LLM_MODEL,
@@ -182,7 +180,6 @@ def run_agent(query: str, context: dict = None, history: list = None,
             )
         except Exception as e:
             raise PlannerError(f"LLM 调用失败: {type(e).__name__}: {e}") from e
-        print(f"[TIMING] turn {turns} LLM={time.monotonic() - t_llm:.2f}s", flush=True)
 
         msg = response.choices[0].message
         tool_calls = getattr(msg, "tool_calls", None)
@@ -194,7 +191,6 @@ def run_agent(query: str, context: dict = None, history: list = None,
 
         # 已有路线但 LLM 还在调工具 → 强制终止（防止 suggest_followup 反复调）
         if artifact_route:
-            print(f"[TIMING] turn {turns}: LLM 仍调用工具但路线已完成，强制终止", flush=True)
             break
 
         messages.append(msg.model_dump(exclude_none=True))
@@ -207,9 +203,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 result = {"error": "invalid_args", "message": "参数不是合法 JSON，请修正后重试"}
                 artifact = None
             else:
-                t_tool = time.monotonic()
                 result, artifact = agent_tools.execute_tool(name, args)
-                print(f"[TIMING] tool {name}={time.monotonic() - t_tool:.2f}s", flush=True)
 
             if artifact:
                 if "route" in artifact:
