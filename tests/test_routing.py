@@ -46,7 +46,7 @@ def mock_graph():
 class TestNormalizeWeights:
     def test_resolve_weights_default(self):
         result = resolve_weights(None)
-        assert result == {"distance": 0.7, "slope": 0.15, "scenery": 0.15}
+        assert result == {"distance": 0.8, "slope": 0.05, "scenery": 0.15}
         assert abs(sum(result.values()) - 1.0) < 1e-9
 
     @pytest.mark.parametrize("raw,expected_min", [
@@ -196,7 +196,7 @@ class TestTravelModeConstants:
     def test_walk_default_weights_unchanged(self):
         assert MODE_DEFAULT_WEIGHTS["walk"] == DEFAULT_WEIGHTS
         assert MODE_DEFAULT_WEIGHTS["walk"] == {
-            "distance": 0.7, "slope": 0.15, "scenery": 0.15
+            "distance": 0.80, "slope": 0.05, "scenery": 0.15
         }
 
     def test_walk_outside_penalty_unchanged(self):

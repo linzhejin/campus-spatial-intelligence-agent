@@ -23,7 +23,7 @@ import networkx as nx
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WEIGHTS = {"distance": 0.7, "slope": 0.15, "scenery": 0.15}
+DEFAULT_WEIGHTS = {"distance": 0.8, "slope": 0.05, "scenery": 0.15}
 WEIGHT_BOUNDS = {"min": 0.05, "max": 0.8}
 
 _PATH_LENGTH_CAP_MULTIPLIER = 3.0
@@ -133,8 +133,10 @@ MODE_SPEEDS_KMH = {"walk": 4.5, "bike": 14.0, "drive": 25.0}
 
 # 各模式默认多因素权重。设计原则：distance 为主导，slope/scenery 是弱偏好——
 # 用户没显式表达偏好时，推荐路线应接近最短路径；只有显式说"风景好/平坦"时才大幅偏离。
+# 实测：校园短边（中位 28m）上坡度按边计费，slope 权重 0.1 就会导致 20%+ 绕行，
+# 故步行默认 slope 压到 0.05（OD 实测绕行 <3%）。
 MODE_DEFAULT_WEIGHTS = {
-    "walk": {"distance": 0.70, "slope": 0.15, "scenery": 0.15},
+    "walk": {"distance": 0.80, "slope": 0.05, "scenery": 0.15},
     "bike": {"distance": 0.60, "slope": 0.25, "scenery": 0.15},
     "drive": {"distance": 0.85, "slope": 0.05, "scenery": 0.10},
 }
