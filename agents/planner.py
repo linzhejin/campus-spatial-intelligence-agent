@@ -168,12 +168,15 @@ def run_agent(query: str, context: dict = None, history: list = None,
             break
         turns += 1
 
+        # 已有路线：关掉工具 schema，强制 LLM 直接给最终答复
+        turn_tools = None if artifact_route else agent_tools.TOOL_SCHEMAS
+
         t_llm = time.monotonic()
         try:
             response = client.chat.completions.create(
                 model=config.LLM_MODEL,
                 messages=messages,
-                tools=agent_tools.TOOL_SCHEMAS,
+                tools=turn_tools,
                 temperature=0.0,
                 max_tokens=LLM_MAX_TOKENS,
             )
@@ -187,6 +190,11 @@ def run_agent(query: str, context: dict = None, history: list = None,
         # 无工具调用：LLM 直接给出最终答复，循环结束
         if not tool_calls:
             final_message = (msg.content or "").strip()
+            break
+
+        # 已有路线但 LLM 还在调工具 → 强制终止（防止 suggest_followup 反复调）
+        if artifact_route:
+            print(f"[TIMING] turn {turns}: LLM 仍调用工具但路线已完成，强制终止", flush=True)
             break
 
         messages.append(msg.model_dump(exclude_none=True))
