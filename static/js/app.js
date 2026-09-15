@@ -597,10 +597,17 @@
     }
 
     function renderUserLocation(lng, lat, accuracy) {
-        // GPS 给 WGS-84；高德瓦片 GCJ-02，蓝点渲染前转一次
+        // 诊断：把原始 GPS 坐标和转换后都打出来，判断浏览器给的到底是啥坐标
         var gcj = wgs84ToGcj02(lng, lat);
         var gcjLng = gcj[0], gcjLat = gcj[1];
-        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy, gcjLng: gcjLng, gcjLat: gcjLat };
+        console.log('[LOC-DEBUG] 浏览器原始坐标 lng=' + lng + ' lat=' + lat + ' accuracy=' + accuracy + 'm');
+        console.log('[LOC-DEBUG] wgs84→gcj02 转换后 lng=' + gcjLng + ' lat=' + gcjLat);
+        console.log('[LOC-DEBUG] 偏移量 Δlng=' + (gcjLng - lng).toFixed(6) + ' Δlat=' + (gcjLat - lat).toFixed(6));
+        // 临时：如果浏览器给的已经是 GCJ-02，再转一遍会偏出约 500-1000m
+        // 如果原始坐标直接画到高德瓦片上很准，那浏览器给的就是 GCJ-02，跳过转换
+        var dblCheck = wgs84ToGcj02(gcjLng, gcjLat);
+        console.log('[LOC-DEBUG] 双重转换后 lng=' + dblCheck[0].toFixed(6) + ' lat=' + dblCheck[1].toFixed(6) + ' (如果这个反而近，说明浏览器给的就是GCJ)');
+        state.userLocation = { lng: lng, lat: lat, accuracy: accuracy, gcjLng: gcjLng, gcjLat: gcjLat, rawLng: lng, rawLat: lat };
         if (!state.map) return;
 
         if (state.userAccuracyCircle) {
@@ -628,6 +635,21 @@
                     direction: 'top', offset: [0, -10], opacity: 0.95,
                 })
                 .addTo(state.map);
+
+            // ====== 临时诊断：画一个红色叉表示"浏览器原始坐标直接画到瓦片上" ======
+            // 如果这个红点反而在信图上，说明浏览器给的已经是 GCJ-02，我们多转了一次
+            if (state.userMarkerRaw) state.userMarkerRaw.remove();
+            var rawHtml = '<div style="width:16px;height:16px;background:#E74C3C;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(231,76,60,0.3);"></div>';
+            state.userMarkerRaw = divMarker([lat, lng], rawHtml, [16, 16], [8, 8], '浏览器原始坐标（未转换）')
+                .bindTooltip('浏览器原始坐标（未做 WGS→GCJ 转换）', { direction: 'right', offset: [8, 0], opacity: 0.95 })
+                .addTo(state.map);
+            // 把"转换后"的蓝点变成绿色，方便和红色原始点区分
+            state.userMarker = divMarker([gcjLat, gcjLng],
+                '<div style="width:16px;height:16px;background:#27AE60;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(39,174,96,0.3);"></div>',
+                [16, 16], [8, 8], '转换后 GCJ-02')
+                .bindTooltip('wgs84→gcj02 转换后坐标 · 如果我偏了说明浏览器给的不是 WGS-84', { direction: 'right', offset: [8, 0], opacity: 0.95 })
+                .addTo(state.map);
+
             // 首次定位：居中并提示一次
             state.map.setView([gcjLat, gcjLng], 17);
             setTimeout(function () {
