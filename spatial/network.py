@@ -332,6 +332,15 @@ def _merge_annotations(G: nx.MultiDiGraph, annotations_path: str) -> float:
                 pass
         if "name" in ann and ann["name"]:
             edge_data["name"] = str(ann["name"])
+        # 人工标注的步行成本倍数：用于处理 OSM 把建筑内台阶/连廊画成穿楼捷径等问题
+        # （只软惩罚不封死：起终点就在该边时仍可通行）
+        if "walk_penalty" in ann and ann["walk_penalty"] is not None:
+            try:
+                wp = float(ann["walk_penalty"])
+                if wp > 0:
+                    edge_data["walk_penalty"] = wp
+            except (ValueError, TypeError):
+                pass
 
         annotated_set.add((orig_u, orig_v, orig_k))
 

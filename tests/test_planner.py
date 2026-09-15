@@ -76,10 +76,12 @@ class TestAgentLoop:
         assert resp["turns"] == 1
 
     def test_tool_call_then_answer(self):
-        route_payload = {"recommended": [{"lng": 1, "lat": 2}], "distance_m": 800}
+        route_payload = {
+            "recommended": [{"lng": 1, "lat": 2}], "distance_m": 800,
+            "start_name": "牌坊", "end_name": "樱顶", "mode": "walk",
+        }
         client = FakeClient([
             _fake_response(tool_calls=[_fake_tool_call("plan_route", {"start": {"name": "牌坊"}, "end": {"name": "樱顶"}})]),
-            _fake_response(content="路线已规划：全程 800 米。"),
         ])
         with patch.object(planner.agent_tools, "execute_tool",
                           return_value=(route_payload, {"route": route_payload})) as mock_exec:
@@ -88,10 +90,9 @@ class TestAgentLoop:
         assert resp["response_kind"] == "route"
         assert resp["route"] == route_payload
         assert resp["route_kind"] == "direct"
-        assert resp["message"] == "路线已规划：全程 800 米。"
-        # 第二轮消息里应包含 tool 结果回注
-        second_call_msgs = client.calls[1]["messages"]
-        assert any(m.get("role") == "tool" for m in second_call_msgs)
+        # 路线产出后立即收尾：不再多调一轮 LLM（防 DSML 泄漏），消息由结构化数据拼出
+        assert resp["message"] == "已为你规划好从牌坊到樱顶的步行路线，约 800 米。"
+        assert len(client.calls) == 1
 
     def test_candidates_artifact(self):
         cands = [{"name": "桂园食堂"}, {"name": "梅园食堂"}]

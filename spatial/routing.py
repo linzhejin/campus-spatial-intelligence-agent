@@ -143,6 +143,11 @@ MODE_DEFAULT_WEIGHTS = {
 # 骑行/驾车本身就常走市政路，惩罚逐档降低。
 MODE_OUTSIDE_ROAD_PENALTY = {"walk": _OUTSIDE_ROAD_PENALTY, "bike": 3.0, "drive": 1.2}
 
+# 步行台阶成本倍数：台阶步行速度约为平地一半，且无法推行。
+# 另一作用：防止 OSM 把教学楼/食堂的入口台阶、连廊画成穿越建筑的"捷径"
+# （如信息学部学生四食堂，长边全是 steps，125 对起终点曾穿楼而过）。
+_WALK_STEPS_PENALTY = 2.5
+
 # 骑行不可通行：纯台阶/垂直交通标签（边只要还含 footway/path 等可骑行标签即保留）
 _BIKE_BLOCKED_HIGHWAY = {"steps", "elevator", "escalator"}
 
@@ -214,7 +219,22 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     outside_status = "no_outside" if outside_edges else "no_filter"
 
     if mode == "walk":
-        return G_mode, outside_status, {}
+        # 台阶软惩罚：不封死（台阶本身可走，且可能是唯一通道），但不让它成为穿楼捷径。
+        # 人工标注 walk_penalty（建筑内连廊等）与台阶惩罚叠加。
+        steps_penalty = {}
+        for u, v, k, data in G_mode.edges(keys=True, data=True):
+            mult = 1.0
+            if "steps" in _edge_highway_tags(data):
+                mult *= _WALK_STEPS_PENALTY
+            wp = data.get("walk_penalty")
+            if wp:
+                try:
+                    mult *= float(wp)
+                except (TypeError, ValueError):
+                    pass
+            if mult > 1.0:
+                steps_penalty[(u, v, k)] = mult
+        return G_mode, outside_status, steps_penalty
 
     # bike/drive：在已剔校外边的图副本上继续删边（绝不能改原图）
     G_mode = G_mode.copy()
@@ -841,9 +861,29 @@ def compute_route(
         else:
             _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
 
-    # 最短路径基线在方式过滤图上计算（避免驾车最短路线穿台阶/步行道）
+    # 最短路径基线在方式过滤图上计算（避免驾车最短路线穿台阶/步行道）。
+    # 步行模式还要叠加台阶/穿楼连廊的基础设施惩罚——否则灰虚线"最短路线"仍会
+    # 从食堂建筑里穿过去（物理距离最短但不可作为正常通道）。
+    def _baseline_weight(u, v, data):
+        if isinstance(data, dict) and data:
+            edge_data = next(iter(data.values()))
+        else:
+            edge_data = data or {}
+        length = edge_data.get("length", 0) or 0
+        mult = 1.0
+        if mode == "walk":
+            if "steps" in _edge_highway_tags(edge_data):
+                mult *= _WALK_STEPS_PENALTY
+            wp = edge_data.get("walk_penalty")
+            if wp:
+                try:
+                    mult *= float(wp)
+                except (TypeError, ValueError):
+                    pass
+        return length * mult
+
     try:
-        shortest = nx.dijkstra_path(G_mode, start_node, end_node, weight="length")
+        shortest = nx.dijkstra_path(G_mode, start_node, end_node, weight=_baseline_weight)
     except nx.NetworkXNoPath:
         shortest = recommended
 

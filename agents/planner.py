@@ -11,6 +11,7 @@ v2 全 Agent 架构的唯一入口：所有用户输入（含明确 A→B、闲�
 
 import json
 import logging
+import re
 import time
 from pathlib import Path
 
@@ -49,6 +50,55 @@ def _make_client():
         # 循环内每次调用给 25s read；总时长由 TIME_BUDGET_S 兜底
         timeout=httpx.Timeout(connect=5.0, read=25.0, write=10.0, pool=5.0),
     )
+
+
+# DeepSeek 偶发把内部 DSML 工具调用标记当纯文本吐出，必须剥掉，绝不能进前端
+_DSML_RE = re.compile(r"<\s*[｜|]{2,}\s*DSML[\s\S]*", re.IGNORECASE)
+
+
+def _sanitize_message(text: str) -> str:
+    if not text:
+        return ""
+    return _DSML_RE.split(text)[0].strip()
+
+
+_MODE_VERB = {"walk": "步行", "bike": "骑行", "drive": "开车"}
+
+
+def _fmt_dist(m):
+    if m is None:
+        return None
+    return f"{m / 1000:.1f} 公里" if m >= 1000 else f"{round(m)} 米"
+
+
+def _build_route_message(route: dict) -> str:
+    """路线工具成功后直接用结构化数据拼一句话，不再调 LLM（快且不会泄漏 DSML）。"""
+    mode = route.get("mode", "walk")
+    verb = _MODE_VERB.get(mode, "步行")
+    s_name = route.get("start_name") or "起点"
+    e_name = route.get("end_name") or "终点"
+    length = route.get("recommended_length_m") or route.get("distance_m")
+    dur = route.get("duration_min")
+    shortest = route.get("shortest_length_m")
+    shortest_dur = route.get("shortest_duration_min")
+
+    head = f"已为你规划好从{s_name}到{e_name}的{verb}路线"
+    ld = _fmt_dist(length)
+    if ld:
+        head += f"，约 {ld}"
+        if dur is not None:
+            head += f"、{dur:g} 分钟"
+    # 最短路线明显更短（>7%）才提示，地图上灰虚线可直接对比
+    tail = ""
+    if shortest and length and shortest < length * 0.93:
+        sd = _fmt_dist(shortest)
+        if sd:
+            tail = f"最短路线约 {sd}"
+            if shortest_dur is not None:
+                tail += f"、{shortest_dur:g} 分钟"
+            tail += "，地图灰虚线可对比"
+    return head + "。" + (tail + "。" if tail else "")
+
 
 
 def _build_messages(query: str, context: dict = None, history: list = None,
@@ -167,14 +217,11 @@ def run_agent(query: str, context: dict = None, history: list = None,
             break
         turns += 1
 
-        # 已有路线：关掉工具 schema，强制 LLM 直接给最终答复
-        turn_tools = None if artifact_route else agent_tools.TOOL_SCHEMAS
-
         try:
             response = client.chat.completions.create(
                 model=config.LLM_MODEL,
                 messages=messages,
-                tools=turn_tools,
+                tools=agent_tools.TOOL_SCHEMAS,
                 temperature=0.0,
                 max_tokens=LLM_MAX_TOKENS,
             )
@@ -187,10 +234,6 @@ def run_agent(query: str, context: dict = None, history: list = None,
         # 无工具调用：LLM 直接给出最终答复，循环结束
         if not tool_calls:
             final_message = (msg.content or "").strip()
-            break
-
-        # 已有路线但 LLM 还在调工具 → 强制终止（防止 suggest_followup 反复调）
-        if artifact_route:
             break
 
         messages.append(msg.model_dump(exclude_none=True))
@@ -226,11 +269,16 @@ def run_agent(query: str, context: dict = None, history: list = None,
         if artifact_clarify:
             break
 
+        # 路线已产出 → 立即收尾，不再让 LLM 多跑一轮
+        # （DeepSeek 在历史含 tool_call 时会把内部 DSML 工具调用格式当纯文本吐出）
+        if artifact_route:
+            break
+
     # ---- 收尾：组装响应 ----
     if artifact_clarify:
         return {
             "response_kind": "clarify",
-            "message": final_message or artifact_clarify["question"],
+            "message": _sanitize_message(final_message) or artifact_clarify["question"],
             "route": artifact_route, "route_kind": route_kind,
             "candidates": artifact_candidates,
             "clarify": artifact_clarify,
@@ -238,10 +286,13 @@ def run_agent(query: str, context: dict = None, history: list = None,
             "turns": turns,
         }
 
+    # 防御：LLM 直出文本里若混入 DSML 标记，剥掉
+    final_message = _sanitize_message(final_message)
+
     if not final_message:
         # 循环耗尽/超时但 LLM 没给结论：基于已有 artifact 兜底生成
         if artifact_route:
-            final_message = "路线已规划好，详情看地图～"
+            final_message = _build_route_message(artifact_route)
         elif artifact_candidates:
             final_message = "帮你找到这些候选地点，选一个我帮你规划路线～"
         else:

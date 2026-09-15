@@ -253,8 +253,16 @@ class TestFilterGraphForMode:
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "walk")
         assert Gf is mode_graph
         assert status == "no_filter"
-        assert penalty == {}
         assert Gf.number_of_edges() == original_edges
+
+        # 步行模式不删边，但台阶（含混合标签）施加软惩罚，普通边无惩罚
+        from spatial.routing import _WALK_STEPS_PENALTY
+        assert penalty[(1, 2, 0)] == _WALK_STEPS_PENALTY
+        assert penalty[(2, 1, 0)] == _WALK_STEPS_PENALTY
+        assert penalty[(2, 3, 0)] == _WALK_STEPS_PENALTY
+        assert penalty[(3, 2, 0)] == _WALK_STEPS_PENALTY
+        assert (0, 1, 0) not in penalty
+        assert (3, 4, 0) not in penalty
 
     def test_bike_removes_pure_steps_keeps_mixed(self, mode_graph):
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "bike")

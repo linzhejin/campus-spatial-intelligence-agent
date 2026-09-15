@@ -197,6 +197,9 @@ def _weights_for_destination(end_poi, mode, explicit_weights=None):
     if explicit_weights is not None:
         return explicit_weights
     mode = normalize_mode(mode)
+    if mode == "drive":
+        # 驾车只关心省时：坡度无意义、风景不绕路，近乎纯距离（时长按固定速度=最短即最快）
+        return {"distance": 0.95, "slope": 0.0, "scenery": 0.05}
     if _is_scenery_destination(end_poi):
         # 景点：按出行方式给平衡权重
         return dict(MODE_DEFAULT_WEIGHTS[mode])
@@ -675,25 +678,9 @@ def route():
     if not start or not end:
         return _err("missing_endpoints", "start 和 end 字段必填", 400)
 
-    start_name = start.get("name")
-    end_name = end.get("name")
-    if not start_name or not end_name:
-        return _err("missing_poi_names", "start.name 和 end.name 必填", 400)
-
     G, err = _ensure_network()
     if err:
         return err
-
-    start_poi = get_poi(start_name)
-    if start_poi is None:
-        return _err("poi_not_found", f"起点 '{start_name}' 未找到", 404)
-
-    end_poi = get_poi(end_name)
-    if end_poi is None:
-        return _err("poi_not_found", f"终点 '{end_name}' 未找到", 404)
-
-    if start_poi["name"] == end_poi["name"]:
-        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
     # 出行方式：优先 body.travel_mode；兼容 /api/parse 返回体里的 mode 字段
     # （注意与快捷预设 distance_first 等区分：只有值在 TRAVEL_MODES 内才采纳）
@@ -706,22 +693,55 @@ def route():
     # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
     G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
 
-    # GCJ-02 → WGS-84：POI 坐标来自高德，路网用 WGS-84（DEC-007）
-    start_lon_wgs, start_lat_wgs = gcj02_to_wgs84(start_poi["lon"], start_poi["lat"])
-    end_lon_wgs, end_lat_wgs = gcj02_to_wgs84(end_poi["lon"], end_poi["lat"])
+    def _resolve_endpoint(ep, label):
+        """端点 → (node, display_name, poi_or_None, error_response_or_None)。
 
-    try:
-        start_node = get_nearest_node(G_mode, start_lon_wgs, start_lat_wgs)
-    except RuntimeError as e:
-        return _err("nearest_node_failed", f"起点最近节点查找失败: {e}", 500)
+        支持两种端点：
+          - POI：{"name": "樱顶"} → 查 pois.json，坐标 GCJ-02 转 WGS-84
+          - 坐标：{"type": "coord", "coordinates": {"lng","lat"}} → 直接 WGS-84 snap
+        """
+        coords = ep.get("coordinates")
+        is_coord = ep.get("type") == "coord" or (coords and coords.get("lng") is not None)
+        if is_coord:
+            if not coords:
+                coords = ep
+            try:
+                lng = float(coords.get("lng", ep.get("lng")))
+                lat = float(coords.get("lat", ep.get("lat")))
+            except (TypeError, ValueError):
+                return None, None, None, _err("invalid_coordinates", f"{label}坐标无效", 400)
+            try:
+                node = get_nearest_node(G_mode, lng, lat)
+            except RuntimeError as e:
+                return None, None, None, _err("nearest_node_failed", f"{label}最近节点查找失败: {e}", 500)
+            return node, ep.get("name") or label, None, None
 
-    try:
-        end_node = get_nearest_node(G_mode, end_lon_wgs, end_lat_wgs)
-    except RuntimeError as e:
-        return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
+        name = ep.get("name")
+        if not name:
+            return None, None, None, _err("missing_poi_names", "端点需提供 name 或 coordinates", 400)
+        poi = get_poi(name)
+        if poi is None:
+            return None, None, None, _err("poi_not_found", f"{label} '{name}' 未找到", 404)
+        lon_wgs, lat_wgs = gcj02_to_wgs84(poi["lon"], poi["lat"])
+        try:
+            node = get_nearest_node(G_mode, lon_wgs, lat_wgs)
+        except RuntimeError as e:
+            return None, None, None, _err("nearest_node_failed", f"{label}最近节点查找失败: {e}", 500)
+        return node, poi["name"], poi, None
+
+    start_node, start_name, start_poi, start_err = _resolve_endpoint(start, "起点")
+    if start_err:
+        return start_err
+    end_node, end_name, end_poi, end_err = _resolve_endpoint(end, "终点")
+    if end_err:
+        return end_err
+
+    # 起终点同名 POI 才拦截（坐标端点可能恰好重合，交给 compute_route 处理）
+    if start_poi and end_poi and start_poi["name"] == end_poi["name"]:
+        return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
     constraints = body.get("constraints", {})
-    # 智能默认：无显式 weights 时根据终点 POI 类型选权重
+    # 智能默认：无显式 weights 时根据终点 POI 类型选权重（坐标终点 → 纯距离主导）
     raw_weights = body.get("weights")
     weights = _weights_for_destination(end_poi, final_mode, explicit_weights=raw_weights)
     resolved_weights = resolve_weights(weights)

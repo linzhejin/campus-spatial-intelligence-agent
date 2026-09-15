@@ -34,6 +34,7 @@
         sessionId: null,
         conversationHistory: [],
         lastIntent: null,  // 最近一轮完整意图快照（多轮对话承接用）
+        lastRouteRequest: null,  // 最近一次成功路线的 /api/route 请求体（切换交通方式直接重算）
         activeMode: null,
         loadingTimer: null,  // 轮播加载语定时器
         requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
@@ -201,19 +202,72 @@
         }
     }
 
-    // 切换出行方式后，若当前正展示路径规划结果且有起终点，自动重算（走 /api/parse shortcut 链路，带 travel_mode）
+    // 切换出行方式后，若当前正展示路线，用上次的起终点直接重算 /api/route（不走 LLM，秒切）
     function maybeRecomputeRouteForMode() {
         var resultsSec = document.getElementById('results-section');
         if (!resultsSec || resultsSec.hidden) return;  // 当前没有路线结果，不重算
-        var intent = state.lastIntent;
-        if (!intent || intent.task_type !== 'path_planning') return;
-        if (!intent.start || !intent.end) return;
+        if (!state.lastRouteRequest || !state.lastRouteRequest.start || !state.lastRouteRequest.end) return;
         if (state.loading) {
             // 上一轮请求还在飞：先挂起，等它落地后再按新方式重算（避免结果与选择器不一致）
             state.pendingModeRecompute = true;
             return;
         }
-        handleShortcutMode(state.activeMode);  // activeMode 为 null 时不带偏好，仅带 travel_mode
+        replayRouteForMode();
+    }
+
+    // 保存一次成功路线的可复现请求体（start/end 可能是 POI 名或 WGS-84 坐标）
+    function saveRouteRequest(start, end, constraints, weights) {
+        if (!start || !end) return;
+        state.lastRouteRequest = {
+            start: JSON.parse(JSON.stringify(start)),
+            end: JSON.parse(JSON.stringify(end)),
+            constraints: constraints || {},
+            weights: weights || null,
+        };
+    }
+
+    // 用 lastRouteRequest + 当前交通方式直接调 /api/route 重算
+    async function replayRouteForMode() {
+        var req = state.lastRouteRequest;
+        var tm = TRAVEL_MODES[state.travelMode] || TRAVEL_MODES.walk;
+        state.requestSeq += 1;
+        var mySeq = state.requestSeq;
+        hideError();
+        cancelRouteAccept();
+        showLoading('切换为' + tm.label + '…', tm.loadingSub);
+        var thinkingBubble = showChatBubble('', '🌸 正在按' + tm.label + '重新规划…');
+        try {
+            var payload = {
+                task_type: 'path_planning',
+                start: req.start,
+                end: req.end,
+                constraints: req.constraints || {},
+                weights: req.weights || null,
+                travel_mode: state.travelMode,
+            };
+            var result = await apiRequest('/api/route', payload);
+            if (mySeq !== state.requestSeq) return;
+            if (result.recommended && result.recommended.length > 0) {
+                renderRoute(result);
+                showResults(result);
+                scheduleRouteAccept(result);
+                updateChatBubble(thinkingBubble, buildRouteSummary(result));
+            } else {
+                clearRouteResult();
+                updateChatBubble(thinkingBubble, '唔，' + tm.label + '路线没能规划出来😅 校内有些区域' + tm.label + '不可达，换步行或骑行试试？');
+            }
+        } catch (err) {
+            if (mySeq !== state.requestSeq) return;
+            clearRouteResult();
+            var msg = (err && err.message) || '重算失败';
+            // 后端对不可达场景返回中文原因（如"驾车无法到达…"），原样展示
+            updateChatBubble(thinkingBubble, '⚠️ ' + msg);
+        } finally {
+            if (mySeq === state.requestSeq) {
+                hideLoading();
+                flushPendingModeRecompute();
+            }
+        }
     }
 
     // 一轮请求结束后，若用户在等待期间切换过出行方式，按最新方式补一次重算
@@ -692,43 +746,82 @@
         var s = state.mapPoints.start, e = state.mapPoints.end;
         if (!s || !e) return;
         var vias = state.mapPoints.via;
-        var query = '从地图标记的起点到终点';
-        if (vias.length > 0) query = '从地图标记的起点途经地图标记点到终点';
-        // 构建请求体，走 /api/chat（coord_start / coord_end 覆盖）
+
+        hideError();
+        cancelRouteAccept();
+        hideWelcomeElements();
+        state.requestSeq += 1;
+        var mySeq = state.requestSeq;
+        var tm = TRAVEL_MODES[state.travelMode] || TRAVEL_MODES.walk;
+
+        // 起点/终点（WGS-84）
+        var startEp = { type: 'coord', name: '地图起点', coordinates: { lng: s.lng, lat: s.lat } };
+        var endEp = { type: 'coord', name: '地图终点', coordinates: { lng: e.lng, lat: e.lat } };
+
+        if (vias.length === 0) {
+            // 无途经点：直连 /api/route，不走 LLM（约 1 秒出结果）
+            showUserBubble('从地图起点到地图终点');
+            var thinkingBubble = showChatBubble('', '🌸 正在为你规划路线…');
+            showLoading(tm.loadingText, tm.loadingSub);
+            apiRequest('/api/route', {
+                task_type: 'path_planning',
+                start: startEp,
+                end: endEp,
+                constraints: {},
+                weights: null,
+                travel_mode: state.travelMode,
+            }).then(function (result) {
+                if (mySeq !== state.requestSeq) return;
+                hideLoading();
+                if (result.recommended && result.recommended.length > 0) {
+                    saveRouteRequest(startEp, endEp, {}, null);
+                    renderRoute(result);
+                    showResults(result);
+                    scheduleRouteAccept(result);
+                    updateChatBubble(thinkingBubble, buildRouteSummary(result));
+                } else {
+                    clearRouteResult();
+                    updateChatBubble(thinkingBubble, '唔，这条路没能规划出来😅 换两个点试试？');
+                }
+            }).catch(function (err) {
+                if (mySeq !== state.requestSeq) return;
+                hideLoading();
+                clearRouteResult();
+                updateChatBubble(thinkingBubble, '❌ ' + (err && err.message ? err.message : '路线规划失败，请重试'));
+            });
+            return;
+        }
+
+        // 有途经点：走 Agent（/api/chat 支持 coord_waypoints）
+        var query = '从地图标记的起点途经地图标记点到终点';
         var body = {
             query: query,
             travel_mode: state.travelMode,
             whu_uid: getUid(),
             coord_start: { lng: s.lng, lat: s.lat, name: '地图起点' },
             coord_end: { lng: e.lng, lat: e.lat, name: '地图终点' },
+            coord_waypoints: vias.map(function (v) { return { lng: v.lng, lat: v.lat }; }),
         };
-        if (vias.length > 0) {
-            body.coord_waypoints = vias.map(function (v) { return { lng: v.lng, lat: v.lat }; });
-        }
-        // 复用 handleNlSubmit 的展示逻辑
-        hideError();
-        cancelRouteAccept();
         startLoadingMessages(query);
-        hideWelcomeElements();
         showUserBubble(query);
-        var thinkingBubble = showChatBubble(query, '🌸 正在为你规划路线…');
+        var viaBubble = showChatBubble(query, '🌸 正在为你规划路线…');
         apiRequest('/api/chat', body).then(function (result) {
+            if (mySeq !== state.requestSeq) return;
             stopLoadingMessages();
             hideLoading();
             if (result.task_type === 'path_planning' || result.response_kind === 'route') {
-                if (result.route) renderRoute(result.route);
-                if (result.message) updateChatBubble(thinkingBubble, result.message);
-                state.lastIntent = result.intent || null;
-            } else if (result.response_kind === 'clarify' && result.clarify) {
-                updateChatBubble(thinkingBubble, result.clarify.question || result.message || '需要更多信息');
-                if (result.clarify.options) renderClarifyOptions(result.clarify.options, thinkingBubble);
+                saveRouteRequest(result.start || startEp, result.end || endEp,
+                    result.constraints, result.weights || result.applied_weights);
+                if (result.recommended) { renderRoute(result); showResults(result); }
+                updateChatBubble(viaBubble, result.explanation || result.message || buildRouteSummary(result));
             } else {
-                updateChatBubble(thinkingBubble, result.message || result.reply || '路线规划完成');
+                updateChatBubble(viaBubble, result.message || result.reply || '路线规划完成');
             }
         }).catch(function (err) {
+            if (mySeq !== state.requestSeq) return;
             stopLoadingMessages();
             hideLoading();
-            updateChatBubble(thinkingBubble, '❌ 路线规划失败：' + (err && err.message ? err.message : '请重试'));
+            updateChatBubble(viaBubble, '❌ 路线规划失败：' + (err && err.message ? err.message : '请重试'));
         });
     }
 
@@ -2132,6 +2225,9 @@
             // path_planning → 渲染路线 + 对话反馈
             if (result.recommended && result.recommended.length > 0) {
                 syncModeFromServer(result);
+                // 保存可复现请求体（POI 名或 WGS-84 坐标），切换交通方式时直接重算
+                saveRouteRequest(result.start, result.end,
+                    result.constraints, result.weights || result.applied_weights);
                 renderRoute(result);
                 showResults(result);
                 scheduleRouteAccept(result);  // 埋点：曝光 + 20s 采纳判定
@@ -2374,12 +2470,18 @@
 
         var cfg = modeConfig[mode] || {};
 
-        var startName = '珞珈门';
-        var endName = '樱顶';
-        if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
-            startName = state.lastIntent.start.name || '珞珈门';
-            endName = state.lastIntent.end.name || '樱顶';
+        // 优先复用上一次成功路线的端点（可能含 WGS-84 坐标，避免「我的位置」这类名无法解析）
+        var startEp = { name: '珞珈门' };
+        var endEp = { name: '樱顶' };
+        if (state.lastRouteRequest && state.lastRouteRequest.start && state.lastRouteRequest.end) {
+            startEp = state.lastRouteRequest.start;
+            endEp = state.lastRouteRequest.end;
+        } else if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
+            startEp = state.lastIntent.start;
+            endEp = state.lastIntent.end;
         }
+        var startName = startEp.name || '珞珈门';
+        var endName = endEp.name || '樱顶';
 
         // 快捷模式也走对话流：用户气泡 + 思考气泡
         hideWelcomeElements();
@@ -2391,8 +2493,8 @@
 
         try {
             var parsePayload = {
-                start: { name: startName },
-                end: { name: endName },
+                start: startEp,
+                end: endEp,
                 input_method: 'shortcut',
                 travel_mode: state.travelMode,
             };
@@ -2408,6 +2510,8 @@
             if (mySeq !== state.requestSeq) return;
 
             if (routeResult.recommended && routeResult.recommended.length > 0) {
+                saveRouteRequest(routePayload.start, routePayload.end,
+                    routePayload.constraints, routePayload.weights);
                 renderRoute(routeResult);
                 showResults(routeResult);
                 // 快捷模式后端不返回 explanation，用兜底摘要
