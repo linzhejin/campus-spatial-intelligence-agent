@@ -604,129 +604,98 @@
 
     function onLocateClick() {
         setLocateBtnState(true);
-        // 已有定位 → 回到我的位置
-        if (state.userLocation && !state.locateWatchId) {
+        // 已有持续跟踪 → 直接回到我的位置（不重复启动 watch）
+        if (state.locateWatchId != null || state._amapWatchListener) {
             setLocateBtnState(false);
-            state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
+            if (state.userLocation) state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
             return;
         }
-        // 优先 AMap.Geolocation（WiFi+基站+GPS，国内精度远超浏览器原生）
-        if (window.AMap && window.AMap.plugin) {
-            _amapLocate();
-        } else {
-            // 等 SDK 加载最多 2 秒，还没来就用浏览器原生
-            setTimeout(function () {
-                if (window.AMap && window.AMap.plugin) _amapLocate();
-                else _browserLocate();
-            }, 2000);
+        // 已有一次性定位（还没启动 watch）→ 也先回到位置，再启动跟踪
+        if (state.userLocation) {
+            state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
+        }
+        startTracking(false);  // 非静默（会弹错误框）
+    }
+
+    // ===== 持续跟踪定位（核心逻辑：共享 state.locateWatchId，防重复 watch） =====
+    // 统一入口：startTracking() 负责清理旧 watch + 启动新 watch（AMap优先 + 原生fallback）
+    // 调用方：autoLocateSilent（页面加载）、onLocateClick（用户点◎）
+    function _clearWatch() {
+        if (state.locateWatchId != null) {
+            try { navigator.geolocation.clearWatch(state.locateWatchId); } catch(e) {}
+            state.locateWatchId = null;
+        }
+        if (state._amapWatchListener) {
+            try { state._amapGeolocation && state._amapGeolocation.clearWatch(state._amapWatchListener); } catch(e) {}
+            state._amapWatchListener = null;
         }
     }
 
-    function _amapLocate() {
+    function _startNativeWatch(silent, onError) {
+        if (!navigator.geolocation || window.isSecureContext === false) {
+            if (!silent) showError('定位需要 HTTPS', '请通过 https://whuspati.online 访问。');
+            else console.warn('[TRACK] 环境不支持原生定位');
+            return false;
+        }
+        _clearWatch();
+        state.locateWatchId = navigator.geolocation.watchPosition(
+            function (pos) {
+                if (!silent) setLocateBtnState(false);
+                renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
+                console.log('[TRACK] 原生位置更新:', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4));
+            },
+            function (err) {
+                var msg = '定位失败：';
+                if (err && err.code === 1) msg += '你拒绝了定位授权';
+                else if (err && err.code === 2) msg += '获取不到位置信号';
+                else if (err && err.code === 3) msg += '定位超时';
+                else msg += '请稍后再试';
+                if (!silent) { setLocateBtnState(false); showError('定位失败', msg); }
+                else console.warn('[TRACK] 原生 watch 错误:', err && err.code, err && err.message);
+                if (onError) onError(err);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000, distanceFilter: 3 }
+        );
+        console.log('[TRACK] 原生 watch 已启动, id:', state.locateWatchId);
+        return true;
+    }
+
+    function _startAmapWatch(silent) {
+        if (!window.AMap || !window.AMap.plugin) return false;
         AMap.plugin('AMap.Geolocation', function () {
             try {
+                _clearWatch();
                 var geo = new AMap.Geolocation({
                     enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
                 });
-                geo.getCurrentPosition(function (status, result) {
+                state._amapGeolocation = geo;
+                state._amapWatchListener = geo.watchPosition(function (status, result) {
                     if (status === 'complete' && result && result.position) {
-                        // AMap 返回 GCJ-02 → 转 WGS-84 → 走原渲染流程
                         var gcjLng = result.position.lng, gcjLat = result.position.lat;
                         var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                        console.log('[LOC] AMap ok, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4), 'accuracy:', (result.accuracy||0).toFixed(0)+'m');
-                        setLocateBtnState(false);
+                        if (!silent) setLocateBtnState(false);
                         renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
+                        console.log('[TRACK] AMap 位置更新, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
                     } else {
-                        console.warn('[LOC] AMap fail:', status);
-                        _browserLocate();
+                        console.warn('[TRACK] AMap watch 状态:', status);
+                        // AMap watch 失败 → 切原生
+                        if (!state.locateWatchId) _startNativeWatch(silent);
                     }
                 });
+                console.log('[TRACK] AMap watch 已启动');
             } catch (e) {
-                console.warn('[LOC] AMap err:', e.message);
-                _browserLocate();
+                console.warn('[TRACK] AMap watch 异常:', e.message, '→ fallback 原生');
+                _startNativeWatch(silent);
             }
         });
+        return true;
     }
 
-    function _browserLocate() {
-        if (!navigator.geolocation) {
-            setLocateBtnState(false);
-            showError('无法定位', '当前浏览器不支持定位。请用手机访问或点 📌 手动选点。');
-            return;
-        }
-        if (window.isSecureContext === false) {
-            setLocateBtnState(false);
-            showError('定位需要 HTTPS', '请通过 https://whuspati.online 访问。');
-            return;
-        }
-        // 用 getCurrentPosition（单次）而非 watchPosition（持续追踪）：
-        // 1. 用户点◎ 只是要"现在的位置"，不需要持续追踪
-        // 2. 之前 watchPosition 返回值丢了导致多次叠加 → 用户感觉一直在自动定位
-        // 3. 持续追踪在用户不需要时浪费电量/网络
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                setLocateBtnState(false);
-                renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
-            },
-            function (err) {
-                setLocateBtnState(false);
-                var msg = '定位失败：';
-                if (err && err.code === 1) msg += '你拒绝了定位授权，请点 ◎ 按钮允许定位后再试。';
-                else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外或开阔地带再试。';
-                else if (err && err.code === 3) msg += '定位超时，请检查 GPS 或到开阔地带再试。';
-                else msg += '请稍后再试；桌面浏览器可能只能 IP 定位，建议用手机或点 📌 手动选点。';
-                showError('定位失败', msg);
-            },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-        );
-    }
-
-    // ===== 页面加载自动定位（静默版） =====
-    // 用户明确要求：进入珞珈智行就自动定位，不管会不会用到。
-    // 复用 AMap-first 链路，失败时只 console.warn 不弹错误框（用户没主动点按钮）。
-    function autoLocateSilent() {
-        if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); return; }
-        if (state.userLocation) { console.log('[AUTO_LOC] 已有定位，跳过自动定位'); return; }
-
-        function _nativeSilent() {
-            if (!navigator.geolocation || window.isSecureContext === false) {
-                console.warn('[AUTO_LOC] 环境不支持定位');
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                function (pos) {
-                    console.log('[AUTO_LOC] 原生定位成功:', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4));
-                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
-                },
-                function (err) {
-                    console.warn('[AUTO_LOC] 原生定位失败:', err && err.code, err && err.message);
-                },
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-            );
-        }
-
+    // 对外：启动持续跟踪（AMap 优先 + 原生 fallback）
+    function startTracking(silent) {
+        _clearWatch();
         if (window.AMap && window.AMap.plugin) {
-            AMap.plugin('AMap.Geolocation', function () {
-                try {
-                    var geo = new AMap.Geolocation({
-                        enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
-                    });
-                    geo.getCurrentPosition(function (status, result) {
-                        if (status === 'complete' && result && result.position) {
-                            var gcjLng = result.position.lng, gcjLat = result.position.lat;
-                            var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                            console.log('[AUTO_LOC] AMap 定位成功, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4), 'acc:', (result.accuracy||0).toFixed(0)+'m');
-                            renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
-                        } else {
-                            console.warn('[AUTO_LOC] AMap 定位失败:', status, '→ fallback 原生');
-                            _nativeSilent();
-                        }
-                    });
-                } catch (e) {
-                    console.warn('[AUTO_LOC] AMap 异常:', e.message, '→ fallback 原生');
-                    _nativeSilent();
-                }
-            });
+            _startAmapWatch(silent);
         } else {
             // SDK 还在加载，等最多 3 秒
             var waited = 0, interval = 200, maxWait = 3000;
@@ -734,14 +703,20 @@
                 waited += interval;
                 if (window.AMap && window.AMap.plugin) {
                     clearInterval(tick);
-                    autoLocateSilent();  // 递归走 AMap 分支
+                    _startAmapWatch(silent);
                 } else if (waited >= maxWait) {
                     clearInterval(tick);
-                    console.warn('[AUTO_LOC] AMap 3 秒未加载 → fallback 原生');
-                    _nativeSilent();
+                    console.warn('[TRACK] AMap 3 秒未加载 → fallback 原生');
+                    _startNativeWatch(silent);
                 }
             }, interval);
         }
+    }
+
+    // ===== 页面加载自动定位（静默版，持续跟踪） =====
+    function autoLocateSilent() {
+        if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); return; }
+        startTracking(true);
     }
 
     function renderUserLocation(lng, lat, accuracy, isManual) {
@@ -1852,72 +1827,30 @@
         };
     }
 
-    // 单次定位：优先 AMap.Geolocation（国内 WiFi+基站+GPS 混合精度高），
-    // 失败再 fallback 浏览器原生。用于用户说出指代表达但还没点过定位按钮的场景。
+    // 确保有定位：优先用已有的 state.userLocation（页面加载自动跟踪已赋值），
+    // 如果还没有（比如用户拒绝了权限），则主动启动跟踪并等第一次回调。
     function ensureUserLocation() {
         if (state.userLocation) return Promise.resolve(state.userLocation);
 
-        function _nativeLocate(resolve, reject) {
-            if (!navigator.geolocation || window.isSecureContext === false) {
-                reject(new Error('当前环境不支持定位（需要 HTTPS），请点右上角 ◎ 按钮。'));
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                function (pos) {
-                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
-                    resolve(state.userLocation);
-                },
-                function (err) {
-                    var msg = '定位失败：';
-                    if (err && err.code === 1) msg += '你还没有授权定位，请点右上角 ◎ 按钮允许定位后再试。';
-                    else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外再试。';
-                    else msg += '请稍后再试。';
-                    reject(new Error(msg));
-                },
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-            );
-        }
-
         return new Promise(function (resolve, reject) {
-            if (window.AMap && window.AMap.plugin) {
-                AMap.plugin('AMap.Geolocation', function () {
-                    try {
-                        var geo = new AMap.Geolocation({
-                            enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
-                        });
-                        geo.getCurrentPosition(function (status, result) {
-                            if (status === 'complete' && result && result.position) {
-                                var gcjLng = result.position.lng, gcjLat = result.position.lat;
-                                var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                                console.log('[ENSURE_LOC] AMap ok, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
-                                renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
-                                resolve(state.userLocation);
-                            } else {
-                                console.warn('[ENSURE_LOC] AMap fail:', status, '→ fallback native');
-                                _nativeLocate(resolve, reject);
-                            }
-                        });
-                    } catch (e) {
-                        console.warn('[ENSURE_LOC] AMap err:', e.message, '→ fallback native');
-                        _nativeLocate(resolve, reject);
-                    }
-                });
-            } else {
-                // SDK 可能还在加载，等最多 2 秒
-                var waited = 0, interval = 150, maxWait = 2000;
-                var tick = setInterval(function () {
-                    waited += interval;
-                    if (window.AMap && window.AMap.plugin) {
-                        clearInterval(tick);
-                        // 递归走 AMap 分支
-                        ensureUserLocation().then(resolve).catch(reject);
-                    } else if (waited >= maxWait) {
-                        clearInterval(tick);
-                        console.warn('[ENSURE_LOC] AMap not loaded after 2s → fallback native');
-                        _nativeLocate(resolve, reject);
-                    }
-                }, interval);
-            }
+            // 启动跟踪（如果还没启动），等第一次 renderUserLocation 后 resolve
+            var resolved = false;
+            var origRender = renderUserLocation;
+            // 临时包装 renderUserLocation，第一次被调时 resolve
+            renderUserLocation = function (lng, lat, accuracy, isManual) {
+                origRender(lng, lat, accuracy, isManual);
+                if (!resolved) { resolved = true; resolve(state.userLocation); }
+            };
+            // 启动跟踪
+            startTracking(true);
+            // 10 秒后还没 resolve → 恢复原函数并 reject
+            setTimeout(function () {
+                if (!resolved) {
+                    resolved = true;
+                    renderUserLocation = origRender;  // 恢复原函数
+                    reject(new Error('定位超时，请点右上角 ◎ 按钮允许定位后再试。'));
+                }
+            }, 10000);
         });
     }
 
