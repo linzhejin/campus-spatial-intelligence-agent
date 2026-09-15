@@ -139,6 +139,24 @@ body {
 
 .legend-line.recommended { background: var(--color-recommended); }
 
+.legend-line.road-closure {
+    background: #C0392B;
+    height: 5px;
+    width: 24px;
+}
+
+.legend-line.road-slow {
+    height: 5px;
+    width: 24px;
+    background: repeating-linear-gradient(
+        90deg,
+        #E67E22 0,
+        #E67E22 7px,
+        transparent 7px,
+        transparent 12px
+    );
+}
+
 .legend-line.shortest {
     background: repeating-linear-gradient(
         90deg,

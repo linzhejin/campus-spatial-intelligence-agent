@@ -25,6 +25,9 @@ from spatial.coord_transform import wgs84_to_gcj02, gcj02_to_wgs84
 #   │         │         │         │
 #   0 ────── 1 ─────── 2 ────── 3     南主路（40/80/40m）
 #         40m      80m      40m
+#            ╱           ╲
+#           8             9          死胡同（10m，让 1/2 成为度=3 路口，
+#                                      边链扩展在此停止；不构成绕行捷径）
 #
 # 竖边 0-4、3-7 约 44m。主路总长 160m，绕行约 249m。
 # 对中间 80m 边(1,2)：2× 后主路 240m 仍短于绕行；3× 后 320m 长于绕行 → 改走北路。
@@ -49,6 +52,9 @@ def _make_graph():
         5: (114.36042, 30.53040),
         6: (114.36125, 30.53040),
         7: (114.36167, 30.53040),
+        # 死胡同叶子：在节点 1、2 正南 10m
+        8: (114.36042, 30.52991),
+        9: (114.36125, 30.52991),
     }
     for nid, (x, y) in pts.items():
         G.add_node(nid, x=x, y=y)
@@ -56,6 +62,7 @@ def _make_graph():
         (0, 1, "自强大道"), (1, 2, "自强大道"), (2, 3, "自强大道"),
         (4, 5, "北环路"), (5, 6, "北环路"), (6, 7, "北环路"),
         (0, 4, ""), (3, 7, ""),
+        (1, 8, ""), (2, 9, ""),
     ]
     for u, v, name in edges:
         length = _haversine_m(pts[u][0], pts[u][1], pts[v][0], pts[v][1])
@@ -223,13 +230,13 @@ class TestEffectMatrix:
 
 class TestResolveAndLifecycle:
     def test_edge_id_invalid_falls_back_to_snap_point(self, G):
-        """路网重建导致 u/v 失效时，用吸附点 12m 几何回退仍能命中。"""
+        """路网重建导致边链 id 全部失效时，用整链几何 12m 回退仍能命中。"""
         cond = _edge_condition(G, "closure")
         cond["edge"]["u"] = 999001
         cond["edge"]["v"] = 999002
+        cond["edge"]["edges"] = []  # 链上 id 全部失效，触发几何回退
         keys = rc._resolve_edge_keys(G, cond)
-        assert {1, 2} in ({k[0], k[1]} for k in keys)
-        assert len(keys) == 2  # 双向
+        assert (1, 2, 0) in keys and (2, 1, 0) in keys
 
     def test_legacy_radius_model_still_works(self, G):
         mid_lng = (G.nodes[1]["x"] + G.nodes[2]["x"]) / 2
@@ -268,6 +275,152 @@ class TestResolveAndLifecycle:
         snap = rc.snap_to_edge(G, *wgs84_to_gcj02(G.nodes[1]["x"], G.nodes[1]["y"]))
         with pytest.raises(ValueError):
             rc.add_condition("earthquake", "地震", edge=snap)
+
+
+# ===================== 边链扩展（路口到路口整段） =====================
+
+def _straight_road_graph(n_seg=4, names=None, start_id=10, extra_edges=None,
+                         base=(114.37000, 30.54000), step_deg=0.00055):
+    """水平直路 start_id … start_id+n_seg，每段约 53m（双向边）。
+
+    extra_edges: [(a, b, name)] 在已有节点 a 上接一条向北的岔路到新节点 b。
+    """
+    G = nx.MultiDiGraph()
+    ids = list(range(start_id, start_id + n_seg + 1))
+    for nid in ids:
+        i = nid - start_id
+        G.add_node(nid, x=base[0] + step_deg * i, y=base[1])
+
+    def _add_bidir(a, b, name):
+        length = _haversine_m(G.nodes[a]["x"], G.nodes[a]["y"],
+                              G.nodes[b]["x"], G.nodes[b]["y"])
+        attrs = {"length": length, "highway": "residential"}
+        if name:
+            attrs["name"] = name
+        G.add_edge(a, b, 0, **attrs)
+        G.add_edge(b, a, 0, **attrs)
+
+    if names is None:
+        names = ["樱花大道"] * n_seg
+    for i in range(n_seg):
+        _add_bidir(ids[i], ids[i + 1], names[i])
+    if extra_edges:
+        for a, b, name in extra_edges:
+            if b not in G:
+                G.add_node(b, x=G.nodes[a]["x"], y=G.nodes[a]["y"] + step_deg)
+            _add_bidir(a, b, name)
+    return G, ids
+
+
+def _undirected_edge_set(triples):
+    return {frozenset((t[0], t[1])) for t in triples}
+
+
+def _chain_condition(G, u, v, cond_type="closure"):
+    x1, y1 = G.nodes[u]["x"], G.nodes[u]["y"]
+    x2, y2 = G.nodes[v]["x"], G.nodes[v]["y"]
+    click = wgs84_to_gcj02((x1 + x2) / 2, (y1 + y2) / 2)
+    snap = rc.snap_to_edge(G, click[0], click[1])
+    assert snap is not None
+    return snap, rc.add_condition(
+        cond_type=cond_type, name="链测试", edge=snap,
+        click_point={"lng": click[0], "lat": click[1]},
+    )
+
+
+class TestEdgeChain:
+    def test_chain_extends_through_degree2_to_both_ends(self):
+        """直路中间边：链穿过所有 degree=2 节点，延伸到两端断头。"""
+        G, ids = _straight_road_graph(n_seg=4)
+        snap, _ = _chain_condition(G, 12, 13)
+        assert _undirected_edge_set(snap["edges"]) == _undirected_edge_set(
+            [(10, 11), (11, 12), (12, 13), (13, 14)]
+        )
+        assert len(snap["edges"]) == 4
+        assert 200 < snap["chain_length_m"] < 225
+        # 合并几何覆盖道路两端
+        first = snap["geometry_gcj"][0]
+        last = snap["geometry_gcj"][-1]
+        g10 = wgs84_to_gcj02(G.nodes[10]["x"], G.nodes[10]["y"])
+        g14 = wgs84_to_gcj02(G.nodes[14]["x"], G.nodes[14]["y"])
+        assert abs(first[0] - g10[0]) < 1e-6 and abs(first[1] - g10[1]) < 1e-6
+        assert abs(last[0] - g14[0]) < 1e-6 and abs(last[1] - g14[1]) < 1e-6
+
+    def test_chain_stops_at_intersection(self):
+        """端点是路口（无向度=3）时链停止，不串到岔路。"""
+        G, ids = _straight_road_graph(n_seg=4, extra_edges=[(12, 20, "岔路")])
+        snap, _ = _chain_condition(G, 11, 12)
+        assert _undirected_edge_set(snap["edges"]) == _undirected_edge_set(
+            [(10, 11), (11, 12)]
+        )
+
+    def test_chain_stops_on_road_name_change(self):
+        """degree=2 直连点处道路名变化即停止（不串到另一条路）。"""
+        G, ids = _straight_road_graph(
+            n_seg=4, names=["樱花大道", "梅园路", "梅园路", "梅园路"]
+        )
+        snap, _ = _chain_condition(G, 10, 11)
+        assert _undirected_edge_set(snap["edges"]) == _undirected_edge_set([(10, 11)])
+
+    def test_chain_stops_on_sharp_turn(self):
+        """degree=2 但相邻边夹角 >100°（急弯折返）时停止。"""
+        G = nx.MultiDiGraph()
+        G.add_node(30, x=114.37000, y=30.54000)
+        G.add_node(31, x=114.37105, y=30.54000)   # 30→31 向东
+        G.add_node(32, x=114.37032, y=30.53900)   # 31→32 向西南（夹角约 149°）
+        for a, b in [(30, 31), (31, 32)]:
+            length = _haversine_m(G.nodes[a]["x"], G.nodes[a]["y"],
+                                  G.nodes[b]["x"], G.nodes[b]["y"])
+            for u, v in ((a, b), (b, a)):
+                G.add_edge(u, v, 0, length=length, highway="residential", name="环山道")
+        snap, _ = _chain_condition(G, 30, 31)
+        assert _undirected_edge_set(snap["edges"]) == _undirected_edge_set([(30, 31)])
+
+    def test_chain_respects_600m_cap(self):
+        """约 800m 直路：600m 预算下主边两侧各只延伸 2 段，整链 5 段。"""
+        G, ids = _straight_road_graph(n_seg=8, step_deg=0.00105)  # 每段约 100m
+        snap, _ = _chain_condition(G, 14, 15)
+        assert _undirected_edge_set(snap["edges"]) == _undirected_edge_set(
+            [(12, 13), (13, 14), (14, 15), (15, 16), (16, 17)]
+        )
+        assert snap["chain_length_m"] <= 601.0
+
+    def test_resolve_edge_keys_covers_full_chain_both_directions(self):
+        """规划期解析：链上每条边双向全部命中。"""
+        G, ids = _straight_road_graph(n_seg=4)
+        _, cond = _chain_condition(G, 12, 13)
+        keys = rc._resolve_edge_keys(G, cond)
+        assert len(keys) == 8
+        for a, b in [(10, 11), (11, 12), (12, 13), (13, 14)]:
+            assert (a, b, 0) in keys and (b, a, 0) in keys
+
+    def test_persisted_condition_contains_chain(self):
+        G, ids = _straight_road_graph(n_seg=4)
+        _, cond = _chain_condition(G, 12, 13)
+        edge = cond["edge"]
+        assert [12, 13, 0] in edge["edges"]
+        assert len(edge["edges"]) == 4
+        assert edge["chain_length_m"] > 200
+        assert len(edge["geometry_gcj"]) >= 5
+
+    def test_chain_geometry_fallback_after_node_id_rebuild(self):
+        """路网重建后 id 全变：靠整链几何回退仍能命中新图上整段（双向）。"""
+        G1, _ = _straight_road_graph(n_seg=4, start_id=10)
+        _, cond = _chain_condition(G1, 12, 13)
+        G2, _ = _straight_road_graph(n_seg=4, start_id=1010)  # 坐标完全相同、id 全换
+        keys = rc._resolve_edge_keys(G2, cond)
+        assert len(keys) == 8
+        for a, b in [(1010, 1011), (1011, 1012), (1012, 1013), (1013, 1014)]:
+            assert (a, b, 0) in keys and (b, a, 0) in keys
+
+    def test_legacy_condition_without_edges_list_still_resolves(self, G):
+        """旧数据（只有 u/v、无 edges 链）继续按单条边双向解析。"""
+        legacy = {
+            "id": "old01", "type": "closure", "name": "旧单条边事件",
+            "edge": {"u": 1, "v": 2, "key": 0, "snap": {"lng": 0, "lat": 0}},
+        }
+        keys = rc._resolve_edge_keys(G, legacy)
+        assert keys == {(1, 2, 0), (2, 1, 0)}
 
 
 # ===================== HTTP 层 =====================

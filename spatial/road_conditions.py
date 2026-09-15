@@ -62,6 +62,12 @@ _EDGE_FALLBACK_DIST_M = 12.0
 # 旧圆模型数据缺省半径
 _LEGACY_DEFAULT_RADIUS_M = 30.0
 
+# 边链扩展：一次管制影响的是"两个路口之间的整段道路"，而非单个 OSM edge。
+# 从吸附边沿拓扑向两端延伸，直连中间节点（无向度=2）直接穿过，直到路口/断头。
+_CHAIN_MAX_EDGES = 40        # 单条链最多合并的边数
+_CHAIN_MAX_LENGTH_M = 600.0  # 单条链最长（米），校园一个街区足够
+_CHAIN_MAX_TURN_DEG = 100.0  # degree=2 处近乎折返（>100°）视为不同道路，停止延伸
+
 _lock = threading.Lock()
 _cache = None  # list of condition dicts
 _cache_mtime = 0.0
@@ -162,6 +168,11 @@ def add_condition(
             "u": int(edge["u"]),
             "v": int(edge["v"]),
             "key": int(edge.get("key", 0)),
+            # 完整边链（路口到路口）；旧数据无此字段时由 u/v 单条边兜底
+            "edges": edge.get("edges") or [
+                [int(edge["u"]), int(edge["v"]), int(edge.get("key", 0))]
+            ],
+            "chain_length_m": edge.get("chain_length_m", 0.0),
             "road_name": edge.get("road_name") or "",
             "snap": {
                 "lng": float(edge["snap_lng_gcj"]),
@@ -256,6 +267,132 @@ def _line_coords(line) -> list:
         return []
 
 
+def _road_name_of(edge_data: dict) -> str:
+    """从边属性取规范道路名（无名路返回 ''）。"""
+    raw = edge_data.get("name")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    if isinstance(raw, list) and raw:
+        return str(raw[0]).strip()
+    return ""
+
+
+def _undirected_degree(G, node) -> int:
+    """节点的无向连接度：双向平行边只算一个邻居。==2 表示道路直连点，可穿过。"""
+    return len(set(G.successors(node)) | set(G.predecessors(node)))
+
+
+def _bearing_deg(p1, p2) -> float:
+    import math
+    dx = (p2[0] - p1[0]) * math.cos(math.radians((p1[1] + p2[1]) / 2.0))
+    dy = p2[1] - p1[1]
+    return math.degrees(math.atan2(dy, dx)) % 360.0
+
+
+def _edge_end_bearing(coords: list, forward: bool) -> float:
+    """边几何在起点(forward=True)/终点(forward=False)端的切线方位角。"""
+    if len(coords) < 2:
+        return 0.0
+    if forward:
+        return _bearing_deg(coords[0], coords[1])
+    return _bearing_deg(coords[-2], coords[-1])
+
+
+def _angle_diff(a: float, b: float) -> float:
+    d = abs(a - b) % 360.0
+    return min(d, 360.0 - d)
+
+
+def _walk_one_direction(G, cur, prev, heading, road_name, budget_edges, budget_m):
+    """沿 cur 端单向延伸（道路为双向 MultiDiGraph，用出边即可）。
+
+    停止条件：到达路口/断头（无向度≠2）、边数/长度预算耗尽、
+    或直连点处道路名变化 / 近乎折返（防止穿到匝道、另一条路上）。
+
+    Returns:
+        keys: [(a,b,k), ...] 沿延伸方向的有向边
+        pts:  [[lng,lat], ...] 从 cur 节点开始（含 cur）的拼接坐标
+        length_m: 新增边总长度
+    """
+    keys, pts, total = [], [], 0.0
+    while budget_edges > 0 and budget_m > 0:
+        if _undirected_degree(G, cur) != 2:
+            break  # 路口、丁字、断头：管制段到此为止
+        candidates = []
+        for _, nxt, k, d in G.out_edges(cur, keys=True, data=True):
+            if nxt == prev:
+                continue
+            cs = _line_coords(_edge_line(G, cur, nxt, d))
+            if len(cs) < 2:
+                continue
+            turn = _angle_diff(heading, _edge_end_bearing(cs, True))
+            name = _road_name_of(d)
+            length = float(d.get("length", 0) or 0)
+            candidates.append((turn, nxt, k, cs, name, length))
+        if not candidates:
+            break
+        candidates.sort(key=lambda c: c[0])
+        turn, nxt, k, cs, name, length = candidates[0]
+        if turn > _CHAIN_MAX_TURN_DEG:
+            break
+        if road_name and name and name != road_name:
+            break
+        if length <= 0 or length > budget_m:
+            break
+        keys.append((cur, nxt, k))
+        if not pts:
+            pts.append(cs[0])
+        pts.extend(cs[1:])
+        total += length
+        budget_edges -= 1
+        budget_m -= length
+        prev, cur = cur, nxt
+        heading = _edge_end_bearing(cs, False)
+        if name:
+            road_name = name
+    return keys, pts, total
+
+
+def _expand_edge_chain(G, u, v, k):
+    """把吸附边 (u,v,k) 扩展为"路口到路口"的完整道路链。
+
+    Returns:
+        ordered_keys: [(a,b,k), ...] 沿几何方向（道路一端→另一端）的有向边
+        coords_wgs:   [[lng,lat], ...] 合并去重后的整链几何（WGS-84）
+        length_m:     整链长度
+        edge_count:   合并边数
+    """
+    main_data = G.get_edge_data(u, v, k) or {}
+    main_coords = _line_coords(_edge_line(G, u, v, main_data))
+    main_len = float(main_data.get("length", 0) or 0)
+    main_name = _road_name_of(main_data)
+    budget_e = _CHAIN_MAX_EDGES - 1
+    budget_m = _CHAIN_MAX_LENGTH_M - main_len
+
+    # 前向：v 端继续；后向：u 端逆推（沿出边走向 v 的反方向）
+    fwd_keys, fwd_pts, fwd_len = _walk_one_direction(
+        G, v, u, _edge_end_bearing(main_coords, False), main_name,
+        budget_e // 2, budget_m / 2,
+    )
+    bwd_keys, bwd_pts, bwd_len = _walk_one_direction(
+        G, u, v, (_edge_end_bearing(main_coords, True) + 180.0) % 360.0, main_name,
+        budget_e - budget_e // 2, budget_m - budget_m / 2,
+    )
+
+    # bwd_pts 方向为 u→道路远端，反转为 远端→…→u，再拼主边与前向
+    coords = list(reversed(bwd_pts)) + main_coords
+    if fwd_pts:
+        coords.extend(fwd_pts[1:])
+    # 相邻重复点去重
+    deduped = []
+    for p in coords:
+        if not deduped or abs(deduped[-1][0] - p[0]) > 1e-12 or abs(deduped[-1][1] - p[1]) > 1e-12:
+            deduped.append(p)
+
+    ordered_keys = [(b, a, kk) for a, b, kk in reversed(bwd_keys)] + [(u, v, k)] + fwd_keys
+    return ordered_keys, deduped, main_len + fwd_len + bwd_len, len(ordered_keys)
+
+
 def snap_to_edge(
     G: nx.MultiDiGraph,
     lng_gcj: float,
@@ -267,12 +404,14 @@ def snap_to_edge(
 
     Returns:
         {
-          "u","v","key": 边标识,
+          "u","v","key": 吸附主边标识,
+          "edges": [[u,v,k],...] 主边沿道路扩展到两端路口后的完整边链,
+          "chain_length_m": 整段道路长度,
           "road_name": 路名（可能为空）,
           "snap_lng_gcj","snap_lat_gcj": 吸附点（GCJ-02）,
           "snap_lng_wgs","snap_lat_wgs": 吸附点（WGS-84）,
           "dist_m": 点击点到边的距离（米）,
-          "geometry_gcj": [[lng,lat],...] 边几何（GCJ-02，前端直接画线）
+          "geometry_gcj": [[lng,lat],...] 整段道路几何（GCJ-02，前端直接画线）
         }
         最近边超过 max_dist_m 时返回 None。
     """
@@ -303,19 +442,24 @@ def snap_to_edge(
 
     _, u, v, k, line, proj = best
     snap_lng_gcj, snap_lat_gcj = wgs84_to_gcj02(proj.x, proj.y)
-    geometry_gcj = [list(wgs84_to_gcj02(x, y)) for x, y in _line_coords(line)]
-    road_name = ""
-    data = G.get_edge_data(u, v, k) or {}
-    raw_name = data.get("name")
-    if isinstance(raw_name, str) and raw_name.strip():
-        road_name = raw_name.strip()
-    elif isinstance(raw_name, list) and raw_name:
-        road_name = str(raw_name[0])
+
+    # 沿道路扩展到两端路口：管制影响的是一整段道路，不是单个 OSM edge
+    try:
+        chain_keys, chain_coords_wgs, chain_len_m, _ = _expand_edge_chain(G, u, v, k)
+    except Exception:
+        logger.warning("边链扩展失败，回退为单条边 (%s,%s,%s)", u, v, k, exc_info=True)
+        chain_keys, chain_coords_wgs, chain_len_m = (
+            [(u, v, k)], _line_coords(line), float((G.get_edge_data(u, v, k) or {}).get("length", 0) or 0),
+        )
+    geometry_gcj = [list(wgs84_to_gcj02(x, y)) for x, y in chain_coords_wgs]
+    road_name = _road_name_of(G.get_edge_data(u, v, k) or {})
 
     return {
         "u": int(u),
         "v": int(v),
         "key": int(k),
+        "edges": [[int(a), int(b), int(kk)] for a, b, kk in chain_keys],
+        "chain_length_m": round(float(chain_len_m), 1),
         "road_name": road_name,
         "snap_lng_gcj": float(snap_lng_gcj),
         "snap_lat_gcj": float(snap_lat_gcj),
@@ -333,22 +477,39 @@ def _resolve_edge_keys(G: nx.MultiDiGraph, cond: dict) -> set:
     解析事件影响的有向边 key 集合（道路双向通行，双向同时生效）。
 
     优先级：
-      1. edge.u/v/key 精确命中（当前路网）
-      2. 节点 id 失效（路网重建）→ 吸附点 12m 几何回退
+      1. edge.edges 边链（路口到路口整段）/ 旧数据 edge.u/v 精确命中（当前路网）
+      2. 节点 id 失效（路网重建）→ 整链几何 12m 回退，吸附点回退兜底
       3. 旧版 radius_m 圆模型 → 按原半径几何回退
     """
     edge_info = cond.get("edge")
-    if edge_info and edge_info.get("u") is not None and edge_info.get("v") is not None:
-        u, v = int(edge_info["u"]), int(edge_info["v"])
-        k = int(edge_info.get("key", 0))
+    if edge_info:
         keys = set()
-        if G.has_edge(u, v, k):
-            keys.add((u, v, k))
-        if G.has_edge(v, u, k):
-            keys.add((v, u, k))
+        chain = edge_info.get("edges")
+        if isinstance(chain, list) and chain:
+            for triple in chain:
+                try:
+                    a, b, kk = int(triple[0]), int(triple[1]), int(triple[2])
+                except (TypeError, ValueError, IndexError):
+                    continue
+                if G.has_edge(a, b, kk):
+                    keys.add((a, b, kk))
+                if G.has_edge(b, a, kk):
+                    keys.add((b, a, kk))
+        elif edge_info.get("u") is not None and edge_info.get("v") is not None:
+            a, b = int(edge_info["u"]), int(edge_info["v"])
+            kk = int(edge_info.get("key", 0))
+            if G.has_edge(a, b, kk):
+                keys.add((a, b, kk))
+            if G.has_edge(b, a, kk):
+                keys.add((b, a, kk))
         if keys:
             return keys
-        # id 失效 → 几何回退
+        # id 全失效 → 整段道路几何回退（覆盖整条链），再退回吸附点回退
+        geom = edge_info.get("geometry_gcj") or []
+        if len(geom) >= 2:
+            chain_keys = _edges_near_geometry(G, geom, _EDGE_FALLBACK_DIST_M)
+            if chain_keys:
+                return chain_keys
         snap = edge_info.get("snap") or {}
         if snap.get("lng") is not None:
             return _edges_near_point(
@@ -377,6 +538,30 @@ def _edges_near_point(G, lng, lat, gcj, radius_m) -> set:
     for u, v, k, data in G.edges(keys=True, data=True):
         line = _edge_line(G, u, v, data)
         if line.distance(Point(lng_wgs, lat_wgs)) <= radius_deg:
+            keys.add((u, v, k))
+            if G.has_edge(v, u, k):
+                keys.add((v, u, k))
+    return keys
+
+
+def _edges_near_geometry(G, coords_gcj, radius_m=_EDGE_FALLBACK_DIST_M) -> set:
+    """整链几何回退：与事件边链折线(GCJ-02)相距 radius_m 内的所有边，双向返回。
+
+    路网重建后节点 id 全部变化时使用——一条链折线与候选边各做一次距离计算。
+    """
+    from spatial.coord_transform import gcj02_to_wgs84
+    from shapely.geometry import LineString
+    wgs = [gcj02_to_wgs84(float(p[0]), float(p[1])) for p in coords_gcj if p and len(p) >= 2]
+    if len(wgs) < 2:
+        return set()
+    try:
+        chain_line = LineString(wgs)
+    except Exception:
+        return set()
+    radius_deg = radius_m / 111320.0
+    keys = set()
+    for u, v, k, data in G.edges(keys=True, data=True):
+        if _edge_line(G, u, v, data).distance(chain_line) <= radius_deg:
             keys.add((u, v, k))
             if G.has_edge(v, u, k):
                 keys.add((v, u, k))

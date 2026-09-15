@@ -186,6 +186,7 @@
         state.travelMode = mode;
         persistTravelMode();
         syncTravelModeUI();
+        if (state.map) loadAndRenderRoadConditions(state.roadConditionAdminView);
         maybeRecomputeRouteForMode();
     }
 
@@ -195,6 +196,7 @@
             state.travelMode = data.mode;
             persistTravelMode();
             syncTravelModeUI();
+            if (state.map) loadAndRenderRoadConditions(state.roadConditionAdminView);
         }
     }
 
@@ -727,6 +729,15 @@
         flooding:    { icon: '🌊', color: '#2980B9', label: '积水', dash: '7 5' },
         accident:    { icon: '⚠️', color: '#F39C12', label: '事故', dash: '12 7' },
     };
+    // 与后端 spatial/road_conditions.py 的 CONDITION_EFFECTS 保持一致：
+    // 'block' = 当前出行模式禁行（画实线，路线绕行）；数字 = 缓行成本倍数（画虚线，仍可通行）
+    var CONDITION_MODE_EFFECTS = {
+        closure:      { walk: 'block', bike: 'block', drive: 'block' },
+        construction: { walk: 4,       bike: 'block', drive: 'block' },
+        flooding:     { walk: 'block', bike: 'block', drive: 4 },
+        accident:     { walk: 3,       bike: 3,       drive: 'block' },
+        event:        { walk: 2,       bike: 2,       drive: 'block' },
+    };
     var COND_STATUS_LABELS = { active: '生效中', scheduled: '未开始', expired: '已结束' };
 
     // 清除路况标记（线段 + 胶囊）
@@ -745,16 +756,31 @@
             clearRoadConditionMarkers();
             state.roadConditionAdminView = !!includeAll;
             var conditions = (data && data.conditions) || [];
+            var hasClosure = false, hasSlow = false;
             conditions.forEach(function (cond) {
+                var active = !includeAll || !cond.status || cond.status === 'active';
+                if (active) {
+                    var eff = (CONDITION_MODE_EFFECTS[cond.type] || {})[state.travelMode];
+                    if (eff === 'block') hasClosure = true; else if (eff) hasSlow = true;
+                }
                 try {
                     renderRoadCondition(cond, !!includeAll);
                 } catch (err) {
                     console.warn('[路况] 单条事件渲染失败，跳过:', err, cond && cond.id);
                 }
             });
+            updateRoadConditionLegend(hasClosure, hasSlow);
         }).catch(function (e) {
             console.warn('[路况] 加载失败:', e);
         });
+    }
+
+    // 地图图例中"管制封闭/缓行"两行仅在存在对应事件时显示
+    function updateRoadConditionLegend(hasClosure, hasSlow) {
+        var elClosure = document.getElementById('legend-closure-item');
+        var elSlow = document.getElementById('legend-slow-item');
+        if (elClosure) elClosure.hidden = !hasClosure;
+        if (elSlow) elSlow.hidden = !hasSlow;
     }
 
     function renderRoadCondition(cond, adminView) {
@@ -768,13 +794,18 @@
         var latlng = gcjToLatLng(anchor.lng, anchor.lat);
         var layers = [];
 
-        // 沿真实路段画高亮线
+        // 沿真实路段画高亮线：当前模式禁行画实线，可通行但缓行画虚线
+        var modeEffect = (CONDITION_MODE_EFFECTS[cond.type] || {})[state.travelMode];
+        var hardClosed = modeEffect === 'block';
         var geom = edge.geometry_gcj || [];
         if (geom.length >= 2) {
             var lineLatLngs = geom.map(function (p) { return gcjToLatLng(p[0], p[1]); });
             var lineOpt = { color: color, weight: 6, opacity: inactive ? 0.4 : 0.9, lineCap: 'round' };
-            if (style.dash && !inactive) lineOpt.dashArray = style.dash;
-            if (inactive) lineOpt.dashArray = '3 8';
+            if (inactive) {
+                lineOpt.dashArray = '3 8';
+            } else if (!hardClosed) {
+                lineOpt.dashArray = style.dash || '8 6';
+            }
             var line = L.polyline(lineLatLngs, lineOpt);
             line.addTo(state.map);
             layers.push(line);
@@ -816,6 +847,18 @@
             };
             var rows = [];
             if (edge.road_name) rows.push('<div style="font-size:12px;">📍 路段：<b>' + escapeHTML(edge.road_name) + '</b></div>');
+            if (edge.chain_length_m) {
+                rows.push('<div style="color:#888;font-size:12px;">影响长度：约 '
+                    + Math.round(edge.chain_length_m) + ' 米（两端路口之间整段）</div>');
+            }
+            if (!inactive) {
+                var eff = (CONDITION_MODE_EFFECTS[cond.type] || {})[state.travelMode];
+                var modeName = (TRAVEL_MODES[state.travelMode] || {}).label || state.travelMode;
+                var effText = eff === 'block'
+                    ? '🚷 当前方式（' + modeName + '）<b>禁止通行</b>，路线将自动绕行'
+                    : ('🚶 当前方式（' + modeName + '）<b>可缓行通过</b>，通过成本约 ×' + eff);
+                rows.push('<div style="font-size:12px;color:' + color + ';">' + effText + '</div>');
+            }
             var start = cond.start_time || 0, end = cond.end_time || 0;
             if (start || end) {
                 rows.push('<div style="color:#888;font-size:12px;">⏱ '
@@ -1110,7 +1153,10 @@
                     if (hint) {
                         hint.style.color = '#27AE60';
                         hint.textContent = '✅ 已吸附到「' + (snap.road_name || '未命名道路')
-                            + '」，偏移 ' + (snap.dist_m != null ? snap.dist_m : '?') + ' 米';
+                            + '」，偏移 ' + (snap.dist_m != null ? snap.dist_m : '?') + ' 米'
+                            + (snap.chain_length_m
+                                ? '，管制将覆盖两端路口间整段约 ' + Math.round(snap.chain_length_m) + ' 米'
+                                : '');
                     }
                 })
                 .catch(function (err) {
