@@ -733,10 +733,10 @@
     // 'block' = 当前出行模式禁行（画实线，路线绕行）；数字 = 缓行成本倍数（画虚线，仍可通行）
     var CONDITION_MODE_EFFECTS = {
         closure:      { walk: 'block', bike: 'block', drive: 'block' },
-        construction: { walk: 4,       bike: 'block', drive: 'block' },
-        flooding:     { walk: 'block', bike: 'block', drive: 4 },
-        accident:     { walk: 3,       bike: 3,       drive: 'block' },
-        event:        { walk: 2,       bike: 2,       drive: 'block' },
+        construction: { walk: 1.5,     bike: 'block', drive: 'block' },
+        flooding:     { walk: 'block', bike: 'block', drive: 1.5 },
+        accident:     { walk: 1.3,     bike: 1.3,     drive: 'block' },
+        event:        { walk: 1.2,     bike: 1.2,     drive: 'block' },
     };
     var COND_STATUS_LABELS = { active: '生效中', scheduled: '未开始', expired: '已结束' };
 

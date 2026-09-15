@@ -39,12 +39,14 @@ _CONDITIONS_FILE = os.path.join(
 )
 
 # "block" = 硬禁止；浮点数 = 边成本惩罚倍数
+# 设计依据：边链扩展后惩罚范围为"两个路口之间整段道路"(300-600m)，
+# 倍数代表对人的真实感知影响——×1.5 ≈ 速度减半（不是×4那种"绕行"级惩罚）。
 CONDITION_EFFECTS = {
     "closure":      {"walk": "block", "bike": "block", "drive": "block"},
-    "construction": {"walk": 4.0,     "bike": "block", "drive": "block"},
-    "flooding":     {"walk": "block", "bike": "block", "drive": 4.0},
-    "accident":     {"walk": 3.0,     "bike": 3.0,     "drive": "block"},
-    "event":        {"walk": 2.0,     "bike": 2.0,     "drive": "block"},
+    "construction": {"walk": 1.5,     "bike": "block", "drive": "block"},
+    "flooding":     {"walk": "block", "bike": "block", "drive": 1.5},
+    "accident":     {"walk": 1.3,     "bike": 1.3,     "drive": "block"},
+    "event":        {"walk": 1.2,     "bike": 1.2,     "drive": "block"},
 }
 
 CONDITION_LABELS = {

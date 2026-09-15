@@ -30,7 +30,9 @@ from spatial.coord_transform import wgs84_to_gcj02, gcj02_to_wgs84
 #                                      边链扩展在此停止；不构成绕行捷径）
 #
 # 竖边 0-4、3-7 约 44m。主路总长 160m，绕行约 249m。
-# 对中间 80m 边(1,2)：2× 后主路 240m 仍短于绕行；3× 后 320m 长于绕行 → 改走北路。
+# 对中间 80m 边(1,2)：新软惩罚 ≤1.5×，主路成本 160+80×1.5=280 仍 < 绕行 249？
+# 实测约 40+80×1.5+40=200 远小于绕行 248，所以软惩罚下仍走主路（虚线=可通行）。
+# 只有硬封(closure)才导致绕行。
 
 def _haversine_m(lng1, lat1, lng2, lat2):
     r = 6371000
@@ -174,12 +176,12 @@ class TestEffectMatrix:
         path = nx.dijkstra_path(G2, 0, 3, weight="length")
         assert 2 not in path
 
-    def test_construction_walk_soft_4x_detours(self, G):
-        """施工对步行是 4× 软惩罚（可穿但不优先）：80m 变 320m，主路长于绕行。"""
+    def test_construction_walk_soft_1_5x_still_main_road(self, G):
+        """施工对步行 1.5× 软惩罚：成本增加但主路仍比绕行短，路径不变（虚线=可通行）。"""
         _edge_condition(G, "construction")
         G2, penalties, closed, applied = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], "walk")
-        assert not closed and penalties[(1, 2, 0)] == 4.0 and applied == 1
-        assert 5 in _path_with_penalty(G2, penalties)
+        assert not closed and abs(penalties[(1, 2, 0)] - 1.5) < 1e-6 and applied == 1
+        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
     def test_flooding_blocks_pedestrian(self, G, mode):
@@ -187,20 +189,20 @@ class TestEffectMatrix:
         G2, _, closed, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
         assert (1, 2, 0) in closed
 
-    def test_flooding_drive_4x_detours(self, G):
-        """机动车可慢速通过积水：4× 软惩罚导致绕行。"""
+    def test_flooding_drive_soft_1_5x_still_main_road(self, G):
+        """机动车可慢速通过积水：1.5× 软惩罚但路径不变（主路仍短于绕行）。"""
         _edge_condition(G, "flooding")
         G2, penalties, closed, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], "drive")
-        assert not closed and penalties[(1, 2, 0)] == 4.0
-        assert 5 in _path_with_penalty(G2, penalties)
+        assert not closed and abs(penalties[(1, 2, 0)] - 1.5) < 1e-6
+        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
-    def test_accident_3x_detours_pedestrian(self, G, mode):
-        """事故对步行/骑行 3×：80m→240m，主路 320m > 绕行 249m。"""
+    def test_accident_soft_1_3x_still_main_road(self, G, mode):
+        """事故对步行/骑行 1.3× 软惩罚：成本微增，路径不变（虚线=可通行）。"""
         _edge_condition(G, "accident")
         G2, penalties, _, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
-        assert penalties[(1, 2, 0)] == 3.0
-        assert 5 in _path_with_penalty(G2, penalties)
+        assert abs(penalties[(1, 2, 0)] - 1.3) < 1e-6
+        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
 
     def test_accident_blocks_drive(self, G):
         _edge_condition(G, "accident")
@@ -208,13 +210,12 @@ class TestEffectMatrix:
         assert (1, 2, 0) in closed
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
-    def test_event_2x_still_main_road(self, G, mode):
-        """活动人流 2×：240m 仍短于绕行 249m，路径不变但该边成本翻倍。"""
+    def test_event_soft_1_2x_still_main_road(self, G, mode):
+        """活动人流 1.2× 软惩罚：成本几乎不变，路径不变。"""
         _edge_condition(G, "event")
         G2, penalties, closed, applied = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
-        assert applied == 1 and not closed and penalties[(1, 2, 0)] == 2.0
-        path = _path_with_penalty(G2, penalties)
-        assert path == [0, 1, 2, 3]
+        assert applied == 1 and not closed and abs(penalties[(1, 2, 0)] - 1.2) < 1e-6
+        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
 
     def test_event_blocks_drive(self, G):
         _edge_condition(G, "event")
