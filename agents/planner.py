@@ -161,12 +161,14 @@ def run_agent(query: str, context: dict = None, history: list = None,
     final_message = ""
     turns = 0
 
+    logger.info("[TIMING] Agent 开始, query=%r", query[:40])
     for _ in range(MAX_TURNS):
         if time.monotonic() - started > TIME_BUDGET_S:
             logger.warning("Agent 循环超时（%.1fs），基于已有结果收尾", time.monotonic() - started)
             break
         turns += 1
 
+        t_llm = time.monotonic()
         try:
             response = client.chat.completions.create(
                 model=config.LLM_MODEL,
@@ -177,6 +179,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
             )
         except Exception as e:
             raise PlannerError(f"LLM 调用失败: {type(e).__name__}: {e}") from e
+        logger.info("[TIMING] turn %d LLM=%.2fs", turns, time.monotonic() - t_llm)
 
         msg = response.choices[0].message
         tool_calls = getattr(msg, "tool_calls", None)
@@ -196,7 +199,9 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 result = {"error": "invalid_args", "message": "参数不是合法 JSON，请修正后重试"}
                 artifact = None
             else:
+                t_tool = time.monotonic()
                 result, artifact = agent_tools.execute_tool(name, args)
+                logger.info("[TIMING] tool %s=%.2fs", name, time.monotonic() - t_tool)
 
             if artifact:
                 if "route" in artifact:
