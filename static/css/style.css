@@ -1671,3 +1671,35 @@ body {
         bottom: 18px;
     }
 }
+
+/* ===== 定位状态指示器（页面上可见，排查微信环境问题） ===== */
+.loc-status {
+    position: fixed;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    transition: opacity 0.3s ease;
+}
+.loc-status--info {
+    background: #4A6CF7;
+    color: #fff;
+}
+.loc-status--success {
+    background: #22C55E;
+    color: #fff;
+}
+.loc-status--warn {
+    background: #F59E0B;
+    color: #fff;
+}
+.loc-status--error {
+    background: #EF4444;
+    color: #fff;
+}

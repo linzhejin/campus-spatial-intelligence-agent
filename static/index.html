@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署，底图与 OSM/天地图同为 WGS-84，消除高德底图偏移） -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260915a">
+    <link rel="stylesheet" href="/css/style.css?v=20260915b">
 </head>
 <body>
 
@@ -413,6 +413,9 @@
             } catch (e) { /* 忽略异常 */ }
         })();
     </script>
+    <!-- ====== 定位状态指示器（页面上可见，排查微信环境问题用） ====== -->
+    <div id="loc-status" class="loc-status" style="display:none;"></div>
+
     <!-- ====== PWA 安装引导横幅（满足条件时由 app.js 显示） ====== -->
     <div id="install-banner" class="install-banner" hidden>
         <div class="install-banner__icon">🌸</div>
@@ -431,6 +434,6 @@
         <span class="footer-copy">© 珞珈智行 WHU-Walker</span>
     </footer>
 
-    <script src="/js/app.js?v=20260915q"></script>
+    <script src="/js/app.js?v=20260915r"></script>
 </body>
 </html>

@@ -620,6 +620,17 @@
     // ===== 持续跟踪定位（核心逻辑：共享 state.locateWatchId，防重复 watch） =====
     // 统一入口：startTracking() 负责清理旧 watch + 启动新 watch（AMap优先 + 原生fallback）
     // 调用方：autoLocateSilent（页面加载）、onLocateClick（用户点◎）
+
+    // 页面上可见的定位状态指示器（微信里看不到 console，靠这个排查）
+    function _setLocStatus(text, type) {
+        var el = document.getElementById('loc-status');
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.display = text ? 'block' : 'none';
+        el.className = 'loc-status loc-status--' + (type || 'info');
+        console.log('[LOC_STATUS]', text);
+    }
+
     function _clearWatch() {
         if (state.locateWatchId != null) {
             try { navigator.geolocation.clearWatch(state.locateWatchId); } catch(e) {}
@@ -633,11 +644,14 @@
 
     function _startNativeWatch(silent, onError) {
         if (!navigator.geolocation || window.isSecureContext === false) {
-            if (!silent) showError('定位需要 HTTPS', '请通过 https://whuspati.online 访问。');
-            else console.warn('[TRACK] 环境不支持原生定位');
+            var reason = !navigator.geolocation ? '浏览器不支持定位' : '非 HTTPS 环境';
+            if (!silent) showError('定位不可用', reason);
+            _setLocStatus('定位不可用：' + reason, 'error');
+            console.warn('[TRACK] 环境不支持原生定位:', reason);
             return false;
         }
         _clearWatch();
+        _setLocStatus('定位中…（原生 GPS）', 'info');
         state.locateWatchId = navigator.geolocation.watchPosition(
             function (pos) {
                 if (!silent) setLocateBtnState(false);
@@ -651,17 +665,20 @@
                 else if (err && err.code === 3) msg += '定位超时';
                 else msg += '请稍后再试';
                 if (!silent) { setLocateBtnState(false); showError('定位失败', msg); }
-                else console.warn('[TRACK] 原生 watch 错误:', err && err.code, err && err.message);
+                _setLocStatus(msg, 'error');
+                console.warn('[TRACK] 原生 watch 错误:', err && err.code, err && err.message);
                 if (onError) onError(err);
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000, distanceFilter: 3 }
         );
+        _setLocStatus('已启动原生 GPS 跟踪', 'success');
         console.log('[TRACK] 原生 watch 已启动, id:', state.locateWatchId);
         return true;
     }
 
     function _startAmapWatch(silent) {
         if (!window.AMap || !window.AMap.plugin) return false;
+        _setLocStatus('加载 AMap 定位插件…', 'info');
         AMap.plugin('AMap.Geolocation', function () {
             try {
                 _clearWatch();
@@ -669,6 +686,7 @@
                     enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
                 });
                 state._amapGeolocation = geo;
+                _setLocStatus('定位中…（AMap WiFi+GPS）', 'info');
                 state._amapWatchListener = geo.watchPosition(function (status, result) {
                     if (status === 'complete' && result && result.position) {
                         var gcjLng = result.position.lng, gcjLat = result.position.lat;
@@ -682,9 +700,11 @@
                         if (!state.locateWatchId) _startNativeWatch(silent);
                     }
                 });
+                _setLocStatus('已启动 AMap 跟踪', 'success');
                 console.log('[TRACK] AMap watch 已启动');
             } catch (e) {
                 console.warn('[TRACK] AMap watch 异常:', e.message, '→ fallback 原生');
+                _setLocStatus('AMap 异常，切换原生', 'warn');
                 _startNativeWatch(silent);
             }
         });
@@ -694,10 +714,12 @@
     // 对外：启动持续跟踪（AMap 优先 + 原生 fallback）
     function startTracking(silent) {
         _clearWatch();
+        _setLocStatus('准备定位…', 'info');
         if (window.AMap && window.AMap.plugin) {
             _startAmapWatch(silent);
         } else {
             // SDK 还在加载，等最多 3 秒
+            _setLocStatus('等待 AMap SDK 加载…', 'info');
             var waited = 0, interval = 200, maxWait = 3000;
             var tick = setInterval(function () {
                 waited += interval;
@@ -707,6 +729,7 @@
                 } else if (waited >= maxWait) {
                     clearInterval(tick);
                     console.warn('[TRACK] AMap 3 秒未加载 → fallback 原生');
+                    _setLocStatus('AMap 未加载，切换原生', 'warn');
                     _startNativeWatch(silent);
                 }
             }, interval);
@@ -715,7 +738,8 @@
 
     // ===== 页面加载自动定位（静默版，持续跟踪） =====
     function autoLocateSilent() {
-        if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); return; }
+        if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); _setLocStatus('地图未就绪，跳过自动定位', 'warn'); return; }
+        _setLocStatus('自动定位中…', 'info');
         startTracking(true);
     }
 
@@ -729,6 +753,9 @@
             accuracy: accuracy || 0,
             manual: !!isManual,
         };
+        // 更新可见状态
+        var accText = accuracy > 0 ? '（精度约 ' + Math.round(accuracy) + 'm）' : '';
+        _setLocStatus('已定位' + accText, 'success');
         if (!state.map) return;
 
         // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner
