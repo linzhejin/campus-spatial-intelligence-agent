@@ -622,13 +622,26 @@
     // 调用方：autoLocateSilent（页面加载）、onLocateClick（用户点◎）
 
     // 页面上可见的定位状态指示器（微信里看不到 console，靠这个排查）
+    // success/warn/info 类型：成功后自动淡出隐藏；error 类型：保持显示直到用户点掉
+    var _locStatusHideTimer = null;
     function _setLocStatus(text, type) {
         var el = document.getElementById('loc-status');
         if (!el) return;
-        el.textContent = text || '';
-        el.style.display = text ? 'block' : 'none';
+        if (_locStatusHideTimer) { clearTimeout(_locStatusHideTimer); _locStatusHideTimer = null; }
+        if (!text) { el.style.display = 'none'; return; }
+        el.textContent = text;
+        el.style.display = 'block';
+        el.style.opacity = '1';
         el.className = 'loc-status loc-status--' + (type || 'info');
         console.log('[LOC_STATUS]', text);
+        // 成功/信息/警告 → 3 秒后淡出隐藏
+        if (type !== 'error') {
+            _locStatusHideTimer = setTimeout(function () {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(function () { el.style.display = 'none'; el.style.transition = ''; }, 500);
+            }, 3000);
+        }
     }
 
     function _clearWatch() {
