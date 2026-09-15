@@ -840,6 +840,7 @@ def chat():
             coord_end=body.get("coord_end"),
             uid=body.get("whu_uid") or body.get("uid"),
             travel_mode=body.get("travel_mode"),
+            coord_waypoints=body.get("coord_waypoints"),
         )
         return _ok(_agent_response_to_legacy(agent_resp,
                     coord_start=body.get("coord_start"),

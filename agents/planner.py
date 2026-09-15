@@ -53,7 +53,8 @@ def _make_client():
 
 def _build_messages(query: str, context: dict = None, history: list = None,
                     coord_start: dict = None, coord_end: dict = None,
-                    uid: str = None, travel_mode: str = None) -> list:
+                    uid: str = None, travel_mode: str = None,
+                    coord_waypoints: list = None) -> list:
     messages = [{"role": "system", "content": _load_system_prompt()}]
 
     # 任务卡知识注入（静态校园经验）
@@ -86,6 +87,21 @@ def _build_messages(query: str, context: dict = None, history: list = None,
     if gps_lines:
         messages.append({"role": "system", "content": "用户本次请求携带了 GPS 定位：\n" + "\n".join(gps_lines)})
 
+    # 地图途经点注入：用户在地图上选的途经点坐标
+    if isinstance(coord_waypoints, list) and coord_waypoints:
+        wp_lines = []
+        for i, wp in enumerate(coord_waypoints):
+            if isinstance(wp, dict) and wp.get("lng") is not None and wp.get("lat") is not None:
+                wp_lines.append(
+                    f"- 途经点{i+1}: WGS-84 坐标 lng={wp['lng']}, lat={wp['lat']}"
+                    f"（调用 plan_via_route 时用 via_coord={{lng:{wp['lng']}, lat:{wp['lat']}}} 传入）"
+                )
+        if wp_lines:
+            messages.append({
+                "role": "system",
+                "content": "用户在地图上标记了途经点，规划时必须经过这些点：\n" + "\n".join(wp_lines),
+            })
+
     # 多轮历史（前端在 P4 接入；兼容旧 context.history 形态）
     history = history or (context or {}).get("history") or []
     for turn in history[-8:]:
@@ -112,7 +128,8 @@ def _build_messages(query: str, context: dict = None, history: list = None,
 
 def run_agent(query: str, context: dict = None, history: list = None,
               coord_start: dict = None, coord_end: dict = None,
-              uid: str = None, travel_mode: str = None) -> dict:
+              uid: str = None, travel_mode: str = None,
+              coord_waypoints: list = None) -> dict:
     """Agent 主循环。
 
     Returns:
@@ -135,7 +152,8 @@ def run_agent(query: str, context: dict = None, history: list = None,
     started = time.monotonic()
     client = _make_client()
     messages = _build_messages(query, context, history, coord_start, coord_end,
-                               uid=uid, travel_mode=travel_mode)
+                               uid=uid, travel_mode=travel_mode,
+                               coord_waypoints=coord_waypoints)
 
     artifact_route, route_kind = None, None
     artifact_candidates, artifact_clarify = None, None

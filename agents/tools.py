@@ -142,16 +142,23 @@ TOOL_SCHEMAS = [
         "function": {
             "name": "plan_via_route",
             "description": "规划带途经点的路径：如'去上课路上顺便买个笔记本'。via 可以指名具体地点，"
-                         "也可以只给类别（自动从该类别里挑最顺路的）。",
+                         "也可以只给类别（自动从该类别里挑最顺路的），也可以用坐标设途经点。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "start": _ENDPOINT_SCHEMA,
                     "end": _ENDPOINT_SCHEMA,
-                    "via_name": {"type": "string", "description": "途经地点名（与 via_subcategory 二选一）"},
+                    "via_name": {"type": "string", "description": "途经地点名（与 via_subcategory/via_coord 三选一）"},
                     "via_subcategory": {"type": "string",
                                         "description": "途经类别（如 supermarket/coffee/canteen），"
                                                        "自动选顺路的，与 via_name 二选一"},
+                    "via_coord": {"type": "object",
+                                  "description": "途经点坐标（WGS-84），与 via_name/via_subcategory 三选一",
+                                  "properties": {
+                                      "lng": {"type": "number", "description": "经度 WGS-84"},
+                                      "lat": {"type": "number", "description": "纬度 WGS-84"},
+                                  },
+                                  "required": ["lng", "lat"]},
                     **_PREFERENCE_SCHEMA,
                 },
                 "required": ["start", "end"],
@@ -538,10 +545,22 @@ def _tool_plan_via_route(args, ctx):
 
     via_name = (args.get("via_name") or "").strip()
     via_sub = (args.get("via_subcategory") or "").strip()
-    if not via_name and not via_sub:
-        return {"error": "missing_via", "message": "缺少途经点：请用 via_name 或 via_subcategory 指定"}, None
+    via_coord = args.get("via_coord")
+    if not via_name and not via_sub and not via_coord:
+        return {"error": "missing_via", "message": "缺少途经点：请用 via_name、via_subcategory 或 via_coord 指定"}, None
 
-    if via_name:
+    if via_coord:
+        # 坐标途经点：直接吸附到最近路网节点
+        try:
+            via_lng = float(via_coord.get("lng"))
+            via_lat = float(via_coord.get("lat"))
+            via_node = get_nearest_node(G_mode, via_lng, via_lat)
+            via_display = "地图途经点"
+            via_info = {"name": via_display}
+            detour_ratio = None
+        except (TypeError, ValueError, RuntimeError) as e:
+            return {"error": "via_coord_invalid", "message": f"途经点坐标无效: {e}"}, None
+    elif via_name:
         via_node, via_display, err = _resolve_endpoint({"name": via_name}, G_mode)
         if err:
             return err, None

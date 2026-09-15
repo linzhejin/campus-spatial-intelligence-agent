@@ -39,10 +39,10 @@
         requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
         travelMode: 'walk',  // 出行方式：walk / bike / drive（持久化偏好，默认步行）
         userLocation: null,  // GPS 定位结果（WGS-84）：{lng, lat, accuracy}
-        userMarker: null,    // 蓝点标记
+        userMarker: null,    // 藍点标记
         userAccuracyCircle: null,  // 定位精度圈
         locateWatchId: null, // navigator.geolocation.watchPosition 句柄
-        locateBtn: null,     // ◎ GPS 定位按钮 DOM（setLocateBtnState 用）
+        _hadUserLocation: false,  // 是否已获得过定位（首次居中用）
         routeAcceptTimer: null,  // 路线采纳判定定时器（20s 未覆盖视为采纳）
     };
 
@@ -461,6 +461,11 @@
                 preferCanvas: false,
             });
 
+            // 用户拖拽地图 → 退出选点模式（如有）
+            state.map.on('dragstart', function () {
+                if (_pointPickMode) stopPointPick();
+            });
+
             // 底图：高德瓦片（GCJ-02，国内秒开，中文标注，高缩放全覆盖）
             // 全站统一 GCJ-02：POI/路线/GPS 均按 GCJ-02 渲染，底图不可混入 WGS-84 源
             // （OSM/Esri 为 WGS-84 且国内不可达/会串位约 500m，已移除）
@@ -538,88 +543,198 @@
         }
     }
 
-    // ========== GPS 定位 + 手动设起点 ==========
+    // ========== 地图选点控制（起点/途经/终点） ==========
     function addLocateControl() {
         var container = L.DomUtil.create('div', 'whu-locate-group');
         container.style.display = 'flex';
         container.style.gap = '4px';
         container.style.flexDirection = 'column';
 
-        // GPS 定位按钮
-        var btn = L.DomUtil.create('div', 'whu-locate-btn leaflet-bar', container);
-        btn.setAttribute('role', 'button');
-        btn.setAttribute('aria-label', 'GPS定位我的位置');
-        btn.title = 'GPS定位（手机精度高；桌面IP定位可能不准，建议手动选点）';
-        btn.innerHTML = '<span class="whu-locate-icon">◎</span>';
-        L.DomEvent.disableClickPropagation(btn);
-        L.DomEvent.disableScrollPropagation(btn);
-        btn.addEventListener('click', onLocateClick);
-        btn.style.cursor = 'pointer';
-        btn.style.width = '30px';
-        btn.style.height = '30px';
-        btn.style.display = 'flex';
-        btn.style.alignItems = 'center';
-        btn.style.justifyContent = 'center';
-        btn.style.background = '#fff';
-        btn.style.borderRadius = '4px';
-        btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-        btn.style.fontSize = '16px';
-        btn.style.fontWeight = 'bold';
-        btn.style.color = '#2B7CFF';
-        // 注意：本函数是普通调用（严格模式下 this 为 undefined），
-        // 按钮引用必须挂到 state，不能写 this._btn（曾导致 TypeError、定位按钮整块不渲染）
-        state.locateBtn = btn;
+        // 起点、途经、终点三个按钮
+        var btnDefs = [
+            { key: 'start', label: '起点', icon: '🟢', color: '#1B7F3B', title: '点击设置出发点' },
+            { key: 'via',   label: '途经', icon: '🚏', color: '#E67E22', title: '点击设置途经点' },
+            { key: 'end',   label: '终点', icon: '🔴', color: '#C0392B', title: '点击设置终点' },
+        ];
+        for (var i = 0; i < btnDefs.length; i++) {
+            (function (def) {
+                var btn = L.DomUtil.create('div', 'whu-point-btn leaflet-bar', container);
+                btn.setAttribute('role', 'button');
+                btn.setAttribute('aria-label', def.title);
+                btn.title = def.title;
+                btn.innerHTML = '<span class="whu-point-icon" style="font-size:14px;">' + def.icon + '</span>'
+                    + '<span class="whu-point-label" style="font-size:11px;margin-left:2px;color:' + def.color + ';">' + def.label + '</span>';
+                L.DomEvent.disableClickPropagation(btn);
+                L.DomEvent.disableScrollPropagation(btn);
+                btn.addEventListener('click', function () { togglePointPickMode(def.key); });
+                btn.style.cursor = 'pointer';
+                btn.style.width = 'auto';
+                btn.style.minWidth = '38px';
+                btn.style.height = '30px';
+                btn.style.display = 'flex';
+                btn.style.alignItems = 'center';
+                btn.style.justifyContent = 'center';
+                btn.style.gap = '2px';
+                btn.style.padding = '0 6px';
+                btn.style.background = '#fff';
+                btn.style.borderRadius = '4px';
+                btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+                btn.dataset.pointKey = def.key;
+                state['pointBtn_' + def.key] = btn;
+            })(btnDefs[i]);
+        }
 
-        // 手动设起点按钮
-        var manualBtn = L.DomUtil.create('div', 'whu-manual-locate-btn leaflet-bar', container);
-        manualBtn.setAttribute('role', 'button');
-        manualBtn.setAttribute('aria-label', '手动点击地图设我的位置');
-        manualBtn.title = '手动选点：点击地图任意位置作为「我的位置」';
-        manualBtn.innerHTML = '<span style="font-size:16px;">📌</span>';
-        L.DomEvent.disableClickPropagation(manualBtn);
-        L.DomEvent.disableScrollPropagation(manualBtn);
-        manualBtn.addEventListener('click', toggleManualLocateMode);
-        manualBtn.style.cursor = 'pointer';
-        manualBtn.style.width = '30px';
-        manualBtn.style.height = '30px';
-        manualBtn.style.display = 'flex';
-        manualBtn.style.alignItems = 'center';
-        manualBtn.style.justifyContent = 'center';
-        manualBtn.style.background = '#fff';
-        manualBtn.style.borderRadius = '4px';
-        manualBtn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-
-        var LocateCtrl = L.Control.extend({
+        var PointCtrl = L.Control.extend({
             options: { position: 'topright' },
             onAdd: function () { return container; },
         });
-        state.locateControl = new LocateCtrl().addTo(state.map);
-        state.manualLocateBtn = manualBtn;
+        state.locateControl = new PointCtrl().addTo(state.map);
     }
 
     function setLocateBtnState(busy) {
-        var btn = state.locateBtn;
-        if (btn) btn.classList.toggle('is-busy', !!busy);
+        // 兼容：旧的 locateBtn 引用可能不存在了
     }
 
-    function onLocateClick() {
-        setLocateBtnState(true);
-        // 已有持续跟踪 → 直接回到我的位置（不重复启动 watch）
-        if (state.locateWatchId != null || state._amapWatchListener) {
-            setLocateBtnState(false);
-            if (state.userLocation) state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
+    // ====== 地图选点模式（起点/途经/终点） ======
+    var _pointPickMode = null;   // 'start' | 'via' | 'end' | null
+    var _pointPickHandler = null;
+    // 地图上的选点标记
+    state.pointMarkers = { start: null, via: [], end: null };
+    state.mapPoints = { start: null, via: [], end: null };  // {lng, lat, gcjLng, gcjLat} WGS-84
+
+    function togglePointPickMode(key) {
+        if (_pointPickMode === key) {
+            // 再次点击同一个按钮 → 退出选点模式
+            stopPointPick();
             return;
         }
-        // 已有一次性定位（还没启动 watch）→ 也先回到位置，再启动跟踪
-        if (state.userLocation) {
-            state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
+        stopPointPick();
+        _pointPickMode = key;
+        var labels = { start: '出发点', via: '途经点', end: '终点' };
+        var colors = { start: '#1B7F3B', via: '#E67E22', end: '#C0392B' };
+        showTopBanner('点击地图设置' + labels[key], 'info');
+        // 高亮当前按钮
+        var btn = state['pointBtn_' + key];
+        if (btn) btn.style.outline = '2px solid ' + colors[key];
+        state.map.getContainer().style.cursor = 'crosshair';
+
+        _pointPickHandler = function (e) {
+            // leaflet 坐标即 GCJ-02（高德瓦片）
+            var gcjLat = e.latlng.lat, gcjLng = e.latlng.lng;
+            var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+            setMapPoint(key, wgs[0], wgs[1], gcjLng, gcjLat);
+            stopPointPick();
+            // 起终点都设置后自动规划
+            if (state.mapPoints.start && state.mapPoints.end) {
+                autoPlanFromMapPoints();
+            }
+        };
+        state.map.on('click', _pointPickHandler);
+    }
+
+    function stopPointPick() {
+        if (_pointPickHandler && state.map) state.map.off('click', _pointPickHandler);
+        _pointPickHandler = null;
+        _pointPickMode = null;
+        // 清除按钮高亮
+        ['start', 'via', 'end'].forEach(function (k) {
+            var b = state['pointBtn_' + k];
+            if (b) b.style.outline = '';
+        });
+        state.map.getContainer().style.cursor = '';
+    }
+
+    function setMapPoint(key, lng, lat, gcjLng, gcjLat) {
+        var pt = { lng: lng, lat: lat, gcjLng: gcjLng, gcjLat: gcjLat };
+        var labels = { start: '起点', via: '途经', end: '终点' };
+        var colors = { start: '#1B7F3B', via: '#E67E22', end: '#C0392B' };
+        var icons = { start: '🟢', via: '🚏', end: '🔴' };
+
+        if (key === 'via') {
+            // 途经点可多个
+            state.mapPoints.via.push(pt);
+            var viaIdx = state.mapPoints.via.length;
+            var m = L.marker([gcjLat, gcjLng], {
+                icon: L.divIcon({
+                    html: '<div style="font-size:20px;">' + icons.via + '</div>',
+                    iconSize: [24, 24], iconAnchor: [12, 12],
+                }),
+            }).addTo(state.map);
+            m.bindTooltip(labels.via + viaIdx, { permanent: false, direction: 'top' });
+            state.pointMarkers.via.push(m);
+            showTopBanner('✅ 已设置途经点' + viaIdx, 'success');
+        } else {
+            // 起点或终点：替换已有标记
+            state.mapPoints[key] = pt;
+            if (state.pointMarkers[key]) state.map.removeLayer(state.pointMarkers[key]);
+            var mk = L.marker([gcjLat, gcjLng], {
+                icon: L.divIcon({
+                    html: '<div style="font-size:20px;">' + icons[key] + '</div>',
+                    iconSize: [24, 24], iconAnchor: [12, 12],
+                }),
+            }).addTo(state.map);
+            mk.bindTooltip(labels[key], { permanent: true, direction: 'top', offset: [0, -12] });
+            state.pointMarkers[key] = mk;
+            showTopBanner('✅ 已设置' + labels[key], 'success');
         }
-        startTracking(false);  // 非静默（会弹错误框）
+    }
+
+    function clearMapPoints() {
+        state.mapPoints = { start: null, via: [], end: null };
+        if (state.pointMarkers.start) { state.map.removeLayer(state.pointMarkers.start); state.pointMarkers.start = null; }
+        state.pointMarkers.via.forEach(function (m) { state.map.removeLayer(m); });
+        state.pointMarkers.via = [];
+        if (state.pointMarkers.end) { state.map.removeLayer(state.pointMarkers.end); state.pointMarkers.end = null; }
+    }
+
+    // 设置起终点后自动触发路径规划
+    function autoPlanFromMapPoints() {
+        var s = state.mapPoints.start, e = state.mapPoints.end;
+        if (!s || !e) return;
+        var vias = state.mapPoints.via;
+        var query = '从地图标记的起点到终点';
+        if (vias.length > 0) query = '从地图标记的起点途经地图标记点到终点';
+        // 构建请求体，走 /api/chat（coord_start / coord_end 覆盖）
+        var body = {
+            query: query,
+            travel_mode: state.travelMode,
+            whu_uid: getUid(),
+            coord_start: { lng: s.lng, lat: s.lat, name: '地图起点' },
+            coord_end: { lng: e.lng, lat: e.lat, name: '地图终点' },
+        };
+        if (vias.length > 0) {
+            body.coord_waypoints = vias.map(function (v) { return { lng: v.lng, lat: v.lat }; });
+        }
+        // 复用 handleNlSubmit 的展示逻辑
+        hideError();
+        cancelRouteAccept();
+        startLoadingMessages(query);
+        hideWelcomeElements();
+        showUserBubble(query);
+        var thinkingBubble = showChatBubble(query, '🌸 正在为你规划路线…');
+        apiRequest('/api/chat', body).then(function (result) {
+            stopLoadingMessages();
+            hideLoading();
+            if (result.task_type === 'path_planning' || result.response_kind === 'route') {
+                if (result.route) renderRoute(result.route);
+                if (result.message) updateChatBubble(thinkingBubble, result.message);
+                state.lastIntent = result.intent || null;
+            } else if (result.response_kind === 'clarify' && result.clarify) {
+                updateChatBubble(thinkingBubble, result.clarify.question || result.message || '需要更多信息');
+                if (result.clarify.options) renderClarifyOptions(result.clarify.options, thinkingBubble);
+            } else {
+                updateChatBubble(thinkingBubble, result.message || result.reply || '路线规划完成');
+            }
+        }).catch(function (err) {
+            stopLoadingMessages();
+            hideLoading();
+            updateChatBubble(thinkingBubble, '❌ 路线规划失败：' + (err && err.message ? err.message : '请重试'));
+        });
     }
 
     // ===== 持续跟踪定位（核心逻辑：共享 state.locateWatchId，防重复 watch） =====
     // 统一入口：startTracking() 负责清理旧 watch + 启动新 watch（AMap优先 + 原生fallback）
-    // 调用方：autoLocateSilent（页面加载）、onLocateClick（用户点◎）
+    // 调用方：autoLocateSilent（页面加载自动定位）
 
     // 页面上可见的定位状态指示器（微信里看不到 console，靠这个排查）
     // success/warn/info 类型：成功后自动淡出隐藏；error 类型：保持显示直到用户点掉
@@ -682,7 +797,7 @@
                 console.warn('[TRACK] 原生 watch 错误:', err && err.code, err && err.message);
                 if (onError) onError(err);
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000, distanceFilter: 3 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 3000 }
         );
         _setLocStatus('已启动原生 GPS 跟踪', 'success');
         console.log('[TRACK] 原生 watch 已启动, id:', state.locateWatchId);
@@ -728,12 +843,19 @@
     function startTracking(silent) {
         _clearWatch();
         _setLocStatus('准备定位…', 'info');
+        // 微信内置浏览器：AMap 定位插件不可靠，直接用原生
+        var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+        if (isWeChat) {
+            _setLocStatus('定位中…（原生 GPS）', 'info');
+            _startNativeWatch(silent);
+            return;
+        }
         if (window.AMap && window.AMap.plugin) {
             _startAmapWatch(silent);
         } else {
-            // SDK 还在加载，等最多 3 秒
+            // SDK 还在加载，等最多 1.5 秒（原 3 秒太慢）
             _setLocStatus('等待 AMap SDK 加载…', 'info');
-            var waited = 0, interval = 200, maxWait = 3000;
+            var waited = 0, interval = 150, maxWait = 1500;
             var tick = setInterval(function () {
                 waited += interval;
                 if (window.AMap && window.AMap.plugin) {
@@ -741,7 +863,7 @@
                     _startAmapWatch(silent);
                 } else if (waited >= maxWait) {
                     clearInterval(tick);
-                    console.warn('[TRACK] AMap 3 秒未加载 → fallback 原生');
+                    console.warn('[TRACK] AMap 1.5 秒未加载 → fallback 原生');
                     _setLocStatus('AMap 未加载，切换原生', 'warn');
                     _startNativeWatch(silent);
                 }
@@ -831,7 +953,7 @@
                 .addTo(state.map);
         }
 
-        // 只有首次定位或手动设点时才居中
+        // 首次定位或手动设点时居中
         if (isFirstFix || isManual) {
             state.map.setView([gcjLat, gcjLng], 17);
         }
@@ -842,8 +964,8 @@
     function showLowAccuracyWarning(acc) {
         if (_lowAccBanner) return;
         var msg = acc === 0
-            ? '⚠️ 当前位置由 IP 推断，精度差。点右上角 📌 手动选点更准。'
-            : '⚠️ 定位精度约 ' + Math.round(acc) + 'm（' + (acc > 1000 ? '误差较大' : '可能不够准') + '）。点 📌 手动选点。';
+            ? '⚠️ 当前位置由 IP 推断，精度差。点右上角「起点」按钮在地图上手动选点。'
+            : '⚠️ 定位精度约 ' + Math.round(acc) + 'm（' + (acc > 1000 ? '误差较大' : '可能不够准') + '）。点「起点」按钮手动选点。';
         _lowAccBanner = showTopBanner(msg, 'warning');
     }
     function hideLowAccuracyWarning() {
@@ -868,43 +990,6 @@
         document.body.appendChild(el);
         setTimeout(function () { if (el.parentNode) el.remove(); }, 10000);  // 10 秒自动消失
         return el;
-    }
-
-    // ====== 手动设起点（点 📌 按钮 → 点击地图任意位置） ======
-    var _manualLocateActive = false;
-    var _manualLocateHandler = null;
-    function toggleManualLocateMode() {
-        if (_manualLocateActive) {
-            // 退出模式
-            if (_manualLocateHandler && state.map) state.map.off('click', _manualLocateHandler);
-            _manualLocateActive = false;
-            _manualLocateHandler = null;
-            if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '';
-            showTopBanner('手动选点已退出', 'info');
-            state.map.getContainer().style.cursor = '';
-        } else {
-            // 进入选点模式
-            _manualLocateActive = true;
-            showTopBanner('📌 点击地图任意位置设为「我的位置」', 'info');
-            if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '2px solid #E67E22';
-            state.map.getContainer().style.cursor = 'crosshair';
-            _manualLocateHandler = function (e) {
-                // leaflet event 里 latlng 是 GCJ-02（高德瓦片坐标系）
-                var gcjLat = e.latlng.lat;
-                var gcjLng = e.latlng.lng;
-                // 反向转成 WGS-84 存起来（跟 GPS 流程一致，存 WGS-84，渲染再转 GCJ）
-                var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                var wgsLng = wgs[0], wgsLat = wgs[1];
-                hideLowAccuracyWarning();
-                renderUserLocation(wgsLng, wgsLat, 5, true);  // accuracy 随便给，手动设的不准也准
-                showTopBanner('✅ 已设为「我的位置」', 'success');
-                // 退出选点模式
-                _manualLocateActive = false;
-                if (state.manualLocateBtn) state.manualLocateBtn.style.outline = '';
-                state.map.getContainer().style.cursor = '';
-            };
-            state.map.on('click', _manualLocateHandler);
-        }
     }
 
     function renderRoute(routeData) {
@@ -1902,7 +1987,7 @@
                 if (!resolved) {
                     resolved = true;
                     renderUserLocation = origRender;  // 恢复原函数
-                    reject(new Error('定位超时，请点右上角 ◎ 按钮允许定位后再试。'));
+                    reject(new Error('定位超时，请稍后重试或在地图上手动选点。'));
                 }
             }, 10000);
         });
@@ -3222,6 +3307,9 @@
         return /iphone|ipad|ipod/i.test(navigator.userAgent)
             || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
+    function isWeChat() {
+        return /MicroMessenger/i.test(navigator.userAgent);
+    }
     function recentlyDismissed() {
         try {
             var t = parseInt(localStorage.getItem(LS_DISMISS) || '0', 10);
@@ -3251,13 +3339,19 @@
         });
         btn.addEventListener('click', function () {
             if (deferredPrompt) {
+                // Chrome / Edge / Android 浏览器：原生安装弹窗
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function () {
                     deferredPrompt = null;
                     hideBanner(true);
                 });
+            } else if (isWeChat()) {
+                // 微信内：引导跳转系统浏览器
+                if (sub) sub.textContent = '点右上角「⋯」→「在浏览器打开」→ 再添加到桌面';
+                btn.textContent = '知道了';
+                btn.addEventListener('click', function () { hideBanner(true); }, { once: true });
             } else if (isIos()) {
-                // iOS 无原生弹窗：展开文字步骤
+                // iOS Safari 无原生弹窗：展开文字步骤
                 if (sub) sub.textContent = '点底部分享图标「□↑」→ 选「添加到主屏幕」';
                 btn.textContent = '知道了';
                 btn.addEventListener('click', function () { hideBanner(true); }, { once: true });
@@ -3273,8 +3367,16 @@
         });
         window.addEventListener('appinstalled', function () { hideBanner(true); });
 
+        // 微信内：beforeinstallprompt 不触发，主动展示引导横幅
+        if (isWeChat() && !isStandalone()) {
+            setTimeout(function () {
+                showBanner('微信不支持直接安装，点右上角「⋯」→ 在浏览器打开');
+                if (btn) btn.textContent = '知道了';
+            }, 3000);
+        }
+
         // iOS Safari：手动引导（仅非 standalone 且首次）
-        if (isIos() && !isStandalone()) {
+        if (isIos() && !isStandalone() && !isWeChat()) {
             setTimeout(function () {
                 showBanner('点底部分享图标「□↑」→「添加到主屏幕」');
             }, 3000);

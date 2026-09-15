@@ -1526,6 +1526,7 @@ body {
     cursor: pointer;
     margin-top: 10px;  /* 与上方图层切换控件留缝 */
     transition: background 0.15s ease;
+    position: relative;
 }
 .whu-locate-btn:hover {
     background: #f5f2ee;
