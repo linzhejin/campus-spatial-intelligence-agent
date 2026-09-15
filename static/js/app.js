@@ -681,6 +681,69 @@
         );
     }
 
+    // ===== 页面加载自动定位（静默版） =====
+    // 用户明确要求：进入珞珈智行就自动定位，不管会不会用到。
+    // 复用 AMap-first 链路，失败时只 console.warn 不弹错误框（用户没主动点按钮）。
+    function autoLocateSilent() {
+        if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); return; }
+        if (state.userLocation) { console.log('[AUTO_LOC] 已有定位，跳过自动定位'); return; }
+
+        function _nativeSilent() {
+            if (!navigator.geolocation || window.isSecureContext === false) {
+                console.warn('[AUTO_LOC] 环境不支持定位');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    console.log('[AUTO_LOC] 原生定位成功:', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4));
+                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
+                },
+                function (err) {
+                    console.warn('[AUTO_LOC] 原生定位失败:', err && err.code, err && err.message);
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+            );
+        }
+
+        if (window.AMap && window.AMap.plugin) {
+            AMap.plugin('AMap.Geolocation', function () {
+                try {
+                    var geo = new AMap.Geolocation({
+                        enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
+                    });
+                    geo.getCurrentPosition(function (status, result) {
+                        if (status === 'complete' && result && result.position) {
+                            var gcjLng = result.position.lng, gcjLat = result.position.lat;
+                            var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                            console.log('[AUTO_LOC] AMap 定位成功, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4), 'acc:', (result.accuracy||0).toFixed(0)+'m');
+                            renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
+                        } else {
+                            console.warn('[AUTO_LOC] AMap 定位失败:', status, '→ fallback 原生');
+                            _nativeSilent();
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[AUTO_LOC] AMap 异常:', e.message, '→ fallback 原生');
+                    _nativeSilent();
+                }
+            });
+        } else {
+            // SDK 还在加载，等最多 3 秒
+            var waited = 0, interval = 200, maxWait = 3000;
+            var tick = setInterval(function () {
+                waited += interval;
+                if (window.AMap && window.AMap.plugin) {
+                    clearInterval(tick);
+                    autoLocateSilent();  // 递归走 AMap 分支
+                } else if (waited >= maxWait) {
+                    clearInterval(tick);
+                    console.warn('[AUTO_LOC] AMap 3 秒未加载 → fallback 原生');
+                    _nativeSilent();
+                }
+            }, interval);
+        }
+    }
+
     function renderUserLocation(lng, lat, accuracy, isManual) {
         // GPS 返回 WGS-84；高德瓦片 GCJ-02，渲染前需转换
         var gcj = wgs84ToGcj02(lng, lat);
@@ -2558,6 +2621,9 @@
 
         // 暴露公开函数给欢迎卡片等模块调用
         window.submitNaturalLanguageQuery = handleNlSubmit;
+
+        // 页面加载自动定位（延迟 1.5s 等地图 + AMap SDK 就绪，静默失败不打扰用户）
+        setTimeout(autoLocateSilent, 1500);
     }
 
     if (document.readyState === 'loading') {
