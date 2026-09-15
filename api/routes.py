@@ -35,6 +35,7 @@ from spatial.routing import (
     TRAVEL_MODES,
     normalize_mode,
     filter_graph_for_mode,
+    MODE_DEFAULT_WEIGHTS,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.road_conditions import (
@@ -151,6 +152,56 @@ def _resolve_travel_mode(query=None, body_mode=None, intent_mode=None):
     if intent_mode is not None:
         return normalize_mode(intent_mode)
     return "walk"
+
+
+# —— 非景点目的地默认纯最短 ——
+# 景点类 POI（type=scenery 或 scenery_score>=3）用平衡权重；
+# 功能性目的地（study/dining/dorm/sports/gate/service 等）和 GPS 坐标目的地
+# 一律用纯距离权重，slope/scenery 弱偏好只在用户显式表达或 LLM 输出时生效。
+_SCENERY_TYPES = {"scenery"}  # 只明确标注为 scenery 的
+_SCENERY_MIN_SCORE = 3       # 片区中心点等也可能被打 3 分
+
+_WEIGHTS_DISTANCE_ONLY = {
+    "distance": 0.8, "slope": 0.05, "scenery": 0.05,
+}
+
+
+def _is_scenery_destination(poi_or_ref) -> bool:
+    """判断目的地 POI 是否属于景点类（应使用风景偏好权重）。
+
+    入参可能是完整 POI dict（从 get_poi 返回），也可能是 PoiRef 兜底
+    （type="coord" 或找不到 POI 时只有 name/coordinates）。兜底情况一律算
+    "非景点" → 纯最短。
+    """
+    if not isinstance(poi_or_ref, dict):
+        return False
+    t = poi_or_ref.get("type")
+    if t == "coord":
+        return False
+    if t in _SCENERY_TYPES:
+        return True
+    score = poi_or_ref.get("scenery_score") or 0
+    return score >= _SCENERY_MIN_SCORE
+
+
+def _weights_for_destination(end_poi, mode, explicit_weights=None):
+    """根据目的地类型和用户显式偏好决定路由权重。
+
+    规则：
+      - explicit_weights 非 None → 用户/LLM 已给出偏好，直接用
+      - 终点是景点类 → 用 MODE_DEFAULT_WEIGHTS[mode]（平衡权重）
+      - 终点是功能性目的地/GPS 坐标 → 用 _WEIGHTS_DISTANCE_ONLY（纯最短）
+
+    返回 dict 或 None（调用 compute_route 时传 None 会用默认）。
+    """
+    if explicit_weights is not None:
+        return explicit_weights
+    mode = normalize_mode(mode)
+    if _is_scenery_destination(end_poi):
+        # 景点：按出行方式给平衡权重
+        return dict(MODE_DEFAULT_WEIGHTS[mode])
+    # 非景点：纯距离主导
+    return dict(_WEIGHTS_DISTANCE_ONLY)
 
 
 def _mode_filtered_graph(G, mode):
@@ -670,7 +721,9 @@ def route():
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
     constraints = body.get("constraints", {})
-    weights = body.get("weights")
+    # 智能默认：无显式 weights 时根据终点 POI 类型选权重
+    raw_weights = body.get("weights")
+    weights = _weights_for_destination(end_poi, final_mode, explicit_weights=raw_weights)
     resolved_weights = resolve_weights(weights)
 
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
@@ -955,7 +1008,9 @@ def chat():
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
     constraints = intent_data.get("constraints", {})
-    weights = intent_data.get("weights")
+    # 智能默认：LLM 未输出显式 weights 时，根据终点 POI 类型选权重
+    raw_weights = intent_data.get("weights")
+    weights = _weights_for_destination(end_poi, final_mode, explicit_weights=raw_weights)
 
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
     weather_snap = _weather_snapshot()
