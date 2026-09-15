@@ -766,9 +766,13 @@
             accuracy: accuracy || 0,
             manual: !!isManual,
         };
-        // 更新可见状态
-        var accText = accuracy > 0 ? '（精度约 ' + Math.round(accuracy) + 'm）' : '';
-        _setLocStatus('已定位' + accText, 'success');
+        // 只有首次定位或手动设点才更新可见状态条（持续跟踪时不要反复闪）
+        var isFirstFix = !state._hadUserLocation;
+        state._hadUserLocation = true;
+        if (isFirstFix || isManual) {
+            var accText = accuracy > 0 ? '（精度约 ' + Math.round(accuracy) + 'm）' : '';
+            _setLocStatus('已定位' + accText, 'success');
+        }
         if (!state.map) return;
 
         // 精度警告：accuracy 过大或无数据 → 显示黄色警告 banner
@@ -798,8 +802,9 @@
             }).addTo(state.map);
         }
 
-        // 蓝点标记
-        var dotColor = isManual ? '#E67E22' : '#2B7CFF';  // 手动=橙，GPS=蓝
+        // 蓝点标记：已有 marker → setLatLng 更新位置（不销毁重建，避免闪烁）
+        // 没有 marker → 新建（首次定位 / 手动设点后被移除）
+        var dotColor = isManual ? '#E67E22' : '#2B7CFF';
         var dotHtml = '<div style="position:relative;width:20px;height:20px;">'
             + '<div style="position:absolute;inset:0;border-radius:50%;background:' + dotColor + ';opacity:0.25;"></div>'
             + '<div style="position:absolute;left:5px;top:5px;width:10px;height:10px;border-radius:50%;'
@@ -810,19 +815,23 @@
             : '我的位置' + (acc > 0 ? '（精度约 ' + Math.round(acc) + 'm）' : '（IP定位精度可能低）') + ' · 说「从我这到樱顶」';
 
         if (state.userMarker) {
-            state.map.removeLayer(state.userMarker);
-            state.userMarker = null;
+            // 持续跟踪更新：只移动位置（setLatLng 不闪烁）
+            state.userMarker.setLatLng([gcjLat, gcjLng]);
+            // 颜色变化时（手动↔GPS）才重建 marker——这种情况极少
+            if (state.userMarker._dotColor !== dotColor) {
+                state.map.removeLayer(state.userMarker);
+                state.userMarker = null;
+            }
         }
-        if (state.userMarkerRaw) { state.map.removeLayer(state.userMarkerRaw); state.userMarkerRaw = null; }
+        if (!state.userMarker) {
+            if (state.userMarkerRaw) { state.map.removeLayer(state.userMarkerRaw); state.userMarkerRaw = null; }
+            state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置');
+            state.userMarker._dotColor = dotColor;
+            state.userMarker.bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
+                .addTo(state.map);
+        }
 
-        state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置')
-            .bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
-            .addTo(state.map);
-
-        // 只有首次定位（之前没有 userLocation）或手动设点时才居中
-        // 持续跟踪更新时不动地图，避免用户看路线/地图时被拉走
-        var isFirstFix = !state._hadUserLocation;
-        state._hadUserLocation = true;
+        // 只有首次定位或手动设点时才居中
         if (isFirstFix || isManual) {
             state.map.setView([gcjLat, gcjLng], 17);
         }
