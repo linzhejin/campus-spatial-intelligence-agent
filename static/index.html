@@ -394,25 +394,23 @@
     <script src="/js/config.js"></script>
     <!-- Leaflet 本地化加载（高德瓦片 GCJ-02，与后端坐标统一） -->
     <script src="/vendor/leaflet/leaflet.js"></script>
-    <!-- 高德 JS SDK（仅用于 Geolocation 插件：WiFi+基站+GPS 混合定位，国内精度远超浏览器原生） -->
-    <!-- async 异步加载，绝对不能阻塞主页面初始化 -->
+    <!-- 高德 JS SDK（仅用于 Geolocation 插件：WiFi+基站+GPS 混合定位） -->
+    <!-- async 异步加载，不阻塞主页面 -->
     <script>
         (function () {
-            var cfg = window.WHU_CONFIG || {};
+            var cfg = window.WHU_WALKER_CONFIG || {};
             var key = cfg.amapKey;
             var scode = cfg.amapSecurityCode;
-            if (!key) { console.warn('[AMap] 未配置 AMAP_KEY，将降级为浏览器原生定位'); return; }
+            if (!key) return;  // 没 Key 直接跳过
             try {
                 if (scode) { window._AMapSecurityConfig = { securityJsCode: scode }; }
                 var s = document.createElement('script');
                 s.async = true;
                 s.defer = true;
                 s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + key + '&plugin=AMap.Geolocation';
-                s.onerror = function () { console.warn('[AMap] SDK 加载失败，降级为浏览器原生定位'); };
+                s.onerror = function () { console.warn('[AMap] SDK 加载失败，降级浏览器原生定位'); };
                 document.head.appendChild(s);
-            } catch (e) {
-                console.warn('[AMap] 加载异常，降级为浏览器原生定位:', e.message);
-            }
+            } catch (e) { /* 忽略异常 */ }
         })();
     </script>
     <!-- ====== PWA 安装引导横幅（满足条件时由 app.js 显示） ====== -->
@@ -426,6 +424,6 @@
         <button type="button" id="install-dismiss" class="install-banner__close" aria-label="关闭">✕</button>
     </div>
 
-    <script src="/js/app.js?v=20260915h"></script>
+    <script src="/js/app.js?v=20260915i"></script>
 </body>
 </html>

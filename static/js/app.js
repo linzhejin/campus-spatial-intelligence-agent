@@ -599,7 +599,6 @@
         if (btn) btn.classList.toggle('is-busy', !!busy);
     }
 
-    // ====== 定位：优先 AMap.Geolocation（WiFi+基站+GPS，GCJ-02 直接用），fallback 浏览器原生 ======
     function onLocateClick() {
         setLocateBtnState(true);
         // 已有定位 → 回到我的位置
@@ -608,64 +607,45 @@
             state.map.setView([state.userLocation.gcjLat, state.userLocation.gcjLng], 17);
             return;
         }
-
-        // 优先用 AMap.Geolocation
+        // 优先 AMap.Geolocation（WiFi+基站+GPS，国内精度远超浏览器原生）
         if (window.AMap && window.AMap.plugin) {
-            _tryAmapGeolocation();
+            _amapLocate();
         } else {
-            // SDK 可能还在加载，等最多 3 秒
-            _waitAmapReady(3000).then(function () {
-                if (window.AMap) {
-                    _tryAmapGeolocation();
-                } else {
-                    _fallbackBrowserGeolocation();
-                }
-            }).catch(function () {
-                _fallbackBrowserGeolocation();
-            });
+            // 等 SDK 加载最多 2 秒，还没来就用浏览器原生
+            setTimeout(function () {
+                if (window.AMap && window.AMap.plugin) _amapLocate();
+                else _browserLocate();
+            }, 2000);
         }
     }
 
-    function _waitAmapReady(timeoutMs) {
-        return new Promise(function (resolve, reject) {
-            var start = Date.now();
-            var tick = setInterval(function () {
-                if (window.AMap) { clearInterval(tick); resolve(); }
-                else if (Date.now() - start > timeoutMs) { clearInterval(tick); reject(); }
-            }, 100);
-        });
-    }
-
-    function _tryAmapGeolocation() {
+    function _amapLocate() {
         AMap.plugin('AMap.Geolocation', function () {
-            var geo = new AMap.Geolocation({
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 30000,
-                convert: false,  // 不要 AMap 内部做转换（我们自己控制坐标）
-            });
-            geo.getCurrentPosition(function (status, result) {
-                setLocateBtnState(false);
-                if (status === 'complete' && result && result.position) {
-                    // AMap.Geolocation 返回 GCJ-02（高德瓦片坐标系），直接渲染
-                    // 存 WGS-84（供导航/后端 API 用），渲染时再转 GCJ-02
-                    var gcjLng = result.position.lng;
-                    var gcjLat = result.position.lat;
-                    var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-                    var accuracy = result.accuracy || 0;
-                    console.log('[LOC] AMap.Geolocation GCJ-02:', gcjLng, gcjLat, 'accuracy:', accuracy, 'm');
-                    console.log('[LOC] AMap.Geolocation WGS-84:', wgs[0], wgs[1]);
-                    renderUserLocationFromGcj(gcjLng, gcjLat, accuracy, false, 'amap');
-                } else {
-                    console.warn('[LOC] AMap.Geolocation 失败:', status, result);
-                    showTopBanner('⚠️ 高德定位失败，尝试浏览器原生定位…', 'warning');
-                    _fallbackBrowserGeolocation();
-                }
-            });
+            try {
+                var geo = new AMap.Geolocation({
+                    enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
+                });
+                geo.getCurrentPosition(function (status, result) {
+                    if (status === 'complete' && result && result.position) {
+                        // AMap 返回 GCJ-02 → 转 WGS-84 → 走原渲染流程
+                        var gcjLng = result.position.lng, gcjLat = result.position.lat;
+                        var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                        console.log('[LOC] AMap ok, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4), 'accuracy:', (result.accuracy||0).toFixed(0)+'m');
+                        setLocateBtnState(false);
+                        renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
+                    } else {
+                        console.warn('[LOC] AMap fail:', status);
+                        _browserLocate();
+                    }
+                });
+            } catch (e) {
+                console.warn('[LOC] AMap err:', e.message);
+                _browserLocate();
+            }
         });
     }
 
-    function _fallbackBrowserGeolocation() {
+    function _browserLocate() {
         if (!navigator.geolocation) {
             setLocateBtnState(false);
             showError('无法定位', '当前浏览器不支持定位。请用手机访问或点 📌 手动选点。');
@@ -673,98 +653,25 @@
         }
         if (window.isSecureContext === false) {
             setLocateBtnState(false);
-            showError('定位需要安全连接', '浏览器仅允许 HTTPS 下定位。请通过 https://whuspati.online 访问。');
+            showError('定位需要 HTTPS', '请通过 https://whuspati.online 访问。');
             return;
-        }
-        // 浏览器原生可能只给 IP 定位（桌面），给个警告
-        if (!_isMobileDevice()) {
-            showTopBanner('⚠️ 桌面浏览器定位可能不准。建议用手机或点 📌 手动选点。', 'warning');
         }
         navigator.geolocation.watchPosition(
             function (pos) {
                 setLocateBtnState(false);
-                // WGS-84 → GCJ-02 再渲染
-                var gcj = wgs84ToGcj02(pos.coords.longitude, pos.coords.latitude);
-                renderUserLocationFromGcj(gcj[0], gcj[1], pos.coords.accuracy || 0, false, 'browser');
+                renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
             },
             function (err) {
                 setLocateBtnState(false);
                 var msg = '定位失败：';
-                if (err && err.code === 1) msg += '你拒绝了定位授权，请在浏览器设置中允许定位后重试。';
-                else if (err && err.code === 2) msg += '暂时获取不到位置信号，请到室外或靠近窗户的地方再试。';
-                else if (err && err.code === 3) msg += '定位超时，请再点一次按钮重试。';
-                else msg += '请稍后再试。';
-                showError('定位失败', msg);
+                if (err && err.code === 1) msg += '你拒绝了定位授权';
+                else if (err && err.code === 2) msg += '获取不到位置信号';
+                else if (err && err.code === 3) msg += '定位超时';
+                else msg += '请稍后再试';
+                showError('定位失败', msg + '。桌面浏览器可能只能 IP 定位，建议用手机或点 📌 手动选点。');
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
         );
-    }
-
-    function _isMobileDevice() {
-        return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    }
-
-    // 直接用 GCJ-02 坐标渲染（AMap 返回就是 GCJ-02；浏览器原生要先转）
-    function renderUserLocationFromGcj(gcjLng, gcjLat, accuracy, isManual, source) {
-        // 存一份 WGS-84（供导航/后端 API 用）
-        var wgs = gcj02ToWgs84(gcjLng, gcjLat);
-        state.userLocation = {
-            lng: wgs[0], lat: wgs[1],
-            gcjLng: gcjLng, gcjLat: gcjLat,
-            accuracy: accuracy || 0,
-            manual: !!isManual,
-            source: source || 'unknown',
-        };
-        if (!state.map) return;
-
-        // 精度警告
-        var acc = accuracy || 0;
-        if (!isManual && source === 'browser' && (acc > 500 || acc === 0)) {
-            showLowAccuracyWarning(acc);
-        } else if (!isManual && source === 'amap' && acc > 200) {
-            showLowAccuracyWarning(acc);
-        } else {
-            hideLowAccuracyWarning();
-        }
-
-        // 精度圈
-        if (state.userAccuracyCircle) {
-            state.userAccuracyCircle.setLatLng([gcjLat, gcjLng]);
-            if (acc > 0) state.userAccuracyCircle.setRadius(acc);
-            state.userAccuracyCircle.setStyle({
-                opacity: isManual ? 0.3 : 0.5,
-                fillOpacity: isManual ? 0.08 : 0.12,
-            });
-        } else if (acc > 0) {
-            state.userAccuracyCircle = L.circle([gcjLat, gcjLng], {
-                radius: acc,
-                color: isManual ? '#E67E22' : '#2B7CFF',
-                weight: 1, opacity: 0.5,
-                fillColor: isManual ? '#E67E22' : '#2B7CFF',
-                fillOpacity: isManual ? 0.08 : 0.12,
-                interactive: false,
-            }).addTo(state.map);
-        }
-
-        // 蓝点标记
-        var dotColor = isManual ? '#E67E22' : '#2B7CFF';
-        var dotHtml = '<div style="position:relative;width:20px;height:20px;">'
-            + '<div style="position:absolute;inset:0;border-radius:50%;background:' + dotColor + ';opacity:0.25;"></div>'
-            + '<div style="position:absolute;left:5px;top:5px;width:10px;height:10px;border-radius:50%;'
-            + 'background:' + dotColor + ';border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>'
-            + '</div>';
-        var srcLabel = source === 'amap' ? '高德定位' : source === 'browser' ? '浏览器定位' : source === 'manual' ? '手动设置' : '';
-        var tooltipTxt = isManual
-            ? '我的位置（手动设置）· 说「从我这到樱顶」'
-            : '我的位置（' + srcLabel + '，精度约 ' + Math.round(acc) + 'm）· 说「从我这到樱顶」';
-
-        if (state.userMarker) { state.map.removeLayer(state.userMarker); state.userMarker = null; }
-
-        state.userMarker = divMarker([gcjLat, gcjLng], dotHtml, [20, 20], [10, 10], '我的位置')
-            .bindTooltip(tooltipTxt, { direction: 'top', offset: [0, -12], opacity: 0.95 })
-            .addTo(state.map);
-
-        state.map.setView([gcjLat, gcjLng], 17);
     }
 
     function renderUserLocation(lng, lat, accuracy, isManual) {
@@ -886,8 +793,11 @@
                 // leaflet event 里 latlng 是 GCJ-02（高德瓦片坐标系）
                 var gcjLat = e.latlng.lat;
                 var gcjLng = e.latlng.lng;
+                // 反向转成 WGS-84 存起来（跟 GPS 流程一致，存 WGS-84，渲染再转 GCJ）
+                var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                var wgsLng = wgs[0], wgsLat = wgs[1];
                 hideLowAccuracyWarning();
-                renderUserLocationFromGcj(gcjLng, gcjLat, 5, true, 'manual');
+                renderUserLocation(wgsLng, wgsLat, 5, true);  // accuracy 随便给，手动设的不准也准
                 showTopBanner('✅ 已设为「我的位置」', 'success');
                 // 退出选点模式
                 _manualLocateActive = false;
