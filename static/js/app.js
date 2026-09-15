@@ -1789,13 +1789,16 @@
         };
     }
 
-    // 单次定位（非 watch）：用于用户已说出指代表达但还没点过定位按钮的场景
+    // 单次定位：优先 AMap.Geolocation（国内 WiFi+基站+GPS 混合精度高），
+    // 失败再 fallback 浏览器原生。用于用户说出指代表达但还没点过定位按钮的场景。
     function ensureUserLocation() {
         if (state.userLocation) return Promise.resolve(state.userLocation);
-        if (!navigator.geolocation || window.isSecureContext === false) {
-            return Promise.reject(new Error('当前环境不支持定位（需要 HTTPS 或 localhost），请先点右上角定位按钮。'));
-        }
-        return new Promise(function (resolve, reject) {
+
+        function _nativeLocate(resolve, reject) {
+            if (!navigator.geolocation || window.isSecureContext === false) {
+                reject(new Error('当前环境不支持定位（需要 HTTPS），请点右上角 ◎ 按钮。'));
+                return;
+            }
             navigator.geolocation.getCurrentPosition(
                 function (pos) {
                     renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy);
@@ -1810,6 +1813,48 @@
                 },
                 { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
             );
+        }
+
+        return new Promise(function (resolve, reject) {
+            if (window.AMap && window.AMap.plugin) {
+                AMap.plugin('AMap.Geolocation', function () {
+                    try {
+                        var geo = new AMap.Geolocation({
+                            enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
+                        });
+                        geo.getCurrentPosition(function (status, result) {
+                            if (status === 'complete' && result && result.position) {
+                                var gcjLng = result.position.lng, gcjLat = result.position.lat;
+                                var wgs = gcj02ToWgs84(gcjLng, gcjLat);
+                                console.log('[ENSURE_LOC] AMap ok, GCJ:', gcjLng.toFixed(4), gcjLat.toFixed(4));
+                                renderUserLocation(wgs[0], wgs[1], result.accuracy || 0);
+                                resolve(state.userLocation);
+                            } else {
+                                console.warn('[ENSURE_LOC] AMap fail:', status, '→ fallback native');
+                                _nativeLocate(resolve, reject);
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('[ENSURE_LOC] AMap err:', e.message, '→ fallback native');
+                        _nativeLocate(resolve, reject);
+                    }
+                });
+            } else {
+                // SDK 可能还在加载，等最多 2 秒
+                var waited = 0, interval = 150, maxWait = 2000;
+                var tick = setInterval(function () {
+                    waited += interval;
+                    if (window.AMap && window.AMap.plugin) {
+                        clearInterval(tick);
+                        // 递归走 AMap 分支
+                        ensureUserLocation().then(resolve).catch(reject);
+                    } else if (waited >= maxWait) {
+                        clearInterval(tick);
+                        console.warn('[ENSURE_LOC] AMap not loaded after 2s → fallback native');
+                        _nativeLocate(resolve, reject);
+                    }
+                }, interval);
+            }
         });
     }
 
