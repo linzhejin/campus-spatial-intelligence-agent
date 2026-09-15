@@ -969,12 +969,36 @@
         return true;
     }
 
+    // ===== 两段式定位：先粗后精 =====
+    // 高精度 GPS 首次锁定需下载卫星星历（冷启动 5-30s，热启动 1-5s），干等体验差。
+    // 先用低精度网络定位（WiFi/基站 + 操作系统缓存，maximumAge 5 分钟）秒出粗点，
+    // 粗点标记 provisional，GPS 精修一到即无条件接管。
+    function _quickFix() {
+        if (!navigator.geolocation) return;
+        try {
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    // 高精度流已经出点（非 provisional）→ 粗点别来添乱
+                    if (state._dispFix && !state._dispFix.provisional) return;
+                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy, false, true);
+                    _setLocStatus('已粗定位（误差约 ' + Math.round(pos.coords.accuracy || 999) + ' 米），GPS 精修中…', 'info');
+                    console.log('[TRACK] 粗定位(网络):', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4), '±', Math.round(pos.coords.accuracy || 0), 'm');
+                },
+                function (err) {
+                    console.log('[TRACK] 粗定位失败 code:', err && err.code, '（GPS 主流程继续）');
+                },
+                { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
+            );
+        } catch (e) { /* 忽略 */ }
+    }
+
     // 对外：启动持续跟踪（原生 GPS 优先，0 等待；AMap 仅作为台式机等无 GPS 环境的兜底）
     // 原生 GPS 手机上通常 1-3 秒出首个定位点，比等 AMap SDK 加载 + 服务器 WiFi 定位快
     function startTracking(silent) {
         _clearWatch();
         state._amapFallbackStarted = false;
         _setLocStatus('定位中…（原生 GPS）', 'info');
+        _quickFix();  // 并行：网络粗定位秒出占位点，GPS 随后精修
         // 原生启动失败（不支持/非HTTPS）或定位出错（超时/无信号）→ 降级 AMap WiFi 定位
         var fallbackFn = function (err) {
             // code 1 = 用户拒绝授权，AMap 高精度定位同样需要授权，降级无意义
@@ -992,15 +1016,17 @@
     // ===== 页面加载自动定位（静默版，持续跟踪） =====
     function autoLocateSilent() {
         if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); _setLocStatus('地图未就绪，跳过自动定位', 'warn'); return; }
-        // 先画上次的位置（10 分钟内有效）：感知秒出，GPS 在后台继续精修
+        // 先画上次的位置（24 小时内有效，标注时长）：感知秒出，GPS/网络定位在后台接管
         try {
             var raw = localStorage.getItem('whu_last_pos');
             if (raw) {
                 var c = JSON.parse(raw);
                 var ageMin = (Date.now() - (c.ts || 0)) / 60000;
-                if (c.lng && c.lat && ageMin >= 0 && ageMin <= 10) {
+                if (c.lng && c.lat && ageMin >= 0 && ageMin <= 24 * 60) {
                     renderUserLocation(c.lng, c.lat, c.accuracy || 0, false, true);
-                    console.log('[AUTO_LOC] 使用缓存位置（' + Math.round(ageMin) + ' 分钟前），等待 GPS 精修');
+                    var ageTxt = ageMin < 1 ? '刚刚' : (ageMin < 60 ? Math.round(ageMin) + ' 分钟前' : Math.round(ageMin / 60) + ' 小时前');
+                    _setLocStatus('先显示 ' + ageTxt + ' 的位置，正在重新定位…', 'info');
+                    console.log('[AUTO_LOC] 使用缓存位置（' + Math.round(ageMin) + ' 分钟前），等待新定位接管');
                 }
             }
         } catch (e) { /* 缓存损坏忽略 */ }
