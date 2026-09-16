@@ -1088,7 +1088,8 @@ public class MainActivity extends Activity {
     private final float[] lastAccel = new float[3];
     private final float[] lastMag = new float[3];
     private boolean hasAccel = false, hasMag = false;
-    private volatile Location lastFix;
+    private volatile Location lastGpsFix;
+    private volatile Location lastNetFix;
     private float gpsBearing = Float.NaN;
     private long gpsBearingTs = 0L;
     private float compassBearing = Float.NaN;
@@ -1150,7 +1151,7 @@ public class MainActivity extends Activity {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                         1000L, 0f, gpsLocationListener, Looper.getMainLooper());
                 Location last = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if (last != null) lastFix = last;
+                if (last != null) lastGpsFix = last;
                 anyProvider = true;
             }
         } catch (SecurityException se) {
@@ -1161,7 +1162,7 @@ public class MainActivity extends Activity {
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                         2000L, 0f, netLocationListener, Looper.getMainLooper());
                 Location last = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                if (last != null && (lastFix == null || last.getTime() > lastFix.getTime())) lastFix = last;
+                if (last != null) lastNetFix = last;
                 anyProvider = true;
             }
         } catch (SecurityException se) {
@@ -1254,7 +1255,10 @@ public class MainActivity extends Activity {
     private class NativeLocationListener implements LocationListener {
         @Override
         public void onLocationChanged(Location loc) {
-            lastFix = loc;
+            // GPS/网络分开保存：WiFi 定位点无速度，不能顶掉 GPS 的运动状态，
+            // 否则走路中航向会周期性回落到罗盘分支（罗盘偏差被带进箭头）
+            if (LocationManager.GPS_PROVIDER.equals(loc.getProvider())) lastGpsFix = loc;
+            else lastNetFix = loc;
             // 磁偏角随位置变化（武汉约 -3.7°）
             try {
                 GeomagneticField gf = new GeomagneticField(
@@ -1309,7 +1313,11 @@ public class MainActivity extends Activity {
     }
 
     private void emitLocation() {
-        Location fix = lastFix;
+        // 优先 GPS 新鲜定位（≤6s）；GPS 失效（室内/天桥下）退回网络定位
+        long nowMs = System.currentTimeMillis();
+        Location fix;
+        if (lastGpsFix != null && nowMs - lastGpsFix.getTime() <= 6000L) fix = lastGpsFix;
+        else fix = lastNetFix;
         if (fix == null || webView == null) return;
         long now = System.currentTimeMillis();
         float heading = Float.NaN;

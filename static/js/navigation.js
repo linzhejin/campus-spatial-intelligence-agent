@@ -60,6 +60,21 @@
         return (m / 1000).toFixed(1) + ' 公里';
     }
 
+    // 最短角差（a-b 归一到 -180..180]，任意实数输入安全）
+    function angDiff(a, b) {
+        return (((a - b) % 360) + 540) % 360 - 180;
+    }
+
+    // 所在路段的方位角（0=北, 90=东；pts 为米制平面坐标 x=东 y=北）
+    function segBearingAt(geo, segIdx) {
+        if (!geo || !geo.pts || segIdx == null) return null;
+        var i = Math.max(0, Math.min(geo.pts.length - 2, segIdx));
+        var dx = geo.pts[i + 1].x - geo.pts[i].x;
+        var dy = geo.pts[i + 1].y - geo.pts[i].y;
+        if (Math.sqrt(dx * dx + dy * dy) < 2) return null;  // 过短路段方向不可信
+        return (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+    }
+
     // ---------- 路线几何 ----------
     function buildGeometry(coords) {
         if (!coords || coords.length < 2) return null;
@@ -302,18 +317,50 @@
         var gcjLng = loc.gcjLng, gcjLat = loc.gcjLat;
         if (gcjLng == null || gcjLat == null) return;
 
-        // 航向优先级：
-        //   1) 设备航向（原生桥融合罗盘+GPS bearing，或浏览器 coords.heading）——
-        //      静止时罗盘也能动，运动时 GPS bearing 响应快
-        //   2) 相邻点位移 >=3m 用 atan2 推算（无传感器的桌面/降级 AMap 定位兜底）
+        var proj = projectOn(nav.geo, gcjLng, gcjLat);
+
+        // 速度 EMA（沿线进度增量 / 时间）
+        var nowMs = Date.now();
+        if (nav.lastProjTs && proj.progress > nav.lastProgress - 5) {
+            var dt = (nowMs - nav.lastProjTs) / 1000;
+            if (dt > 0.5 && dt < 6) {
+                var v = (proj.progress - nav.lastProgress) / dt;
+                if (v >= 0 && v < 30) nav.speed = nav.speed * 0.6 + v * 0.4;
+            }
+        }
+        nav.lastProjTs = nowMs;
+        nav.lastProgress = proj.progress;
+        nav.lastProjection = proj;
+
+        // 航向决策：
+        //   A) 沿线行进中（贴线≤30m 且在移动）→ 箭头吸附到所在路段方位角，
+        //      顺路即贴路，彻底消除罗盘磁偏/噪声带来的方向偏差；
+        //      与设备航向夹角>100°（逆行/掉头中）不吸附，显示真实朝向
+        //   B) 其余情况用设备航向（原生融合罗盘+GPS bearing / 浏览器 coords.heading）
+        //   C) 无传感器时相邻点位移≥3m 用 atan2 推算兜底
         var deviceHeading = (loc.heading != null && isFinite(loc.heading)) ? loc.heading : null;
-        if (deviceHeading !== null) {
+        var targetHeading = null;
+        var snapAlpha = 0.5;
+        var moving = (loc.speed != null && isFinite(loc.speed)) ? loc.speed >= 0.5
+                   : (nav.lastProjTs > 0 && nav.speed >= 0.5);
+        var onRoute = proj.cross <= 30 && proj.progress > 2 && proj.progress < nav.geo.total - 2;
+        if (onRoute && moving) {
+            var segBear = segBearingAt(nav.geo, proj.seg);
+            if (segBear != null &&
+                (deviceHeading == null || Math.abs(angDiff(segBear, deviceHeading)) <= 100)) {
+                targetHeading = segBear;
+                snapAlpha = 0.55;
+            }
+        }
+        if (targetHeading == null && deviceHeading != null) targetHeading = deviceHeading;
+
+        if (targetHeading != null) {
             if (nav.heading == null) {
-                nav.heading = deviceHeading;  // 首次直接采用，避免从北慢慢转过去
+                nav.heading = targetHeading;  // 首次直接采用，避免从北慢慢转过去
             } else {
-                // 角度最短路径低通：抑制罗盘抖动，同时 0.5s 一次的更新下转向跟手
-                var dh = ((deviceHeading - nav.heading + 540) % 360) - 180;
-                nav.heading = (nav.heading + dh * 0.5 + 360) % 360;
+                // 角度最短路径低通：抑制抖动，同时 0.5s 一次的更新下转向跟手
+                var dh = angDiff(targetHeading, nav.heading);
+                nav.heading = (nav.heading + dh * snapAlpha + 360) % 360;
             }
         } else if (nav.lastFixGcj) {
             var moved = haversine(nav.lastFixGcj.lat, nav.lastFixGcj.lng, gcjLat, gcjLng);
@@ -327,23 +374,16 @@
         }
         nav.lastFixGcj = { lng: gcjLng, lat: gcjLat, ts: Date.now() };
 
-        // 速度 EMA（沿线进度增量 / 时间）
-        var proj = projectOn(nav.geo, gcjLng, gcjLat);
-        var nowMs = Date.now();
-        if (nav.lastProjTs && proj.progress > nav.lastProgress - 5) {
-            var dt = (nowMs - nav.lastProjTs) / 1000;
-            if (dt > 0.5 && dt < 6) {
-                var v = (proj.progress - nav.lastProgress) / dt;
-                if (v >= 0 && v < 30) nav.speed = nav.speed * 0.6 + v * 0.4;
-            }
-        }
-        nav.lastProjTs = nowMs;
-        nav.lastProgress = proj.progress;
-        nav.lastProjection = proj;
-
         // 地图箭头 + 北朝上跟随
         ensureArrowMarker(nav, gcjLat, gcjLng);
-        setArrowHeading(nav, nav.heading || 0);
+        // 显示角展平（不归一）：避免 359↔0 跨越正北时 CSS 过渡绕远路整圈打转
+        var disp = 0;
+        if (nav.heading != null) {
+            if (nav.headingDisp == null) nav.headingDisp = nav.heading;
+            else nav.headingDisp += angDiff(nav.heading, nav.headingDisp);
+            disp = nav.headingDisp;
+        }
+        setArrowHeading(nav, disp);
         if (nav.follow) {
             if (nav.map.getZoom() < 16) {
                 nav.map.setView([gcjLat, gcjLng], 17, { animate: true });
