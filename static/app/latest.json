@@ -2,7 +2,7 @@
   "versionCode": 4,
   "versionName": "1.3.0",
   "apkUrl": "https://whuspati.online/app/whu-walker.apk",
-  "sha256": "4c961e30c7dbbf92b01e45b24480411df65c7971632da27833a8a46131d53c0e",
+  "sha256": "6db3c2caff42968a9429372f00bab0ac2ec95be537158ccfb9db70e257e362bd",
   "publishedAt": "2026-09-16",
   "changelog": [
     "修复首次安装允许定位后不生效的问题：改用原生定位，授权通过立即启动",

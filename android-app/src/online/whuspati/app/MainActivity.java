@@ -447,7 +447,9 @@ public class MainActivity extends Activity {
             in.close();
             conn.disconnect();
 
-            if (tmp.length() < 100 * 1024) {
+            // 30KB 下限只用于拦截网关错误页（通常几 KB）；本应用是零依赖 WebView 壳，
+            // 正常 APK 约 70KB（v1.2 曾误设 100KB 导致真包被判"过小"）
+            if (tmp.length() < 30 * 1024) {
                 tmp.delete();
                 throw new IllegalStateException("安装包异常（过小）");
             }

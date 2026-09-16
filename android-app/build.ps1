@@ -1,4 +1,4 @@
-# 珞珈智行 APK 手工构建链：aapt2 → javac → d8 → aapt add → zipalign → apksigner
+﻿# 珞珈智行 APK 手工构建链：aapt2 → javac → d8 → aapt add → zipalign → apksigner
 # 无 Gradle / 无第三方依赖，签名密钥保存在本目录（勿提交）
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -14,7 +14,16 @@ $verCode = 4
 $verName = "1.3.0"
 $build = Join-Path $proj "build"
 Remove-Item -Recurse -Force $build -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path "$build\classes", "$build\dex" | Out-Null
+New-Item -ItemType Directory -Force -Path "$build\classes", "$build\dex", "$build\assets" | Out-Null
+
+# 兼容性填充：v1.2 更新器硬编码了"APK < 100KB 即视为异常"的校验，
+# 而本应用是零依赖 WebView 壳，正常产物仅约 70KB 会被误杀。
+# 在签名前放入 64KB 不可压缩随机数据（zeros 会被 deflate 压没，必须用随机字节），
+# 使最终 APK > 100KB。文件在运行时从不读取，SHA-256 校验仍保证包完整性。
+$padPath = Join-Path $build "assets\pad.dat"
+$padBytes = New-Object byte[] 65536
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($padBytes)
+[System.IO.File]::WriteAllBytes($padPath, $padBytes)
 
 Write-Host "== 1. aapt2 compile =="
 & (Join-Path $bt "aapt2.exe") compile --dir (Join-Path $proj "res") -o "$build\res.zip"
@@ -23,6 +32,7 @@ if ($LASTEXITCODE -ne 0) { throw "aapt2 compile failed" }
 Write-Host "== 2. aapt2 link =="
 & (Join-Path $bt "aapt2.exe") link -o "$build\unsigned.apk" `
     -I $platJar `
+    -A "$build\assets" `
     --manifest (Join-Path $proj "AndroidManifest.xml") `
     -R "$build\res.zip" --auto-add-overlay `
     --min-sdk-version 26 --target-sdk-version 34 `
