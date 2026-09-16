@@ -102,6 +102,9 @@ public class MainActivity extends Activity {
     private final List<ComponentName> asrServices = new ArrayList<>();  // 本机可用识别服务（厂商优先）
     private int asrServiceIdx = 0;
     private boolean asrEnumerated = false;
+    private boolean asrUsingDefault = false;  // 枚举为空时启用系统默认识别器兜底
+    private RecognitionListener asrListener;
+    private ComponentName asrCurrentCn;
     private boolean holdActive = false;      // 一轮按住进行中
     private boolean holdReleased = false;    // 已松手，等待 final/end
     private boolean holdCancelled = false;   // 上滑取消，结果丢弃
@@ -178,7 +181,7 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         // UA 追加标识：网页据此抑制"安装到主屏幕"横幅（已在 App 内无需再装）
-        s.setUserAgentString(s.getUserAgentString() + " WHUWalkerApp/1.4");
+        s.setUserAgentString(s.getUserAgentString() + " WHUWalkerApp/1.4.1");
 
         webView.addJavascriptInterface(new TtsBridge(), "WhuWalkerTts");
         webView.addJavascriptInterface(new VoiceBridge(), "WhuWalkerVoice");
@@ -813,16 +816,18 @@ public class MainActivity extends Activity {
 
     private void beginHolding() {
         ensureAsrServices();
-        if (asrServices.isEmpty()) {
-            emitVoiceEvent("error", null, "这台设备没有可用的语音识别服务，请直接打字，或在系统设置里启用语音引擎");
-            return;
-        }
+        asrUsingDefault = false;
         holdActive = true;
         holdReleased = false;
         holdCancelled = false;
         asrServiceIdx = 0;
         emitVoiceEvent("start", null, null);
-        bindAndStart(asrServiceIdx);
+        if (asrServices.isEmpty()) {
+            // 厂商服务枚举不到（包可见性受限/特殊 ROM）→ 系统默认识别器兜底
+            bindDefault();
+        } else {
+            bindAndStart(asrServiceIdx);
+        }
         // 最长 30 秒自动松手
         maxHoldTask = new Runnable() {
             @Override public void run() { if (holdActive && !holdReleased) finishHolding(); }
@@ -839,101 +844,131 @@ public class MainActivity extends Activity {
             return;
         }
         destroyRecognizer();
-        asrReady = false;
-        asrStarting = true;
-        final ComponentName cn = asrServices.get(idx);
+        asrCurrentCn = asrServices.get(idx);
         try {
-            recognizer = SpeechRecognizer.createSpeechRecognizer(this, cn);
+            recognizer = SpeechRecognizer.createSpeechRecognizer(this, asrCurrentCn);
         } catch (Exception e) {
-            Log.w(TAG, "createSpeechRecognizer failed for " + cn + ": " + e.getMessage());
+            Log.w(TAG, "createSpeechRecognizer failed for " + asrCurrentCn + ": " + e.getMessage());
             tryNextService();
             return;
         }
-        recognizer.setRecognitionListener(new RecognitionListener() {
-            @Override public void onReadyForSpeech(Bundle params) {
-                asrStarting = false;
-                asrReady = true;
-                cancelStartTimeout();
-                // 用户在服务就绪前就已松手（快速点按/服务切换慢）→ 立即结束并取结果
-                if (holdReleased && !holdCancelled) {
-                    try { recognizer.stopListening(); } catch (Exception e) { /* ignore */ }
-                }
-            }
-            @Override public void onBeginningOfSpeech() { }
-            @Override
-            public void onRmsChanged(float rmsdB) {
-                // dB 常见范围 -2~12，映射成 0~1 给网页波形
-                if (holdActive && !holdCancelled) emitVoiceLevel(rmsdB);
-            }
-            @Override public void onBufferReceived(byte[] buffer) { }
-            @Override public void onEndOfSpeech() { }
+        recognizer.setRecognitionListener(getAsrListener());
+        startListeningIntent(asrCurrentCn);
+    }
 
-            @Override
-            public void onError(int error) {
-                Log.w(TAG, "ASR error " + error + " from " + cn.flattenToShortString()
-                        + " released=" + holdReleased + " ready=" + asrReady);
-                // startListening 后连 onReady 都没有 → 该服务不可用，立刻换下一个
-                boolean deadBeforeReady = asrStarting || !asrReady;
-                boolean serviceDead = error == SpeechRecognizer.ERROR_CLIENT
-                        || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
-                        || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
-                        || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
-                        || error == SpeechRecognizer.ERROR_SERVER
-                        || error == SpeechRecognizer.ERROR_NETWORK
-                        || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT;
-                if (!holdCancelled && deadBeforeReady && serviceDead) {
-                    tryNextService();
-                    return;
-                }
-                cancelStartTimeout();
-                if (holdCancelled) {
-                    cleanupHold();
-                    return;
-                }
-                // NO_MATCH/SPEECH_TIMEOUT：松手后没听到内容——安静结束，不弹错误打扰
-                if (error == SpeechRecognizer.ERROR_NO_MATCH
-                        || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                    if (holdReleased) {
-                        emitVoiceEvent("end", null, null);
-                        cleanupHold();
+    /** 系统默认识别服务兜底（不受包可见性过滤影响） */
+    private void bindDefault() {
+        if (!holdActive || holdCancelled) { cleanupHold(); return; }
+        asrUsingDefault = true;
+        destroyRecognizer();
+        asrCurrentCn = null;
+        try {
+            recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+        } catch (Exception e) {
+            Log.w(TAG, "createSpeechRecognizer(default) failed: " + e.getMessage());
+            if (!holdCancelled) {
+                emitVoiceEvent("error", null, "这台设备没有可用的语音识别服务，请直接打字，或在系统设置里启用语音引擎");
+            }
+            cleanupHold();
+            return;
+        }
+        recognizer.setRecognitionListener(getAsrListener());
+        startListeningIntent(null);
+    }
+
+    private RecognitionListener getAsrListener() {
+        if (asrListener == null) {
+            asrListener = new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {
+                    asrStarting = false;
+                    asrReady = true;
+                    cancelStartTimeout();
+                    // 用户在服务就绪前就已松手（快速点按/服务切换慢）→ 立即结束并取结果
+                    if (holdReleased && !holdCancelled) {
+                        try { recognizer.stopListening(); } catch (Exception e) { /* ignore */ }
                     }
-                    return;
                 }
-                if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
-                    emitVoiceEvent("error", null, "麦克风权限被拒绝，可在系统设置中开启");
+                @Override public void onBeginningOfSpeech() { }
+                @Override
+                public void onRmsChanged(float rmsdB) {
+                    // dB 常见范围 -2~12，映射成 0~1 给网页波形
+                    if (holdActive && !holdCancelled) emitVoiceLevel(rmsdB);
+                }
+                @Override public void onBufferReceived(byte[] buffer) { }
+                @Override public void onEndOfSpeech() { }
+
+                @Override
+                public void onError(int error) {
+                    Log.w(TAG, "ASR error " + error + " from " + asrCurrentCn
+                            + " released=" + holdReleased + " ready=" + asrReady);
+                    // startListening 后连 onReady 都没有 → 该服务不可用，立刻换下一个
+                    boolean deadBeforeReady = asrStarting || !asrReady;
+                    boolean serviceDead = error == SpeechRecognizer.ERROR_CLIENT
+                            || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
+                            || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
+                            || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                            || error == SpeechRecognizer.ERROR_SERVER
+                            || error == SpeechRecognizer.ERROR_NETWORK
+                            || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT;
+                    if (!holdCancelled && deadBeforeReady && serviceDead) {
+                        tryNextService();
+                        return;
+                    }
+                    cancelStartTimeout();
+                    if (holdCancelled) {
+                        cleanupHold();
+                        return;
+                    }
+                    // NO_MATCH/SPEECH_TIMEOUT：松手后没听到内容——安静结束，不弹错误打扰
+                    if (error == SpeechRecognizer.ERROR_NO_MATCH
+                            || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                        if (holdReleased) {
+                            emitVoiceEvent("end", null, null);
+                            cleanupHold();
+                        }
+                        return;
+                    }
+                    if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                        emitVoiceEvent("error", null, "麦克风权限被拒绝，可在系统设置中开启");
+                        cleanupHold();
+                        return;
+                    }
+                    emitVoiceEvent("error", null, asrErrorMessage(error));
                     cleanupHold();
-                    return;
                 }
-                emitVoiceEvent("error", null, asrErrorMessage(error));
-                cleanupHold();
-            }
 
-            @Override
-            public void onResults(Bundle results) {
-                cancelStartTimeout();
-                if (holdCancelled) { cleanupHold(); return; }
-                ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                String text = (list != null && !list.isEmpty() && list.get(0) != null) ? list.get(0).trim() : "";
-                if (!TextUtils.isEmpty(text)) {
-                    emitVoiceEvent("final", text, null);
-                } else {
-                    emitVoiceEvent("end", null, null);
+                @Override
+                public void onResults(Bundle results) {
+                    cancelStartTimeout();
+                    if (holdCancelled) { cleanupHold(); return; }
+                    ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    String text = (list != null && !list.isEmpty() && list.get(0) != null) ? list.get(0).trim() : "";
+                    if (!TextUtils.isEmpty(text)) {
+                        emitVoiceEvent("final", text, null);
+                    } else {
+                        emitVoiceEvent("end", null, null);
+                    }
+                    cleanupHold();
                 }
-                cleanupHold();
-            }
 
-            @Override
-            public void onPartialResults(Bundle partialResults) {
-                if (holdCancelled) return;
-                ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                if (list != null && !list.isEmpty() && list.get(0) != null && !list.get(0).isEmpty()) {
-                    emitVoiceEvent("partial", list.get(0), null);
+                @Override
+                public void onPartialResults(Bundle partialResults) {
+                    if (holdCancelled) return;
+                    ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if (list != null && !list.isEmpty() && list.get(0) != null && !list.get(0).isEmpty()) {
+                        emitVoiceEvent("partial", list.get(0), null);
+                    }
                 }
-            }
 
-            @Override public void onEvent(int eventType, Bundle params) { }
-        });
+                @Override public void onEvent(int eventType, Bundle params) { }
+            };
+        }
+        return asrListener;
+    }
 
+    private void startListeningIntent(ComponentName cn) {
+        asrReady = false;
+        asrStarting = true;
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
@@ -961,9 +996,19 @@ public class MainActivity extends Activity {
     private void tryNextService() {
         cancelStartTimeout();
         destroyRecognizer();
+        if (asrUsingDefault) {
+            // 默认识别器也失败：放弃本轮
+            if (!holdCancelled) {
+                emitVoiceEvent("error", null, "没有可用的语音识别服务，请直接打字，或在系统设置里启用语音引擎");
+            }
+            cleanupHold();
+            return;
+        }
         if (asrServiceIdx + 1 < asrServices.size()) {
             asrServiceIdx++;
             bindAndStart(asrServiceIdx);
+        } else if (asrServices.isEmpty()) {
+            bindDefault();  // 枚举为空（如包可见性过滤）→ 系统默认识别器兜底
         } else {
             if (!holdCancelled) {
                 emitVoiceEvent("error", null, "没有可用的语音识别服务，请直接打字，或在系统设置里启用语音引擎");
@@ -1016,6 +1061,7 @@ public class MainActivity extends Activity {
         holdCancelled = false;
         asrStarting = false;
         asrReady = false;
+        asrUsingDefault = false;
         cancelMaxHold();
         cancelStartTimeout();
         cancelFinishGuard();
