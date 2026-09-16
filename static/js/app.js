@@ -2011,27 +2011,59 @@
         }
     }
 
-    function handleVoiceBtn() {
+    // 按住说话：pointerdown → press；pointerup → release；上滑超过阈值 → cancel（单向，越过即取消）
+    var voiceHold = {
+        active: false, pointerId: null, startY: 0,
+        cancelled: false, committed: false, baseText: '',
+    };
+    var VOICE_CANCEL_DY = 70;
+
+    function resetVoiceBtn() {
+        var btn = document.getElementById('voice-btn');
+        if (btn) btn.classList.remove('listening', 'will-cancel');
+        if (btn) btn.blur();
+    }
+
+    function startVoiceHold(clientY, pointerId) {
         var VI = window.WhuWalkerVoiceInput;
         var input = document.getElementById('nl-input');
-        var submitBtn = document.getElementById('submit-btn');
-        if (!VI || !input) return;
-        if (VI.isListening()) { VI.stop(); setVoiceBtnState(false); return; }
+        var btn = document.getElementById('voice-btn');
+        if (!VI || !input || voiceHold.active) return;
 
         var cap = VI.capability();
         if (!cap.ok) { showVoiceUnsupported(cap.reason); return; }
 
-        var baseText = input.value.trim();
-        VI.start({
-            onStateChange: function (s) { setVoiceBtnState(s === 'listening'); },
+        voiceHold.active = true;
+        voiceHold.pointerId = pointerId;
+        voiceHold.startY = clientY;
+        voiceHold.cancelled = false;
+        voiceHold.committed = false;
+        voiceHold.baseText = input.value.trim();
+
+        if (btn) btn.classList.add('listening');
+        VI.press({
+            onStateChange: function (s) {
+                setVoiceBtnState(s === 'listening');
+                if (s === 'idle') {
+                    voiceHold.active = false;
+                    resetVoiceBtn();
+                    // 取消、没说话、无匹配：还原按下前的输入框内容
+                    if (!voiceHold.committed) {
+                        input.value = voiceHold.baseText;
+                        input.dispatchEvent(new Event('input'));
+                    }
+                }
+            },
             onInterim: function (text) {
-                input.value = baseText ? (baseText + ' ' + text) : text;
+                input.value = voiceHold.baseText ? (voiceHold.baseText + ' ' + text) : text;
                 input.dispatchEvent(new Event('input'));
             },
             onFinal: function (text) {
-                input.value = baseText ? (baseText + ' ' + text) : text;
+                voiceHold.committed = true;
+                input.value = voiceHold.baseText ? (voiceHold.baseText + ' ' + text) : text;
                 input.dispatchEvent(new Event('input'));
                 setVoiceBtnState(false);
+                var submitBtn = document.getElementById('submit-btn');
                 if (submitBtn && text.trim()) submitBtn.click();
             },
             onUnsupported: function (reason) {
@@ -2043,6 +2075,27 @@
                 showTopBanner('🎤 ' + msg, 'info');
             },
         });
+    }
+
+    function moveVoiceHold(clientY, pointerId) {
+        if (!voiceHold.active || pointerId !== voiceHold.pointerId || voiceHold.cancelled) return;
+        if (voiceHold.startY - clientY > VOICE_CANCEL_DY) {
+            voiceHold.cancelled = true;
+            var btn = document.getElementById('voice-btn');
+            var VI = window.WhuWalkerVoiceInput;
+            if (btn) { btn.classList.add('will-cancel'); btn.classList.remove('listening'); }
+            if (VI) VI.setCancelHint(true);
+        }
+    }
+
+    function endVoiceHold(pointerId, abort) {
+        if (!voiceHold.active || (pointerId != null && pointerId !== voiceHold.pointerId)) return;
+        var VI = window.WhuWalkerVoiceInput;
+        voiceHold.active = false;
+        resetVoiceBtn();
+        if (!VI) return;
+        if (abort || voiceHold.cancelled) VI.cancel();
+        else VI.release();
     }
 
     function clearRouteResult() {
@@ -3093,9 +3146,40 @@
             });
         }
 
-        // ===== 语音输入 =====
+        // ===== 语音输入（按住说话；松开发送，上滑取消） =====
         var voiceBtn = document.getElementById('voice-btn');
-        if (voiceBtn) voiceBtn.addEventListener('click', handleVoiceBtn);
+        if (voiceBtn) {
+            voiceBtn.title = '按住说话，松开发送，上滑取消';
+            voiceBtn.setAttribute('aria-label', '按住说话，松开发送，上滑取消');
+            voiceBtn.addEventListener('pointerdown', function (e) {
+                e.preventDefault();  // 抑制聚焦/合成 click/滚动
+                try { voiceBtn.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+                startVoiceHold(e.clientY, e.pointerId);
+            });
+            voiceBtn.addEventListener('pointermove', function (e) {
+                moveVoiceHold(e.clientY, e.pointerId);
+            });
+            var releaseVoice = function (e) { endVoiceHold(e.pointerId, false); };
+            voiceBtn.addEventListener('pointerup', releaseVoice);
+            voiceBtn.addEventListener('pointercancel', function (e) { endVoiceHold(e.pointerId, true); });
+            // 兜底：捕获失效/手指滑出按钮
+            voiceBtn.addEventListener('lostpointercapture', function () {
+                if (voiceHold.active) endVoiceHold(voiceHold.pointerId, voiceHold.cancelled);
+            });
+            // 键盘可达性：空格/回车按住说话
+            voiceBtn.addEventListener('keydown', function (e) {
+                if ((e.key === ' ' || e.key === 'Enter') && !voiceHold.active) {
+                    e.preventDefault();
+                    startVoiceHold(0, -1);
+                }
+            });
+            voiceBtn.addEventListener('keyup', function (e) {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); endVoiceHold(-1, false); }
+            });
+            // 彻底吞掉 click，避免 pointerup 后二次触发
+            voiceBtn.addEventListener('click', function (e) { e.preventDefault(); });
+            voiceBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        }
 
         // 帮助按钮 → 快捷键帮助弹窗
         var helpBtn = document.getElementById('help-btn');
