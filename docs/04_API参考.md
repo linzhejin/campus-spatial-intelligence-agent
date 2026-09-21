@@ -1,160 +1,209 @@
 # 04 · API 参考
 
-所有端点前缀 `/api`。响应统一格式 `{"data": ...}` 或 `{"error": "code", "message": "..."}`。
+- 业务端点前缀 `/api`（Blueprint `url_prefix="/api"`）；健康检查 `GET /health` 无前缀（另有 `/api/health` 别名）。
+- 统一响应：成功 `{"data": {...}}`，失败 `{"error": "code", "message": "..."}`。
+- 主入口是 **POST /api/chat**（全 Agent）；`/parse` 与 `/route` 是拆分式旧管道，Agent 故障时服务端内部也用它们兜底。
 
 ## 健康检查
 
-### GET /health · GET /api/health
-返回服务状态。
+### GET /health
+
+负载均衡/监控探活，无需鉴权。
 
 ```json
-{"status":"ok","project":"珞珈智行","timestamp":1725789600}
+{"project": "珞珈智行", "status": "ok", "timestamp": 1789540308}
 ```
+
+## 对话与规划（主链路）
+
+### POST /api/chat ⭐
+
+一站式入口：NL → Agent 循环（工具调用）→ 路径 / 候选 / 澄清 / 闲聊。
+
+**请求体**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `query` | string | 必填，≤500 字 |
+| `context` | object | 多轮上下文（start/end/history/previous_intent） |
+| `travel_mode` | string | walk / bike / drive，前端方式切换传入 |
+| `coord_start` / `coord_end` | object | GPS 端点 `{lng, lat}`，**WGS-84**；"我这/到我这"用 |
+| `coord_waypoints` | array | 地图途经点 `[{lng, lat}, ...]`，WGS-84 |
+| `whu_uid` / `uid` | string | 前端生成的持久用户 ID（画像与埋点用） |
+
+**响应 data：按 response_kind 分四种形态**
+
+1) `task_type: "path_planning"`（Agent 调了 plan_route / plan_via_route / plan_tour）
+
+```json
+{
+  "task_type": "path_planning",
+  "response_kind": "route",
+  "route_kind": "direct",
+  "explanation": "已为你规划好从珞珈门到樱顶的步行路线，约 830 米、12 分钟。",
+  "start": {"name": "珞珈门", "type": "poi"},
+  "end": {"name": "樱顶", "type": "poi"},
+  "recommended": [{"lng": 114.358, "lat": 30.533}],
+  "shortest": [{"lng": 114.358, "lat": 30.533}],
+  "steps": [{"seq": 0, "type": "depart", "text": "...", "cumulative_m": 0, "point": {"lng": 0, "lat": 0}}],
+  "pois": [{"name": "万林博物馆"}],
+  "recommended_length_m": 830.0,
+  "shortest_length_m": 760.0,
+  "duration_min": 12.0,
+  "applied_weights": {"distance": 0.8, "slope": 0.05, "scenery": 0.15},
+  "mode": "walk",
+  "filter_status": "no_filter",
+  "suggestions": [{"label": "风景更好的", "query": "..."}],
+  "via": {"...": "plan_via_route 时出现"},
+  "tour": {"...": "plan_tour 时出现"},
+  "legs": ["两段/多段路径包，via/tour 时出现"]
+}
+```
+
+坐标字段（recommended/shortest/steps.point/POI）一律 **GCJ-02**，可直接上图。
+
+2) `task_type: "candidates"`：`{"message", "candidates": [...]}`，前端渲染候选地点卡片。
+
+3) `task_type: "unknown"`（clarify 反问）：`{"message", "clarify": {"question", "options": [...]}}`。
+
+4) `task_type: "chat"`：`{"reply": "..."}`。
+
+LLM API 故障时自动落旧管道，响应结构与上述保持兼容（旧管道另有 help / unknown 等分支文案）。
+
+### POST /api/parse（旧管道·拆分接口）
+
+NL 或快捷按钮 → TaskIntent。
+
+```json
+// 请求：NL 模式
+{"query": "从珞珈门到樱顶，避开陡坡", "input_method": "nl"}
+// 请求：快捷模式
+{"start": {"name": "珞珈门"}, "end": {"name": "樱顶"}, "input_method": "shortcut", "mode": "distance_first"}
+```
+
+```json
+{
+  "task_type": "path_planning",
+  "start": {"name": "珞珈门", "type": "poi"},
+  "end": {"name": "樱顶", "type": "poi"},
+  "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
+  "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2},
+  "mode": "walk",
+  "weight_source": "explicit_nl",
+  "ambiguity": null
+}
+```
+
+`weight_source ∈ explicit_nl | shortcut | default`；task_type 另含 poi_query / help / chat / unknown。
+
+### POST /api/route（旧管道·拆分接口）
+
+结构化意图 → 路径。请求体含 start/end/constraints/weights/mode，可附 `coord_start/coord_end`。响应为路径包（字段同 /chat 的 path_planning 形态）+ `explanation`。
+
+### POST /api/candidates
+
+"只有起点 + 想去的类别"场景的候选 POI（路网距离排序，不经过 LLM）。
+
+```json
+// 请求
+{"start": {"name": "珞珈门"}, "poi_type": "scenery", "keyword": "樱花"}
+// 响应 data
+{"candidates": [{"name": "樱花大道", "type": "scenery", "distance_m": 320}], "count": 5}
+```
+
+## POI
+
+### GET /api/pois
+
+Query 参数：`type`（类型）、`season`（spring/summer/autumn/winter）、`keyword`（模糊）。返回 `{"pois": [...]}`。
+
+### GET /api/pois/&lt;name&gt;
+
+名称/别名模糊查询，返回 `{"poi": {...}}`，未命中 404 `poi_not_found`。
 
 ## 天气
 
 ### GET /api/weather
-获取武汉天气（含气温、天气、出行建议）。
 
 ```json
 {
-  "data": {
-    "weather": "晴",
-    "temperature": 23.5,
-    "advice": "天气晴朗，适合步行赏景"
-  }
+  "weather": "晴", "temperature": 23.5, "humidity": 61,
+  "winddirection": "北", "windpower": "≤3", "reporttime": "...",
+  "slippery": false, "hot": false, "low_visibility": false,
+  "label": "适宜步行", "advice": "天气晴朗，适合步行赏景"
 }
 ```
 
-## NL 解析与路径规划
+上游不可用时 503 `weather_unavailable`（不影响路径规划主流程）。
 
-### POST /api/parse
-自然语言 → 结构化任务意图。
-
-**请求**
-```json
-{"query": "从珞珈门到樱顶，避开陡坡"}
-```
-
-**响应**
-```json
-{
-  "data": {
-    "task_type": "path_planning",
-    "start": {"name": "珞珈门", "type": "poi"},
-    "end": {"name": "樱顶", "type": "poi"},
-    "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
-    "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2},
-    "mode": "walk"
-  }
-}
-```
-
-### POST /api/route
-任务意图 → 路径规划结果。
-
-**请求**
-```json
-{
-  "start": {"name": "珞珈门"},
-  "end": {"name": "樱顶"},
-  "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
-  "weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2},
-  "mode": "walk"
-}
-```
-
-**响应**
-```json
-{
-  "data": {
-    "route": [{"lng": 114.358, "lat": 30.533}, ...],
-    "distance": 1234.5,
-    "pois": [{"name": "万林博物馆", "lng": ..., "lat": ...}, ...],
-    "costs": {"distance": 0.8, "slope": 0.3, "scenery": 0.4},
-    "explanation": "从珞珈门出发，沿主干道..."
-  }
-}
-```
-
-### POST /api/chat ⭐
-一站式：NL → 解析 + 路径规划 + 解释生成。
-
-**请求**
-```json
-{"query": "从珞珈门到樱顶", "travel_mode": "walk", "context": {...}}
-```
-
-**响应**：合并 parse + route 的完整结果，含 `explanation` 字段。
-
-## POI 查询
-
-### GET /api/pois
-POI 列表，支持 `type` / `season` 筛选。
-
-```
-GET /api/pois?type=scenery&season=spring
-```
-
-### GET /api/pois/<name>
-单 POI 查询。模糊匹配，多个候选返回 ambiguity。
-
-```
-GET /api/pois/七舍
-```
-
-### POST /api/candidates
-场景 3：按类型查找起点附近的候选 POI。
-
-```json
-{"start": {"name": "珞珈门"}, "poi_type": "scenery", "keyword": "樱花"}
-```
-
-## 路网
-
-### POST /api/network/init
-触发路网加载（生产模式已自动预热）。
-
-## 路况事件
+## 路况事件（5 个端点）
 
 ### GET /api/road-conditions
-获取所有路况事件列表。
+
+默认只返回**当前生效**事件（普通用户视角）：`{"conditions": [...], "count": n}`。
+管理员（session 或 Token）加 `?all=1` 返回含 scheduled/expired 的全部事件并附 `status`。
 
 ### POST /api/road-conditions ⚠️ 管理员
-新增路况事件。需先 POST /api/admin/login 登录。
+
+事件由**服务端吸附到最近路段**（30m 容差），不接受手填 geometry/半径：
 
 ```json
 {
   "type": "construction",
-  "geometry": "LINESTRING (114.36 30.53, ...)",
-  "description": "樱花大道部分施工"
+  "name": "樱花大道施工",
+  "lng": 114.3651,
+  "lat": 30.5362,
+  "description": "施工期间禁止通行",
+  "start_time": "2026-09-10T08:00",
+  "end_time": "2026-09-12T18:00"
 }
 ```
 
-type 取值：`closure`（封闭）/ `construction`（施工）/ `accident`（事故）。
+- `type`：`closure` 封闭 / `construction` 施工 / `flooding` 积水 / `accident` 事故 / `event` 活动
+- 时间均可省略：省略 start=立即生效，省略 end=长期有效；支持 ISO 字符串或时间戳
+- 201 返回 `{"condition": {...}, "snap": {...}}`
 
-### DELETE /api/road-conditions/<id> ⚠️ 管理员
-删除路况事件。
+### GET /api/road-conditions/snap ⚠️ 管理员
 
-## 管理员
+`?lng=&lat=` 选点预览：把点击点吸附到最近路段，返回边标识、吸附点（GCJ-02）、道路名、几何，供前端画预览线。
 
-### POST /api/admin/login
+### PATCH /api/road-conditions/&lt;id&gt; ⚠️ 管理员
+
+支持 `{"action": "end"}`（立即结束，保留记录）、改名/描述、调整 start_time/end_time。
+
+### DELETE /api/road-conditions/&lt;id&gt; ⚠️ 管理员
+
+彻底删除事件（前端退出管理模式时同步清除所有本地标记）。
+
+## 管理员鉴权（双通道）
+
+| 通道 | 方式 | 配置 |
+|---|---|---|
+| 网页 session | `POST /api/admin/login {"password": "..."}` 写 session cookie | 环境变量 `ROAD_CONDITION_ADMIN_PASSWORD`（未配置则登录入口关闭） |
+| 系统对接 Token | 请求头 `X-Admin-Token: <token>` 或 `Authorization: Bearer <token>`，hmac 常量时间比较 | 环境变量 `ROAD_CONDITION_ADMIN_TOKEN` |
+
+- `POST /api/admin/login` / `POST /api/admin/logout` / `GET /api/admin/status`（返回 `{is_admin, login_enabled}`）
+- 写操作（POST/PATCH/DELETE/snap）任一通道通过即可；普通用户只读且只见到生效中事件。
+
+## 行为埋点
+
+### POST /api/telemetry
+
+前端行为回流，**任何失败都返回 ok，绝不影响主流程**；事件追加写入 `data/telemetry.jsonl`。
+
 ```json
-{"password": "你的管理员密码"}
+{"uid": "whu_uid", "event": "route_accept", "applied_weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}}
 ```
-成功后写入 session `is_admin=true`。
 
-### POST /api/admin/logout
-退出管理员登录。
+- `route_shown`：路线曝光，仅计 exposure，不学习权重
+- `route_accept`：路线采纳，触发 profile.py 的 EMA 画像更新（需带 applied_weights）
 
-### GET /api/admin/status
-查询当前是否管理员登录态。
+## 路网
 
-## 出行方式参数
+### POST /api/network/init
 
-所有规划类端点（route / chat）支持 `travel_mode` 或在 query 中显式关键词：
-- `walk` 步行（默认）
-- `bike` 骑行（"骑车/单车/骑行"）
-- `drive` 驾车（"开车/驾车/自驾"）
+触发路网加载（生产启动时已后台预热）。`{"force": true}` 强制重新下载。返回 `{status, nodes, edges, cached}`。
 
-优先级：自然语言关键词 > body 参数 > intent.mode > 默认 walk。
+## 出行方式约定
+
+所有规划调用支持 `travel_mode` / `mode = walk | bike | drive`（默认 walk）。服务端最终取值优先级：**NL 显式关键词（骑车/开车/步行，正则后处理纠偏） > body 参数 > 上下文继承 > 默认 walk**。

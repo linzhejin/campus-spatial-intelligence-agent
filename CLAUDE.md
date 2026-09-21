@@ -1,114 +1,89 @@
 # CLAUDE.md
 
-本文件为 Claude Code (claude.ai/code) 提供代码库工作指南。
+本文件为 AI 编码助手提供代码库工作指南。**内容以代码为事实源**；详细文档在 `docs/`，架构决策在 `docs/development/06_DECISIONS.md`（v0.1）与 `12_V2决策日志.md`（v2，现行）。
 
 ## 项目概述
 
-**漫步珞珈 (WHU-Walker)** — 武汉大学校园空间智能体。用户用自然语言描述出行需求（如"避开陡坡，从牌坊到樱顶走风景好的路"），系统返回多因素优化的路径并在地图上可视化展示。
+**珞珈智行 (WHU-Walker)** — 武汉大学校园空间智能体（在线 https://whuspati.online）。自然语言 → Agent 工具调用 → 三校区多因素路径规划 → 地图/语音交付。支持步行/骑行/驾车、按住说话语音输入、步行导航、Android APK。
 
-核心研究问题：*大语言模型能否作为人类空间偏好的转换器，将模糊的自然语言转化为可计算的空间参数？*
+核心研究问题：*大模型能否把模糊的自然语言空间偏好转换为可计算的空间参数（权重/约束）？*
 
 ## 常用命令
 
 ```bash
-# 启动开发服务器（Flask，端口 5000）
-python app.py
-
-# 生产环境启动
-gunicorn app:app --workers 1 --timeout 60 --bind 0.0.0.0:$PORT
-
-# 运行全部测试
-python -m pytest tests/ -q --tb=short
-
-# 运行单个测试文件
-python -m pytest tests/test_parser.py -q
-
-# 运行指定测试用例
-python -m pytest tests/test_routing.py::test_resolve_weights_default -q
-
-# 验证路网覆盖率（首次运行会下载 OSM 数据，约 30 秒）
-python scripts/validate_osm_network.py
-
-# 自检脚本（项目专项验证）
-python scripts/validate_t005_prompts.py    # Prompt few-shot 数量检查
-python scripts/validate_t018.py            # PWA / CSS 验证
-python scripts/T026_validate_annotations.py # 路段标注验证
-
-# 健康检查
+python app.py                      # Flask 开发服务器，端口 5000
+python -m pytest tests/ -q         # 全部测试（373）
+python -m pytest tests/test_routing.py -q
+python scripts/validate/validate_osm_network.py   # 路网覆盖率校验
+python scripts/validate/validate_all_data.py      # POI 数据校验
 curl -s http://localhost:5000/health
 ```
 
-## 系统架构
+## 系统架构（全 Agent，勿与旧 parser 管道混淆）
 
 ```
-用户 NL 输入 → agents/parser.py   (LLM → TaskIntent)
-             → api/routes.py      (坐标转换 + 路径计算)
-             → spatial/routing.py (硬约束过滤 + 软成本 Dijkstra)
-             → agents/explainer.py(LLM → 自然语言解释)
-             → 前端地图渲染       (高德 JS API)
+POST /api/chat（api/routes.py）
+  → agents/planner.py  run_agent()  Plan-Act-Observe 循环（MAX_TURNS=6, 40s 预算）
+      system 上下文：agent_system.txt + knowledge 任务卡 + profile 画像
+                    + 出行方式/GPS/途经点/多轮历史
+  → agents/tools.py  9 个 function-calling 工具（LLM 只决策，不计算）
+      resolve_poi / search_poi_candidates
+      plan_route / plan_via_route / plan_tour
+      get_weather / list_road_conditions
+      ask_user / suggest_followup
+  → spatial/ 纯算法：routing.py（模式过滤→硬约束→路况/天气成本→加权 Dijkstra）
+  → 路径包（GCJ-02）→ 前端 Leaflet / navigation.js
 ```
+
+**旧管道**（parser.py → routing.py → explainer.py）只在 LLM API 故障抛 `PlannerError` 时兜底，不是并行通道。`parser.detect_travel_mode` 关键词纠偏仍被两管道共用。
 
 ### 模块职责
 
-| 层级 | 模块 | 职责 |
-|------|------|------|
-| 入口 | `app.py` | Flask 工厂函数，CORS 配置，静态文件服务，`/js/config.js` 注入高德 Key |
-| API | `api/routes.py` | 7 个 REST 端点：`/parse`、`/route`、`/chat`、`/pois`、`/pois/<name>`、`/network/init`、`/candidates` |
-| Agent | `agents/parser.py` | NL → `TaskIntent`（DeepSeek LLM + 规则兜底分类）。双轨策略：`parse_query()` 调用 LLM（3 次重试 + Pydantic 校验），`_t011_post_process()` 对 `help`/`unknown`/`poi_query` 类型做规则强制覆盖 |
-| Agent | `agents/explainer.py` | 路径数据 → ≤150 字中文解释（LLM 优先，模板兜底） |
-| Agent | `agents/prompts/` | `parse_system.txt`（8 个 few-shot）、`explain_system.txt`（3 个 few-shot） |
-| GIS | `spatial/network.py` | OSMnx 路网下载/缓存。首次运行通过 `network_type="walk"` 下载，保存为 `data/whu_road_network.graphml`。加载时自动合并 `road_annotations.json` 到边的属性中 |
-| GIS | `spatial/routing.py` | **核心算法**：两步路径计算（DEC-011）。(1) 硬约束过滤：`slope=avoid` 时移除 `slope_level=5` 的边，对 level=4 施加 2× 距离惩罚。(2) 软成本优化：`Cost = w_d×D + w_s×S + w_v×(1−V)`。路径长度上限为 `min(最短路径×3, 2000m)` |
-| GIS | `spatial/coord_transform.py` | GCJ-02 ⇄ WGS-84 双向转换。POI（高德，GCJ-02）→ WGS-84 供 OSM 路径计算 → 转回 GCJ-02 供前端展示 |
-| GIS | `spatial/poi.py` | 从 `data/pois.json` 加载 POI，模糊名称匹配，支持按类型/季节筛选 |
-| 数据 | `data/pois.json` | ≥15 个 POI，包含名称、别名、坐标（GCJ-02）、类型、描述、季节标签、景观评分 |
-| 数据 | `data/road_annotations.json` | 每条路段的人工坡度/景观标注（1-5 级），启动时合并到路网边属性 |
-| 前端 | `static/` | 原生 JS + 高德 JS API 2.0 + PWA（Service Worker 三策略缓存）。珞珈主题色：樱花粉 + 翡翠绿 |
+| 模块 | 职责 |
+|---|---|
+| `agents/planner.py` | Agent 循环、护栏（轮次/时长）、响应组装、DSML 清洗 |
+| `agents/tools.py` | 9 工具 schema 与执行器，LLM 与空间层唯一通道；坐标回注压缩、artifact 直传 |
+| `agents/parser.py` | 旧管道 NL→TaskIntent（DeepSeek temperature=0 + Pydantic + 规则后处理双轨） |
+| `agents/explainer.py` | 旧管道解释/闲聊/跟进建议（模板兜底） |
+| `agents/knowledge.py` | 任务卡关键词召回（≤2 张/轮，当季加权） |
+| `agents/profile.py` | 服务端 EMA 画像（α=0.3，≥3 次采纳才注入，仅 route_accept 学习） |
+| `spatial/routing.py` | **核心算法**。MODE_DEFAULT_WEIGHTS、filter_graph_for_mode、resolve_weights、compute_route/via/tour、build_turn_by_turn |
+| `spatial/network.py` | OSMnx 路网缓存；合并 road_annotations 与 edge_overrides |
+| `spatial/poi.py` | 420 POI、别名/中文数字归一、模糊匹配、类别检索、同分歧义 |
+| `spatial/road_conditions.py` | 路况 CRUD、CONDITION_EFFECTS、边吸附（30m）与边链扩展、时间窗 |
+| `spatial/coord_transform.py` | GCJ-02 ⇄ WGS-84 |
+| `spatial/weather.py` | 高德天气 + 出行影响分级 |
+| `static/` | index.html、js/app.js、navigation.js、voice-input.js、voice-output.js、sw.js、vendor/leaflet |
+| `android-app/` | WebView 壳 MainActivity.java（定位/ASR/TTS/安装桥），当前 v1.4.1 versionCode 6 |
 
-### 坐标系规则（关键）
+## 关键事实（改代码前必读）
 
-- **POI 和前端**：GCJ-02（高德坐标系）
-- **OSM 路网**：WGS-84
-- **API 边界**：入参 `gcj02_to_wgs84()`，出参 `wgs84_to_gcj02()`
-- 不转换会导致 50-200 米偏移 — 每个路径端点调用都必须转换
-
-### TaskIntent 数据结构（`agents/parser.py`）
-
-系统中流转的核心数据类型：
-- `task_type`：`path_planning` | `poi_query` | `help` | `unknown`
-- `start` / `end`：`PoiRef`，含 `name`、`type`（poi/coord）
-- `constraints`：`{distance, slope, scenery}` — 硬约束等级
-- `weights`：`{distance, slope, scenery}` — 软成本权重（null = 使用默认值）
-- `weight_source`：`explicit_nl` | `shortcut` | `default`
-- `ambiguity`：起终点无法解析时的错误/引导信息
-
-### 关键设计决策（详见 `project-docs/06_DECISIONS.md`）
-
-- **DEC-006**：LLM 选用 DeepSeek V4-Flash，通过 OpenAI SDK 调用（model: `deepseek-chat`，base_url: `https://api.deepseek.com/v1`）
-- **DEC-010**：LLM 直接输出 `weights` 权重值（核心研究链路：NL → 空间认知 → GIS 决策），而非规则映射
-- **DEC-011**：约束（硬过滤）与权重（软成本）分离 — "避开陡坡"意味着禁止 `slope_level=5` 的路段，而不仅是降低偏好
-- **DEC-012**：使用 `network_type="walk"` 全量步行路网（不再二次筛选 footway/path）— OSM 在武大校园的 footway 覆盖率仅约 70%
-- **DEC-013**：Parser 采用双轨策略 — LLM 主流程 + 规则后处理覆盖 `help`/`unknown`/`poi_query` 分类
-- **DEC-004（修订）**：默认权重 `{distance: 0.5, slope: 0.2, scenery: 0.3}` — 无偏好时以距离为主导
+- **默认权重按方式**（routing.py `MODE_DEFAULT_WEIGHTS`，唯一事实源）：walk {0.8,0.05,0.15}、bike {0.6,0.25,0.15}、drive {0.85,0.05,0.10}。注意 config.py 里 0.5/0.2/0.3 旧常量已无引用，别用它。
+- **约束 ≠ 权重**（DEC-011）：硬约束过滤不可通行边（slope=avoid 删 level=5），软权重进成本函数 `Cost = w_d·D + w_s·S + w_v·(1−V)`；路径上限 min(最短×3, 2000m)。
+- **路况全方式生效**：closure 全 block、construction 步行 1.5×/骑行驾车 block、flooding 驾车 1.5×/其余 block、accident 步行骑行 1.3×/驾车 block、event 步行骑行 1.2×/驾车 block；不可达降级大惩罚。
+- **台阶/电梯/扶梯** bike/drive 一票否决；步行台阶 2.5×；edge_overrides.json 208 边人工覆盖（穿楼封禁、食堂 10× 防穿楼）。
+- **坐标系**：POI/前端/路况点击 = GCJ-02；OSM 路网/DEM/API 入参 GPS = WGS-84。边界必须转换；前端只准 GCJ-02 瓦片（高德 webrd/webst），禁接 OSM/Esri。
+- **POI 纪律**：仅三学部，排除校外/居民区，is_minor 标小商铺；别名须含数字归一且宽泛片区词不扩散。
+- **路线成功即结束 Agent 循环**，不让 LLM 再调 suggest_followup（DSML 泄漏防护）。
+- **切换方式**用上次路线起终点坐标直接重算，禁止把"我的位置"当 POI 名查。
+- **前端请求序号**（requestSeq）防旧响应覆盖新状态；非路径响应要清空地图路线。
+- **SW 纪律**：改 PRECACHE_URLS 内文件必须升 `sw.js` CACHE_NAME（当前 whu-walker-v47）。⚠️ 已知回归：前端目前**未注册** serviceWorker（"全新布局"提交移除），恢复缓存能力时要补回注册代码。
 
 ## 环境配置
 
-将 `.env.example` 复制为 `.env`，设置：
-- `DEEPSEEK_API_KEY` — DeepSeek API 密钥（LLM 调用）
-- `AMAP_KEY` — 高德 JS API 密钥（前端地图）
-- `FLASK_ENV` — `development`（开启 debug）或 `production`（限制 CORS）
-- 可选：`WHU_BBOX_*` 覆盖校园边界框
+`.env`（参考 .env.example）：`DEEPSEEK_API_KEY`、`AMAP_KEY`、`AMAP_SECURITY_CODE`、`AMAP_WEB_KEY`、`FLASK_ENV`、`SECRET_KEY`、`ROAD_CONDITION_ADMIN_PASSWORD`（网页 session）、`ROAD_CONDITION_ADMIN_TOKEN`（系统对接 X-Admin-Token）。
+图片生成 API 仅 Trae IDE 可用，生产不可用。
 
-## 数据标注流程
+## 数据与部署
 
-路段坡度/景观数据由熟悉武大校园的人手动标注：
+- 数据文件见 docs/06_数据字典.md；改 POI/路网后跑 validate_all_data.py 与对应 pytest。
+- 生产：腾讯云 CVM（ubuntu@152.136.102.172），路径 /home/ubuntu/campus-spatial-intelligence-agent，systemd `whu-walker`，Caddy HTTPS（whuspati.online）→ gunicorn 127.0.0.1:5000。
+- gunicorn 必须 `--workers 2 --threads 4 --timeout 60 --max-requests 1000`；禁用 --preload/--keepalive/--max-requests-jitter。
+- 发布流程（Gitee 为主源，GitHub 尽力）见 deploy-whu-walker skill：提交 → push gitee → ssh `git reset --hard origin/main` → restart → curl /health。
+- APK 发布：升 versionCode/versionName（build.ps1）→ 更新 static/app/latest.json 的 sha256 → SW 对 APK network-only。
 
-1. `python scripts/export_edges_for_annotation.py` → 生成路段清单 + Folium 可视化地图
-2. 在 CSV 中逐条标注 `slope_level`（1-5）和 `scenery_level`（1-5）
-3. `python scripts/csv_to_json.py data/road_annotations.csv` → 生成 `data/road_annotations.json`
-4. 启动时 `spatial/network.py` 自动将标注合并到路网边属性
-5. 覆盖率 < 80% 触发降级模式（未标注路段仅按距离成本计算）
+## 工作纪律
 
-## 任务管理
-
-项目使用 `.superpowers/sdd/` 存放任务简报和实现报告。任务状态记录在 `project-docs/05_TASKS.md`（9 个阶段共 32 个任务）。当前进行中的任务记录在 `.superpowers/sdd/progress.md`。
+- 改 Agent 行为优先改 `agents/prompts/agent_system.txt` 与工具 schema；确定性逻辑放 tools.py/spatial，不要让 LLM 做计算。
+- prompts 模板有进程内缓存，改后需重启服务。
+- 新增工具：tools.py 加 schema + executor，同步 agent_system.txt 与 tests/test_planner.py。

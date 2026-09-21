@@ -1,8 +1,36 @@
-# 06 · 决策日志（Decision Log）
+# 06 · 决策日志（Decision Log）· v0.1 卷
+
+> **历史归档声明（2026-09）**
+> 本卷成文于 2026-08 v0.1 建设期（T-001~T-032），记录的是 **parser 单管道时代**的决策。
+> 当前系统已演进为 `agents/planner.py` 全 Agent + function-calling 架构，v2 决策见同目录
+> [12_V2决策日志.md](12_V2决策日志.md)，现行架构事实以 [docs/05_架构设计.md](../05_架构设计.md) 与代码为准。
+>
+> **本卷决策现状对照**（DEC 编号在代码注释中仍被引用，故原文保留不改）：
+>
+> | 决策 | 现状 |
+> |---|---|
+> | DEC-001/006 DeepSeek + OpenAI SDK | ✅ 仍有效（model `deepseek-chat`） |
+> | DEC-002 15s/30s SLA（Render 休眠前提） | ➡️ 已失效：迁腾讯云 CVM 常驻，Agent 循环预算改为 6 轮 / 40s |
+> | DEC-003 坡度纯手动标注 | ➡️ 半推翻：坡度以 DEM 反算为主，短边保留占位；景观仍人工标注 |
+> | DEC-004 修订 默认权重 0.5/0.2/0.3 | ❌ 已废止：按方式区分，步行 0.8/0.05/0.15（routing.py MODE_DEFAULT_WEIGHTS）；config.py 中同名旧常量已无引用 |
+> | DEC-005 多轮 P1 | ✅ 保留，承载体改为 Agent 上下文消息流 + 结构化槽位 |
+> | DEC-007 高德 JS API 地图 | ➡️ 半推翻：地图改 Leaflet + 高德 GCJ-02 瓦片，高德 JS SDK 仅辅助定位；坐标转换层仍有效 |
+> | DEC-008 JSON 文件存储 | ✅ 扩展有效：新增 task_cards / edge_overrides / user_profiles / telemetry.jsonl；画像改服务端存储 |
+> | DEC-009 5 端点 REST | ➡️ 扩展为 17 路由，风格延续；/chat 现为 Agent 入口 |
+> | DEC-010 LLM 直出 weights + null fallback | ✅ 核心研究链路，现为工具参数 weights |
+> | DEC-011 约束/权重分离、两步路由 | ✅ 完全有效（tools schema + routing.py） |
+> | DEC-012 walk 全量路网 | ✅ 有效 |
+> | DEC-013 parser 双轨 | ➡️ 降级：parser 管道仅作 Agent 的 PlannerError 停电兜底 |
+> | DEC-014 多轮槽位承接 | ✅ 逻辑保留在 parser 后处理（兜底路径）+ planner 上下文注入 |
+> | DEC-015 weight_source 标注 | ✅ 旧管道有效；Agent 路径由 applied_weights + telemetry 承接 |
+> | DEC-017 边两级匹配 | ✅ 有效 |
+> | DEC-019/020 candidates 交付 | ➡️ DEC-020 独立端点现存；Agent 时代候选由 search_poi_candidates 工具直接产出，两者并存 |
+>
+> DEC-016/018 为当时 prompt/CSS/SW 的施工纪律记录，仅具历史意义。
 
 > 产出阶段: 全程
 > 角色: 所有角色
-> 状态: 持续更新
+> 状态: v0.1 卷已冻结；新决策记于 12_V2决策日志.md
 
 ## 规则
 

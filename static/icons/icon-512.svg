@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Lao Zhaishe green glazed-tile roof: concave slope with upturned eaves -->
+    <!-- 老斋舍绿琉璃瓦主屋面（凹曲坡顶 + 起翘檐角） -->
     <path id="roof-slope" d="
       M102 298
       C 112 282 130 278 150 286
@@ -13,81 +13,82 @@
       C 126 307 110 306 102 298 Z"/>
   </defs>
 
-  <!-- Sky: Republican-era paper cream -->
+  <!-- ========== 天空：民国纸张米白 ========== -->
   <rect width="512" height="512" rx="112" fill="#F5F1E8"/>
 
-  <!-- Warm sun -->
+  <!-- ========== 暖阳 ========== -->
   <circle cx="382" cy="124" r="52" fill="#E7C98E" opacity="0.4"/>
 
-  <!-- Distant Luojia hills, two value-separated layers -->
+  <!-- ========== 远山（两层景深，拉开明度差） ========== -->
   <path d="M0 312 C 56 256 104 272 168 244 C 236 214 294 262 358 232
            C 420 204 472 242 512 226 L512 512 L0 512 Z" fill="#93B396"/>
   <path d="M0 352 C 70 300 134 324 202 296 C 270 268 324 314 394 290
            C 450 271 488 290 512 284 L512 512 L0 512 Z" fill="#4A7C52"/>
 
-  <!-- Lao Zhaishe -->
-  <!-- Central pavilion roof behind main ridge, with gold finial -->
-  <path d="M224 260 L238 256 L274 256 L288 260
-           Q 281 246 274 244 L 263 219 Q 256 212 249 219 L 238 244
-           Q 231 246 224 260 Z"
+  <!-- ========== 老斋舍 ========== -->
+  <!-- 中央阁楼（歇山顶小宝顶，位于主屋脊之后） -->
+  <path d="M226 262 L240 258 L272 258 L286 262
+           Q 280 250 274 248 L 262 226 Q 256 220 250 226 L 238 248
+           Q 232 250 226 262 Z"
         fill="#234A25" stroke="#1A3A1C" stroke-width="2.5"/>
-  <rect x="253.5" y="199" width="5" height="17" fill="#B68948"/>
-  <circle cx="256" cy="196" r="7.5" fill="#B68948"/>
+  <rect x="249" y="200" width="5" height="14" fill="#B68948"/>
+  <circle cx="251.5" cy="198" r="7.5" fill="#B68948"/>
 
-  <!-- Brick wall: flat high-contrast mass for small-size silhouette -->
+  <!-- 砖墙（整块高对比实色，保证小尺寸剪影） -->
   <rect x="148" y="318" width="216" height="78" fill="#8B3A3A"/>
   <rect x="148" y="372" width="216" height="24" fill="#6B2828" opacity="0.28"/>
-  <!-- Warm lit windows, no mullions -->
+  <!-- 窗：暖光实点（不放窗格，48px 下仍可见） -->
   <g fill="#F2DFAE">
     <path d="M170 364 L170 338 Q170 326 184 326 Q198 326 198 338 L198 364 Z"/>
     <path d="M212 364 L212 338 Q212 326 226 326 Q240 326 240 338 L240 364 Z"/>
     <path d="M272 364 L272 338 Q272 326 286 326 Q300 326 300 338 L300 364 Z"/>
     <path d="M314 364 L314 338 Q314 326 328 326 Q342 326 342 338 L342 364 Z"/>
   </g>
-  <!-- Arched door -->
+  <!-- 拱门 -->
   <path d="M244 396 L244 356 Q244 338 256 338 Q268 338 268 356 L268 396 Z" fill="#4E1F1F"/>
 
-  <!-- Main green glazed roof -->
+  <!-- 主屋面：绿琉璃瓦 -->
   <use href="#roof-slope" fill="#2C5F2D"/>
   <use href="#roof-slope" fill="none" stroke="#1A3A1C" stroke-width="3.5"/>
-  <!-- Eave beam + gold trim -->
+  <!-- 檐口厚梁 + 金色勾边 -->
   <rect x="116" y="300" width="280" height="20" fill="#1F4520"/>
   <rect x="116" y="318" width="280" height="4" fill="#B68948"/>
-  <!-- Three tile ribs only -->
+  <!-- 瓦垄（仅留三道，大尺寸精致小尺寸不脏） -->
   <g stroke="#44804A" stroke-width="3" opacity="0.8" fill="none" stroke-linecap="round">
     <path d="M186 288 L178 301"/>
     <path d="M256 266 L256 300"/>
     <path d="M326 288 L334 301"/>
   </g>
-  <!-- Main ridge -->
+  <!-- 正脊 -->
   <path d="M230 252 C 247 244 265 244 282 252" fill="none"
         stroke="#B68948" stroke-width="3.5" stroke-linecap="round"/>
 
-  <!-- Foreground hills -->
+  <!-- ========== 前景山林 ========== -->
   <path d="M0 440 C 86 398 168 412 256 402 C 348 392 432 386 512 408
            L512 512 L0 512 Z" fill="#204823"/>
   <path d="M0 440 C 86 398 168 412 256 402 C 348 392 432 386 512 408"
         fill="none" stroke="#3A6B3E" stroke-width="4" opacity="0.85"/>
 
-  <!-- Winding mountain path (navigation semantics) -->
+  <!-- ========== 蜿蜒山路（导航语义） ========== -->
   <path d="M256 514 C 204 472 310 452 258 416 C 234 400 246 394 256 392"
         fill="none" stroke="#8C7443" stroke-width="18" stroke-linecap="round" opacity="0.5"/>
   <path d="M256 514 C 204 472 310 452 258 416 C 234 400 246 394 256 392"
         fill="none" stroke="#EDE4D0" stroke-width="11" stroke-linecap="round"/>
 
-  <!-- Cherry blossom, brand mark: rounded petals with shallow cleft -->
-  <g transform="translate(122 112) scale(0.86)">
-    <g fill="#F6C3CE" stroke="#CF667C" stroke-width="2.5" stroke-linejoin="round">
-      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
-               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(0)"/>
-      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
-               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(72)"/>
-      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
-               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(144)"/>
-      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
-               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(216)"/>
-      <path d="M0 -20 C -14 -22 -18 -38 -11 -47 Q -6 -51 -3 -46 L 0 -51 L 3 -46
-               Q 6 -51 11 -47 C 18 -38 14 -22 0 -20 Z" transform="rotate(288)"/>
+  <!-- ========== 樱花（品牌符号，加深描边保证米白底可读） ========== -->
+  <g transform="translate(128 118)">
+    <ellipse cx="4" cy="6" rx="42" ry="34" fill="#6B2828" opacity="0.14"/>
+    <g fill="#F7CBD4" stroke="#D47084" stroke-width="2.5">
+      <path d="M0 -24 C -15 -27 -19 -45 -9 -53 L -3 -46 L 0 -53 L 3 -46 L 9 -53
+               C 19 -45 15 -27 0 -24 Z" transform="rotate(0)"/>
+      <path d="M0 -24 C -15 -27 -19 -45 -9 -53 L -3 -46 L 0 -53 L 3 -46 L 9 -53
+               C 19 -45 15 -27 0 -24 Z" transform="rotate(72)"/>
+      <path d="M0 -24 C -15 -27 -19 -45 -9 -53 L -3 -46 L 0 -53 L 3 -46 L 9 -53
+               C 19 -45 15 -27 0 -24 Z" transform="rotate(144)"/>
+      <path d="M0 -24 C -15 -27 -19 -45 -9 -53 L -3 -46 L 0 -53 L 3 -46 L 9 -53
+               C 19 -45 15 -27 0 -24 Z" transform="rotate(216)"/>
+      <path d="M0 -24 C -15 -27 -19 -45 -9 -53 L -3 -46 L 0 -53 L 3 -46 L 9 -53
+               C 19 -45 15 -27 0 -24 Z" transform="rotate(288)"/>
     </g>
     <circle r="11" fill="#B68948"/>
     <g fill="#6B2828">
@@ -98,7 +99,13 @@
       <circle cx="-5.2" cy="-1.8" r="2.8"/>
     </g>
   </g>
-  <!-- One falling petal -->
-  <ellipse cx="0" cy="0" rx="5" ry="9" fill="#F6C3CE" opacity="0.7"
-           transform="translate(312 200) rotate(28)"/>
+  <!-- 落英 -->
+  <path d="M0 -10 C -9 -11 -11 -22 -6 -26 L -2 -21 L 0 -26 L 2 -21 L 6 -26
+           C 11 -22 9 -11 0 -10 Z"
+        fill="#F7CBD4" stroke="#D47084" stroke-width="1.5"
+        transform="translate(206 178) rotate(30) scale(0.85)"/>
+  <path d="M0 -10 C -9 -11 -11 -22 -6 -26 L -2 -21 L 0 -26 L 2 -21 L 6 -26
+           C 11 -22 9 -11 0 -10 Z"
+        fill="#F7CBD4" opacity="0.7"
+        transform="translate(326 206) rotate(-20) scale(0.6)"/>
 </svg>
