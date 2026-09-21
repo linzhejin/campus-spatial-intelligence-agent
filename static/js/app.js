@@ -2261,6 +2261,18 @@
             if (shortestLabel) shortestLabel.textContent = '游览景点';
             document.getElementById('overlap-rate').textContent = tourInfo.loop ? '环线' : '单程';
             if (overlapLabel) overlapLabel.textContent = '游览方式';
+        } else if (routeKind === 'multimodal') {
+            // 多模态换乘：最短距离 → 换乘次数，重叠率 → 换乘点列表
+            var legs = data.legs || [];
+            var transferCount = Math.max(0, legs.length - 1);
+            document.getElementById('shortest-distance').textContent = transferCount + ' 次';
+            if (shortestLabel) shortestLabel.textContent = '换乘次数';
+            // 换乘点 = 每个 leg 的 end_name（除最后一段）
+            var transfers = legs.slice(0, -1).map(function (lg) { return lg.end_name || ''; })
+                                .filter(function (n) { return n; });
+            document.getElementById('overlap-rate').textContent =
+                transfers.length ? transfers.join(' → ') : '—';
+            if (overlapLabel) overlapLabel.textContent = '换乘点';
         } else if (routeKind === 'via') {
             // 途经路线：最短距离 → 途经点，重叠率 → 绕行比
             var viaInfo = data.via || {};

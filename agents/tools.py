@@ -189,6 +189,44 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "plan_multimodal_route",
+            "description": "规划分段换乘路径：如'先骑车到樱花大道再步行到珞珈山'"
+                         "'骑车到校门再走进去'这类一次出行含多种出行方式的需求。"
+                         "每段单独给 mode 和终点；第 N 段终点自动作为第 N+1 段起点。"
+                         "不用于普通单方式路径（用 plan_route 即可）。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start": _ENDPOINT_SCHEMA,
+                    "legs": {
+                        "type": "array",
+                        "description": "换乘段列表（2~4 段）。每段独立规划，按顺序拼接",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "mode": {"type": "string",
+                                         "enum": ["walk", "bike", "drive"],
+                                         "description": "本段出行方式"},
+                                "end": _ENDPOINT_SCHEMA,
+                                "via_name": {"type": "string",
+                                             "description": "本段途经点（可选）；"
+                                                            "不填则直接走终点"},
+                            },
+                            "required": ["mode", "end"],
+                        },
+                        "minItems": 2,
+                        "maxItems": 4,
+                    },
+                    **{k: v for k, v in _PREFERENCE_SCHEMA.items()
+                       if k != "mode"},
+                },
+                "required": ["start", "legs"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_weather",
             "description": "查询武汉当前实时天气。用户问天气/要不要带伞/适不适合出门时必须调用，不允许凭印象回答。",
             "parameters": {"type": "object", "properties": {}},
@@ -669,6 +707,140 @@ def _tool_plan_via_route(args, ctx):
     return payload, {"route": payload, "route_kind": "via"}
 
 
+def _tool_plan_multimodal_route(args, ctx):
+    """分段换乘路径：用户显式给每段 mode + end，按顺序拼接。
+
+    schema: start + legs: array[{mode, end, via_name?}]。
+    第 N 段终点自动作为第 N+1 段起点（节点重新吸附到对应 mode 的 G_mode）。
+    每段独立 compute_route，最后合并 legs/recommended/steps/duration_min。
+    """
+    legs_in = args.get("legs") or []
+    if not isinstance(legs_in, list) or len(legs_in) < 2:
+        return {"error": "invalid_legs",
+                "message": "至少需要 2 段换乘信息（每段含 mode 和 end）"}, None
+    if len(legs_in) > 4:
+        return {"error": "too_many_legs",
+                "message": "换乘段数过多（最多 4 段），可拆成多次规划"}, None
+
+    G = _ensure_graph()
+    weather_info = None
+    try:
+        snap = _weather_snapshot()
+        if snap:
+            weather_info = snap.get("live")
+    except Exception:
+        pass
+
+    # 起点（按第一段 mode 吸附）
+    first_mode = legs_in[0].get("mode") or "walk"
+    if first_mode not in ("walk", "bike", "drive"):
+        first_mode = "walk"
+    G_first, _, _ = filter_graph_for_mode(G, first_mode)
+    start_node, start_name, err = _resolve_endpoint(args.get("start"), G_first)
+    if err:
+        return err, None
+
+    legs_payload = []
+    prev_node = start_node
+    prev_name = start_name
+    cumulative_len = 0.0
+    cumulative_dur = 0.0
+    recommended_all = []
+    pois_all = []
+
+    for idx, leg in enumerate(legs_in):
+        mode = leg.get("mode") or "walk"
+        if mode not in ("walk", "bike", "drive"):
+            mode = "walk"
+        end_ref = leg.get("end")
+        if not isinstance(end_ref, dict):
+            return {"error": "invalid_leg_end",
+                    "message": f"第 {idx + 1} 段终点格式不正确"}, None
+
+        # 每段独立过滤路网（mode 不同 → G_mode 不同）
+        G_mode, _, _ = filter_graph_for_mode(G, mode)
+        end_node, end_name, err = _resolve_endpoint(end_ref, G_mode)
+        if err:
+            return err, None
+        # 起点也要重新吸附到本段 G_mode（前一段终点是 walk-only 时可能不在本段图里）
+        if prev_node not in G_mode:
+            # 用前一终点坐标重新吸附到本段图最近 in-mode 节点
+            try:
+                prev_lng, prev_lat = get_node_coords(G, prev_node)
+                prev_node = get_nearest_node(G_mode, prev_lng, prev_lat)
+            except Exception:
+                return {"error": "leg_start_unreachable",
+                        "message": f"第 {idx + 1} 段起点在 {mode} 模式下无可达节点附近，"
+                                   f"可调整换乘点位置"}, None
+
+        if prev_node == end_node:
+            return {"error": "same_poi",
+                    "message": f"第 {idx + 1} 段起终点相同，可省略该段"}, None
+
+        via_name = (leg.get("via_name") or "").strip()
+        try:
+            if via_name:
+                via_node, via_display, err = _resolve_endpoint({"name": via_name}, G_mode)
+                if err:
+                    return err, None
+                result = compute_via_route(
+                    G, prev_node, via_node, end_node,
+                    constraints=args.get("constraints") or {},
+                    weights=args.get("weights"), mode=mode,
+                    weather_info=weather_info,
+                )
+                leg1 = _route_payload(G, result["leg1"], prev_name, via_display, mode)
+                leg2 = _route_payload(G, result["leg2"], via_display, end_name, mode)
+                leg_payload = {
+                    "via": {"name": via_display},
+                    "legs": [leg1, leg2],
+                    "recommended": leg1["recommended"] + leg2["recommended"],
+                    "steps": _merge_leg_steps([leg1, leg2]),
+                    "recommended_length_m": result["total_length_m"],
+                    "distance_m": result["total_length_m"],
+                    "duration_min": round(estimate_duration_min(result["total_length_m"], mode), 1),
+                    "mode": mode,
+                    "pois": leg1["pois"] + leg2["pois"],
+                }
+            else:
+                result = compute_route(
+                    G=G, start_node=prev_node, end_node=end_node,
+                    constraints=args.get("constraints") or {},
+                    weights=args.get("weights"), mode=mode,
+                    weather_info=weather_info,
+                )
+                leg_payload = _route_payload(G, result, prev_name, end_name, mode)
+        except ValueError as e:
+            return {"error": "route_not_found",
+                    "message": f"第 {idx + 1} 段（{mode}：{prev_name}→{end_name}）不可达：{e}"}, None
+
+        legs_payload.append(leg_payload)
+        cumulative_len += float(leg_payload["recommended_length_m"] or 0)
+        cumulative_dur += float(leg_payload["duration_min"] or 0)
+        recommended_all += leg_payload["recommended"]
+        pois_all += leg_payload.get("pois") or []
+        prev_node = end_node
+        prev_name = end_name
+
+    # 合并多段 steps（_merge_leg_steps 已处理跨段 arrive→via 转换）
+    merged_steps = _merge_leg_steps(legs_payload)
+
+    payload = {
+        "legs": legs_payload,
+        "start_name": start_name,
+        "end_name": prev_name,
+        "recommended": recommended_all,
+        "steps": merged_steps,
+        "recommended_length_m": round(cumulative_len, 1),
+        "distance_m": round(cumulative_len, 1),
+        "duration_min": round(cumulative_dur, 1),
+        # 整体 mode 用第一段（前端默认渲染色），每段 mode 在 legs[].mode 里
+        "mode": legs_payload[0]["mode"],
+        "pois": pois_all,
+    }
+    return payload, {"route": payload, "route_kind": "multimodal"}
+
+
 def _tool_plan_tour(args, ctx):
     G, G_mode, mode, weather_info = _plan_common(args, ctx)
 
@@ -798,6 +970,7 @@ _EXECUTORS = {
     "search_poi_candidates": _tool_search_poi_candidates,
     "plan_route": _tool_plan_route,
     "plan_via_route": _tool_plan_via_route,
+    "plan_multimodal_route": _tool_plan_multimodal_route,
     "plan_tour": _tool_plan_tour,
     "get_weather": _tool_get_weather,
     "list_road_conditions": _tool_list_road_conditions,

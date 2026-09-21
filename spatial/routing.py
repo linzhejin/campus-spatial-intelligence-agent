@@ -174,6 +174,40 @@ def normalize_mode(mode) -> str:
     return "walk"
 
 
+def nearest_in_mode_node(G: nx.MultiDiGraph, G_mode: nx.MultiDiGraph,
+                          lng: float, lat: float, max_dist_m: float = 50.0):
+    """
+    在 G_mode 中找距离 (lng, lat) 最近的节点，限半径 max_dist_m。
+
+    用于 bike/drive 起终点吸附到 walk-only POI 时的兜底：原 POI 节点已被
+    filter_graph_for_mode 删除，需要找一个该模式下仍可通行的最近节点
+    作为"换乘锚点"，前后拼接 walk 段。
+
+    Returns:
+        (node_id, dist_m) 或 (None, inf)。dist_m 为 haversine 米距。
+    """
+    import math
+    if G_mode.number_of_nodes() == 0:
+        return None, float("inf")
+    cos_lat = math.cos(math.radians(lat))
+    best_node = None
+    best_dist_m = float("inf")
+    for node_id, data in G_mode.nodes(data=True):
+        x = float(data.get("x", 0))
+        y = float(data.get("y", 0))
+        # 等距圆柱近似：经度差 × cos(lat)
+        dlat = (y - lat)
+        dlng = (x - lng) * cos_lat
+        # 度 → 米：1° 纬度 ≈ 111000m
+        dist_m = math.sqrt((dlat * 111000.0) ** 2 + (dlng * 111000.0) ** 2)
+        if dist_m < best_dist_m:
+            best_dist_m = dist_m
+            best_node = node_id
+    if best_node is None or best_dist_m > max_dist_m:
+        return None, float("inf")
+    return best_node, best_dist_m
+
+
 def _edge_highway_tags(edge_data: dict) -> list:
     """解析边的 highway 属性（str / list / 被 str() 序列化的 list），返回标签字符串列表。"""
     if not edge_data:
@@ -326,17 +360,88 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     return G_mode, status, penalty_map
 
 
-def estimate_duration_min(length_m, mode) -> float:
+def estimate_duration_min(length_m, mode, G=None, route_nodes=None,
+                          penalty_map=None) -> float:
     """
     按模式平均速度估算通行时长（分钟），round 到 1 位小数。
 
-    length 为 0 / None 时返回 0.0。
+    两种调用形式（重载）：
+      1. estimate_duration_min(length_m: number, mode) — 旧签名，仅按总长×平均速度，
+         不考虑坡度/台阶/路况。保留兼容（TestEstimateDuration 旧用例）。
+      2. estimate_duration_min(length_m=None, mode, G, route_nodes, penalty_map) —
+         新签名，按路径每条边累加时长，speed 由 slope_level / steps 标签 /
+         penalty_map 路况惩罚倒推（penalty F → 速度 ÷ F），更贴近实际。
+
+    length 为 0 / None 且无 route_nodes 时返回 0.0。
     """
-    if not length_m:
-        return 0.0
+    if route_nodes is None or G is None:
+        if not length_m:
+            return 0.0
+        mode = normalize_mode(mode)
+        meters_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
+        return round(length_m / meters_per_min, 1)
+    return _estimate_route_duration_min(G, route_nodes, mode, penalty_map)
+
+
+def _estimate_route_duration_min(G, route_nodes, mode, penalty_map=None) -> float:
+    """按路径每条边累加时长，速度受 slope/steps/路况惩罚影响。
+
+    - slope_factor：walk slope_level 5→0.5、4→0.7；bike 5→0.4、4→0.6；drive 全 1.0
+    - steps_factor：walk 命中 steps 标签→0.4（与 _WALK_STEPS_PENALTY 2.5× 减速语义对齐）
+    - road_factor：penalty_map[(u,v,k)] 数值 F → 速度 ÷ F（block 边已删不入 route）
+    """
     mode = normalize_mode(mode)
-    meters_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
-    return round(length_m / meters_per_min, 1)
+    if not route_nodes or len(route_nodes) < 2:
+        return 0.0
+    base_m_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
+    penalty_map = penalty_map or {}
+    total_min = 0.0
+    for i in range(len(route_nodes) - 1):
+        u, v = route_nodes[i], route_nodes[i + 1]
+        edge_data = G.get_edge_data(u, v)
+        if not edge_data:
+            continue
+        # 多平行边取最短（与 _path_length 一致）
+        d = min(edge_data.values(), key=lambda x: x.get("length", float("inf")))
+        try:
+            length_m = float(d.get("length", 0) or 0)
+        except (TypeError, ValueError):
+            length_m = 0.0
+        if length_m <= 0:
+            continue
+
+        # 速度折扣因子（越大越快），1.0 为基线
+        factor = 1.0
+        if mode == "walk":
+            tags = _edge_highway_tags(d)
+            if "steps" in tags:
+                factor *= 0.4  # 台阶速度减半多
+            lvl = d.get("slope_level")
+            if lvl == 5:
+                factor *= 0.5
+            elif lvl == 4:
+                factor *= 0.7
+        elif mode == "bike":
+            lvl = d.get("slope_level")
+            if lvl == 5:
+                factor *= 0.4
+            elif lvl == 4:
+                factor *= 0.6
+        # drive 不受小坡影响
+
+        # 路况惩罚：penalty F → 速度 ÷ F
+        # 多 key 兼容（_key 注入或 (u,v,k) 直查）
+        for k_idx in edge_data.keys():
+            f = penalty_map.get((u, v, k_idx))
+            if f and f > 1.0:
+                factor /= f
+                break
+
+        # 边通行速度（米/分）= base × factor；时长 = length / speed
+        edge_speed = base_m_per_min * max(factor, 0.05)  # 防 0
+        total_min += length_m / edge_speed
+
+    return round(total_min, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -1173,7 +1278,9 @@ def compute_route(
         "max_len": max_len,
         "_annotation_degraded": annotation_degraded is not None,
         "mode": mode,
-        "duration_min": estimate_duration_min(recommended_len, mode),
+        "duration_min": estimate_duration_min(None, mode, G=G,
+                                              route_nodes=recommended,
+                                              penalty_map=penalty_map),
         "shortest_duration_min": estimate_duration_min(shortest_len, mode),
         "speed_kmh": MODE_SPEEDS_KMH[mode],
         "road_conditions_applied": road_conditions_applied,

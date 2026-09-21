@@ -11,12 +11,14 @@
 事件类型 × 出行方式影响矩阵（CONDITION_EFFECTS）：
                      walk        bike        drive
   closure 道路封闭   block       block       block   物理断行，人车均不可通行
-  construction 施工  4.0 软惩罚   block       block   围挡断车道，行人可谨慎穿行
-  flooding 积水      block       block       4.0     深积水人/骑行不可蹚，车可慢速通过
-  accident 事故      3.0         3.0         block   人可侧穿绕行，车辆堵死
-  event 活动         2.0         2.0         block   人流密集步行可穿，机动车管制
+  construction 施工  1.5 软惩罚  block       block   围挡断车道，行人可谨慎穿行
+  flooding 积水      block       block       1.5     深积水人/骑行不可蹚，车可慢速通过
+  accident 事故      1.3         1.3         block   人可侧穿绕行，车辆堵死
+  event 活动         1.2         1.2         block   人流密集步行可穿，机动车管制
 
 block = 硬移除边（不可通行）；数字 = 该边成本乘以的惩罚系数。
+倍数代表"两个路口之间整段道路"（300-600m）对人的真实感知影响，
+×1.5 ≈ 速度减半（见 road_penalty_map → _estimate_route_duration_min 的速度÷F 映射）。
 
 数据持久化到 data/road_conditions.json，坐标全部 GCJ-02（与 POI/前端一致）。
 """

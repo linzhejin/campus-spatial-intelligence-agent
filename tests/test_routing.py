@@ -150,6 +150,8 @@ from spatial.routing import (  # noqa: E402
     _edge_highway_tags,
     filter_graph_for_mode,
     estimate_duration_min,
+    _estimate_route_duration_min,
+    nearest_in_mode_node,
     compute_route_with_annotations,
 )
 
@@ -479,3 +481,115 @@ class TestTourRoute:
     def test_tour_empty_pois(self, mock_graph):
         result = compute_tour_route(mock_graph, [], start_node=0)
         assert result["ordered_pois"] == [] and result["legs"] == []
+
+
+# ---------------------------------------------------------------------------
+# 时间估算按边累加 + 多模态换乘 测试
+# ---------------------------------------------------------------------------
+
+class TestEstimateDurationEdgeAccumulator:
+    """新签名 estimate_duration_min(G, route_nodes, mode, penalty_map)
+    按边累加时长，速度受 slope_level/steps 标签/penalty_map 影响。"""
+
+    def test_old_signature_compat_length_number(self):
+        # 旧签名：length_m 是 number → 走旧分支，与 TestEstimateDuration 一致
+        assert estimate_duration_min(1000.0, "walk") == 13.3
+        assert estimate_duration_min(1000.0, "bike") == 4.3
+        assert estimate_duration_min(1000.0, "drive") == 2.4
+
+    def test_flat_walk_path(self, mock_graph):
+        # 0→1 (100m, slope=2) walk → 1.3min（slope 2 不打折：100/75=1.33min）
+        result = _estimate_route_duration_min(mock_graph, [0, 1], "walk")
+        assert result == 1.3
+
+    def test_slope5_walk_path(self, mock_graph):
+        # 2→3 (150m, slope=5) walk → factor=0.5 → 速度 2.25km/h → 4min
+        # 150m / (4.5*0.5 km/h * 1000/60 m/min) = 150 / 37.5 = 4.0min
+        result = _estimate_route_duration_min(mock_graph, [2, 3], "walk")
+        assert result == 4.0
+
+    def test_slope4_bike_path(self, mock_graph):
+        # 1→2 (200m, slope=4) bike → factor=0.6 → 速度 8.4km/h → 200m / 140 m/min ≈ 1.4min
+        # 200 / (14*0.6 * 1000/60) = 200 / 140 = 1.43 → round to 1.4
+        result = _estimate_route_duration_min(mock_graph, [1, 2], "bike")
+        assert result == 1.4
+
+    def test_slope_ignored_for_drive(self, mock_graph):
+        # drive 不受小坡影响：2→3 (150m, slope=5) → 速度 25km/h → 0.36min → 0.4
+        # 150 / (25 * 1000/60) = 150 / 416.67 = 0.36 → round to 0.4
+        result = _estimate_route_duration_min(mock_graph, [2, 3], "drive")
+        assert result == 0.4
+
+    def test_road_penalty_divides_speed(self, mock_graph):
+        # 0→1 (100m, walk, slope=2) + penalty 1.5 → 速度 ÷ 1.5 = 3km/h
+        # 100 / (4.5/1.5 * 1000/60) = 100 / 50 = 2.0min
+        # penalty_map 用 (u, v, k)；mock_graph 默认 key=0
+        penalty = {(0, 1, 0): 1.5}
+        result = _estimate_route_duration_min(mock_graph, [0, 1], "walk",
+                                              penalty_map=penalty)
+        assert result == 2.0
+
+    def test_empty_or_short_route(self, mock_graph):
+        assert _estimate_route_duration_min(mock_graph, [], "walk") == 0.0
+        assert _estimate_route_duration_min(mock_graph, [0], "walk") == 0.0
+
+    def test_steps_tag_slows_walk(self, mode_graph):
+        # mode_graph: 1→2 highway=steps, length=100, slope=3
+        # steps_factor=0.4 → 速度 1.8km/h → 100m / 30 m/min = 3.33 → 3.3min
+        result = _estimate_route_duration_min(mode_graph, [1, 2], "walk")
+        assert result == 3.3
+
+
+class TestNearestInModeNode:
+    """nearest_in_mode_node：bike/drive 起终点 POI 在 walk-only 节点时
+    找 G_mode 中最近节点（限半径 50m）。"""
+
+    def test_returns_none_when_no_node_in_radius(self):
+        # 空图
+        G = nx.MultiDiGraph()
+        result, dist = nearest_in_mode_node(G, G, 114.36, 30.54, 50.0)
+        assert result is None and dist == float("inf")
+
+    def test_returns_nearest_within_radius(self, mode_graph):
+        # mode_graph 所有节点坐标都是 (114.360, 30.535)（_set_campus_coords）
+        # 在该坐标 50m 内找 bike 过滤图最近节点
+        G_bike, _, _ = filter_graph_for_mode(mode_graph, "bike")
+        node, dist = nearest_in_mode_node(mode_graph, G_bike, 114.360, 30.535, 50.0)
+        assert node is not None
+        assert dist <= 50.0
+
+    def test_returns_none_when_far(self, mode_graph):
+        # 远距离坐标（10km 外）应返回 None
+        G_bike, _, _ = filter_graph_for_mode(mode_graph, "bike")
+        node, dist = nearest_in_mode_node(mode_graph, G_bike, 114.5, 30.6, 50.0)
+        assert node is None and dist == float("inf")
+
+
+class TestToolPlanMultimodalRoute:
+    """_tool_plan_multimodal_route 拼接多段路径为单个 route artifact。"""
+
+    def test_invalid_legs_too_few(self):
+        from agents.tools import _tool_plan_multimodal_route
+        args = {"start": {"name": "X"}, "legs": [{"mode": "walk", "end": {"name": "Y"}}]}
+        result, artifact = _tool_plan_multimodal_route(args, None)
+        assert "error" in result and result["error"] == "invalid_legs"
+
+    def test_invalid_legs_too_many(self):
+        from agents.tools import _tool_plan_multimodal_route
+        legs = [{"mode": "walk", "end": {"name": f"P{i}"}} for i in range(5)]
+        args = {"start": {"name": "X"}, "legs": legs}
+        result, artifact = _tool_plan_multimodal_route(args, None)
+        assert "error" in result and result["error"] == "too_many_legs"
+
+    def test_pois_not_found_returns_error(self):
+        from agents.tools import _tool_plan_multimodal_route
+        # 校外不存在的 POI
+        args = {
+            "start": {"name": "不存在的地点"},
+            "legs": [
+                {"mode": "walk", "end": {"name": "武汉大学教1楼"}},
+                {"mode": "bike", "end": {"name": "武汉大学图书馆(总馆)"}},
+            ],
+        }
+        result, artifact = _tool_plan_multimodal_route(args, None)
+        assert "error" in result and result["error"] == "poi_not_found"

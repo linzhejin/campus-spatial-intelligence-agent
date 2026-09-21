@@ -306,6 +306,14 @@
         navState.progress = 0;
         navState.lastProjection = null;
         if (routeData.end && routeData.end.name) navState.endName = routeData.end.name;
+        // 多模态路径：保存 legs 以便跨段切换 mode（每段 mode 不同，影响速度/偏航阈值）
+        if (routeData.route_kind === 'multimodal' && routeData.legs && routeData.legs.length > 1) {
+            navState.legs = routeData.legs;
+            navState.legIdx = 0;
+        } else {
+            navState.legs = null;
+            navState.legIdx = 0;
+        }
     }
 
     // ---------- GPS 推送（app.js 蓝点更新时调用） ----------
@@ -444,7 +452,22 @@
             }
             if (!m.spokeNear && distTo <= NEAR_M) {
                 m.spokeNear = true;
-                if (V) V.speak('到达途经点，继续前行');
+                // 多模态换乘：跨 leg 时切换 mode + 重置偏航计数（避免 mode 阈值突变误触）
+                if (navState.legs && navState.legs.length > 1 &&
+                    navState.legIdx < navState.legs.length - 1) {
+                    navState.legIdx += 1;
+                    var nextLeg = navState.legs[navState.legIdx];
+                    if (nextLeg && nextLeg.mode && nextLeg.mode !== navState.mode) {
+                        navState.mode = nextLeg.mode;
+                        navState.offCount = 0;
+                        var modeLabel = { walk: '步行', bike: '骑行', drive: '驾车' }[nextLeg.mode] || nextLeg.mode;
+                        if (V) V.speak('已到达换乘点，切换为' + modeLabel + '模式，继续前行');
+                    } else {
+                        if (V) V.speak('到达途经点，继续前行');
+                    }
+                } else {
+                    if (V) V.speak('到达途经点，继续前行');
+                }
             }
         } else if (m.type === 'turn' || m.type === 'depart' || m.type === 'straight' || ACTIONS[m.action]) {
             var farAt = FAR_M[navState.mode];
