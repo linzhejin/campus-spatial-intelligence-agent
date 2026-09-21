@@ -484,6 +484,26 @@
         return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    // navigator.geolocation 返回的坐标系在国内不确定：
+    //   - 标准 WGS-84（Chrome/Edge 规范行为，手机 GPS）
+    //   - GCJ-02（国内 Windows Location Platform 可能用高德数据源，已偏移）
+    // 无法从 API 层直接判断坐标系。利用"校园中心"作为锚点对比：
+    //   把坐标当成 WGS-84 转一次 GCJ-02，看转换前后哪个离校园中心更近。
+    //   转换后更近 → 原始是 WGS-84；直接更近 → 原始已是 GCJ-02，需逆转回 WGS-84。
+    // 返回统一为 WGS-84，交给 renderUserLocation 做最终渲染转换。
+    function _guessWgs84FromNavigator(lng, lat) {
+        var center = MAP_CENTER; // GCJ-02 [lng, lat]
+        var dDirect = _haversineMeters(lat, lng, center[1], center[0]);
+        var gcj = wgs84ToGcj02(lng, lat);
+        var dConverted = _haversineMeters(gcj[1], gcj[0], center[1], center[0]);
+        if (dConverted < dDirect) {
+            // 转换后更近 → 原始是 WGS-84
+            return [lng, lat];
+        }
+        // 直接更近 → 原始是 GCJ-02，逆转回 WGS-84
+        return gcj02ToWgs84(lng, lat);
+    }
+
     // 后端所有坐标（POI、路径、路况）均为 GCJ-02；高德瓦片也是 GCJ-02，
     // 直接用 GCJ-02 坐标入图（[lat, lng]），无需转换
     function gcjToLatLng(lng, lat) {
@@ -908,8 +928,12 @@
                 // 系统航向/速度（手机浏览器一般支持；静止时 heading 常为 null）
                 var hd = (c.heading != null && isFinite(c.heading)) ? c.heading : null;
                 var sp = (c.speed != null && isFinite(c.speed)) ? c.speed : null;
-                renderUserLocation(c.longitude, c.latitude, c.accuracy, false, false, hd, sp);
-                console.log('[TRACK] 原生位置更新:', c.latitude.toFixed(4), c.longitude.toFixed(4),
+                // navigator.geolocation 坐标系不确定（国内 Windows 可能返回 GCJ-02），
+                // 用校园中心锚点猜测并统一为 WGS-84
+                var wgs = _guessWgs84FromNavigator(c.longitude, c.latitude);
+                renderUserLocation(wgs[0], wgs[1], c.accuracy, false, false, hd, sp);
+                console.log('[TRACK] 原生位置更新(猜系后 WGS-84):', wgs[1].toFixed(4), wgs[0].toFixed(4),
+                    '原始:', c.latitude.toFixed(4), c.longitude.toFixed(4),
                     hd != null ? 'heading=' + Math.round(hd) : '');
             },
             function (err) {
@@ -1006,9 +1030,12 @@
                 function (pos) {
                     // 高精度流已经出点（非 provisional）→ 粗点别来添乱
                     if (state._dispFix && !state._dispFix.provisional) return;
-                    renderUserLocation(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy, false, true);
+                    var wgs = _guessWgs84FromNavigator(pos.coords.longitude, pos.coords.latitude);
+                    renderUserLocation(wgs[0], wgs[1], pos.coords.accuracy, false, true);
                     _setLocStatus('已粗定位（误差约 ' + Math.round(pos.coords.accuracy || 999) + ' 米），GPS 精修中…', 'info');
-                    console.log('[TRACK] 粗定位(网络):', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4), '±', Math.round(pos.coords.accuracy || 0), 'm');
+                    console.log('[TRACK] 粗定位(网络,猜系后):', wgs[1].toFixed(4), wgs[0].toFixed(4),
+                        '原始:', pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4),
+                        '±', Math.round(pos.coords.accuracy || 0), 'm');
                 },
                 function (err) {
                     console.log('[TRACK] 粗定位失败 code:', err && err.code, '（GPS 主流程继续）');
@@ -1026,16 +1053,6 @@
         // APK 内走原生定位桥：无授权时序问题，且带罗盘/GPS 融合航向
         if (window.WhuWalkerLocation && typeof window.WhuWalkerLocation.start === 'function') {
             _startAppNativeWatch(silent);
-            return;
-        }
-        // PC 浏览器（非手机 UA）：navigator.geolocation 在 Windows 上坐标系不可信
-        // （Location Platform 在国内可能返回已被偏移的 GCJ-02，代码当 WGS-84 再转一次造成二次偏移）
-        // 直接走 AMap SDK（convert: true 强制 GCJ-02），跳过原生 watch
-        var isMobileUA = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
-        if (!isMobileUA) {
-            console.log('[TRACK] PC 浏览器环境 → 直接走 AMap SDK（跳过 navigator.geolocation 二次偏移风险）');
-            _setLocStatus('定位中…（WiFi/IP 定位）', 'info');
-            _startAmapWatch(silent);
             return;
         }
         _setLocStatus('定位中…（原生 GPS）', 'info');
