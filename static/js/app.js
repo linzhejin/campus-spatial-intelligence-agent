@@ -1074,25 +1074,49 @@
     // ===== 页面加载自动定位（静默版，持续跟踪） =====
     function autoLocateSilent() {
         if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); _setLocStatus('地图未就绪，跳过自动定位', 'warn'); return; }
+        // PC 端无 GPS，缓存位置可能来自上次 IP 定位（偏差数百米到公里），
+        // 直接显示会误导用户，跳过缓存只走实时定位（不达标则引导手动选点）
+        var _isMobileUA = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
         // 先画上次的位置（24 小时内有效，标注时长）：感知秒出，GPS/网络定位在后台接管
-        try {
-            var raw = localStorage.getItem('whu_last_pos');
-            if (raw) {
-                var c = JSON.parse(raw);
-                var ageMin = (Date.now() - (c.ts || 0)) / 60000;
-                if (c.lng && c.lat && ageMin >= 0 && ageMin <= 24 * 60) {
-                    renderUserLocation(c.lng, c.lat, c.accuracy || 0, false, true);
-                    var ageTxt = ageMin < 1 ? '刚刚' : (ageMin < 60 ? Math.round(ageMin) + ' 分钟前' : Math.round(ageMin / 60) + ' 小时前');
-                    _setLocStatus('先显示 ' + ageTxt + ' 的位置，正在重新定位…', 'info');
-                    console.log('[AUTO_LOC] 使用缓存位置（' + Math.round(ageMin) + ' 分钟前），等待新定位接管');
+        if (_isMobileUA) {
+            try {
+                var raw = localStorage.getItem('whu_last_pos');
+                if (raw) {
+                    var c = JSON.parse(raw);
+                    var ageMin = (Date.now() - (c.ts || 0)) / 60000;
+                    if (c.lng && c.lat && ageMin >= 0 && ageMin <= 24 * 60) {
+                        renderUserLocation(c.lng, c.lat, c.accuracy || 0, false, true);
+                        var ageTxt = ageMin < 1 ? '刚刚' : (ageMin < 60 ? Math.round(ageMin) + ' 分钟前' : Math.round(ageMin / 60) + ' 小时前');
+                        _setLocStatus('先显示 ' + ageTxt + ' 的位置，正在重新定位…', 'info');
+                        console.log('[AUTO_LOC] 使用缓存位置（' + Math.round(ageMin) + ' 分钟前），等待新定位接管');
+                    }
                 }
-            }
-        } catch (e) { /* 缓存损坏忽略 */ }
+            } catch (e) { /* 缓存损坏忽略 */ }
+        } else {
+            console.log('[AUTO_LOC] PC 环境跳过缓存位置，等待实时定位或手动选点');
+        }
         _setLocStatus('自动定位中…', 'info');
         startTracking(true);
     }
 
     function renderUserLocation(lng, lat, accuracy, isManual, isCached, heading, speed) {
+        // ===== PC 端精度门槛 =====
+        // PC 无 GPS，定位多走 Windows 位置服务（WiFi 指纹）或纯 IP，精度差时会乱跳到
+        // 校外/其他校区。手机端 GPS/网络定位稳定，不受此门槛影响。
+        // 拦截条件：非手机 UA + 非手动点 + (精度 >100m 或 accuracy=0)
+        //   缓存点也拦——避免上次 IP 定位留下的错位置继续误导 PC 用户
+        // 拦截后：不画蓝点、不更新 state._dispFix，只弹横幅引导手动选点
+        var isMobileUA = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+        if (!isMobileUA && !isManual) {
+            var pcAcc = accuracy || 0;
+            if (pcAcc === 0 || pcAcc > 100) {
+                console.warn('[TRACK] PC 精度不足（±' + (pcAcc || '∞') + 'm），拒显蓝点，引导手动选点');
+                _setLocStatus('电脑定位精度不足，请点右上角「起点」手动选点', 'warn');
+                showLowAccuracyWarning(pcAcc);
+                return;  // 不画蓝点、不更新 state
+            }
+        }
+
         // heading/speed：设备航向（°，0北90东）。独立于坐标——坐标被噪声抑制钉住时，
         // 原地转身航向仍然要透传给导航箭头
         var hasHeading = heading != null && isFinite(heading);
