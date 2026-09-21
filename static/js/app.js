@@ -952,8 +952,11 @@
                         try {
                             // 不要 _clearWatch()：原生 watch 报错后仍可能自愈出点，
                             // 两条流并存谁先到用谁，renderUserLocation 幂等
+                            // convert: true 强制 AMap 返回 GCJ-02——PC 浏览器上 navigator.geolocation
+                            // 坐标系不可信（Windows Location Platform 在国内可能返回已被偏移的 GCJ-02），
+                            // 让 AMap 统一处理转换，避免下游链路二次偏移
                             var geo = new AMap.Geolocation({
-                                enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: false,
+                                enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, convert: true,
                             });
                             state._amapGeolocation = geo;
                             state._amapWatchListener = geo.watchPosition(function (status, result) {
@@ -1023,6 +1026,16 @@
         // APK 内走原生定位桥：无授权时序问题，且带罗盘/GPS 融合航向
         if (window.WhuWalkerLocation && typeof window.WhuWalkerLocation.start === 'function') {
             _startAppNativeWatch(silent);
+            return;
+        }
+        // PC 浏览器（非手机 UA）：navigator.geolocation 在 Windows 上坐标系不可信
+        // （Location Platform 在国内可能返回已被偏移的 GCJ-02，代码当 WGS-84 再转一次造成二次偏移）
+        // 直接走 AMap SDK（convert: true 强制 GCJ-02），跳过原生 watch
+        var isMobileUA = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+        if (!isMobileUA) {
+            console.log('[TRACK] PC 浏览器环境 → 直接走 AMap SDK（跳过 navigator.geolocation 二次偏移风险）');
+            _setLocStatus('定位中…（WiFi/IP 定位）', 'info');
+            _startAmapWatch(silent);
             return;
         }
         _setLocStatus('定位中…（原生 GPS）', 'info');
