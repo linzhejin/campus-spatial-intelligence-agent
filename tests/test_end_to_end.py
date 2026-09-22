@@ -646,7 +646,7 @@ class TestTravelModeEndToEnd:
     # ---- /api/chat ----
     def test_chat_travel_mode_bike(self):
         """/api/chat 带 travel_mode=bike：响应 mode=bike 且含 duration_min。"""
-        code, body = self._post("/api/chat", {"query": "从牌坊到樱顶", "travel_mode": "bike"})
+        code, body = self._post("/api/chat", {"query": "从牌坊到工学部学生一食堂", "travel_mode": "bike"})
         assert code == 200, body
         data = body["data"]
         assert data["task_type"] == "path_planning"
@@ -694,7 +694,7 @@ class TestTravelModeEndToEnd:
         """/api/route 带 travel_mode=bike。"""
         code, body = self._post("/api/route", {
             "start": {"name": "牌坊", "type": "poi"},
-            "end": {"name": "樱顶", "type": "poi"},
+            "end": {"name": "工学部学生一食堂", "type": "poi"},
             "travel_mode": "bike",
         })
         assert code == 200, body
@@ -756,7 +756,7 @@ class TestTravelModeEndToEnd:
         """兼容 /api/parse 返回体的 mode 字段：值为 bike 时采纳；distance_first 等预设不采纳。"""
         code, body = self._post("/api/route", {
             "start": {"name": "牌坊", "type": "poi"},
-            "end": {"name": "樱顶", "type": "poi"},
+            "end": {"name": "工学部学生一食堂", "type": "poi"},
             "mode": "bike",
         })
         assert code == 200, body

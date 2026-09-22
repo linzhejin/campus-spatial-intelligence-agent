@@ -46,7 +46,7 @@ def mock_graph():
 class TestNormalizeWeights:
     def test_resolve_weights_default(self):
         result = resolve_weights(None)
-        assert result == {"distance": 0.8, "slope": 0.05, "scenery": 0.15}
+        assert result == {"distance": 0.90, "slope": 0.05, "scenery": 0.05}
         assert abs(sum(result.values()) - 1.0) < 1e-9
 
     @pytest.mark.parametrize("raw,expected_min", [
@@ -201,7 +201,7 @@ class TestTravelModeConstants:
     def test_walk_default_weights_unchanged(self):
         assert MODE_DEFAULT_WEIGHTS["walk"] == DEFAULT_WEIGHTS
         assert MODE_DEFAULT_WEIGHTS["walk"] == {
-            "distance": 0.80, "slope": 0.05, "scenery": 0.15
+            "distance": 0.90, "slope": 0.05, "scenery": 0.05
         }
 
     def test_walk_outside_penalty_unchanged(self):
@@ -254,13 +254,20 @@ class TestEdgeHighwayTags:
 
 class TestFilterGraphForMode:
     def test_walk_no_filter_returns_original(self, mode_graph):
+        # walk 分支现在也硬删 corridor 边（建筑连廊/穿楼通道，杜绝步行捷径）
+        # mock 图有 4 条 corridor 边（2 对双向: 5-6, 8-9），被硬删
         original_edges = mode_graph.number_of_edges()
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "walk")
-        assert Gf is mode_graph
-        assert status == "no_filter"
-        assert Gf.number_of_edges() == original_edges
+        assert status == "no_filter"  # mock 图无校外边
+        # corridor 硬删：边数减少 4
+        assert Gf.number_of_edges() == original_edges - 4
+        # corridor 边不在结果图中
+        assert not Gf.has_edge(5, 6, 0)
+        assert not Gf.has_edge(6, 5, 0)
+        assert not Gf.has_edge(8, 9, 0)
+        assert not Gf.has_edge(9, 8, 0)
 
-        # 步行模式不删边，但台阶（含混合标签）施加软惩罚，普通边无惩罚
+        # 台阶软惩罚仍然施加（混合标签台阶也惩罚）
         from spatial.routing import _WALK_STEPS_PENALTY
         assert penalty[(1, 2, 0)] == _WALK_STEPS_PENALTY
         assert penalty[(2, 1, 0)] == _WALK_STEPS_PENALTY
@@ -386,7 +393,7 @@ class TestComputeRouteModes:
         assert result["speed_kmh"] == 4.5
         # walk 不过滤，filter_status 不以 mode_ 开头
         assert not result["filter_status"].startswith("mode_")
-        assert result["applied_weights"] == DEFAULT_WEIGHTS
+        assert result["applied_weights"] == DEFAULT_WEIGHTS  # 通勤默认 distance 主导
 
     def test_annotations_passthrough_mode(self, mode_graph):
         result = compute_route_with_annotations(mode_graph, 0, 7, mode="bike")

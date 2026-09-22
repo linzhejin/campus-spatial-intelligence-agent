@@ -23,7 +23,7 @@ import networkx as nx
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WEIGHTS = {"distance": 0.8, "slope": 0.05, "scenery": 0.15}
+DEFAULT_WEIGHTS = {"distance": 0.90, "slope": 0.05, "scenery": 0.05}
 WEIGHT_BOUNDS = {"min": 0.05, "max": 0.8}
 
 _PATH_LENGTH_CAP_MULTIPLIER = 3.0
@@ -136,9 +136,12 @@ MODE_SPEEDS_KMH = {"walk": 4.5, "bike": 14.0, "drive": 25.0}
 # 实测：校园短边（中位 28m）上坡度按边计费，slope 权重 0.1 就会导致 20%+ 绕行，
 # 故步行默认 slope 压到 0.05（OD 实测绕行 <3%）。
 MODE_DEFAULT_WEIGHTS = {
-    "walk": {"distance": 0.80, "slope": 0.05, "scenery": 0.15},
-    "bike": {"distance": 0.60, "slope": 0.25, "scenery": 0.15},
-    "drive": {"distance": 0.85, "slope": 0.05, "scenery": 0.10},
+    # 通勤默认：distance 绝对主导（0.90/0.90/0.95），
+    # slope 近似不计（0.05/0.05/0.00），scenery 给极小权重（0.05/0.05/0.05）兜底。
+    # 用户明确表达"看风景/避坡"偏好时 LLM 才调高非距离权重，否则不主动偏航。
+    "walk": {"distance": 0.90, "slope": 0.05, "scenery": 0.05},
+    "bike": {"distance": 0.90, "slope": 0.05, "scenery": 0.05},
+    "drive": {"distance": 0.95, "slope": 0.00, "scenery": 0.05},
 }
 
 # 校外市政道路惩罚倍数：步行强避免（10×，与 _OUTSIDE_ROAD_PENALTY 保持一致）；
@@ -277,11 +280,14 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     if mode == "walk":
         # 台阶软惩罚：不封死（台阶本身可走，且可能是唯一通道），但不让它成为穿楼捷径。
         # 人工标注 walk_penalty（建筑内连廊等）与台阶惩罚叠加。
+        # corridor 硬封禁：OSM 的 corridor 为建筑内部连廊/穿楼通道，不是室外步行道，
+        # 不能让它成为步行穿楼捷径（与 bike/drive 对 corridor 的处理一致）。
         steps_penalty = {}
         hard_blocked = []
         for u, v, k, data in G_mode.edges(keys=True, data=True):
+            tags = _edge_highway_tags(data)
             mult = 1.0
-            if "steps" in _edge_highway_tags(data):
+            if "steps" in tags:
                 mult *= _WALK_STEPS_PENALTY
             wp = data.get("walk_penalty")
             if wp:
@@ -292,7 +298,8 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
             if mult > 1.0:
                 steps_penalty[(u, v, k)] = mult
             bm = _edge_blocked_modes(data)
-            if "all" in bm or "walk" in bm:
+            if ("all" in bm or "walk" in bm
+                    or "corridor" in tags):
                 hard_blocked.append((u, v, k))
         if hard_blocked:
             # 有人工封禁（"all"）边时才复制图，避免常态下整图拷贝
