@@ -69,7 +69,7 @@ _PREFERENCE_SCHEMA = {
     },
     "weights": {
         "type": "object",
-        "description": "软权重，三项均在 0.05~0.8 且和为 1。用户无偏好时不填（用默认值）",
+        "description": "软权重，三项均在 0.05~0.90 且和为 1。普通通勤不填（默认 0.90/0.05/0.05）",
         "properties": {
             "distance": {"type": "number"},
             "slope": {"type": "number"},
@@ -182,6 +182,7 @@ TOOL_SCHEMAS = [
                     "start": _ENDPOINT_SCHEMA,
                     "loop": {"type": "boolean", "description": "true=回到起点环线（默认），false=开放路线"},
                     "max_pois": {"type": "integer", "description": "游览点数量上限 2~8，默认 6"},
+                    **_PREFERENCE_SCHEMA,
                 },
             },
         },

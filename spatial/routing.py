@@ -7,7 +7,7 @@
   1. 硬约束过滤：根据 constraints 过滤不可通行路段
   2. 软成本优化：Cost = w_d × D + w_s × S + w_v × (1 − V)
   3. 路径长度上限：recommended ≤ shortest × 3 或 ≤ 2000m
-  4. 降级策略：约束过严时自动放宽
+  4. 不可达策略：保留硬约束，明确报告无可行路线
 
 数据源：
   - G: OSMnx 路网（含 length 属性）
@@ -24,7 +24,7 @@ import networkx as nx
 logger = logging.getLogger(__name__)
 
 DEFAULT_WEIGHTS = {"distance": 0.90, "slope": 0.05, "scenery": 0.05}
-WEIGHT_BOUNDS = {"min": 0.05, "max": 0.8}
+WEIGHT_BOUNDS = {"min": 0.05, "max": 0.90}
 
 _PATH_LENGTH_CAP_MULTIPLIER = 3.0
 _PATH_LENGTH_CAP_MAX = 2000.0
@@ -136,12 +136,11 @@ MODE_SPEEDS_KMH = {"walk": 4.5, "bike": 14.0, "drive": 25.0}
 # 实测：校园短边（中位 28m）上坡度按边计费，slope 权重 0.1 就会导致 20%+ 绕行，
 # 故步行默认 slope 压到 0.05（OD 实测绕行 <3%）。
 MODE_DEFAULT_WEIGHTS = {
-    # 通勤默认：distance 绝对主导（0.90/0.90/0.95），
-    # slope 近似不计（0.05/0.05/0.00），scenery 给极小权重（0.05/0.05/0.05）兜底。
+    # 三种出行方式的通勤默认统一为 0.90/0.05/0.05。
     # 用户明确表达"看风景/避坡"偏好时 LLM 才调高非距离权重，否则不主动偏航。
-    "walk": {"distance": 0.90, "slope": 0.05, "scenery": 0.05},
-    "bike": {"distance": 0.90, "slope": 0.05, "scenery": 0.05},
-    "drive": {"distance": 0.95, "slope": 0.00, "scenery": 0.05},
+    "walk": dict(DEFAULT_WEIGHTS),
+    "bike": dict(DEFAULT_WEIGHTS),
+    "drive": dict(DEFAULT_WEIGHTS),
 }
 
 # 校外市政道路惩罚倍数：步行强避免（10×，与 _OUTSIDE_ROAD_PENALTY 保持一致）；
@@ -645,7 +644,7 @@ def resolve_weights(llm_weights: Optional[dict]) -> dict:
     解析 LLM 输出的 weights，校验后返回最终权重。
 
     - 入参为 None 时返回 DEFAULT_WEIGHTS
-    - 每个权重强制限制在 [0.05, 0.8]
+    - 每个权重强制限制在 [0.05, 0.90]
     - 归一化使总和 = 1
 
     Args:
@@ -749,7 +748,7 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
     DEC-011 规则：
       - slope=avoid: 过滤 slope_level=5 的路段
                      slope_level=4 的路段加 2× 距离惩罚
-                     兜底：若无可行路径，放宽 slope_level=4 可通行（3× 惩罚）
+                     无可行路径时保留硬约束，由调用方报告不可达
       - 其他约束等级（normal/any）：不过滤
 
     Args:
@@ -759,7 +758,7 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
     Returns:
         (G_filtered, filter_status, penalty_map) 元组
         - G_filtered: 过滤后的图（可能是原图副本）
-        - filter_status: 状态标记 ("filtered" | "degraded_slope" | "no_filter")
+        - filter_status: 状态标记 ("filtered" | "no_filter")
         - penalty_map: {(u, v, k): penalty_multiplier} 用于成本调整
     """
     slope_constraint = constraints.get("slope", "normal")
@@ -783,15 +782,6 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
 
     G_filtered = G.copy()
     G_filtered.remove_edges_from(edges_to_remove)
-
-    if nx.is_empty(G_filtered):
-        G_filtered = G.copy()
-        penalty_map = {}
-        for u, v, k, data in G.edges(keys=True, data=True):
-            if data.get("slope_level") == 5:
-                penalty_map[(u, v, k)] = 3.0
-        logger.info("硬约束过滤后无可行路径，降级为 slope_level=4+5 均可通行")
-        return G_filtered, "degraded_slope", penalty_map
 
     return G_filtered, "filtered", penalty_map
 
@@ -953,6 +943,8 @@ def _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode="wal
         raise ValueError(
             "该路线因道路封闭/施工暂时无法通行，建议选择附近的其他地点作为起终点，或稍后再试～"
         )
+    if "slope_avoid" in filter_status:
+        raise ValueError("暂未找到满足避坡要求的路线，已保留避开陡坡的约束，请更换起终点。")
     if mode == "drive":
         raise ValueError(
             "驾车无法到达该地点（附近可能只有步行道/台阶），建议切换骑行或步行～"
@@ -1035,24 +1027,15 @@ def compute_route(
     else:
         resolved_weights = resolve_weights(weights)
 
-    # 天气影响权重：高温时倾向树荫景观路（在归一化/校验后的权重上微调再归一化）
+    # 天气只提供状态与路段安全惩罚，不修改默认或用户指定的偏好权重。
     weather_penalty = {}
     weather_applied = False
     if weather_info:
         try:
-            from spatial.weather import weather_slope_penalty, adjust_weights_for_weather, classify_weather
-            slope_pen = weather_slope_penalty(weather_info)
+            from spatial.weather import classify_weather
             weather_applied = bool(classify_weather(weather_info).get("label"))
-            if slope_pen:
-                # 湿滑：对陡坡/台阶边按 slope_level 加惩罚（先收集 level→multiplier）
-                # 实际边惩罚在 G_filtered 构建后按 slope_level 注入
-                pass
-            hot_adj = adjust_weights_for_weather(resolved_weights, weather_info)
-            # 高温且 weights 非用户显式锁定时采用；这里仅在发生变化时覆盖
-            if hot_adj != resolved_weights:
-                resolved_weights = resolve_weights(hot_adj)
         except Exception as e:
-            logger.warning("天气权重调整失败，跳过: %s", e)
+            logger.warning("天气分类失败，跳过: %s", e)
 
     max_len, norm_lengths = _normalize_lengths(G)
 
@@ -1071,7 +1054,6 @@ def compute_route(
     road_penalty = {}
     road_conditions_applied = 0
     closed_edges = set()
-    G_mode_before_road = G_mode  # 保存路况处理前的图，用于不可达时软降级重试
     if road_conditions is None:
         try:
             from spatial.road_conditions import list_conditions
@@ -1148,64 +1130,11 @@ def compute_route(
             G_filtered, start_node, end_node, weight=edge_weight
         )
     except nx.NetworkXNoPath:
-        # 路况封闭边导致不可达时，软降级重试：不删边，封闭边施加 1000× 惩罚
-        if closed_edges:
-            closure_penalty = {(u, v, k): 1000.0 for u, v, k in closed_edges}
-            retry_penalty = _merge_penalty_maps(mode_penalty, road_penalty, closure_penalty)
-            edge_weight = _edge_cost_factory(
-                G_mode_before_road, norm_lengths, resolved_weights, retry_penalty,
-                annotation_degraded, outside_road_penalty=outside_penalty,
-            )
-            try:
-                recommended = nx.dijkstra_path(
-                    G_mode_before_road, start_node, end_node, weight=edge_weight
-                )
-                filter_status = "degraded_road_closure"
-                if annotation_degraded is not None:
-                    filter_status = f"degraded_road_closure+{annotation_degraded}"
-                logger.info(
-                    "路况封闭导致 start=%s end=%s mode=%s 不可达，软降级（封闭边1000×成本）后重算成功",
-                    start_node, end_node, mode,
-                )
-            except nx.NetworkXNoPath:
-                _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
-        # 避坡硬过滤（删除 slope_level=5 边）可能割裂路网（湖滨/凌波门等台阶密集区域）。
-        # 软降级重试：不删边，level5 边 3× 成本、level4 边 2× 成本，保证可达、仍尽量少走陡坡。
-        elif constraints.get("slope") == "avoid":
-            retry_penalty = {}
-            for u, v, k, data in G_mode.edges(keys=True, data=True):
-                lvl = data.get("slope_level")
-                if lvl == 5:
-                    retry_penalty[(u, v, k)] = 3.0
-                elif lvl == 4:
-                    retry_penalty[(u, v, k)] = 2.0
-            retry_penalty = _merge_penalty_maps(mode_penalty, retry_penalty)
-            edge_weight = _edge_cost_factory(
-                G_mode, norm_lengths, resolved_weights, retry_penalty,
-                annotation_degraded, outside_road_penalty=outside_penalty,
-            )
-            try:
-                recommended = nx.dijkstra_path(
-                    G_mode, start_node, end_node, weight=edge_weight
-                )
-                if mode == "walk":
-                    filter_status = "degraded_slope"
-                    if annotation_degraded is not None:
-                        filter_status = f"degraded_slope+{annotation_degraded}"
-                else:
-                    filter_status = f"{mode_status}+degraded_slope"
-                    if annotation_degraded is not None:
-                        filter_status = f"{mode_status}+degraded_slope+{annotation_degraded}"
-                logger.info(
-                    "避坡硬过滤导致 start=%s end=%s mode=%s 不可达，软降级（陡坡3×成本）后重算成功",
-                    start_node, end_node, mode,
-                )
-            except nx.NetworkXNoPath:
-                _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
-        else:
-            _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
+        if constraints.get("slope") == "avoid" and not disable_hard_filter:
+            filter_status = f"{filter_status}+slope_avoid"
+        _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
 
-    # 最短路径基线在方式过滤图上计算（避免驾车最短路线穿台阶/步行道）。
+    # 最短路径基线使用同一张硬约束过滤图，避免对比路线经过封闭路或禁走陡坡。
     # 步行模式还要叠加台阶/穿楼连廊的基础设施惩罚——否则灰虚线"最短路线"仍会
     # 从食堂建筑里穿过去（物理距离最短但不可作为正常通道）。
     def _baseline_weight(u, v, data):
@@ -1227,7 +1156,7 @@ def compute_route(
         return length * mult
 
     try:
-        shortest = nx.dijkstra_path(G_mode, start_node, end_node, weight=_baseline_weight)
+        shortest = nx.dijkstra_path(G_filtered, start_node, end_node, weight=_baseline_weight)
     except nx.NetworkXNoPath:
         shortest = recommended
 
@@ -1610,7 +1539,7 @@ def compute_tour_route(
         order.remove(victim)
         dropped.append(poi_nodes[victim - 1][0] if anchor_first else poi_nodes[victim][0])
 
-    # 逐段生成真实加权路径；某段加权不可达时退化为最短路径
+    # 逐段生成满足约束的路径；不可达时明确失败，不回退到未过滤的最短路径。
     ordered_nodes = [nodes[i] for i in order]
     ordered_pois = [poi_nodes[i - 1][0] if anchor_first else poi_nodes[i][0]
                     for i in order if not (anchor_first and i == 0)]
@@ -1620,14 +1549,8 @@ def compute_tour_route(
     for a, b in zip(seq, seq[1:]):
         if a == b:
             continue
-        try:
-            leg = compute_route(G, a, b, constraints, weights, mode=mode,
-                                road_conditions=road_conditions, weather_info=weather_info)
-        except ValueError:
-            path = nx.dijkstra_path(G_mode, a, b, weight="length")
-            leg = {"recommended": path, "shortest": path,
-                   "recommended_length_m": _path_length(G, path),
-                   "filter_status": "tour_leg_fallback", "mode": mode}
+        leg = compute_route(G, a, b, constraints, weights, mode=mode,
+                            road_conditions=road_conditions, weather_info=weather_info)
         legs.append(leg)
         total += leg["recommended_length_m"]
 

@@ -25,6 +25,7 @@ from flask import Blueprint, request, jsonify, session
 
 import config
 from agents.parser import parse_query, detect_travel_mode
+from agents.planner import PlannerError
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
@@ -36,6 +37,7 @@ from spatial.routing import (
     normalize_mode,
     filter_graph_for_mode,
     MODE_DEFAULT_WEIGHTS,
+    DEFAULT_WEIGHTS,
     build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
@@ -87,7 +89,7 @@ _network_initialized = False
 #   distance_first 最短路径 / scenery_first 风景优先 / slope_avoid 平坦优先（避开陡坡）
 SHORTCUT_MODE_PRESETS = {
     "distance_first": {
-        "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1},
+        "weights": dict(DEFAULT_WEIGHTS),
         "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"},
     },
     "scenery_first": {
@@ -175,57 +177,12 @@ def _resolve_travel_mode(query=None, body_mode=None, intent_mode=None):
     return "walk"
 
 
-# —— 非景点目的地默认纯最短 ——
-# 景点类 POI（type=scenery 或 scenery_score>=3）用平衡权重；
-# 功能性目的地（study/dining/dorm/sports/gate/service 等）和 GPS 坐标目的地
-# 一律用纯距离权重，slope/scenery 弱偏好只在用户显式表达或 LLM 输出时生效。
-_SCENERY_TYPES = {"scenery"}  # 只明确标注为 scenery 的
-_SCENERY_MIN_SCORE = 3       # 片区中心点等也可能被打 3 分
-
-_WEIGHTS_DISTANCE_ONLY = {
-    "distance": 0.8, "slope": 0.05, "scenery": 0.05,
-}
-
-
-def _is_scenery_destination(poi_or_ref) -> bool:
-    """判断目的地 POI 是否属于景点类（应使用风景偏好权重）。
-
-    入参可能是完整 POI dict（从 get_poi 返回），也可能是 PoiRef 兜底
-    （type="coord" 或找不到 POI 时只有 name/coordinates）。兜底情况一律算
-    "非景点" → 纯最短。
-    """
-    if not isinstance(poi_or_ref, dict):
-        return False
-    t = poi_or_ref.get("type")
-    if t == "coord":
-        return False
-    if t in _SCENERY_TYPES:
-        return True
-    score = poi_or_ref.get("scenery_score") or 0
-    return score >= _SCENERY_MIN_SCORE
-
-
 def _weights_for_destination(end_poi, mode, explicit_weights=None):
-    """根据目的地类型和用户显式偏好决定路由权重。
-
-    规则：
-      - explicit_weights 非 None → 用户/LLM 已给出偏好，直接用
-      - 终点是景点类 → 用 MODE_DEFAULT_WEIGHTS[mode]（平衡权重）
-      - 终点是功能性目的地/GPS 坐标 → 用 _WEIGHTS_DISTANCE_ONLY（纯最短）
-
-    返回 dict 或 None（调用 compute_route 时传 None 会用默认）。
-    """
+    """显式偏好优先；通勤统一默认值，不根据目的地是否为景点改变权重。"""
     if explicit_weights is not None:
         return explicit_weights
     mode = normalize_mode(mode)
-    if mode == "drive":
-        # 驾车只关心省时：坡度无意义、风景不绕路，近乎纯距离（时长按固定速度=最短即最快）
-        return {"distance": 0.95, "slope": 0.0, "scenery": 0.05}
-    if _is_scenery_destination(end_poi):
-        # 景点：按出行方式给平衡权重
-        return dict(MODE_DEFAULT_WEIGHTS[mode])
-    # 非景点：纯距离主导
-    return dict(_WEIGHTS_DISTANCE_ONLY)
+    return dict(MODE_DEFAULT_WEIGHTS[mode])
 
 
 def _mode_filtered_graph(G, mode):
@@ -890,8 +847,11 @@ def chat():
         return _ok(_agent_response_to_legacy(agent_resp,
                     coord_start=body.get("coord_start"),
                     coord_end=body.get("coord_end")))
-    except Exception as e:
+    except PlannerError as e:
         logger.warning("Agent 规划器不可用（%s: %s），落回旧管道", type(e).__name__, e)
+    except Exception:
+        logger.exception("Agent 规划处理发生内部错误")
+        return _err("internal_error", "路线规划服务暂时异常，请稍后重试。", 500)
 
     try:
         intent = parse_query(query, context)

@@ -20,6 +20,7 @@ import httpx
 import config
 from agents import tools as agent_tools
 from agents import knowledge, profile
+from agents.preferences import route_preference_requested
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +114,15 @@ def _build_messages(query: str, context: dict = None, history: list = None,
         messages.append({"role": "system", "content": knowledge_msg})
 
     # 用户画像注入（动态个体偏好）
-    profile_msg = profile.build_profile_message(uid)
+    allow_preferences = route_preference_requested(query, context, history)
+    profile_msg = profile.build_profile_message(uid) if allow_preferences else None
     if profile_msg:
         messages.append({"role": "system", "content": profile_msg})
+    if not allow_preferences and re.search(r"从.{1,20}(?:到|去)|路线|怎么走|通勤|上课|宿舍", query):
+        messages.append({"role": "system", "content":
+                         "本次为普通通勤或距离优先请求。所有规划工具省略 weights，"
+                         "使用固定默认 distance/slope/scenery=0.90/0.05/0.05。"
+                         "目的地为景点、天气、任务卡和历史画像均不能改变这组权重。"})
 
     # 出行方式注入：前端切换了步行/骑行/驾车，LLM 应在 plan_route 等工具调用中设 mode
     if travel_mode and travel_mode in ("walk", "bike", "drive"):
@@ -210,6 +217,14 @@ def run_agent(query: str, context: dict = None, history: list = None,
     artifact_suggestions = None
     final_message = ""
     turns = 0
+    allow_preferences = route_preference_requested(query, context, history)
+    previous = (context or {}).get("previous_intent") or {}
+    prev_constraints = previous.get("constraints") or (context or {}).get("constraints") or {}
+    avoid_slope = prev_constraints.get("slope") == "avoid" or "避坡" in query or "陡坡" in query
+    active_weights = None
+    if allow_preferences:
+        active_weights = previous.get("weights")
+    route_tools = {"plan_route", "plan_via_route", "plan_tour", "plan_multimodal_route"}
 
     for _ in range(MAX_TURNS):
         if time.monotonic() - started > TIME_BUDGET_S:
@@ -246,6 +261,19 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 result = {"error": "invalid_args", "message": "参数不是合法 JSON，请修正后重试"}
                 artifact = None
             else:
+                if name in route_tools and isinstance(args, dict):
+                    if not allow_preferences:
+                        args.pop("weights", None)
+                    elif active_weights and "weights" not in args:
+                        args["weights"] = active_weights
+                    elif args.get("weights"):
+                        active_weights = args["weights"]
+                    constraints = args.get("constraints")
+                    if isinstance(constraints, dict):
+                        avoid_slope = avoid_slope or constraints.get("slope") == "avoid"
+                    if avoid_slope:
+                        args["constraints"] = {**(constraints if isinstance(constraints, dict) else {}),
+                                               "slope": "avoid"}
                 result, artifact = agent_tools.execute_tool(name, args)
 
             if artifact:

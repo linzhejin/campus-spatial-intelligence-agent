@@ -8,6 +8,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from config import DEEPSEEK_API_KEY, OPENAI_BASE_URL, LLM_MODEL
+from agents.preferences import route_preference_requested
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ FEW_SHOT_EXAMPLES = [
     ),
     (
         "从梅园到桂园，最短路径",
-        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"weights":{"distance":0.8,"slope":0.1,"scenery":0.1},"mode":"walk","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "带朋友逛，从教五去图书馆，走风景好的路",
@@ -907,6 +908,23 @@ def _t011_post_process(
     kw_mode, mode_explicit = detect_travel_mode(query)
     if mode_explicit:
         intent.mode = kw_mode
+
+    # 多轮只改出行方式时，保留上一轮明确的避坡/景观硬约束。
+    if context and route_preference_requested(query, context):
+        prev = context.get("previous_intent") or {}
+        prev_constraints = prev.get("constraints") or context.get("constraints") or {}
+        if isinstance(prev_constraints, dict):
+            if prev_constraints.get("slope") in ("avoid", "prefer") and intent.constraints.slope == "normal":
+                intent.constraints.slope = prev_constraints["slope"]
+            if prev_constraints.get("scenery") == "high" and intent.constraints.scenery == "normal":
+                intent.constraints.scenery = "high"
+        if intent.weights is None and prev.get("weights"):
+            intent.weights = prev["weights"]
+
+    # 普通通勤不得因模型、目的地或历史权重变成游览路线；快捷按钮保留显式选择。
+    if (not shortcut_mode_hint and intent.input_method != "shortcut"
+            and not route_preference_requested(query, context)):
+        intent.weights = None
 
     # 4. 优先级打标（T-011 验收 6）
     if shortcut_mode_hint:

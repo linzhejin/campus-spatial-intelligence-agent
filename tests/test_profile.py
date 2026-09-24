@@ -20,8 +20,8 @@ class TestRecordFeedback:
     def test_first_accept_creates_profile(self):
         p = profile.record_route_feedback("u1", W)
         assert p["accepted_count"] == 1
-        # EMA: 0.7*0.5 + 0.3*0.7 = 0.56
-        assert p["weights"]["distance"] == pytest.approx(0.56, abs=1e-3)
+        # EMA: 0.7*0.9 + 0.3*0.7 = 0.84
+        assert p["weights"]["distance"] == pytest.approx(0.84, abs=1e-3)
 
     def test_ema_converges_toward_accepted(self):
         for _ in range(10):
@@ -38,7 +38,7 @@ class TestRecordFeedback:
 
     def test_unnormalized_weights_are_normalized(self):
         p = profile.record_route_feedback("u1", {"distance": 7, "slope": 2, "scenery": 1})
-        assert p["weights"]["distance"] == pytest.approx(0.56, abs=1e-3)
+        assert p["weights"]["distance"] == pytest.approx(0.84, abs=1e-3)
 
     def test_invalid_inputs_return_none(self):
         assert profile.record_route_feedback("", W) is None
@@ -69,6 +69,12 @@ class TestBuildProfileMessage:
 
 
 class TestPlannerInjection:
+    def test_profile_not_injected_for_commute(self):
+        for _ in range(profile.MIN_SAMPLES):
+            profile.record_route_feedback("u1", {"distance": 0.1, "slope": 0.1, "scenery": 0.8})
+        msgs = planner._build_messages("从教五到图书馆", uid="u1")
+        assert not any("历史偏好" in m["content"] for m in msgs if m["role"] == "system")
+
     def test_profile_injected_when_mature(self):
         for _ in range(profile.MIN_SAMPLES):
             profile.record_route_feedback("u1", W)

@@ -584,7 +584,7 @@ def apply_conditions_to_graph(
         (G_modified, penalty_map, closed_edges, applied_count)
         - G_modified: 硬封边移除后的图（无封边时为原图）
         - penalty_map: {(u,v,k): 成本倍数} 软惩罚边
-        - closed_edges: 被硬封的边集合（供不可达时软降级重试）
+        - closed_edges: 被硬封的边集合（用于不可达诊断，不可恢复通行）
         - applied_count: 在该模式图上实际命中至少一条边的事件数
     """
     if conditions is None:

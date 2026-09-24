@@ -18,6 +18,8 @@ import logging
 import threading
 from pathlib import Path
 
+from spatial.routing import DEFAULT_WEIGHTS
+
 logger = logging.getLogger(__name__)
 
 _PROFILES_PATH = Path(__file__).parent.parent / "data" / "user_profiles.json"
@@ -79,7 +81,7 @@ def record_route_feedback(uid: str, applied_weights: dict, accepted: bool = True
     with _lock:
         profiles = _load()
         p = profiles.setdefault(uid, {
-            "weights": {"distance": 0.5, "slope": 0.2, "scenery": 0.3},  # 与系统默认一致
+            "weights": dict(DEFAULT_WEIGHTS),
             "accepted_count": 0,
             "exposure_count": 0,
         })
@@ -99,8 +101,8 @@ def build_profile_message(uid: str) -> str | None:
         return None
     w = p["weights"]
     return (
-        f"该用户的历史偏好（{p['accepted_count']} 次采纳中学得，作为默认倾向，"
+        f"该用户的历史偏好（{p['accepted_count']} 次采纳中学得，仅在本次有偏好需求时参考，"
         f"用户本次显式要求优先）：distance={w['distance']:.2f}, "
         f"slope={w['slope']:.2f}, scenery={w['scenery']:.2f}。"
-        f"用户没有表达偏好时，weights 参考这组值。"
+        f"普通通勤和赶时间请求不使用画像权重，统一使用 0.90/0.05/0.05。"
     )

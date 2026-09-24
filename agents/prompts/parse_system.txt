@@ -65,6 +65,8 @@
 
 weights 是可选的软成本权重，反映用户偏好的强度。**如果 constraints 全为默认值（medium/normal/normal），则 weights 必须为 null。**
 
+普通 A→B 通勤、赶时间、快点到、最短路线统一 weights=null，后端固定采用 distance/slope/scenery=0.90/0.05/0.05（全部出行方式一致）。目的地是景点也不能推断为游览需求。只有明确的避坡、看风景、游览等偏好才按下面规则生成权重。
+
 如果用户表达了明确偏好，按以下规则生成 weights：
 
 ## 单个偏好（只表达了 1 个维度）
@@ -80,10 +82,10 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 ## 强烈单一偏好
 - 该维度设为 0.7~0.8
 - 其余两维度均分剩余
-- 示例：「最短」（强烈）→ {distance: 0.8, slope: 0.1, scenery: 0.1}
+- 示例：「最短」（强烈）→ weights=null，采用固定通勤默认值
 - 示例：「绝对不走陡坡」→ {distance: 0.1, slope: 0.8, scenery: 0.1}
 
-**注意**：每个权重在 [0.05, 0.8] 范围内，无需归一化（后端自动处理）。
+**注意**：每个权重在 [0.05, 0.90] 范围内，无需归一化（后端自动处理）。
 
 # 四、起终点识别（原文名提取）
 
@@ -149,7 +151,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "avoid", "scenery": "high"}, "weights": {"distance": 0.1, "slope": 0.5, "scenery": 0.4}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："从梅园到桂园，最短路径"
-输出：{"task_type": "path_planning", "start": {"name": "梅园", "type": "poi"}, "end": {"name": "桂园", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}, "mode": "walk", "input_method": "nl", "ambiguity": null}
+输出：{"task_type": "path_planning", "start": {"name": "梅园", "type": "poi"}, "end": {"name": "桂园", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："带朋友逛，从教五去图书馆，走风景好的路"
 输出：{"task_type": "path_planning", "start": {"name": "教五", "type": "poi"}, "end": {"name": "图书馆", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": null}
@@ -161,7 +163,7 @@ weights 是可选的软成本权重，反映用户偏好的强度。**如果 con
 输出：{"task_type": "path_planning", "start": {"name": "总图书馆", "type": "poi"}, "end": {"name": "凌波门", "type": "poi"}, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": null}
 
 输入："哪条路去樱顶最近"
-输出：{"task_type": "path_planning", "start": null, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": {"distance": 0.7, "slope": 0.15, "scenery": 0.15}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
+输出：{"task_type": "path_planning", "start": null, "end": {"name": "樱顶", "type": "poi"}, "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"}, "weights": null, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}
 
 输入："我第一次来武大，想看最美的校园路线"
 输出：{"task_type": "path_planning", "start": null, "end": null, "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"}, "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7}, "mode": "walk", "input_method": "nl", "ambiguity": "请指定起点"}

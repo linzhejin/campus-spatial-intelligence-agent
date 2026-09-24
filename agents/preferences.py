@@ -1,0 +1,47 @@
+"""决定是否允许偏好权重，避免模型或历史画像替普通通勤添加游览偏好。"""
+
+import re
+
+
+_PREFERENCE = re.compile(
+    r"风景|景观|看景|赏景|赏樱|赏花|看花|看樱花|观景|拍照|最美|漂亮|"
+    r"游览|旅游|游客|逛|散步|走走|沿湖|沿着湖|树荫|阴凉|少晒|遮阳|"
+    r"爬坡|陡坡|坡道|平坦|平路|台阶|楼梯|省力|轻松|费力|膝盖|轮椅|无障碍|"
+    r"锻炼|跑步|爬山|多走|远一点|景色好|不想上坡|不要上坡"
+)
+_DISTANCE_ONLY = re.compile(r"最短|赶时间|赶课|快一点|快点|尽快|直接到|不绕路|别绕路|默认路线")
+_FOLLOWUP = re.compile(r"^(还是|换|改|那|继续|然后|从那里|从这|骑车|骑行|开车|驾车|步行|走路)")
+_NEGATED_SCENERY = re.compile(r"(?:不看|不要看|不用看|不考虑|无所谓)(?:风景|景观|景色|景)")
+
+
+def route_preference_requested(query: str, context: dict = None, history: list = None) -> bool:
+    """只对显式偏好及其后续修改开放权重；新 A→B 行程不继承游览偏好。"""
+    text = _NEGATED_SCENERY.sub("", query or "").strip()
+    if re.search(r"从.{1,20}(?:到|去).{1,20}", text):
+        # 新的完整 A→B 行程不继承上一轮的游览偏好。
+        explicit = _PREFERENCE.search(text)
+        return bool(explicit)
+    if _PREFERENCE.search(text):
+        return True
+    if _DISTANCE_ONLY.search(text):
+        return False
+    context = context if isinstance(context, dict) else {}
+    previous = context.get("previous_intent") or {}
+    if not isinstance(previous, dict):
+        previous = {}
+    turns = history or context.get("history") or []
+    clarification = any(isinstance(t, dict) and t.get("role") == "assistant"
+                        and any(x in str(t.get("content", "")) for x in ("起点", "从哪里", "出发"))
+                        for t in turns[-2:])
+    if not _FOLLOWUP.search(text) and not previous.get("ambiguity") and not clarification:
+        return False
+    for turn in reversed(turns):
+        if not isinstance(turn, dict):
+            continue
+        prior = turn.get("content") if turn.get("role") == "user" else turn.get("query")
+        if not prior or prior == query:
+            continue
+        # 递归只传更早的历史，让连续修改也能追溯到原始偏好。
+        return route_preference_requested(str(prior), history=turns[:turns.index(turn)])
+    constraints = previous.get("constraints") or context.get("constraints") or {}
+    return constraints.get("slope") in ("avoid", "prefer") or constraints.get("scenery") == "high"

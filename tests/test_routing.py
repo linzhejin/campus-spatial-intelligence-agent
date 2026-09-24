@@ -57,7 +57,7 @@ class TestNormalizeWeights:
         result = resolve_weights(raw)
         for v in result.values():
             assert v >= 0.05 - 1e-9
-            assert v <= 0.8 + 1e-9
+            assert v <= 0.9 + 1e-9
         assert abs(sum(result.values()) - 1.0) < 1e-9
 
     def test_resolve_weights_boundary_normalized(self):
@@ -600,3 +600,71 @@ class TestToolPlanMultimodalRoute:
         }
         result, artifact = _tool_plan_multimodal_route(args, None)
         assert "error" in result and result["error"] == "poi_not_found"
+
+
+class TestRoutingReliability:
+    """通勤参数与硬约束必须在实际寻路结果上成立。"""
+
+    @pytest.fixture(autouse=True)
+    def isolate_annotations(self, monkeypatch):
+        monkeypatch.setattr(routing_module, "_should_degrade_annotations", lambda: None)
+
+    @pytest.mark.parametrize("mode", ["walk", "bike", "drive"])
+    @pytest.mark.parametrize("weights", [None, {"distance": 0.90, "slope": 0.05, "scenery": 0.05}])
+    def test_commute_weights_survive_hot_weather(self, mode_graph, mode, weights):
+        result = compute_route(mode_graph, 0, 7, mode=mode, weights=weights,
+                               road_conditions=[], weather_info={"temperature": 38, "weather": "晴"})
+        assert result["applied_weights"] == pytest.approx(
+            {"distance": 0.90, "slope": 0.05, "scenery": 0.05})
+
+    def test_explicit_preferences_survive_hot_weather(self, mode_graph):
+        weights = {"distance": 0.2, "slope": 0.6, "scenery": 0.2}
+        result = compute_route(mode_graph, 0, 7, weights=weights, road_conditions=[],
+                               weather_info={"temperature": 38, "weather": "晴"})
+        assert result["applied_weights"] == pytest.approx(weights)
+
+    @staticmethod
+    def _chain():
+        graph = nx.MultiDiGraph()
+        for u, v in ((0, 1), (1, 2), (2, 3)):
+            graph.add_edge(u, v, length=100.0, highway="residential",
+                           slope_level=2, scenery_level=3)
+            graph.add_edge(v, u, length=100.0, highway="residential",
+                           slope_level=2, scenery_level=3)
+        return _set_campus_coords(graph)
+
+    def test_closure_disconnect_must_not_restore_closed_edge(self):
+        graph = self._chain()
+        conditions = [{"id": "blocked", "type": "closure", "edge": {"u": 1, "v": 2, "key": 0}}]
+        with pytest.raises(ValueError, match="封闭|无法通行"):
+            compute_route(graph, 0, 3, road_conditions=conditions)
+
+    @pytest.mark.parametrize("all_steep", [False, True])
+    def test_slope_disconnect_must_not_relax_constraint(self, all_steep):
+        graph = self._chain()
+        for u, v, data in graph.edges(data=True):
+            if all_steep or u == 1:
+                data["slope_level"] = 5
+        with pytest.raises(ValueError, match="陡坡|避坡"):
+            compute_route(graph, 0, 3, constraints={"slope": "avoid"}, road_conditions=[])
+
+    def test_shortest_comparison_also_respects_slope_constraint(self):
+        graph = self._chain()
+        graph.add_edge(0, 3, length=10.0, highway="residential", slope_level=5, scenery_level=3)
+        result = compute_route(graph, 0, 3, constraints={"slope": "avoid"}, road_conditions=[])
+        assert result["recommended"] == [0, 1, 2, 3]
+        assert result["shortest"] == [0, 1, 2, 3]
+
+    def test_tour_must_not_fallback_through_closed_edge(self):
+        graph = self._chain()
+        conditions = [{"id": "blocked", "type": "closure", "edge": {"u": 1, "v": 2, "key": 0}}]
+        with pytest.raises(ValueError, match="封闭|无法通行"):
+            compute_tour_route(graph, [({"name": "B"}, 3)], start_node=0,
+                               loop=False, road_conditions=conditions)
+
+    def test_tour_must_not_fallback_through_steep_edge(self):
+        graph = self._chain()
+        graph[1][2][0]["slope_level"] = 5
+        with pytest.raises(ValueError, match="陡坡|避坡"):
+            compute_tour_route(graph, [({"name": "B"}, 3)], start_node=0,
+                               loop=False, constraints={"slope": "avoid"}, road_conditions=[])

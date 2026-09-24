@@ -36,7 +36,7 @@ class TestTelemetry:
         assert r.get_json()["data"]["recorded"] is True
         p = profile.get_profile("u1")
         assert p["accepted_count"] == 1
-        assert p["weights"]["distance"] == pytest.approx(0.56, abs=1e-3)
+        assert p["weights"]["distance"] == pytest.approx(0.84, abs=1e-3)
 
     def test_route_shown_only_exposure(self, client):
         client.post("/api/telemetry",

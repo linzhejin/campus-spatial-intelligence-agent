@@ -195,3 +195,80 @@ class TestChatEndpointAgentFirst:
             r = client.post("/api/chat", json={"query": "你好"})
         assert r.status_code == 200
         assert r.get_json()["data"]["task_type"] == "chat"
+
+    def test_internal_bug_does_not_trigger_legacy_parser(self, client):
+        with patch("agents.planner.run_agent", side_effect=RuntimeError("implementation bug")), \
+             patch("api.routes.parse_query") as mock_parse:
+            r = client.post("/api/chat", json={"query": "从教五到图书馆"})
+        mock_parse.assert_not_called()
+        assert r.status_code == 500
+        assert r.get_json()["error"] == "internal_error"
+        assert "implementation bug" not in r.get_data(as_text=True)
+
+
+class TestPreferenceReliability:
+    def test_retry_keeps_explicit_weights(self):
+        weights = {"distance": 0.2, "slope": 0.1, "scenery": 0.7}
+        client = FakeClient([
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {"weights": weights})]),
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {})]),
+            _fake_response(content="暂未找到可行路线。"),
+        ])
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool", return_value=({"error": "route_not_found"}, None)) as execute:
+            planner.run_agent("从教五到图书馆，走风景好的路")
+        assert execute.call_args_list[1].args[1]["weights"] == weights
+
+    def test_slope_avoid_is_enforced_when_model_omits_it(self):
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {})]),
+                             _fake_response(content="没有可行路线。")])
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool", return_value=({"error": "route_not_found"}, None)) as execute:
+            planner.run_agent("从教五到图书馆，避开陡坡")
+        assert execute.call_args.args[1]["constraints"]["slope"] == "avoid"
+
+    def test_tour_exposes_all_route_preferences(self):
+        schemas = {t["function"]["name"]: t["function"]["parameters"]
+                   for t in planner.agent_tools.TOOL_SCHEMAS}
+        assert {"mode", "weights", "constraints"} <= schemas["plan_tour"]["properties"].keys()
+
+    @pytest.mark.parametrize("query", ["从教五到图书馆", "从珞珈门到樱顶，赶时间", "回宿舍上课别绕路"])
+    def test_commute_ignores_model_invented_scenery_weights(self, query):
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "start": {"name": "教五"}, "end": {"name": "图书馆"},
+            "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7},
+        })])])
+        route = {"distance_m": 500, "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool", return_value=(route, {"route": route})) as execute:
+            planner.run_agent(query)
+        args = execute.call_args.args[1]
+        assert args.get("weights") is None or args["weights"] == {
+            "distance": 0.90, "slope": 0.05, "scenery": 0.05}
+
+    def test_explicit_preference_is_preserved(self):
+        weights = {"distance": 0.2, "slope": 0.6, "scenery": 0.2}
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "start": {"name": "教五"}, "end": {"name": "图书馆"},
+            "weights": weights, "constraints": {"slope": "avoid"},
+        })])])
+        route = {"distance_m": 500, "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool", return_value=(route, {"route": route})) as execute:
+            planner.run_agent("从教五到图书馆，避开陡坡")
+        assert execute.call_args.args[1]["weights"] == weights
+
+    def test_retry_cannot_drop_slope_constraint(self):
+        client = FakeClient([
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {
+                "start": {"name": "A"}, "end": {"name": "B"}, "constraints": {"slope": "avoid"},
+            })]),
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {
+                "start": {"name": "A"}, "end": {"name": "B"}, "constraints": {"slope": "normal"},
+            })]),
+            _fake_response(content="暂无满足避坡要求的路线。"),
+        ])
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool", return_value=({"error": "route_not_found"}, None)) as execute:
+            planner.run_agent("从 A 到 B，避开陡坡")
+        assert execute.call_args_list[1].args[1]["constraints"]["slope"] == "avoid"
