@@ -1,5 +1,5 @@
 """
-高德 POI 全量拉取脚本 V2（校园范围 + 类型过滤）
+高德 POI 候选查询脚本（校园范围 + 类型过滤；接口不保证全量）
 
 策略：
   1. place/polygon + place/around 网格化，覆盖三个学部；
@@ -19,9 +19,10 @@ from datetime import datetime
 import httpx
 from dotenv import dotenv_values
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 from config import CAMPUS_POLYS_GCJ  # noqa: E402
+from scripts.fetch.campus_scope import campus_for_gcj, load_whu_polygons  # noqa: E402
 
 POIS_PATH = os.path.join(PROJECT_ROOT, "data", "pois.json")
 OUT_PATH = os.path.join(PROJECT_ROOT, "data", "pois_new.json")
@@ -46,7 +47,7 @@ KEEP_KEYWORDS = (
 
 # 排除关键词（命中即删，商业/设施类）
 EXCLUDE_KEYWORDS = (
-    "咖啡", "奶茶", "茶", "餐厅", "饭馆", "火锅", "烧烤", "米粉", "面馆", "小吃", "快餐",
+    "咖啡", "奶茶", "茶饮", "餐厅", "饭馆", "火锅", "烧烤", "米粉", "面馆", "小吃", "快餐",
     "便当", "披萨", "汉堡", "寿司", "料理", "甜品", "蛋糕", "面包", "烘焙", "冰淇淋",
     "酒吧", "酒馆",
     "停车场", "车位",
@@ -58,8 +59,8 @@ EXCLUDE_KEYWORDS = (
     "药店", "药房", "医院", "诊所", "口腔", "体检",
     "银行", "ATM", "取款", "工商", "建设", "农业", "中国银",
     "移动", "联通", "电信", "营业厅",
-    "彩票", "烟酒", "网吧", "KTV", "影院", "健身",
-    "维修", "服务中心", "营业厅",
+    "彩票", "烟酒", "网吧", "KTV", "影院",
+    "维修", "营业厅",
     "公司", "有限", "集团", "门市", "代理",
     "停车场", "充电", "加油",
     "外卖", "快递",
@@ -82,7 +83,6 @@ def point_in_polygon(lng, lat, polygon):
 
 def keep_poi(name, addr, type_code):
     """判断是否保留此POI。"""
-    full = (name + " " + addr)
     # 排除商业类
     for kw in EXCLUDE_KEYWORDS:
         if kw in name:  # 只看名称，地址里可能有"武汉大学"
@@ -115,7 +115,8 @@ def classify(name, type_code):
 def fetch_by_polygon(client, key, polygon, types=None):
     poly_str = ";".join(f"{lng},{lat}" for lng, lat in polygon)
     out = []
-    for page in range(1, 101):
+    # 官方同一查询最多返回 200 条，超过上限不能靠追加页码补齐。
+    for page in range(1, 9):
         params = {
             "key": key, "polygon": poly_str,
             "offset": 25, "page": page, "extensions": "all",
@@ -126,7 +127,7 @@ def fetch_by_polygon(client, key, polygon, types=None):
             r = client.get(POLYGON_API, params=params, timeout=15)
             d = r.json()
         except Exception as e:
-            print(f"    polygon 异常 page={page}: {e}")
+            print(f"    polygon 异常 page={page}: {type(e).__name__}")
             break
         if d.get("status") != "1":
             print(f"    polygon 错误: {d.get('info')}")
@@ -191,6 +192,7 @@ def main():
         existing_data = json.load(f)
     existing = existing_data.get("pois", [])
     existing_by_name = {p["name"]: p for p in existing}
+    campus_polygons = load_whu_polygons()
 
     candidates = {}
     stats = {"raw": 0, "filtered_out": 0, "kept": 0}
@@ -228,7 +230,8 @@ def main():
                 if not name:
                     continue
 
-                if not point_in_polygon(lng, lat, polygon):
+                assigned_campus = campus_for_gcj(lng, lat, campus_polygons)
+                if assigned_campus is None:
                     continue
 
                 type_code = p.get("typecode") or ""
@@ -247,7 +250,7 @@ def main():
                     "type_code": type_code,
                     "type_name": p.get("type", ""),
                     "address": addr,
-                    "campus": campus_name,
+                    "campus": assigned_campus,
                     "category": classify(name, type_code),
                     "amap_id": amap_id,
                 }

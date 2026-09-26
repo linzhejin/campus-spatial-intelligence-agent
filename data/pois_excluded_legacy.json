@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "source_boundary": "scripts\\fetch\\osm_campus_boundaries.geojson",
+  "excluded": [
+    {
+      "poi": {
+        "id": "poi_232",
+        "name": "中国龙狮运动学院",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.377625,
+          "lat": 30.519575
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。远志路与珞喻路交叉口北240米",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": 2.6,
+        "subcategory": "college",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_232",
+        "name": "中国龙狮运动学院",
+        "foreign_boundary_ref": "way/112940438",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/way/112940438"
+      },
+      "boundary_name": "武汉体育学院"
+    },
+    {
+      "poi": {
+        "id": "poi_233",
+        "name": "二号教学楼",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.360011,
+          "lat": 30.518845
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "classroom",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_233",
+        "name": "二号教学楼",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_235",
+        "name": "国际园区2号教学楼",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.356755,
+          "lat": 30.522887
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "classroom",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_235",
+        "name": "国际园区2号教学楼",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_236",
+        "name": "国际园区3号教学楼",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.35645,
+          "lat": 30.522485
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "classroom",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_236",
+        "name": "国际园区3号教学楼",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_251",
+        "name": "法学院楼",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.358878,
+          "lat": 30.521453
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。武汉大学法学院楼，位于文理学部。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "college",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_251",
+        "name": "法学院楼",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_252",
+        "name": "西教学楼",
+        "aliases": [],
+        "coordinates": {
+          "lng": 114.377859,
+          "lat": 30.521441
+        },
+        "type": "study",
+        "campus": "信息学部",
+        "category": "study",
+        "description": "信息学部校内地点。武汉大学信息学部教学楼，位于信息学部核心教学区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "classroom",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_252",
+        "name": "西教学楼",
+        "foreign_boundary_ref": "way/112940438",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/way/112940438"
+      },
+      "boundary_name": "武汉体育学院"
+    },
+    {
+      "poi": {
+        "id": "poi_264",
+        "name": "国际园区5栋学生宿舍",
+        "aliases": [
+          "国际园区5栋"
+        ],
+        "coordinates": {
+          "lng": 114.355676,
+          "lat": 30.522693
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_264",
+        "name": "国际园区5栋学生宿舍",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_265",
+        "name": "国际园区6栋学生宿舍",
+        "aliases": [
+          "国际园区6栋"
+        ],
+        "coordinates": {
+          "lng": 114.35585,
+          "lat": 30.521994
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_265",
+        "name": "国际园区6栋学生宿舍",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_266",
+        "name": "国际园区学生宿舍3栋",
+        "aliases": [
+          "国际园区3栋"
+        ],
+        "coordinates": {
+          "lng": 114.355978,
+          "lat": 30.523253
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_266",
+        "name": "国际园区学生宿舍3栋",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_267",
+        "name": "国际园区学生宿舍4栋",
+        "aliases": [
+          "国际园区4栋"
+        ],
+        "coordinates": {
+          "lng": 114.356704,
+          "lat": 30.523692
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_267",
+        "name": "国际园区学生宿舍4栋",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_268",
+        "name": "国际园区学生宿舍8栋",
+        "aliases": [
+          "国际园区8栋"
+        ],
+        "coordinates": {
+          "lng": 114.356903,
+          "lat": 30.521601
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_268",
+        "name": "国际园区学生宿舍8栋",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    },
+    {
+      "poi": {
+        "id": "poi_269",
+        "name": "国际园区学生宿舍9栋",
+        "aliases": [
+          "国际园区9栋"
+        ],
+        "coordinates": {
+          "lng": 114.356905,
+          "lat": 30.5218
+        },
+        "type": "dorm",
+        "campus": "信息学部",
+        "category": "dorm",
+        "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
+        "season_tags": [
+          "all"
+        ],
+        "scenery_score": 1,
+        "rating": null,
+        "subcategory": "dormitory",
+        "is_minor": false
+      },
+      "review": {
+        "poi_id": "poi_269",
+        "name": "国际园区学生宿舍9栋",
+        "foreign_boundary_ref": "relation/20383289",
+        "decision": "exclude_from_campus_master",
+        "evidence": "https://www.openstreetmap.org/relation/20383289"
+      },
+      "boundary_name": "华中师范大学"
+    }
+  ]
+}

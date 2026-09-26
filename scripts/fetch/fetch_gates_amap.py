@@ -12,12 +12,15 @@ import os
 import re
 import time
 import math
+import sys
 from datetime import datetime
 
 import httpx
 from dotenv import dotenv_values
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
+from scripts.fetch.campus_scope import campus_for_gcj, load_whu_polygons  # noqa: E402
 ENV = dotenv_values(os.path.join(PROJECT_ROOT, ".env"))
 KEY = ENV.get("AMAP_WEB_KEY", "")
 
@@ -25,9 +28,9 @@ TEXT_API = "https://restapi.amap.com/v3/place/text"
 AROUND_API = "https://restapi.amap.com/v3/place/around"
 
 CAMPUSES = [
-    {"name": "文理学部", "anchor": (114.3630, 30.5365), "radius": 1700},
-    {"name": "工学部", "anchor": (114.3695, 30.5430), "radius": 1400},
-    {"name": "信息学部", "anchor": (114.3725, 30.5255), "radius": 1500},
+    {"name": "文理学部", "anchor": (114.366379, 30.536838), "radius": 1600},
+    {"name": "工学部", "anchor": (114.362163, 30.542629), "radius": 950},
+    {"name": "信息学部", "anchor": (114.360214, 30.528503), "radius": 900},
 ]
 
 # 定向搜索的校门名（含可能遗漏的）
@@ -143,6 +146,7 @@ def main():
         print("缺少 AMAP_WEB_KEY")
         return 1
 
+    campus_polygons = load_whu_polygons()
     raw = []
     with httpx.Client() as client:
         for kw in GATE_NAMES:
@@ -180,11 +184,8 @@ def main():
             continue
         full = name + " " + addr
         whu = any(h in full for h in WHU_HINTS)
-        if not whu:
-            near = any(dist_m(lng, lat, c["anchor"][0], c["anchor"][1]) < c["radius"]
-                       for c in CAMPUSES)
-            if not near:
-                continue
+        if campus_for_gcj(lng, lat, campus_polygons, boundary_tolerance_m=25) is None:
+            continue
         did = p.get("id") or f"{lng:.6f}_{lat:.6f}"
         if did in by_id:
             continue

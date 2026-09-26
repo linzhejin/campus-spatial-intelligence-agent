@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "coordinate_system": "GCJ-02 for screenshot estimate and displayed candidates; OSM source nodes remain WGS-84",
+  "candidates": [
+    {
+      "name": "玉兰2门",
+      "possible_alias": "玉兰二门",
+      "status": "needs_pin_or_field_verification",
+      "published_to_poi_catalog": false,
+      "evidence": [
+        "用户提供的高德底图截图可见玉兰2门文字标注，位置在科技门西南侧",
+        "高德 Web 服务 place/text 在武汉全市查询玉兰2门与玉兰二门均返回 0 条；截图附近 250 米 place/around 搜玉兰和门、邻近区域 place/polygon 搜同词也均返回 0 条；同区域搜武汉大学有正常结果",
+        "本地 OSM PBF 有附近无名门节点，但没有玉兰2门名称"
+      ],
+      "screenshot_estimate_gcj02": {"lng": 114.36007, "lat": 30.53149},
+      "estimate_uncertainty_m": 25,
+      "possible_osm_nodes": [
+        {"source_id": "node/1204194363", "gcj02": {"lng": 114.360093, "lat": 30.531619}, "distance_from_estimate_m": 14.4, "tags": {"barrier": "gate", "foot": "yes", "bicycle": "yes", "motor_vehicle": "no"}},
+        {"source_id": "node/9555357538", "gcj02": {"lng": 114.36045, "lat": 30.531578}, "distance_from_estimate_m": 37.7, "tags": {"barrier": "gate", "foot": "permit", "access": "permit", "motor_vehicle": "no"}}
+      ],
+      "acceptance_evidence_needed": "高德地图分享的精确点位链接或现场门牌照片与步行通行记录；核对后才将名称绑定到具体 OSM 门节点"
+    }
+  ]
+}

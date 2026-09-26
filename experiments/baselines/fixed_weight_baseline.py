@@ -19,7 +19,7 @@ from spatial.routing import compute_route, DEFAULT_WEIGHTS
 def fixed_weight_route(G, start_node: int, end_node: int, constraints: dict | None = None, mode: str = "walk") -> dict:
     """R2：固定权重基线。
 
-    用 DEFAULT_WEIGHTS（distance:0.5/slope:0.2/scenery:0.3）调用 compute_route，
+    用当前 DEFAULT_WEIGHTS（distance:0.90/slope:0.05/scenery:0.05）调用 compute_route，
     不读取 LLM 输出的 weights。返回 compute_route 的完整结果。
 
     Args:

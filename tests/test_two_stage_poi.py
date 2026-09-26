@@ -274,7 +274,7 @@ class TestGateCoordinates:
     GATE_NAMES = {
         "凌波门", "珞南门", "武汉大学科技门", "珞珈门", "武汉大学茶港门",
         "洪波门", "武汉大学文澜门", "珞瑜二门", "珞瑜门", "弘毅门",
-        "北门", "扬波门",
+        "北门", "扬波门", "澄波门", "珞东二门", "珞南二门", "珞南三门",
     }
 
     @pytest.fixture(scope="class")
@@ -283,10 +283,10 @@ class TestGateCoordinates:
             pois = json.load(f)["pois"]
         return {p["name"]: p for p in pois if p.get("subcategory") == "gate"}
 
-    def test_all_12_gates_present(self, gates):
+    def test_required_gates_present(self, gates):
         missing = self.GATE_NAMES - set(gates)
         assert not missing, f"缺少校门 POI: {missing}"
-        assert len(gates) == 12
+        assert len(gates) >= len(self.GATE_NAMES)
 
     def test_no_phantom_xinan_gate(self, gates):
         """武大批图上曾误标「西南门」（珞珈山路附近的近似点），
@@ -320,12 +320,12 @@ class TestGateCoordinates:
         assert find_poi("武大东门")["name"] == "扬波门"
         assert find_poi("牌坊")["name"] == "珞珈门"
 
-    def test_chagang_gate_belongs_arts_campus(self, gates):
-        """茶港门属文理学部（茶港路-天鹅路一线），不是工学部。"""
+    def test_chagang_gate_belongs_engineering_campus(self, gates):
+        """校保卫部将茶港门列在工学部：https://www.whu.edu.cn/info/5231/240334.htm"""
         p = gates["武汉大学茶港门"]
-        assert p["campus"] == "文理学部"
-        assert "文理学部茶港门" in p["aliases"]
-        assert "工学部茶港门" not in p["aliases"]
+        assert p["campus"] == "工学部"
+        assert "工学部茶港门" in p["aliases"]
+        assert "文理学部茶港门" not in p["aliases"]
 
     def test_shuisheng_alias_points_to_wenlan(self, gates):
         """「水生所旁校门」是文澜门，曾误挂洪波门。"""

@@ -65,6 +65,9 @@ def _get_outside_edges(G: nx.MultiDiGraph) -> set:
     结果按 id(G) 缓存，路网不变时只算一次。
     """
     poly = get_campus_polygon()
+    if G.graph.get("routing_boundary_wkt"):
+        from shapely.wkt import loads as _load_boundary
+        poly = _load_boundary(G.graph["routing_boundary_wkt"])
     if not poly:
         # 多边形不可用 → 退路名匹配（保守）
         return set()
@@ -80,6 +83,19 @@ def _get_outside_edges(G: nx.MultiDiGraph) -> set:
         pu = Point(float(ud.get("x", 0)), float(ud.get("y", 0)))
         pv = Point(float(vd.get("x", 0)), float(vd.get("y", 0)))
         if not poly.covers(pu) and not poly.covers(pv):
+            from shapely.geometry import LineString
+            from shapely.wkt import loads as _load_geometry
+            raw = d.get("geometry")
+            try:
+                line = _load_geometry(raw) if isinstance(raw, str) else raw
+                if line is None:
+                    line = LineString([pu, pv])
+                if poly.intersects(line):
+                    continue
+            except (ValueError, TypeError):
+                # Failed geometry parsing is not evidence a crossing is absent.
+                if poly.intersects(LineString([pu, pv])):
+                    continue
             outside.add((u, v, k))
     _outside_edge_cache[cache_key] = outside
     return outside
@@ -264,6 +280,8 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
     """
     mode = normalize_mode(mode)
 
+    from spatial.osm_access import edge_access, node_access
+
     # —— 第一步：所有模式都剔除真校外边 ——
     outside_edges = _get_outside_edges(G)
     if outside_edges:
@@ -276,11 +294,27 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
         G_mode = G
     outside_status = "no_outside" if outside_edges else "no_filter"
 
+    # Preserve OSM mode-specific access and direction instead of deriving motor
+    # permissions from a bidirectional walking graph. Unknown tags remain open
+    # for review; explicit no/private and physical barriers are respected.
+    denied_nodes = {n for n, d in G_mode.nodes(data=True) if not node_access(d, mode)[0]}
+    denied_edges = []
+    for u, v, k, data in G_mode.edges(keys=True, data=True):
+        declared = data.get("allowed_modes")
+        allowed = _road_name_list(declared) if declared is not None else None
+        if (u in denied_nodes or v in denied_nodes or not edge_access(data, mode)[0]
+                or (allowed is not None and mode not in allowed)):
+            denied_edges.append((u, v, k))
+    if denied_edges:
+        G_mode = G_mode.copy()
+        G_mode.remove_edges_from(denied_edges)
+        G_mode.remove_nodes_from([n for n, degree in G_mode.degree() if degree == 0])
+
     if mode == "walk":
         # 台阶软惩罚：不封死（台阶本身可走，且可能是唯一通道），但不让它成为穿楼捷径。
         # 人工标注 walk_penalty（建筑内连廊等）与台阶惩罚叠加。
-        # corridor 硬封禁：OSM 的 corridor 为建筑内部连廊/穿楼通道，不是室外步行道，
-        # 不能让它成为步行穿楼捷径（与 bike/drive 对 corridor 的处理一致）。
+        # Indoor/corridor tags describe infrastructure, not a walk prohibition.
+        # Explicit foot/access and barrier rules are applied above.
         steps_penalty = {}
         hard_blocked = []
         for u, v, k, data in G_mode.edges(keys=True, data=True):
@@ -297,8 +331,7 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
             if mult > 1.0:
                 steps_penalty[(u, v, k)] = mult
             bm = _edge_blocked_modes(data)
-            if ("all" in bm or "walk" in bm
-                    or "corridor" in tags):
+            if "all" in bm or "walk" in bm:
                 hard_blocked.append((u, v, k))
         if hard_blocked:
             # 有人工封禁（"all"）边时才复制图，避免常态下整图拷贝
@@ -320,8 +353,7 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
             # 一票否决：只要含台阶/电梯/走廊等非机动车设施标签即剔除
             # （多标签边 ['service','steps'] 同样剔除，杜绝"车上台阶"）；
             # 人工覆盖 blocked_modes 命中本模式同样剔除
-            if (any(tag in _NON_VEHICULAR_HIGHWAY for tag in tags)
-                    or mode in bm or "all" in bm):
+            if mode in bm or "all" in bm:
                 edges_to_remove.append((u, v, k))
         base_status = "mode_bike"
     else:  # drive
@@ -330,22 +362,15 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
             bm = _edge_blocked_modes(data)
             # 双重条件：含非机动车设施标签一票否决；否则要求至少一个车行道标签；
             # 人工覆盖（如穿楼车行道）命中同样剔除
-            if (any(tag in _NON_VEHICULAR_HIGHWAY for tag in tags)
-                    or mode in bm or "all" in bm
-                    or not any(tag in _DRIVE_ALLOWED_HIGHWAY for tag in tags)):
+            if mode in bm or "all" in bm:
                 edges_to_remove.append((u, v, k))
         base_status = "mode_drive"
 
     G_mode.remove_edges_from(edges_to_remove)
 
     if G_mode.number_of_edges() == 0:
-        # 极端情况：方式过滤删掉了所有边（数据异常），回退原图保证可达
-        logger.warning(
-            "出行方式 %s 过滤后图为空（移除 %d 条边），回退原图",
-            mode, len(edges_to_remove),
-        )
-        G_mode = G
-        status = f"{base_status}_degraded"
+        # Empty legal-edge graph is unreachable; never restore prohibited roads.
+        status = f"{base_status}_empty"
     else:
         isolated = [n for n, deg in G_mode.degree() if deg == 0]
         if isolated:
@@ -367,7 +392,7 @@ def filter_graph_for_mode(G: nx.MultiDiGraph, mode) -> tuple:
 
 
 def estimate_duration_min(length_m, mode, G=None, route_nodes=None,
-                          penalty_map=None) -> float:
+                          penalty_map=None, route_edges=None) -> float:
     """
     按模式平均速度估算通行时长（分钟），round 到 1 位小数。
 
@@ -386,10 +411,11 @@ def estimate_duration_min(length_m, mode, G=None, route_nodes=None,
         mode = normalize_mode(mode)
         meters_per_min = MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
         return round(length_m / meters_per_min, 1)
-    return _estimate_route_duration_min(G, route_nodes, mode, penalty_map)
+    return _estimate_route_duration_min(G, route_nodes, mode, penalty_map, route_edges)
 
 
-def _estimate_route_duration_min(G, route_nodes, mode, penalty_map=None) -> float:
+def _estimate_route_duration_min(G, route_nodes, mode, penalty_map=None,
+                                 route_edges=None) -> float:
     """按路径每条边累加时长，速度受 slope/steps/路况惩罚影响。
 
     - slope_factor：walk slope_level 5→0.5、4→0.7；bike 5→0.4、4→0.6；drive 全 1.0
@@ -407,8 +433,12 @@ def _estimate_route_duration_min(G, route_nodes, mode, penalty_map=None) -> floa
         edge_data = G.get_edge_data(u, v)
         if not edge_data:
             continue
-        # 多平行边取最短（与 _path_length 一致）
-        d = min(edge_data.values(), key=lambda x: x.get("length", float("inf")))
+        if route_edges is not None:
+            edge_key = route_edges[i][2]
+            d = edge_data[edge_key]
+        else:
+            edge_key = min(edge_data, key=lambda k: edge_data[k].get("length", float("inf")))
+            d = edge_data[edge_key]
         try:
             length_m = float(d.get("length", 0) or 0)
         except (TypeError, ValueError):
@@ -436,12 +466,9 @@ def _estimate_route_duration_min(G, route_nodes, mode, penalty_map=None) -> floa
         # drive 不受小坡影响
 
         # 路况惩罚：penalty F → 速度 ÷ F
-        # 多 key 兼容（_key 注入或 (u,v,k) 直查）
-        for k_idx in edge_data.keys():
-            f = penalty_map.get((u, v, k_idx))
-            if f and f > 1.0:
-                factor /= f
-                break
+        f = penalty_map.get((u, v, edge_key))
+        if f and f > 1.0:
+            factor /= f
 
         # 边通行速度（米/分）= base × factor；时长 = length / speed
         edge_speed = base_m_per_min * max(factor, 0.05)  # 防 0
@@ -489,7 +516,11 @@ def _edge_points(G, u, v, data) -> list:
         try:
             from shapely.wkt import loads as wkt_loads
             g = wkt_loads(raw)
-            return list(g.coords)
+            points = list(g.coords)
+            u_coords = (float(G.nodes[u].get("x", 0)), float(G.nodes[u].get("y", 0)))
+            if points and (points[0][0] - u_coords[0]) ** 2 + (points[0][1] - u_coords[1]) ** 2 > (points[-1][0] - u_coords[0]) ** 2 + (points[-1][1] - u_coords[1]) ** 2:
+                points.reverse()
+            return points
         except Exception:
             pass
     xu = float(G.nodes[u].get("x", 0))
@@ -517,7 +548,7 @@ def _human_distance(m: float) -> str:
 
 
 def build_turn_by_turn(G, route_nodes: list, mode: str = "walk",
-                       end_name: str = "") -> list:
+                       end_name: str = "", route_edges=None) -> list:
     """
     由路径节点序列生成转向指令（坐标 WGS-84，与路网一致）。
 
@@ -534,14 +565,12 @@ def build_turn_by_turn(G, route_nodes: list, mode: str = "walk",
 
     # ---------- 1. 逐边取几何/路名/长度 ----------
     raw_edges = []
-    for a, b in zip(route_nodes, route_nodes[1:]):
+    for i, (a, b) in enumerate(zip(route_nodes, route_nodes[1:])):
         data = G.get_edge_data(a, b)
         if not data:
             # 回退：尝试反向边（理论上路径有向不会发生）
             data = G.get_edge_data(b, a) or {}
-            k0 = sorted(data.keys())[0] if data else 0
-        else:
-            k0 = sorted(data.keys())[0]
+        k0 = route_edges[i][2] if route_edges is not None else (sorted(data.keys())[0] if data else 0)
         d = data.get(k0, {})
         pts = _edge_points(G, a, b, d)
         if len(pts) < 2:
@@ -817,19 +846,14 @@ def _edge_cost_factory(
 
     返回的函数签名: edge_weight(u, v, data) -> float
     """
-    def edge_weight(u, v, data):
-        # networkx 3.x 对 MultiDiGraph 传给 weight 函数的 data 是 {edge_key: edge_attr_dict}，
-        # 必须先取出真正的边属性 dict，否则 name/slope_level/scenery_level/length 都读不到
-        if isinstance(data, dict) and data:
-            edge_k = next(iter(data))
-            edge_data = data[edge_k]
-        else:
-            edge_k = 0
-            edge_data = data or {}
+    max_len_for_fallback = max(
+        (float(attrs.get("length", 0) or 0) for _, _, attrs in G.edges(data=True)),
+        default=1.0,
+    )
 
+    def single_edge_cost(u, v, edge_k, edge_data):
         key = (u, v, edge_k)
         raw_length = edge_data.get("length", 0)
-        max_len_for_fallback = max(norm_lengths.values()) if norm_lengths else 1000.0
         fallback_norm = raw_length / max_len_for_fallback if max_len_for_fallback > 0 else 0.0
         norm = norm_lengths.get(key, fallback_norm)
 
@@ -847,14 +871,38 @@ def _edge_cost_factory(
 
         return cost
 
+    def edge_weight(u, v, data):
+        # MultiDiGraph 的 weight 回调一次收到全部平行边；必须按实际成本选边。
+        if data and all(isinstance(value, dict) for value in data.values()):
+            return min(
+                single_edge_cost(u, v, key, attrs)
+                for key, attrs in data.items()
+            )
+        return single_edge_cost(u, v, 0, data or {})
+
     return edge_weight
+
+
+def _select_path_edges(G: nx.MultiDiGraph, path: list, weight) -> list:
+    """将节点路径还原成 Dijkstra 实际计费的 (u, v, key) 序列。"""
+    selected = []
+    for u, v in zip(path, path[1:]):
+        parallel = G.get_edge_data(u, v)
+        if not parallel:
+            raise ValueError(f"路径边不存在: {u}->{v}")
+        key = min(
+            parallel,
+            key=lambda k: (weight(u, v, {k: parallel[k]}), str(k)),
+        )
+        selected.append((u, v, key))
+    return selected
 
 
 def _compute_overlap(route_a: list, route_b: list) -> float:
     """
-    计算两条路径的节点重叠率。
+    计算两条路径的元素重叠率；主流程传入精确边 ID。
 
-    overlap_rate = 共同节点数 / max(len(route_a), len(route_b))
+    overlap_rate = 共同边数 / max(len(route_a), len(route_b))
 
     Args:
         route_a: 节点路径 [node1, node2, ...]
@@ -874,7 +922,7 @@ def _compute_overlap(route_a: list, route_b: list) -> float:
     return overlap / max_len if max_len > 0 else 0.0
 
 
-def _path_length(G: nx.MultiDiGraph, path: list) -> float:
+def _path_length(G: nx.MultiDiGraph, path: list, route_edges=None) -> float:
     """
     计算路径总长度（米）。
 
@@ -890,12 +938,15 @@ def _path_length(G: nx.MultiDiGraph, path: list) -> float:
         u, v = path[i], path[i + 1]
         edge_data = G.get_edge_data(u, v)
         if edge_data:
-            min_len = min(d.get("length", 0) for d in edge_data.values())
-            total += min_len
+            if route_edges is not None:
+                total += float(edge_data[route_edges[i][2]].get("length", 0))
+            else:
+                total += min(float(d.get("length", 0)) for d in edge_data.values())
     return total
 
 
-def _weighted_avg_attr(G: nx.MultiDiGraph, path: list, attr: str) -> float:
+def _weighted_avg_attr(G: nx.MultiDiGraph, path: list, attr: str,
+                       route_edges=None) -> float:
     """计算路径的长度加权平均属性值（如坡度/景观等级）。
 
     用于实验评估：Σ(attr(e) × L(e)) / Σ L(e)
@@ -907,7 +958,10 @@ def _weighted_avg_attr(G: nx.MultiDiGraph, path: list, attr: str) -> float:
         edge_data = G.get_edge_data(u, v)
         if not edge_data:
             continue
-        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+        if route_edges is not None:
+            data = edge_data[route_edges[i][2]]
+        else:
+            data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
         length = data.get("length", 0)
         attr_val = data.get(attr, 3)  # 默认值 3（中等）
         total_weighted += float(attr_val) * length
@@ -1137,11 +1191,7 @@ def compute_route(
     # 最短路径基线使用同一张硬约束过滤图，避免对比路线经过封闭路或禁走陡坡。
     # 步行模式还要叠加台阶/穿楼连廊的基础设施惩罚——否则灰虚线"最短路线"仍会
     # 从食堂建筑里穿过去（物理距离最短但不可作为正常通道）。
-    def _baseline_weight(u, v, data):
-        if isinstance(data, dict) and data:
-            edge_data = next(iter(data.values()))
-        else:
-            edge_data = data or {}
+    def _single_baseline_cost(edge_data):
         length = edge_data.get("length", 0) or 0
         mult = 1.0
         if mode == "walk":
@@ -1155,13 +1205,20 @@ def compute_route(
                     pass
         return length * mult
 
+    def _baseline_weight(u, v, data):
+        if data and all(isinstance(value, dict) for value in data.values()):
+            return min(_single_baseline_cost(attrs) for attrs in data.values())
+        return _single_baseline_cost(data or {})
+
     try:
         shortest = nx.dijkstra_path(G_filtered, start_node, end_node, weight=_baseline_weight)
     except nx.NetworkXNoPath:
         shortest = recommended
 
-    recommended_len = _path_length(G, recommended)
-    shortest_len = _path_length(G, shortest)
+    recommended_edges = _select_path_edges(G_filtered, recommended, edge_weight)
+    shortest_edges = _select_path_edges(G_filtered, shortest, _baseline_weight)
+    recommended_len = _path_length(G, recommended, recommended_edges)
+    shortest_len = _path_length(G, shortest, shortest_edges)
 
     cap_multplier = _PATH_LENGTH_CAP_MULTIPLIER
     cap_max = _PATH_LENGTH_CAP_MAX
@@ -1180,29 +1237,30 @@ def compute_route(
         )
         length_capped = True
 
-    overlap_rate = _compute_overlap(recommended, shortest)
+    overlap_rate = _compute_overlap(recommended_edges, shortest_edges)
 
     # 从实际结果路径计算 degraded_count（避免闭包中 Dijkstra 重复评估边导致计数虚高）
     degraded_count = 0
-    for i in range(len(recommended) - 1):
-        u, v = recommended[i], recommended[i + 1]
-        edge_data = G.get_edge_data(u, v)
-        if edge_data:
-            data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
-            _, is_d = _compute_edge_cost(data, norm_lengths.get((u, v), 0.001), resolved_weights)
-            if is_d:
-                degraded_count += 1
+    for u, v, key in recommended_edges:
+        data = G[u][v][key]
+        _, is_d = _compute_edge_cost(
+            data, norm_lengths.get((u, v, key), 0.001), resolved_weights,
+        )
+        if is_d:
+            degraded_count += 1
     is_degraded = degraded_count > 0
 
     # 计算路径加权平均坡度和景观（用于实验评估）
-    slope_avg_rec = _weighted_avg_attr(G, recommended, "slope_level")
-    scenery_avg_rec = _weighted_avg_attr(G, recommended, "scenery_level")
-    slope_avg_short = _weighted_avg_attr(G, shortest, "slope_level")
-    scenery_avg_short = _weighted_avg_attr(G, shortest, "scenery_level")
+    slope_avg_rec = _weighted_avg_attr(G, recommended, "slope_level", recommended_edges)
+    scenery_avg_rec = _weighted_avg_attr(G, recommended, "scenery_level", recommended_edges)
+    slope_avg_short = _weighted_avg_attr(G, shortest, "slope_level", shortest_edges)
+    scenery_avg_short = _weighted_avg_attr(G, shortest, "scenery_level", shortest_edges)
 
     return {
         "recommended": recommended,
         "shortest": shortest,
+        "recommended_edges": recommended_edges,
+        "shortest_edges": shortest_edges,
         "filter_status": filter_status,
         "overlap_rate": round(overlap_rate, 4),
         "degraded": is_degraded,
@@ -1216,6 +1274,7 @@ def compute_route(
         "mode": mode,
         "duration_min": estimate_duration_min(None, mode, G=G,
                                               route_nodes=recommended,
+                                              route_edges=recommended_edges,
                                               penalty_map=penalty_map),
         "shortest_duration_min": estimate_duration_min(shortest_len, mode),
         "speed_kmh": MODE_SPEEDS_KMH[mode],

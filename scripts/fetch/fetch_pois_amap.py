@@ -1,16 +1,15 @@
 """
-高德 Web 服务 POI 批量抓取脚本（POI 全覆盖 · 步骤 1）
+高德 Web 服务 POI 候选查询脚本（接口不保证全量）
 
 范围：武汉大学老校区三个学部（文理学部 / 工学部 / 信息学部），不含医学部。
 
 策略：
   1. 对三个学部锚点分别用 place/around（圆形搜索）+ 关键词补搜，抓高德 POI；
-  2. 双重过滤：①名称/地址含"武汉大学/武大/珞珈"等校内标识 ②坐标落在学部多边形内；
+  2. 用三学部 OSM 边界过滤候选，并检查名称/地址；
   3. 按 高德 id + 坐标 去重，与现有 data/pois.json 的 24 个手工 POI 比对标记；
   4. 输出 data/pois_candidates.json（**不覆盖**正式数据），供人工核对后合并。
 
-坐标说明：高德 place/around 返回的是 GCJ-02 火星坐标，与 data/pois.json 一致，
-         本脚本不做坐标转换；学部多边形也用 GCJ-02 坐标圈定。
+坐标说明：高德返回 GCJ-02；只在范围判定时转换为 WGS-84 与 OSM 边界比较。
 
 用法：
   python scripts/fetch_pois_amap.py            # 抓取并生成候选清单
@@ -27,41 +26,18 @@ from datetime import datetime
 import httpx
 from dotenv import dotenv_values
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
+from scripts.fetch.campus_scope import campus_for_gcj, load_whu_polygons  # noqa: E402
 POIS_PATH = os.path.join(PROJECT_ROOT, "data", "pois.json")
 OUT_PATH = os.path.join(PROJECT_ROOT, "data", "pois_candidates.json")
 AROUND_API = "https://restapi.amap.com/v3/place/around"
 
-# ===== 三学部锚点 + 搜索半径（米）+ 粗略多边形（GCJ-02，圈校园含余量）=====
+# 三学部 OSM 面内锚点（GCJ-02）；圆形只负责请求，入库范围由 OSM 边界判定。
 CAMPUSES = [
-    {
-        "name": "文理学部",
-        "anchor": (114.3630, 30.5365),
-        "radius": 1400,
-        "polygon": [  # 粗略边界：北到东湖边，南到珞瑜路，西到珞狮路，东接工学部
-            (114.3520, 30.5450), (114.3600, 30.5465), (114.3690, 30.5440),
-            (114.3710, 30.5360), (114.3670, 30.5300), (114.3570, 30.5285),
-            (114.3530, 30.5340),
-        ],
-    },
-    {
-        "name": "工学部",
-        "anchor": (114.3695, 30.5430),
-        "radius": 1100,
-        "polygon": [  # 文理学部东北侧：水利水电/城市设计/工学分馆一带
-            (114.3650, 30.5490), (114.3770, 30.5490), (114.3800, 30.5420),
-            (114.3780, 30.5370), (114.3690, 30.5370), (114.3660, 30.5430),
-        ],
-    },
-    {
-        "name": "信息学部",
-        "anchor": (114.3725, 30.5255),
-        "radius": 1300,
-        "polygon": [  # 珞瑜路以南：广埠屯 ~ 街道口之间
-            (114.3580, 30.5300), (114.3860, 30.5295), (114.3870, 30.5200),
-            (114.3630, 30.5185), (114.3580, 30.5240),
-        ],
-    },
+    {"name": "文理学部", "anchor": (114.366379, 30.536838), "radius": 1600},
+    {"name": "工学部", "anchor": (114.362163, 30.542629), "radius": 950},
+    {"name": "信息学部", "anchor": (114.360214, 30.528503), "radius": 900},
 ]
 
 # 高德 POI 大类 type code（| 分隔为多类）
@@ -71,6 +47,13 @@ KEYWORDS = ["食堂", "宿舍", "学生公寓", "教学楼", "图书馆", "操�
 
 # 校内标识：名称或地址命中即认为是武大相关
 WHU_HINTS = ("武汉大学", "武大", "珞珈", "whu", "WHU")
+
+
+def keep_campus_candidate(name, address):
+    whu_named = any(h in (name + address) for h in WHU_HINTS)
+    campus_word = any(k in name for k in (
+        "食堂", "宿舍", "公寓", "教学楼", "图书馆", "操场", "体育馆"))
+    return whu_named or campus_word or (len(name) >= 2 and name.endswith("门"))
 
 
 def haversine_m(lng1, lat1, lng2, lat2):
@@ -140,7 +123,7 @@ def classify(name, type_code):
         return "sports"
     if any(k in name for k in ("宿舍", "公寓", "学生寝室")):
         return "dorm"
-    if ("门" in name and any(k in name for k in ("校门", "大门", "凌波", "珞瑜", "洪波", "牌坊", "珞珈门"))):
+    if len(name) >= 2 and name.endswith("门"):
         return "gate"
     if type_code.startswith("11") or any(k in name for k in ("山", "湖", "广场", "樱", "斋舍")):
         return "scenery"
@@ -160,6 +143,7 @@ def main():
     with open(POIS_PATH, encoding="utf-8") as f:
         existing = json.load(f)["pois"]
     existing_names = {p["name"] for p in existing}
+    campus_polygons = load_whu_polygons()
 
     candidates = {}  # amap_id 或 坐标key -> record（去重）
     stats = {"raw": 0, "off_campus": 0, "kept": 0}
@@ -189,14 +173,15 @@ def main():
                 if not name:
                     continue
 
-                in_poly = point_in_polygon(lng, lat, campus["polygon"])
+                gate_like = len(name) >= 2 and name.endswith("门")
+                assigned_campus = campus_for_gcj(
+                    lng, lat, campus_polygons,
+                    boundary_tolerance_m=25 if gate_like else 0)
                 whu_named = any(h in (name + addr) for h in WHU_HINTS)
-                # 双重过滤：必须在校内多边形内；且要么有武大标识，要么是校内说法（食堂/宿舍/教学楼）
-                campus_word = any(k in name for k in ("食堂", "宿舍", "公寓", "教学楼", "图书馆", "操场", "体育馆"))
-                if not in_poly:
+                if assigned_campus is None:
                     stats["off_campus"] += 1
                     continue
-                if not (whu_named or campus_word):
+                if not keep_campus_candidate(name, addr):
                     stats["off_campus"] += 1
                     continue
 
@@ -213,7 +198,7 @@ def main():
                     "type_code": type_code,
                     "type_name": p.get("type", ""),
                     "address": addr,
-                    "campus": campus["name"],
+                    "campus": assigned_campus,
                     "category": classify(name, type_code),
                     "whu_named": whu_named,
                     "already_exists": name in existing_names,

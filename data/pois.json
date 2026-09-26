@@ -1,6 +1,10 @@
 {
- "source": "高德Web服务API严格清洗版：校门/教学/寝室/食堂/餐饮/景点/校内服务（410条）",
- "count": 420,
+ "source": "历史高德等来源整理的 POI；新增开放 OSM 候选均单独注明来源，历史条目待逐项核实",
+ "count": 439,
+ "provenance_defaults": {
+  "source_refs": [],
+  "verification_status": "legacy_unverified"
+ },
  "pois": [
   {
    "id": "poi_001",
@@ -321,7 +325,8 @@
     "文理图书馆",
     "新图书馆",
     "武大图书馆总馆",
-    "武汉大学图"
+    "武汉大学图",
+    "武汉大学图书馆"
    ],
    "coordinates": {
     "lng": 114.362998,
@@ -337,7 +342,16 @@
    "scenery_score": 1,
    "rating": 4.8,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "relation/19725659",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/relation/19725659"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_016",
@@ -552,7 +566,8 @@
     "教一",
     "教一楼",
     "文理学部教1楼",
-    "文理学部教一"
+    "文理学部教一",
+    "文理学部第一教学楼"
    ],
    "coordinates": {
     "lng": 114.365366,
@@ -568,7 +583,16 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/103752729",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/103752729"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_026",
@@ -2266,7 +2290,8 @@
    "id": "poi_099",
    "name": "武汉大学枫园3舍",
    "aliases": [
-    "枫园3舍"
+    "枫园3舍",
+    "枫园三舍"
    ],
    "coordinates": {
     "lng": 114.370827,
@@ -2282,7 +2307,16 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/103940881",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/103940881"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_100",
@@ -3250,7 +3284,35 @@
    "scenery_score": 1,
    "rating": 4.7,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667184",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667184"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/13613667184",
+     "coordinates": {
+      "lng": 114.37058,
+      "lat": 30.54327
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "凌波门",
+      "opening_hours": "Mo-Su 07:00-22:00"
+     }
+    }
+   ]
   },
   {
    "id": "poi_138",
@@ -3297,7 +3359,33 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/3186610000",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/3186610000"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/3186610000",
+     "coordinates": {
+      "lng": 114.360619,
+      "lat": 30.532047
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "barrier": "gate",
+      "bicycle": "yes",
+      "foot": "yes",
+      "motor_vehicle": "no",
+      "name": "武汉大学科技门"
+     }
+    }
+   ]
   },
   {
    "id": "poi_140",
@@ -5399,22 +5487,62 @@
   {
    "id": "poi_226",
    "name": "武汉大学茶港门",
-   "aliases": ["文理学部茶港门", "武大茶港门", "茶港门"],
+   "aliases": [
+    "工学部茶港门",
+    "武大茶港门",
+    "茶港门"
+   ],
    "coordinates": {
     "lng": 114.354475,
     "lat": 30.539325
    },
    "type": "gate",
-   "campus": "文理学部",
+   "campus": "工学部",
    "category": "gate",
-   "description": "文理学部校内地点。茶港路与天鹅路交叉口（高德核实）。",
+   "description": "工学部茶港门，茶港路与天鹅路交叉口。",
    "season_tags": [
     "all"
    ],
    "scenery_score": 1,
    "rating": 3.5,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "Wuhan University",
+     "url": "https://www.whu.edu.cn/info/5231/240334.htm",
+     "applies_to": [
+      "campus"
+     ]
+    },
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1663906468",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1663906468"
+    }
+   ],
+   "campus_verification_status": "institution_verified",
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/1663906468",
+     "coordinates": {
+      "lng": 114.354524,
+      "lat": 30.539285
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "permit",
+      "name": "茶港门",
+      "opening_hours": "24/7"
+     }
+    }
+   ]
   },
   {
    "id": "poi_227",
@@ -5438,7 +5566,36 @@
    "scenery_score": 1,
    "rating": 4.4,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1199819000",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1199819000"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/1199819000",
+     "coordinates": {
+      "lng": 114.366117,
+      "lat": 30.545249
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "barrier": "gate",
+      "bicycle": "no",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "洪波门",
+      "old_name": "桃园门",
+      "opening_hours": "Mo-Su 07:00-22:00"
+     }
+    }
+   ]
   },
   {
    "id": "poi_228",
@@ -5531,46 +5688,6 @@
    "is_minor": false
   },
   {
-   "id": "poi_232",
-   "name": "中国龙狮运动学院",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.377625,
-    "lat": 30.519575
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。远志路与珞喻路交叉口北240米",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": 2.6,
-   "subcategory": "college",
-   "is_minor": false
-  },
-  {
-   "id": "poi_233",
-   "name": "二号教学楼",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.360011,
-    "lat": 30.518845
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "classroom",
-   "is_minor": false
-  },
-  {
    "id": "poi_234",
    "name": "信息学部西区综合楼",
    "aliases": [],
@@ -5582,46 +5699,6 @@
    "campus": "信息学部",
    "category": "study",
    "description": "信息学部校内地点。星湖三路与星湖南路交叉口西140米",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "classroom",
-   "is_minor": false
-  },
-  {
-   "id": "poi_235",
-   "name": "国际园区2号教学楼",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.356755,
-    "lat": 30.522887
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "classroom",
-   "is_minor": false
-  },
-  {
-   "id": "poi_236",
-   "name": "国际园区3号教学楼",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.35645,
-    "lat": 30.522485
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。武汉大学文理学部教学楼，位于文理学部核心教学区。",
    "season_tags": [
     "all"
    ],
@@ -5995,46 +6072,6 @@
    "is_minor": false
   },
   {
-   "id": "poi_251",
-   "name": "法学院楼",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.358878,
-    "lat": 30.521453
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。武汉大学法学院楼，位于文理学部。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "college",
-   "is_minor": false
-  },
-  {
-   "id": "poi_252",
-   "name": "西教学楼",
-   "aliases": [],
-   "coordinates": {
-    "lng": 114.377859,
-    "lat": 30.521441
-   },
-   "type": "study",
-   "campus": "信息学部",
-   "category": "study",
-   "description": "信息学部校内地点。武汉大学信息学部教学楼，位于信息学部核心教学区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "classroom",
-   "is_minor": false
-  },
-  {
    "id": "poi_253",
    "name": "信息学部清真食堂",
    "aliases": [
@@ -6228,7 +6265,8 @@
    "id": "poi_261",
    "name": "武汉大学信息学部游泳池",
    "aliases": [
-    "信息学部游泳池"
+    "信息学部游泳池",
+    "竹园游泳池"
    ],
    "coordinates": {
     "lng": 114.357763,
@@ -6244,7 +6282,16 @@
    "scenery_score": 1,
    "rating": 4.4,
    "subcategory": "pool",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/85985416",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/85985416"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_262",
@@ -6297,138 +6344,6 @@
    "is_minor": false
   },
   {
-   "id": "poi_264",
-   "name": "国际园区5栋学生宿舍",
-   "aliases": [
-    "国际园区5栋"
-   ],
-   "coordinates": {
-    "lng": 114.355676,
-    "lat": 30.522693
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
-   "id": "poi_265",
-   "name": "国际园区6栋学生宿舍",
-   "aliases": [
-    "国际园区6栋"
-   ],
-   "coordinates": {
-    "lng": 114.35585,
-    "lat": 30.521994
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
-   "id": "poi_266",
-   "name": "国际园区学生宿舍3栋",
-   "aliases": [
-    "国际园区3栋"
-   ],
-   "coordinates": {
-    "lng": 114.355978,
-    "lat": 30.523253
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
-   "id": "poi_267",
-   "name": "国际园区学生宿舍4栋",
-   "aliases": [
-    "国际园区4栋"
-   ],
-   "coordinates": {
-    "lng": 114.356704,
-    "lat": 30.523692
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
-   "id": "poi_268",
-   "name": "国际园区学生宿舍8栋",
-   "aliases": [
-    "国际园区8栋"
-   ],
-   "coordinates": {
-    "lng": 114.356903,
-    "lat": 30.521601
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
-   "id": "poi_269",
-   "name": "国际园区学生宿舍9栋",
-   "aliases": [
-    "国际园区9栋"
-   ],
-   "coordinates": {
-    "lng": 114.356905,
-    "lat": 30.5218
-   },
-   "type": "dorm",
-   "campus": "信息学部",
-   "category": "dorm",
-   "description": "信息学部校内地点。武汉大学文理学部学生宿舍区。",
-   "season_tags": [
-    "all"
-   ],
-   "scenery_score": 1,
-   "rating": null,
-   "subcategory": "dormitory",
-   "is_minor": false
-  },
-  {
    "id": "poi_270",
    "name": "武汉大学信息学部6舍",
    "aliases": [
@@ -6438,7 +6353,6 @@
     "信六舍",
     "信息学部6舍",
     "信息学部六舍",
-    "信息学部快递服务中心",
     "信部6舍",
     "信部六舍"
    ],
@@ -6788,7 +6702,9 @@
    "id": "poi_282",
    "name": "武汉大学信息学部学生宿舍3舍",
    "aliases": [
-    "信息学部学生宿舍3舍"
+    "信息学部学生宿舍3舍",
+    "信息学部3舍",
+    "信部3舍"
    ],
    "coordinates": {
     "lng": 114.360104,
@@ -6804,13 +6720,24 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/104372405",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/104372405"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_283",
    "name": "武汉大学信息学部学生宿舍4舍",
    "aliases": [
-    "信息学部学生宿舍4舍"
+    "信息学部学生宿舍4舍",
+    "信息学部4舍",
+    "信部4舍"
    ],
    "coordinates": {
     "lng": 114.360019,
@@ -6826,13 +6753,24 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/104372401",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/104372401"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_284",
    "name": "武汉大学信息学部学生宿舍5舍",
    "aliases": [
-    "信息学部学生宿舍5舍"
+    "信息学部学生宿舍5舍",
+    "信息学部5舍",
+    "信部5舍"
    ],
    "coordinates": {
     "lng": 114.360067,
@@ -6848,7 +6786,16 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/236801236",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/236801236"
+    }
+   ],
+   "verification_status": "source_only"
   },
   {
    "id": "poi_285",
@@ -7135,7 +7082,35 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667196",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667196"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/13613667196",
+     "coordinates": {
+      "lng": 114.36035,
+      "lat": 30.545415
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "文澜门",
+      "opening_hours": "24/7"
+     }
+    }
+   ]
   },
   {
    "id": "poi_296",
@@ -7160,7 +7135,36 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/3148705291",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/3148705291"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/3148705291",
+     "coordinates": {
+      "lng": 114.357548,
+      "lat": 30.52599
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "alt_name": "南二门",
+      "barrier": "gate",
+      "bicycle": "no",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "珞瑜二门",
+      "opening_hours": "24/7"
+     }
+    }
+   ]
   },
   {
    "id": "poi_297",
@@ -7170,7 +7174,8 @@
     "信息学部正门",
     "广埠屯校门",
     "珞瑜路校门",
-    "南大门"
+    "南大门",
+    "珞喻门"
    ],
    "coordinates": {
     "lng": 114.36116,
@@ -7186,7 +7191,59 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667143",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667143"
+    },
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667147",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667147"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/13613667143",
+     "coordinates": {
+      "lng": 114.361341,
+      "lat": 30.524738
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "alt_name": "南门",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "珞喻门",
+      "opening_hours": "Mo-Su 07:00-23:00"
+     }
+    },
+    {
+     "source_id": "node/13613667147",
+     "coordinates": {
+      "lng": 114.361135,
+      "lat": 30.524737
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "alt_name": "南门",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "珞喻门",
+      "opening_hours": "Mo-Su 07:00-23:00"
+     }
+    }
+   ]
   },
   {
    "id": "poi_298",
@@ -7281,7 +7338,35 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667157",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667157"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/13613667157",
+     "coordinates": {
+      "lng": 114.357018,
+      "lat": 30.535364
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "alt_name": "西门",
+      "barrier": "gate",
+      "bicycle": "permit",
+      "foot": "permit",
+      "motor_vehicle": "no",
+      "name": "弘毅门",
+      "opening_hours": "24/7"
+     }
+    }
+   ]
   },
   {
    "id": "poi_302",
@@ -7330,7 +7415,36 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1358787382",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1358787382"
+    }
+   ],
+   "verification_status": "source_only",
+   "source_entrances": [
+    {
+     "source_id": "node/1358787382",
+     "coordinates": {
+      "lng": 114.377404,
+      "lat": 30.535157
+     },
+     "coordinate_system": "GCJ-02",
+     "tags": {
+      "access": "permit",
+      "alt_name": "东门",
+      "barrier": "gate",
+      "bicycle": "private",
+      "foot": "permit",
+      "motor_vehicle": "permit",
+      "name": "扬波门",
+      "old_name": "烟波门"
+     }
+    }
+   ]
   },
   {
    "id": "poi_305",
@@ -9335,7 +9449,7 @@
     "lat": 30.54032
    },
    "type": "dining",
-   "campus": "文理学部",
+   "campus": "工学部",
    "category": "dining",
    "description": "文理学部校内地点。工学部集贸市场旁蛋糕烘焙（高德餐饮POI逆地核实为校内）。",
    "season_tags": [
@@ -9344,7 +9458,10 @@
    "scenery_score": 1,
    "rating": 4.0,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
   },
   {
    "id": "poi_396",
@@ -9379,7 +9496,7 @@
     "lat": 30.54134
    },
    "type": "dining",
-   "campus": "文理学部",
+   "campus": "工学部",
    "category": "dining",
    "description": "文理学部校内地点。桂园一路川味餐馆（高德餐饮POI逆地核实为校内）。",
    "season_tags": [
@@ -9388,7 +9505,10 @@
    "scenery_score": 1,
    "rating": 4.4,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
   },
   {
    "id": "poi_398",
@@ -9779,7 +9899,7 @@
     "lat": 30.540298
    },
    "type": "service",
-   "campus": "文理学部",
+   "campus": "工学部",
    "category": "service",
    "description": "文理学部校内地点。工学部集贸市场（工学部菜市场），茶港路计算机大楼后，生鲜副食综合市场（高德核实）。",
    "season_tags": [
@@ -9788,7 +9908,10 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "supermarket",
-   "is_minor": false
+   "is_minor": false,
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
   },
   {
    "id": "poi_416",
@@ -9965,6 +10088,37 @@
    "is_minor": false
   },
   {
+   "id": "poi_418",
+   "name": "卓尔体育馆",
+   "aliases": [
+    "武汉大学卓尔体育馆",
+    "武大卓尔体育馆"
+   ],
+   "coordinates": {
+    "lng": 114.357362,
+    "lat": 30.536957
+   },
+   "type": "sports",
+   "campus": "文理学部",
+   "category": "sports",
+   "description": "武汉大学文理学部体育场馆。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gym",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/869323037",
+     "license": "ODbL-1.0"
+    }
+   ],
+   "verification_status": "source_only"
+  },
+  {
    "id": "area_文理学部",
    "name": "文理学部",
    "aliases": [
@@ -9983,6 +10137,1041 @@
    "rating": null,
    "subcategory": "area",
    "is_minor": false
+  },
+  {
+   "id": "poi_419",
+   "name": "澄波门",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.357648,
+    "lat": 30.543936
+   },
+   "type": "gate",
+   "campus": "工学部",
+   "category": "gate",
+   "description": "武汉大学工学部校门。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gate",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1197839325",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1197839325"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097",
+    "way/1475253993"
+   ],
+   "access": {
+    "access": "permit",
+    "foot": "permit",
+    "bicycle": "permit",
+    "motor_vehicle": "no"
+   }
+  },
+  {
+   "id": "poi_420",
+   "name": "珞东二门",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.371856,
+    "lat": 30.532032
+   },
+   "type": "gate",
+   "campus": "文理学部",
+   "category": "gate",
+   "description": "武汉大学文理学部校门。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gate",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1196703578",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1196703578"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ],
+   "access": {
+    "access": "permit",
+    "foot": "permit",
+    "bicycle": "permit",
+    "motor_vehicle": "no",
+    "opening_hours": "Mo-Su 06:30-22:30"
+   }
+  },
+  {
+   "id": "poi_421",
+   "name": "珞南二门",
+   "aliases": [
+    "明贤门"
+   ],
+   "coordinates": {
+    "lng": 114.36318,
+    "lat": 30.531104
+   },
+   "type": "gate",
+   "campus": "文理学部",
+   "category": "gate",
+   "description": "武汉大学文理学部校门。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gate",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/3631666752",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/3631666752"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ],
+   "access": {
+    "access": "permit",
+    "foot": "permit",
+    "bicycle": "permit",
+    "motor_vehicle": "no",
+    "opening_hours": "Mo-Su 07:00-22:00"
+   }
+  },
+  {
+   "id": "poi_422",
+   "name": "珞南三门",
+   "aliases": [
+    "南三门"
+   ],
+   "coordinates": {
+    "lng": 114.367953,
+    "lat": 30.529775
+   },
+   "type": "gate",
+   "campus": "文理学部",
+   "category": "gate",
+   "description": "武汉大学文理学部校门。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gate",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13613667172",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13613667172"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ],
+   "access": {
+    "access": "permit",
+    "foot": "permit",
+    "bicycle": "permit",
+    "motor_vehicle": "no",
+    "opening_hours": "24/7"
+   }
+  },
+  {
+   "id": "poi_423",
+   "name": "梅园快递服务中心",
+   "aliases": [
+    "武汉大学（梅园）快递服务中心"
+   ],
+   "coordinates": {
+    "lng": 114.365161,
+    "lat": 30.536842
+   },
+   "type": "service",
+   "campus": "文理学部",
+   "category": "service",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1445906649",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1445906649"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_424",
+   "name": "信息学部快递服务中心",
+   "aliases": [
+    "武汉大学（信息学部学生区）快递服务中心"
+   ],
+   "coordinates": {
+    "lng": 114.358974,
+    "lat": 30.527875
+   },
+   "type": "service",
+   "campus": "信息学部",
+   "category": "service",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13266231641",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13266231641"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_425",
+   "name": "武汉大学医院二门诊部",
+   "aliases": [
+    "武汉大学医院信息学部院区",
+    "武大测绘社区卫生服务站",
+    "信息学部校医院"
+   ],
+   "coordinates": {
+    "lng": 114.35769,
+    "lat": 30.529174
+   },
+   "type": "service",
+   "campus": "信息学部",
+   "category": "service",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "hospital",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/9555974805",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/9555974805"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_426",
+   "name": "武汉大学医院一门诊部",
+   "aliases": [
+    "武汉大学医院工学部院区",
+    "工学部校医院"
+   ],
+   "coordinates": {
+    "lng": 114.359529,
+    "lat": 30.541863
+   },
+   "type": "service",
+   "campus": "工学部",
+   "category": "service",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "hospital",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/306379133",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/306379133"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_427",
+   "name": "武汉大学水电服务大厅",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.359181,
+    "lat": 30.537062
+   },
+   "type": "service",
+   "campus": "文理学部",
+   "category": "service",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1408203762",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1408203762"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_428",
+   "name": "武汉大学邮政室",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.365852,
+    "lat": 30.536497
+   },
+   "type": "service",
+   "campus": "文理学部",
+   "category": "service",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1445901385",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1445901385"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_429",
+   "name": "武汉大学一站式学生服务中心",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.361754,
+    "lat": 30.540888
+   },
+   "type": "service",
+   "campus": "工学部",
+   "category": "service",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/303368388",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/303368388"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_430",
+   "name": "武汉大学信息中心",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.360209,
+    "lat": 30.5437
+   },
+   "type": "service",
+   "campus": "工学部",
+   "category": "service",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/306232321",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/306232321"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_431",
+   "name": "卓尔附馆",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.356909,
+    "lat": 30.537784
+   },
+   "type": "sports",
+   "campus": "文理学部",
+   "category": "sports",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gym",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/869323038",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/869323038"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_432",
+   "name": "工学部排球场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.366998,
+    "lat": 30.542704
+   },
+   "type": "sports",
+   "campus": "工学部",
+   "category": "sports",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "court",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1477325043",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1477325043"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_433",
+   "name": "测量仪器陈列馆",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.362546,
+    "lat": 30.528735
+   },
+   "type": "study",
+   "campus": "信息学部",
+   "category": "study",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "museum",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/104219268",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/104219268"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_434",
+   "name": "人文社科楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.372552,
+    "lat": 30.541242
+   },
+   "type": "study",
+   "campus": "文理学部",
+   "category": "study",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "building",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1337114129",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1337114129"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_435",
+   "name": "博观楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.361555,
+    "lat": 30.532964
+   },
+   "type": "study",
+   "campus": "文理学部",
+   "category": "study",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "building",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/103749311",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/103749311"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
+  },
+  {
+   "id": "poi_436",
+   "name": "水工大厅",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.364501,
+    "lat": 30.544471
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "laboratory",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/173419309",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/173419309"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_437",
+   "name": "泥沙实验楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.360732,
+    "lat": 30.541241
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "laboratory",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "relation/20206556",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/relation/20206556"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_438",
+   "name": "教材中心",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.363801,
+    "lat": 30.542211
+   },
+   "type": "service",
+   "campus": "工学部",
+   "category": "service",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "service",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/153752703",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/153752703"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_439",
+   "name": "高压大厅",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.363633,
+    "lat": 30.542725
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "laboratory",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/153752702",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/153752702"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_440",
+   "name": "尖端科技楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.366733,
+    "lat": 30.544771
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "building",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "relation/20205019",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/relation/20205019"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_441",
+   "name": "机电排灌楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.363993,
+    "lat": 30.54442
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "laboratory",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/306407472",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/306407472"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_442",
+   "name": "水工实验楼",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.361443,
+    "lat": 30.542078
+   },
+   "type": "study",
+   "campus": "工学部",
+   "category": "study",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "laboratory",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/153751900",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/153751900"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_443",
+   "name": "星空广场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.359052,
+    "lat": 30.529416
+   },
+   "type": "scenery",
+   "campus": "信息学部",
+   "category": "scenery",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "square",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1155391715",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1155391715"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_444",
+   "name": "博望亭",
+   "aliases": [
+    "星湖亭"
+   ],
+   "coordinates": {
+    "lng": 114.359497,
+    "lat": 30.527307
+   },
+   "type": "scenery",
+   "campus": "信息学部",
+   "category": "scenery",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "pavilion",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1444077815",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1444077815"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_445",
+   "name": "星湖运动场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.358155,
+    "lat": 30.529119
+   },
+   "type": "sports",
+   "campus": "信息学部",
+   "category": "sports",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "sports_field",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "relation/19149478",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/relation/19149478"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_446",
+   "name": "竹园网球场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.362663,
+    "lat": 30.528018
+   },
+   "type": "sports",
+   "campus": "信息学部",
+   "category": "sports",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "court",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/1382564211",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/1382564211"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ]
+  },
+  {
+   "id": "poi_447",
+   "name": "露天羽毛球场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.36456,
+    "lat": 30.543394
+   },
+   "type": "sports",
+   "campus": "工学部",
+   "category": "sports",
+   "description": "武汉大学工学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "court",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "way/380915238",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/way/380915238"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349097"
+   ]
+  },
+  {
+   "id": "poi_448",
+   "name": "大学生体育活动中心",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.357734,
+    "lat": 30.536593
+   },
+   "type": "sports",
+   "campus": "文理学部",
+   "category": "sports",
+   "description": "武汉大学文理学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "sports_centre",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/9655586490",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/9655586490"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ]
   }
  ]
 }

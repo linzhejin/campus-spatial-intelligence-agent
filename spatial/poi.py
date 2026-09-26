@@ -8,6 +8,7 @@ POI 加载与匹配模块
 import json
 import os
 import re
+from copy import deepcopy
 from difflib import SequenceMatcher
 from typing import Optional
 
@@ -89,7 +90,12 @@ def _load_from_json() -> list:
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return data.get("pois", [])
+        defaults = data.get("provenance_defaults", {})
+        pois = data.get("pois", [])
+        for poi in pois:
+            for key, value in defaults.items():
+                poi.setdefault(key, deepcopy(value))
+        return pois
     except (json.JSONDecodeError, IOError):
         return []
 
@@ -110,6 +116,8 @@ def _load_from_config() -> list:
             "type": info.get("type", "landmark"),
             "description": info.get("desc", ""),
             "scenery_score": info.get("scenery_score", 3),
+            "source_refs": [],
+            "verification_status": "legacy_unverified",
         })
     return pois
 

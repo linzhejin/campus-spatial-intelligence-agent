@@ -41,6 +41,7 @@ from spatial.routing import (
     build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
+from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import (
     list_conditions, add_condition, remove_condition, update_condition,
     snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS, SNAP_MAX_DIST_M,
@@ -123,7 +124,7 @@ def _coords_wgs_to_gcj(coords_list):
             for gcj_lng, gcj_lat in [wgs84_to_gcj02(c["lng"], c["lat"])]]
 
 
-def _build_steps_gcj(G, route_nodes, mode, end_name=""):
+def _build_steps_gcj(G, route_nodes, mode, end_name="", route_edges=None):
     """生成逐步转向指令，并把动作点坐标从 WGS-84 转成 GCJ-02（前端高德底图）。
 
     任何异常都不应阻断路径规划主流程，失败时返回空列表（前端降级为无指令导航）。
@@ -131,7 +132,9 @@ def _build_steps_gcj(G, route_nodes, mode, end_name=""):
     if not route_nodes or len(route_nodes) < 2:
         return []
     try:
-        steps = build_turn_by_turn(G, route_nodes, mode=mode, end_name=end_name or "")
+        steps = build_turn_by_turn(
+            G, route_nodes, mode=mode, end_name=end_name or "", route_edges=route_edges,
+        )
     except Exception:
         logger.warning("转向指令生成失败 mode=%s", mode, exc_info=True)
         return []
@@ -221,7 +224,7 @@ def _apply_coord_override(intent, coord_start, coord_end):
         ))
 
 
-def _endpoint_to_wgs(ref, fallback_poi):
+def _endpoint_to_wgs(ref, fallback_poi, mode='walk'):
     """把 PoiRef 解析为 (lon_wgs, lat_wgs) 供 nearest_node 使用。
 
     - type="coord"：坐标本身即 WGS-84（GPS 定位），直接使用；
@@ -230,7 +233,7 @@ def _endpoint_to_wgs(ref, fallback_poi):
     if isinstance(ref, dict) and ref.get("type") == "coord" and ref.get("coordinates"):
         c = ref["coordinates"]
         return float(c["lng"]), float(c["lat"])
-    return gcj02_to_wgs84(fallback_poi["lon"], fallback_poi["lat"])
+    return navigation_wgs(fallback_poi, mode)
 
 
 def _haversine(lat1, lon1, lat2, lon2):
@@ -269,7 +272,7 @@ def _parse_linestring(wkt):
     return pts if pts else None
 
 
-def _path_to_coords(G, route_nodes):
+def _path_to_coords(G, route_nodes, route_edges=None):
     """把路径节点序列展开为密集坐标序列（含边的 geometry 中间点）。
 
     路网下载时用了 simplify=True，节点只保留交叉路口，弯曲道路的中间点
@@ -293,7 +296,8 @@ def _path_to_coords(G, route_nodes):
         if not edge_data:
             continue
 
-        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+        data = (edge_data[route_edges[i][2]] if route_edges is not None
+                else min(edge_data.values(), key=lambda d: d.get("length", float("inf"))))
 
         # 添加当前边起点（首段才加；后续段的起点已由上一段终点覆盖）
         if not coords:
@@ -303,6 +307,9 @@ def _path_to_coords(G, route_nodes):
         geom = data.get("geometry")
         pts = _parse_linestring(geom) if geom else None
         if pts and len(pts) >= 2:
+            ulng, ulat = get_node_coords(G, u)
+            if (pts[0][0] - ulng) ** 2 + (pts[0][1] - ulat) ** 2 > (pts[-1][0] - ulng) ** 2 + (pts[-1][1] - ulat) ** 2:
+                pts.reverse()
             # geometry 首尾点即 u/v，跳过首点，追加中间点与终点
             for lng, lat in pts[1:]:
                 coords.append({"lng": round(lng, 6), "lat": round(lat, 6)})
@@ -314,7 +321,7 @@ def _path_to_coords(G, route_nodes):
     return coords
 
 
-def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
+def _compute_route_costs(G, route_nodes, weights, max_len=0.0, route_edges=None):
     if len(route_nodes) < 2:
         return {"distance": 0.0, "slope": 0.0, "scenery": 0.0}
 
@@ -337,7 +344,8 @@ def _compute_route_costs(G, route_nodes, weights, max_len=0.0):
         if not edge_data:
             continue
 
-        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+        data = (edge_data[route_edges[i][2]] if route_edges is not None
+                else min(edge_data.values(), key=lambda d: d.get("length", float("inf"))))
         length = data.get("length", 0)
         norm_length = length / max_len
 
@@ -700,7 +708,7 @@ def route():
         poi = get_poi(name)
         if poi is None:
             return None, None, None, _err("poi_not_found", f"{label} '{name}' 未找到", 404)
-        lon_wgs, lat_wgs = gcj02_to_wgs84(poi["lon"], poi["lat"])
+        lon_wgs, lat_wgs = navigation_wgs(poi, final_mode)
         try:
             node = get_nearest_node(G_mode, lon_wgs, lat_wgs)
         except RuntimeError as e:
@@ -748,10 +756,15 @@ def route():
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
 
-    recommended_coords = _path_to_coords(G, recommended_nodes)
-    shortest_coords = _path_to_coords(G, shortest_nodes)
+    recommended_edges = route_result["recommended_edges"]
+    shortest_edges = route_result["shortest_edges"]
+    recommended_coords = _path_to_coords(G, recommended_nodes, recommended_edges)
+    shortest_coords = _path_to_coords(G, shortest_nodes, shortest_edges)
 
-    costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
+    costs = _compute_route_costs(
+        G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0),
+        recommended_edges,
+    )
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
@@ -761,11 +774,16 @@ def route():
     shortest_coords = _coords_wgs_to_gcj(shortest_coords)
 
     # 逐步转向指令（动作点同步转 GCJ-02），供前端实时导航与语音播报
-    steps = _build_steps_gcj(G, recommended_nodes, final_mode, end_name=end_name)
+    steps = _build_steps_gcj(
+        G, recommended_nodes, final_mode, end_name=end_name,
+        route_edges=recommended_edges,
+    )
 
     response = {
         "recommended": recommended_coords,
         "shortest": shortest_coords,
+        "recommended_edge_ids": recommended_edges,
+        "shortest_edge_ids": shortest_edges,
         "steps": steps,
         "costs": costs,
         "pois": pois_along,
@@ -993,8 +1011,8 @@ def chat():
     G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
 
     # 坐标统一到 WGS-84：GPS coord 本身即 WGS-84；POI 为 GCJ-02 需转换
-    start_lon_wgs, start_lat_wgs = _endpoint_to_wgs(start, start_poi)
-    end_lon_wgs, end_lat_wgs = _endpoint_to_wgs(end, end_poi)
+    start_lon_wgs, start_lat_wgs = _endpoint_to_wgs(start, start_poi, final_mode)
+    end_lon_wgs, end_lat_wgs = _endpoint_to_wgs(end, end_poi, final_mode)
 
     # 起终点重合判定：含坐标时看球面距离（<10m 视为同点）；POI-POI 看规范名
     if start.get("type") == "coord" or end.get("type") == "coord":
@@ -1043,10 +1061,15 @@ def chat():
     shortest_nodes = route_result["shortest"]
     resolved_weights = resolve_weights(weights)
 
-    recommended_coords = _path_to_coords(G, recommended_nodes)
-    shortest_coords = _path_to_coords(G, shortest_nodes)
+    recommended_edges = route_result["recommended_edges"]
+    shortest_edges = route_result["shortest_edges"]
+    recommended_coords = _path_to_coords(G, recommended_nodes, recommended_edges)
+    shortest_coords = _path_to_coords(G, shortest_nodes, shortest_edges)
 
-    costs = _compute_route_costs(G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0))
+    costs = _compute_route_costs(
+        G, recommended_nodes, resolved_weights, route_result.get("max_len", 0.0),
+        recommended_edges,
+    )
 
     pois_along = _find_pois_along_route(G, recommended_nodes)
 
@@ -1089,9 +1112,12 @@ def chat():
         # 注意：pois_along 里的 POI 本身来自 pois.json(GCJ-02)，不需要再转！
         "recommended": _coords_wgs_to_gcj(recommended_coords),
         "shortest": _coords_wgs_to_gcj(shortest_coords),
+        "recommended_edge_ids": recommended_edges,
+        "shortest_edge_ids": shortest_edges,
         "steps": _build_steps_gcj(
             G, recommended_nodes, final_mode,
             end_name=(end_poi.get("name") if end_poi else end.get("name")) or "",
+            route_edges=recommended_edges,
         ),
         "costs": costs,
         "pois": pois_along,

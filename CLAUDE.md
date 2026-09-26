@@ -12,7 +12,7 @@
 
 ```bash
 python app.py                      # Flask 开发服务器，端口 5000
-python -m pytest tests/ -q         # 全部测试（373）
+python -m pytest tests/ -q         # 全部测试（381 passed，5 skipped，1 xfailed）
 python -m pytest tests/test_routing.py -q
 python scripts/validate/validate_osm_network.py   # 路网覆盖率校验
 python scripts/validate/validate_all_data.py      # POI 数据校验
@@ -26,9 +26,9 @@ POST /api/chat（api/routes.py）
   → agents/planner.py  run_agent()  Plan-Act-Observe 循环（MAX_TURNS=6, 40s 预算）
       system 上下文：agent_system.txt + knowledge 任务卡 + profile 画像
                     + 出行方式/GPS/途经点/多轮历史
-  → agents/tools.py  9 个 function-calling 工具（LLM 只决策，不计算）
+  → agents/tools.py  10 个 function-calling 工具（LLM 只决策，不计算）
       resolve_poi / search_poi_candidates
-      plan_route / plan_via_route / plan_tour
+      plan_route / plan_via_route / plan_tour / plan_multimodal_route
       get_weather / list_road_conditions
       ask_user / suggest_followup
   → spatial/ 纯算法：routing.py（模式过滤→硬约束→路况/天气成本→加权 Dijkstra）
@@ -58,7 +58,7 @@ POST /api/chat（api/routes.py）
 
 ## 关键事实（改代码前必读）
 
-- **默认权重按方式**（routing.py `MODE_DEFAULT_WEIGHTS`，唯一事实源）：walk {0.8,0.05,0.15}、bike {0.6,0.25,0.15}、drive {0.85,0.05,0.10}。注意 config.py 里 0.5/0.2/0.3 旧常量已无引用，别用它。
+- **默认权重按方式**（routing.py `MODE_DEFAULT_WEIGHTS`，唯一事实源）：通勤 distance 绝对主导——walk {d 0.90, s 0.05, v 0.05}、bike {0.90, 0.05, 0.05}、drive {0.95, 0.00, 0.05}（2026-09-24 起；用户明确"看风景/避坡"时 LLM 才调高非距离权重）。注意 config.py 里 0.5/0.2/0.3 旧常量已无引用，别用它。
 - **约束 ≠ 权重**（DEC-011）：硬约束过滤不可通行边（slope=avoid 删 level=5），软权重进成本函数 `Cost = w_d·D + w_s·S + w_v·(1−V)`；路径上限 min(最短×3, 2000m)。
 - **路况全方式生效**：closure 全 block、construction 步行 1.5×/骑行驾车 block、flooding 驾车 1.5×/其余 block、accident 步行骑行 1.3×/驾车 block、event 步行骑行 1.2×/驾车 block；不可达降级大惩罚。
 - **台阶/电梯/扶梯** bike/drive 一票否决；步行台阶 2.5×；edge_overrides.json 208 边人工覆盖（穿楼封禁、食堂 10× 防穿楼）。
@@ -67,7 +67,7 @@ POST /api/chat（api/routes.py）
 - **路线成功即结束 Agent 循环**，不让 LLM 再调 suggest_followup（DSML 泄漏防护）。
 - **切换方式**用上次路线起终点坐标直接重算，禁止把"我的位置"当 POI 名查。
 - **前端请求序号**（requestSeq）防旧响应覆盖新状态；非路径响应要清空地图路线。
-- **SW 纪律**：改 PRECACHE_URLS 内文件必须升 `sw.js` CACHE_NAME（当前 whu-walker-v47）。⚠️ 已知回归：前端目前**未注册** serviceWorker（"全新布局"提交移除），恢复缓存能力时要补回注册代码。
+- **SW 纪律**：改 PRECACHE_URLS 内文件必须升 `sw.js` CACHE_NAME（当前 whu-walker-v51）。⚠️ 已知回归：前端目前**未注册** serviceWorker（"全新布局"提交移除，app.js 中无 serviceWorker 注册），恢复缓存能力时要补回注册代码。
 
 ## 环境配置
 

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "purpose": "相同起终点的自有路网、商业地图步行路线及现场通行性对照；样本结论待核实",
+  "samples": [
+    {"id": "od_01", "start": "武汉大学教1楼", "end": "武汉大学图书馆(总馆)", "scenario": "文理学部日常通勤", "field_verification": null},
+    {"id": "od_02", "start": "武汉大学图书馆(总馆)", "end": "武汉大学图书馆工学分馆", "scenario": "跨文理与工学学部", "field_verification": null},
+    {"id": "od_03", "start": "武汉大学信息学部图书馆", "end": "武汉大学图书馆(总馆)", "scenario": "跨信息与文理学部", "field_verification": null},
+    {"id": "od_04", "start": "武汉大学樱花大道", "end": "武汉大学珞珈山", "scenario": "山路与台阶", "field_verification": null},
+    {"id": "od_05", "start": "武汉大学枫园", "end": "武汉大学工学部学生一食堂", "scenario": "学部边界", "field_verification": null},
+    {"id": "od_06", "start": "卓尔体育馆", "end": "武汉大学图书馆(总馆)", "scenario": "体育馆新补地点与建筑周边", "field_verification": null}
+  ]
+}

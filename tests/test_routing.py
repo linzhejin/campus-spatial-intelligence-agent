@@ -254,18 +254,15 @@ class TestEdgeHighwayTags:
 
 class TestFilterGraphForMode:
     def test_walk_no_filter_returns_original(self, mode_graph):
-        # walk 分支现在也硬删 corridor 边（建筑连廊/穿楼通道，杜绝步行捷径）
-        # mock 图有 4 条 corridor 边（2 对双向: 5-6, 8-9），被硬删
+        # A mapped corridor is not itself an access prohibition.
         original_edges = mode_graph.number_of_edges()
         Gf, status, penalty = filter_graph_for_mode(mode_graph, "walk")
         assert status == "no_filter"  # mock 图无校外边
-        # corridor 硬删：边数减少 4
-        assert Gf.number_of_edges() == original_edges - 4
-        # corridor 边不在结果图中
-        assert not Gf.has_edge(5, 6, 0)
-        assert not Gf.has_edge(6, 5, 0)
-        assert not Gf.has_edge(8, 9, 0)
-        assert not Gf.has_edge(9, 8, 0)
+        assert Gf.number_of_edges() == original_edges
+        assert Gf.has_edge(5, 6, 0)
+        assert Gf.has_edge(6, 5, 0)
+        assert Gf.has_edge(8, 9, 0)
+        assert Gf.has_edge(9, 8, 0)
 
         # 台阶软惩罚仍然施加（混合标签台阶也惩罚）
         from spatial.routing import _WALK_STEPS_PENALTY
@@ -622,6 +619,39 @@ class TestRoutingReliability:
         result = compute_route(mode_graph, 0, 7, weights=weights, road_conditions=[],
                                weather_info={"temperature": 38, "weather": "晴"})
         assert result["applied_weights"] == pytest.approx(weights)
+
+    def test_parallel_edge_length_and_geometry_match_selected_edge(self):
+        from api.routes import _path_to_coords
+
+        graph = nx.MultiDiGraph()
+        graph.add_node(0, x=114.36, y=30.54)
+        graph.add_node(1, x=114.361, y=30.54)
+        common = {"highway": "residential", "name": "校内路", "scenery_level": 3}
+        graph.add_edge(0, 1, key=0, length=80.0, slope_level=5,
+                       geometry="LINESTRING (114.36 30.54, 114.3605 30.5402, 114.361 30.54)",
+                       **common)
+        graph.add_edge(0, 1, key=1, length=120.0, slope_level=1,
+                       geometry="LINESTRING (114.36 30.54, 114.3605 30.5395, 114.361 30.54)",
+                       **common)
+
+        result = compute_route(graph, 0, 1,
+                               weights={"distance": 0.1, "slope": 0.9, "scenery": 0.0},
+                               road_conditions=[])
+        assert result["recommended_edges"] == [(0, 1, 1)]
+        assert result["shortest_edges"] == [(0, 1, 0)]
+        assert result["recommended_length_m"] == 120.0
+        assert result["shortest_length_m"] == 80.0
+        coords = _path_to_coords(graph, result["recommended"], result["recommended_edges"])
+        assert coords[1] == {"lng": 114.3605, "lat": 30.5395}
+        from scripts.validate_route_quality import path_edges
+        from scripts.validate_route_quality import reachability_regressions
+        from scripts.verify_road_condition_effects import edge_on_path
+        assert path_edges(graph, result["recommended_edges"])[0][2] == 1
+        assert edge_on_path(result["recommended_edges"], 0, 1, 1)
+        assert not edge_on_path(result["recommended_edges"], 0, 1, 0)
+        base = {mode: {"fail": 0} for mode in ("walk", "bike", "drive")}
+        fixed = {mode: {"fail": int(mode == "bike")} for mode in base}
+        assert reachability_regressions(base, fixed) == {"bike": (0, 1)}
 
     @staticmethod
     def _chain():

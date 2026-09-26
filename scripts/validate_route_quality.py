@@ -47,17 +47,15 @@ def load_poi_nodes(G):
     return nodes
 
 
-def path_edges(G, nodes_seq):
+def path_edges(G, edge_ids):
     out = []
-    for a, b in zip(nodes_seq, nodes_seq[1:]):
-        data = G.get_edge_data(a, b)
-        if data:
-            k0 = sorted(data.keys())[0]
-            out.append((a, b, k0, data[k0]))
+    for u, v, key in edge_ids:
+        if G.has_edge(u, v, key):
+            out.append((u, v, key, G[u][v][key]))
     return out
 
 
-def run_matrix(G, pairs, label):
+def run_matrix(G, pairs, label, crossing_edges):
     stats = {m: {"n": 0, "fail": 0, "steps": 0, "cross_bike_drive": 0,
                  "cross_walk": 0, "blocked_attr": 0} for m in ("walk", "bike", "drive")}
     t0 = time.time()
@@ -67,23 +65,20 @@ def run_matrix(G, pairs, label):
             st["n"] += 1
             try:
                 res = compute_route(G, s, t, mode=mode)
-                seq = res["recommended"]
+                selected_edges = res["recommended_edges"]
             except Exception:
                 st["fail"] += 1
                 continue
-            for u, v, k, d in path_edges(G, seq):
+            for u, v, k, d in path_edges(G, selected_edges):
                 tags = _edge_highway_tags(d)
                 bm = _edge_blocked_modes(d)
                 if any(x in ("steps", "elevator", "escalator") for x in tags):
                     st["steps"] += 1
-                wp = d.get("walk_penalty")
-                # walk_penalty==10 来自穿楼覆盖/食堂标注
-                if mode == "walk" and wp:
-                    try:
-                        if float(wp) >= 9.9:
-                            st["cross_walk"] += 1
-                    except (TypeError, ValueError):
-                        pass
+                if (u, v, k) in crossing_edges:
+                    if mode == "walk":
+                        st["cross_walk"] += 1
+                    else:
+                        st["cross_bike_drive"] += 1
                 if mode in ("bike", "drive") and (mode in bm or "all" in bm):
                     st["blocked_attr"] += 1
     dt = time.time() - t0
@@ -91,9 +86,17 @@ def run_matrix(G, pairs, label):
     for mode in ("walk", "bike", "drive"):
         st = stats[mode]
         print(f"  {mode:5s}: 路径{st['n']:4d}  失败{st['fail']:3d}  "
-              f"台阶侵入{st['steps']:4d}  穿楼步行边{st['cross_walk']:4d}  "
+              f"台阶侵入{st['steps']:4d}  疑似穿楼边"
+              f"{st['cross_walk'] + st['cross_bike_drive']:4d}  "
               f"封禁边漏网{st['blocked_attr']:4d}")
     return stats
+
+
+def reachability_regressions(base, fixed):
+    """相同 OD 样本中，新策略不能增加任一方式的不可达数量。"""
+    return {mode: (base[mode]["fail"], fixed[mode]["fail"])
+            for mode in ("walk", "bike", "drive")
+            if fixed[mode]["fail"] > base[mode]["fail"]}
 
 
 def main():
@@ -109,6 +112,14 @@ def main():
         s, t = random.sample(poi_nodes, 2)
         pairs.append((s[0], s[1], t[0], t[1]))
 
+    issue_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "audit_output", "audit_issues.json")
+    if not os.path.exists(issue_path):
+        raise RuntimeError("缺少建筑相交审计清单，请先运行 scripts/audit_network.py")
+    with open(issue_path, encoding="utf-8") as f:
+        crossing_edges = {(e["u"], e["v"], e.get("k", 0))
+                          for e in json.load(f).get("cross_building_edges", [])}
+
     # 基线：重读缓存 + 仅 annotations（模拟 overrides 不存在）
     print("构建基线路网（无 edge_overrides）...")
     cache = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -118,18 +129,26 @@ def main():
     if os.path.exists(ann):
         _merge_annotations(G_base, ann)
 
-    base = run_matrix(G_base, pairs, "修复前基线")
-    fixed = run_matrix(G_fixed, pairs, "修复后")
+    base = run_matrix(G_base, pairs, "修复前基线", crossing_edges)
+    fixed = run_matrix(G_fixed, pairs, "修复后", crossing_edges)
 
     print("\n=== 结论 ===")
     for mode in ("bike", "drive"):
         ok_steps = fixed[mode]["steps"] == 0
         ok_block = fixed[mode]["blocked_attr"] == 0
         print(f"  {mode}: 台阶侵入 {base[mode]['steps']} → {fixed[mode]['steps']} "
-              f"{'✅' if ok_steps else '❌'}；封禁边漏网 {fixed[mode]['blocked_attr']} "
-              f"{'✅' if ok_block else '❌'}；失败 {base[mode]['fail']} → {fixed[mode]['fail']}")
-    print(f"  walk: 穿楼/食堂高惩罚边侵入 {base['walk']['cross_walk']} → {fixed['walk']['cross_walk']}；"
+              f"{'通过' if ok_steps else '失败'}；封禁边漏网 {fixed[mode]['blocked_attr']} "
+              f"{'通过' if ok_block else '失败'}；失败 {base[mode]['fail']} → {fixed[mode]['fail']}")
+    print(f"  walk: 疑似穿楼边侵入 {base['walk']['cross_walk']} → {fixed['walk']['cross_walk']}；"
           f"失败 {base['walk']['fail']} → {fixed['walk']['fail']}")
+    print(f"  bike: 疑似穿楼边侵入 {base['bike']['cross_bike_drive']} → "
+          f"{fixed['bike']['cross_bike_drive']}")
+    print(f"  drive: 疑似穿楼边侵入 {base['drive']['cross_bike_drive']} → "
+          f"{fixed['drive']['cross_bike_drive']}")
+    regressions = reachability_regressions(base, fixed)
+    if regressions:
+        print(f"[失败] 相同 OD 样本的可达性下降: {regressions}")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

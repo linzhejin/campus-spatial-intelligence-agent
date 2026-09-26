@@ -49,7 +49,7 @@ python app.py                     # http://localhost:5000
 ## 测试与校验
 
 ```bash
-python -m pytest tests/ -q               # 373 tests
+python -m pytest tests/ -q               # 381 passed, 5 skipped, 1 xfailed
 python scripts/validate/validate_all_data.py
 ```
 

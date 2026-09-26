@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "source_boundary": "scripts/fetch/osm_campus_boundaries.geojson",
+  "review_basis": "Legacy POI coordinates fall inside another named university boundary in the local OSM extract and outside the Wuhan University boundaries. Original records are archived for correction or reinstatement if new evidence appears.",
+  "decisions": [
+    {"poi_id": "poi_232", "name": "中国龙狮运动学院", "foreign_boundary_ref": "way/112940438", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/way/112940438"},
+    {"poi_id": "poi_233", "name": "二号教学楼", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_235", "name": "国际园区2号教学楼", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_236", "name": "国际园区3号教学楼", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_251", "name": "法学院楼", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_252", "name": "西教学楼", "foreign_boundary_ref": "way/112940438", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/way/112940438"},
+    {"poi_id": "poi_264", "name": "国际园区5栋学生宿舍", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_265", "name": "国际园区6栋学生宿舍", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_266", "name": "国际园区学生宿舍3栋", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_267", "name": "国际园区学生宿舍4栋", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_268", "name": "国际园区学生宿舍8栋", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"},
+    {"poi_id": "poi_269", "name": "国际园区学生宿舍9栋", "foreign_boundary_ref": "relation/20383289", "decision": "exclude_from_campus_master", "evidence": "https://www.openstreetmap.org/relation/20383289"}
+  ]
+}

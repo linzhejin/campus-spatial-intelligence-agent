@@ -8,6 +8,7 @@ OSMnx 路网加载与缓存模块
 import json
 import logging
 import os
+import ast
 from typing import Optional, Tuple
 
 import networkx as nx
@@ -90,6 +91,8 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
         except Exception as e:
             logger.warning("路网缓存失败（不影响运行）: %s", e)
 
+    _mark_osm_provenance(_G)
+
     ann_path = _annotations_path()
     if os.path.exists(ann_path):
         try:
@@ -114,7 +117,78 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
         except Exception as e:
             logger.warning("路网人工覆盖 merge 失败（不影响运行）: %s", e)
 
+    review_path = os.path.join(os.path.dirname(__file__), "..", "data",
+                               "campus_review_decisions.json")
+    if os.path.exists(review_path):
+        try:
+            n = _merge_verified_road_reviews(_G, review_path)
+            logger.info("已应用现场/校方核实路段: %d 条", n)
+        except Exception as e:
+            logger.warning("核实路段记录加载失败（不影响运行）: %s", e)
+
     return _G
+
+
+def _mark_osm_provenance(G: nx.MultiDiGraph) -> None:
+    """给 OSM 底稿路段附来源和核实状态；自动标注不等于实地核实。"""
+    for _, _, _, edge in G.edges(keys=True, data=True):
+        raw = edge.get("osmid")
+        if isinstance(raw, str) and raw.startswith("["):
+            try:
+                raw = ast.literal_eval(raw)
+            except (ValueError, SyntaxError):
+                pass
+        ids = raw if isinstance(raw, (list, tuple)) else [raw]
+        edge["source_refs"] = [
+            {"source": "OpenStreetMap", "id": f"way/{osm_id}", "license": "ODbL-1.0"}
+            for osm_id in ids if osm_id is not None
+        ]
+        edge.setdefault("verification_status", "source_only")
+
+
+def _merge_verified_road_reviews(G: nx.MultiDiGraph, review_path: str) -> int:
+    """仅应用有证据和日期、且精确匹配边 ID 的通行决定。"""
+    with open(review_path, encoding="utf-8") as handle:
+        decisions = json.load(handle).get("road_decisions", [])
+    applied = 0
+    valid_modes = {"walk", "bike", "drive"}
+    for review in decisions:
+        if (G.graph.get("annotation_policy") == "source_scoped_only"
+                and review.get("graph_source_sha256") != G.graph.get("source_sha256")):
+            continue
+        if review.get("verification_status") not in {"field_verified", "institution_verified"}:
+            continue
+        if not review.get("evidence") or not review.get("verified_at"):
+            continue
+        raw_id = review.get("edge_id")
+        if not isinstance(raw_id, list) or len(raw_id) != 3:
+            continue
+        u, v, key = raw_id
+        if not G.has_edge(u, v, key):
+            continue
+        blocked = set(review.get("blocked_modes") or [])
+        passable = set(review.get("passable_modes") or [])
+        if not blocked <= valid_modes or not passable <= valid_modes or blocked & passable:
+            continue
+        edge = G[u][v][key]
+        old = edge.get("blocked_modes") or []
+        if isinstance(old, str):
+            try:
+                old = ast.literal_eval(old)
+            except (ValueError, SyntaxError):
+                old = [old]
+        modes = set(old)
+        if "all" in modes:
+            modes = (modes - {"all"}) | valid_modes
+        modes -= passable
+        edge["blocked_modes"] = sorted(modes | blocked)
+        if review.get("clear_walk_penalty") and "walk" in passable:
+            edge.pop("walk_penalty", None)
+        edge["verification_status"] = review["verification_status"]
+        edge["verified_at"] = review["verified_at"]
+        edge["review_flag"] = "resolved_by_verified_evidence"
+        applied += 1
+    return applied
 
 
 def _load_graphml(path: str) -> nx.MultiDiGraph:
@@ -287,6 +361,11 @@ def _merge_annotations(G: nx.MultiDiGraph, annotations_path: str) -> float:
     with open(annotations_path, "r", encoding="utf-8") as f:
         ann_data = json.load(f)
 
+    if (G.graph.get("annotation_policy") == "source_scoped_only"
+            and ann_data.get("graph_source_sha256") != G.graph.get("source_sha256")):
+        logger.info("旧边号标注未绑定当前路网来源版本，跳过合并")
+        return 0.0
+
     edges_ann = ann_data.get("edges", []) or []
     total_edges = G.number_of_edges()
 
@@ -381,6 +460,11 @@ def _merge_overrides(G: nx.MultiDiGraph, overrides_path: str) -> int:
     with open(overrides_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    if (G.graph.get("annotation_policy") == "source_scoped_only"
+            and data.get("graph_source_sha256") != G.graph.get("source_sha256")):
+        logger.info("旧路网覆盖未绑定当前路网来源版本，跳过合并")
+        return 0
+
     edges_ov = data.get("edges", []) or []
     graph_uv_to_keys = {}
     key_to_orig = {}
@@ -406,6 +490,11 @@ def _merge_overrides(G: nx.MultiDiGraph, overrides_path: str) -> int:
 
         ou, ov_, ok = key_to_orig[target]
         edge_data = G[ou][ov_][ok]
+
+        if ov.get("reason") == "crosses_building":
+            edge_data["review_flag"] = "suspected_building_crossing"
+        if ov.get("verification_status"):
+            edge_data["verification_status"] = str(ov["verification_status"])
 
         modes = ov.get("blocked_modes")
         if modes:

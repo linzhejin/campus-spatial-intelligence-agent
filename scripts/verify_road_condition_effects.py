@@ -56,9 +56,9 @@ def find_sample_edge(G, mode, max_tries=60):
     return None
 
 
-def edge_on_path(path, u, v):
-    return any((a == u and b == v) or (a == v and b == u)
-               for a, b in zip(path, path[1:]))
+def edge_on_path(edge_ids, u, v, key):
+    return any(edge_key == key and ((a == u and b == v) or (a == v and b == u))
+               for a, b, edge_key in edge_ids)
 
 
 def make_condition(ctype, u, v, k, name):
@@ -102,7 +102,7 @@ def main():
             effect = CONDITION_EFFECTS[ctype][mode]
             cond = make_condition(ctype, u, v, k, name)
             r = compute_route(G, u, v, mode=mode, road_conditions=[cond])
-            uses = edge_on_path(r["recommended"], u, v)
+            uses = edge_on_path(r["recommended_edges"], u, v, k)
             label = "硬封" if effect == "block" else f"{effect:g}×"
             if effect == "block":
                 uses_txt = "是(异常!)" if uses else "否"
@@ -123,16 +123,16 @@ def main():
         u, v, k, name = samples["walk"]
         cond = make_condition("closure", u, v, k, name)
         r = compute_route(G, u, v, mode="walk", road_conditions=[cond])
-        assert not edge_on_path(r["recommended"], u, v), "步行封闭未绕行！"
+        assert not edge_on_path(r["recommended_edges"], u, v, k), "步行封闭未绕行！"
         assert r["road_conditions_applied"] == 1
-        print("✅ 关键回归：步行模式下道路封闭已正确绕行（旧版完全忽略路况）")
+        print("[通过] 关键回归：步行模式下道路封闭已正确绕行（旧版完全忽略路况）")
 
     if failures:
-        print("\n❌ 验证失败：")
+        print("\n[失败] 验证失败：")
         for f in failures:
             print("  -", f)
         sys.exit(1)
-    print("\n✅ 全部硬封类型在对应模式下均绕行，软惩罚类型正常注入成本。")
+    print("\n[通过] 全部硬封类型在对应模式下均绕行，软惩罚类型正常注入成本。")
 
 
 if __name__ == "__main__":

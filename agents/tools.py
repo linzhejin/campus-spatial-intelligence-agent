@@ -26,6 +26,7 @@ from spatial.routing import (
     estimate_duration_min, MODE_SPEEDS_KMH, build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
+from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import list_conditions, CONDITION_LABELS
 from spatial import weather as weather_mod
 
@@ -316,7 +317,7 @@ def _parse_linestring(wkt):
     return pts if pts else None
 
 
-def _path_to_coords(G, route_nodes):
+def _path_to_coords(G, route_nodes, route_edges=None):
     """路径节点序列 → 密集坐标序列（WGS-84，含边 geometry 中间点）。"""
     if not route_nodes:
         return []
@@ -326,12 +327,16 @@ def _path_to_coords(G, route_nodes):
         edge_data = G.get_edge_data(u, v)
         if not edge_data:
             continue
-        data = min(edge_data.values(), key=lambda d: d.get("length", float("inf")))
+        data = (edge_data[route_edges[i][2]] if route_edges is not None
+                else min(edge_data.values(), key=lambda d: d.get("length", float("inf"))))
         if not coords:
             ulng, ulat = get_node_coords(G, u)
             coords.append({"lng": round(ulng, 6), "lat": round(ulat, 6)})
         pts = _parse_linestring(data.get("geometry")) if data.get("geometry") else None
         if pts and len(pts) >= 2:
+            ulng, ulat = get_node_coords(G, u)
+            if (pts[0][0] - ulng) ** 2 + (pts[0][1] - ulat) ** 2 > (pts[-1][0] - ulng) ** 2 + (pts[-1][1] - ulat) ** 2:
+                pts.reverse()
             for lng, lat in pts[1:]:
                 coords.append({"lng": round(lng, 6), "lat": round(lat, 6)})
         else:
@@ -348,12 +353,14 @@ def _coords_wgs_to_gcj(coords_list):
             for gcj_lng, gcj_lat in [wgs84_to_gcj02(c["lng"], c["lat"])]]
 
 
-def _build_steps_gcj(G, route_nodes, mode, end_name=""):
+def _build_steps_gcj(G, route_nodes, mode, end_name="", route_edges=None):
     """逐步转向指令（动作点转 GCJ-02）。失败返回 []，不阻断路径规划。"""
     if not route_nodes or len(route_nodes) < 2:
         return []
     try:
-        steps = build_turn_by_turn(G, route_nodes, mode=mode, end_name=end_name or "")
+        steps = build_turn_by_turn(
+            G, route_nodes, mode=mode, end_name=end_name or "", route_edges=route_edges,
+        )
     except Exception:
         logger.warning("转向指令生成失败 mode=%s", mode, exc_info=True)
         return []
@@ -449,7 +456,7 @@ def _resolve_endpoint(ref: dict, G_mode):
             "message": f"校内没找到「{name}」",
             "candidates": [_poi_public(a, with_coords=False) for a in (alts or [])][:5],
         }
-    lng_wgs, lat_wgs = gcj02_to_wgs84(poi["lon"], poi["lat"])
+    lng_wgs, lat_wgs = navigation_wgs(poi, G_mode.graph.get('travel_mode', 'walk'))
     node = get_nearest_node(G_mode, lng_wgs, lat_wgs)
     return node, poi["name"], None
 
@@ -514,12 +521,19 @@ def _route_payload(G, route_result, start_name, end_name, mode):
     """compute_route 结果 → 前端/LLM 可用的路径包（坐标 GCJ-02）。"""
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
+    recommended_edges = route_result["recommended_edges"]
+    shortest_edges = route_result["shortest_edges"]
     return {
         "start_name": start_name,
         "end_name": end_name,
-        "recommended": _coords_wgs_to_gcj(_path_to_coords(G, recommended_nodes)),
-        "shortest": _coords_wgs_to_gcj(_path_to_coords(G, shortest_nodes)),
-        "steps": _build_steps_gcj(G, recommended_nodes, mode, end_name=end_name),
+        "recommended": _coords_wgs_to_gcj(
+            _path_to_coords(G, recommended_nodes, recommended_edges)),
+        "shortest": _coords_wgs_to_gcj(
+            _path_to_coords(G, shortest_nodes, shortest_edges)),
+        "recommended_edge_ids": recommended_edges,
+        "shortest_edge_ids": shortest_edges,
+        "steps": _build_steps_gcj(
+            G, recommended_nodes, mode, end_name=end_name, route_edges=recommended_edges),
         "pois": _pois_along_route(G, recommended_nodes),
         "filter_status": route_result["filter_status"],
         "overlap_rate": route_result["overlap_rate"],
@@ -696,6 +710,8 @@ def _tool_plan_via_route(args, ctx):
         "start_name": start_name,
         "end_name": end_name,
         "recommended": leg1["recommended"] + leg2["recommended"],
+        "recommended_edge_ids": (
+            leg1["recommended_edge_ids"] + leg2["recommended_edge_ids"]),
         "steps": _merge_leg_steps([leg1, leg2]),
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
@@ -831,6 +847,9 @@ def _tool_plan_multimodal_route(args, ctx):
         "start_name": start_name,
         "end_name": prev_name,
         "recommended": recommended_all,
+        "recommended_edge_ids": [
+            edge for leg in legs_payload for edge in leg["recommended_edge_ids"]
+        ],
         "steps": merged_steps,
         "recommended_length_m": round(cumulative_len, 1),
         "distance_m": round(cumulative_len, 1),
@@ -913,6 +932,9 @@ def _tool_plan_tour(args, ctx):
         # 前端兼容：整条环线作为 recommended 返回
         "start_name": seq_names[0] if seq_names else "",
         "recommended": [c for leg in legs_payload for c in leg["recommended"]],
+        "recommended_edge_ids": [
+            edge for leg in legs_payload for edge in leg["recommended_edge_ids"]
+        ],
         "steps": _merge_leg_steps(legs_payload),
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
