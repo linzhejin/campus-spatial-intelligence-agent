@@ -22,9 +22,10 @@ from spatial.poi import (
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import (
     compute_route, compute_via_route, compute_tour_route,
-    rank_via_candidates, resolve_weights, filter_graph_for_mode,
+    rank_via_candidates, resolve_weights,
     estimate_duration_min, MODE_SPEEDS_KMH, build_turn_by_turn,
 )
+from spatial.routing_index import get_routing_index
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import list_conditions, CONDITION_LABELS
@@ -604,7 +605,7 @@ def _plan_common(args, ctx):
     mode = args.get("mode") or "walk"
     if mode not in ("walk", "bike", "drive"):
         mode = "walk"
-    G_mode, _, _ = filter_graph_for_mode(G, mode)
+    G_mode = get_routing_index(G).for_mode(mode).graph
     snap = _weather_snapshot()
     return G, G_mode, mode, (snap["live"] if snap else None)
 
@@ -752,7 +753,7 @@ def _tool_plan_multimodal_route(args, ctx):
     first_mode = legs_in[0].get("mode") or "walk"
     if first_mode not in ("walk", "bike", "drive"):
         first_mode = "walk"
-    G_first, _, _ = filter_graph_for_mode(G, first_mode)
+    G_first = get_routing_index(G).for_mode(first_mode).graph
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_first)
     if err:
         return err, None
@@ -775,7 +776,7 @@ def _tool_plan_multimodal_route(args, ctx):
                     "message": f"第 {idx + 1} 段终点格式不正确"}, None
 
         # 每段独立过滤路网（mode 不同 → G_mode 不同）
-        G_mode, _, _ = filter_graph_for_mode(G, mode)
+        G_mode = get_routing_index(G).for_mode(mode).graph
         end_node, end_name, err = _resolve_endpoint(end_ref, G_mode)
         if err:
             return err, None

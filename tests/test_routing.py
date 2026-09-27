@@ -494,6 +494,23 @@ class TestViaRoute:
         assert 0.8 <= result["detour_ratio"] <= 1.5
         assert result["total_length_m"] > 0
 
+    def test_compute_via_route_prepares_mode_graph_once(self, mock_graph, monkeypatch):
+        from spatial import routing_index
+
+        routing_index.invalidate_routing_index()
+        calls = 0
+        original = routing_index.build_mode_index
+
+        def counted(*args, **kwargs):
+            nonlocal calls
+            calls += 1
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(routing_index, "build_mode_index", counted)
+        compute_via_route(mock_graph, 0, 1, 3, road_conditions=[])
+
+        assert calls == 1
+
 
 class TestTourRoute:
     def _pois(self):

@@ -1120,12 +1120,17 @@ def compute_route(
         except Exception as e:
             logger.warning("天气分类失败，跳过: %s", e)
 
-    max_len, norm_lengths = _normalize_lengths(G)
-
     annotation_degraded = _should_degrade_annotations()
 
     # 1) 出行方式过滤（所有模式先剔真校外边；bike/drive 再按方式删边+删孤立节点）
-    G_mode, mode_status, mode_penalty = filter_graph_for_mode(G, mode)
+    if prepared is None:
+        from spatial.routing_index import get_routing_index
+        prepared = get_routing_index(G).for_mode(mode)
+    G_mode = prepared.graph
+    mode_status = prepared.mode_status
+    mode_penalty = dict(prepared.mode_penalty)
+    max_len = prepared.max_len
+    norm_lengths = prepared.norm_lengths
 
     # 起终点在过滤后被作为孤立节点移除（如驾车时起终点只连台阶/步行道，
     # 或步行时起终点只连校外路段）→ 该方式不可达，给友好提示
@@ -1181,10 +1186,6 @@ def compute_route(
     penalty_map = _merge_penalty_maps(mode_penalty, road_penalty)
     penalty_map = _merge_penalty_maps(penalty_map, weather_penalty)
     penalty_map = _merge_penalty_maps(penalty_map, constraint_penalty)
-
-    # 将 edge key 注入边数据，使 edge_weight 能按 (u, v, k) 查找 norm 和 penalty
-    for u, v, k, data in G_filtered.edges(keys=True, data=True):
-        data["_key"] = k
 
     if mode == "walk":
         status_parts = [mode_status] if mode_status != "no_filter" else []
@@ -1413,7 +1414,8 @@ def rank_via_candidates(
           on_the_way = [(poi_dict, node_id, detour_ratio), ...] 按绕行比升序
           off_the_way = 同上结构，全部超阈值（供"都不顺路"时说明）
     """
-    G_mode, _, _ = filter_graph_for_mode(G, mode)
+    from spatial.routing_index import get_routing_index
+    G_mode = get_routing_index(G).for_mode(mode).graph
     direct = _shortest_distance(G_mode, start_node, end_node)
     if direct <= 0 or direct == float("inf"):
         return [], []
@@ -1459,7 +1461,14 @@ def compute_via_route(
             "via_node": int,
         }
     """
-    kwargs = dict(mode=mode, road_conditions=road_conditions, weather_info=weather_info)
+    from spatial.routing_index import get_routing_index
+    prepared = get_routing_index(G).for_mode(mode)
+    kwargs = dict(
+        mode=mode,
+        road_conditions=road_conditions,
+        weather_info=weather_info,
+        prepared=prepared,
+    )
     leg1 = compute_route(G, start_node, via_node, constraints, weights, **kwargs)
     leg2 = compute_route(G, via_node, end_node, constraints, weights, **kwargs)
     direct = compute_route(G, start_node, end_node, constraints, weights, **kwargs)
@@ -1585,7 +1594,9 @@ def compute_tour_route(
                 "total_length_m": 0.0, "dropped": [], "loop": loop}
 
     poi_nodes = poi_nodes[:TOUR_MAX_POIS]
-    G_mode, _, _ = filter_graph_for_mode(G, mode)
+    from spatial.routing_index import get_routing_index
+    prepared = get_routing_index(G).for_mode(mode)
+    G_mode = prepared.graph
 
     # 起点固定为顺序首位：有 start_node 时把它作为 0 号节点加入矩阵
     nodes = [n for _, n in poi_nodes]
@@ -1642,7 +1653,8 @@ def compute_tour_route(
         if a == b:
             continue
         leg = compute_route(G, a, b, constraints, weights, mode=mode,
-                            road_conditions=road_conditions, weather_info=weather_info)
+                            road_conditions=road_conditions, weather_info=weather_info,
+                            prepared=prepared)
         legs.append(leg)
         total += leg["recommended_length_m"]
 

@@ -276,6 +276,8 @@ def reload_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
     """
     global _G
     _G = None
+    from spatial.routing_index import invalidate_routing_index
+    invalidate_routing_index()
 
     cache = _cache_path()
     if os.path.exists(cache):
@@ -287,6 +289,8 @@ def reload_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
 
 def clear_cache() -> None:
     """删除路网缓存文件。"""
+    from spatial.routing_index import invalidate_routing_index
+    invalidate_routing_index()
     cache = _cache_path()
     if os.path.exists(cache):
         os.remove(cache)

@@ -102,3 +102,16 @@ class TestGraphmlRoundTrip:
         assert 13239152642 in loaded.nodes
         assert 286074417 in loaded.nodes
         assert all(isinstance(n, int) for n in loaded.nodes)
+
+
+def test_routing_index_reuses_mode_graph_and_invalidates_on_reload():
+    from spatial.routing_index import get_routing_index, invalidate_routing_index
+
+    graph = _make_graph(4)
+    first = get_routing_index(graph).for_mode("walk")
+    second = get_routing_index(graph).for_mode("walk")
+    assert first is second
+
+    invalidate_routing_index()
+    third = get_routing_index(graph).for_mode("walk")
+    assert third is not first
