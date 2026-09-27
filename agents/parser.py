@@ -8,7 +8,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from config import DEEPSEEK_API_KEY, OPENAI_BASE_URL, LLM_MODEL
-from agents.preferences import route_preference_requested
+from agents.preferences import detect_strategy_hint, route_preference_requested
 
 logger = logging.getLogger(__name__)
 
@@ -17,31 +17,31 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 FEW_SHOT_EXAMPLES = [
     (
         "从牌坊到樱顶",
-        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"strategy_hint":"shortest","weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "从牌坊骑车到樱顶",
-        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"bike","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"strategy_hint":"shortest","weights":null,"mode":"bike","input_method":"nl","ambiguity":null}',
     ),
     (
         "开车从信息学部到文理学部教五",
-        '{"task_type":"path_planning","start":{"name":"信息学部","type":"poi"},"end":{"name":"教五","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"weights":null,"mode":"drive","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"信息学部","type":"poi"},"end":{"name":"教五","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"normal"},"strategy_hint":"shortest","weights":null,"mode":"drive","input_method":"nl","ambiguity":null}',
     ),
     (
         "从牌坊到樱顶，避开陡坡",
-        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"avoid","scenery":"normal"},"weights":{"distance":0.2,"slope":0.6,"scenery":0.2},"mode":"walk","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"牌坊","type":"poi"},"end":{"name":"樱顶","type":"poi"},"constraints":{"distance":"medium","slope":"avoid","scenery":"normal"},"strategy_hint":"flat","weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "我第一次来武大，想看樱花和老图书馆，但膝盖不好",
-        '{"task_type":"path_planning","start":null,"end":null,"constraints":{"distance":"medium","slope":"avoid","scenery":"high"},"weights":{"distance":0.1,"slope":0.5,"scenery":0.4},"mode":"walk","input_method":"nl","ambiguity":"请指定起点"}',
+        '{"task_type":"path_planning","start":null,"end":null,"constraints":{"distance":"medium","slope":"avoid","scenery":"high"},"strategy_hint":"flat","weights":null,"mode":"walk","input_method":"nl","ambiguity":"请指定起点"}',
     ),
     (
         "从梅园到桂园，最短路径",
-        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"梅园","type":"poi"},"end":{"name":"桂园","type":"poi"},"constraints":{"distance":"short","slope":"normal","scenery":"normal"},"strategy_hint":"shortest","weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "带朋友逛，从教五去图书馆，走风景好的路",
-        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"weights":{"distance":0.2,"slope":0.1,"scenery":0.7},"mode":"walk","input_method":"nl","ambiguity":null}',
+        '{"task_type":"path_planning","start":{"name":"教五","type":"poi"},"end":{"name":"图书馆","type":"poi"},"constraints":{"distance":"medium","slope":"normal","scenery":"high"},"strategy_hint":"scenery","weights":null,"mode":"walk","input_method":"nl","ambiguity":null}',
     ),
     (
         "樱顶在哪里",
@@ -84,6 +84,7 @@ class TaskIntent(BaseModel):
     input_method: Literal["nl", "shortcut", "map_click"] = "nl"
     ambiguity: Optional[str] = None
     weight_source: Optional[Literal["explicit_nl", "shortcut", "default"]] = None
+    strategy_hint: Optional[Literal["shortest", "recommended", "scenery", "flat", "custom"]] = None
 
 
 # 出行方式关键词（与 spatial.routing.TRAVEL_MODES 对应）：
@@ -498,14 +499,16 @@ def _rule_based_classify(query: str) -> dict:
                 "end_name": None,
             }
 
-    # Step 2: 匹配 Help / 功能说明（T-011 验收 8）
-    for pattern in _HELP_PATTERNS:
-        if re.search(pattern, q, flags=re.IGNORECASE):
-            return {
-                "task_type": "help",
-                "start_name": None,
-                "end_name": None,
-            }
+    # Step 2: 匹配 Help / 功能说明（T-011 验收 8）。含路径语义时继续向下
+    # 提取起终点，避免“推荐路线”中的“推荐”抢先把规划请求判成帮助。
+    if not has_path_semantics:
+        for pattern in _HELP_PATTERNS:
+            if re.search(pattern, q, flags=re.IGNORECASE):
+                return {
+                    "task_type": "help",
+                    "start_name": None,
+                    "end_name": None,
+                }
 
     # Step 3: 匹配 "我在X" → 声明起点，path_planning
     at_pattern = re.match(r"我?在(.+?)(?:附近|周围)?$", q)
@@ -921,16 +924,20 @@ def _t011_post_process(
         if intent.weights is None and prev.get("weights"):
             intent.weights = prev["weights"]
 
-    # 普通通勤不得因模型、目的地或历史权重变成游览路线；快捷按钮保留显式选择。
-    if (not shortcut_mode_hint and intent.input_method != "shortcut"
-            and not route_preference_requested(query, context)):
-        intent.weights = None
+    # 解析层只输出策略证据。固定策略的数值由 routing_policy 统一负责；仅当
+    # 用户明确给出三维比例时保留 weights 作为 custom 策略输入。
+    if intent.task_type == "path_planning":
+        intent.strategy_hint = detect_strategy_hint(query, context)
+        if intent.strategy_hint != "custom":
+            intent.weights = None
 
     # 4. 优先级打标（T-011 验收 6）
-    if shortcut_mode_hint:
+    if shortcut_mode_hint or intent.input_method == "shortcut":
         intent = _apply_priority_logic(intent, weight_source_hint="shortcut")
+    elif intent.strategy_hint in ("recommended", "scenery", "flat", "custom"):
+        intent = _apply_priority_logic(intent, weight_source_hint="explicit_nl")
     else:
-        intent = _apply_priority_logic(intent)
+        intent = _apply_priority_logic(intent, weight_source_hint="default")
 
     # 5. unknown 兜底：如果 task_type=unknown 且 ambiguity 空，补引导语
     if intent.task_type == "unknown" and not intent.ambiguity:

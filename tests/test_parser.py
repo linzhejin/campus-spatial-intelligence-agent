@@ -13,6 +13,7 @@ from agents.parser import (
     _annotate_weight_source,
     detect_travel_mode,
 )
+from agents.preferences import detect_strategy_hint
 
 
 class TestTaskIntentInstantiation:
@@ -54,6 +55,90 @@ class TestTaskIntentInstantiation:
         )
         intent = _annotate_weight_source(intent)
         assert intent.weight_source == "shortcut"
+
+
+class TestRouteStrategyHints:
+    @pytest.mark.parametrize(
+        "query,expected",
+        [
+            ("从珞珈门到教五", "shortest"),
+            ("赶课，走最短路径", "shortest"),
+            ("带朋友逛，从教五到图书馆，推荐路线", "recommended"),
+            ("从牌坊到樱顶，走风景好的路", "scenery"),
+            ("从牌坊到樱顶，尽量平坦", "flat"),
+            ("距离坡度风景按 6:3:1", "custom"),
+        ],
+    )
+    def test_detect_strategy_hint(self, query, expected):
+        assert detect_strategy_hint(query) == expected
+
+    def test_post_process_commute_ignores_model_invented_weights(self):
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=PoiRef(name="珞珈门", type="poi"),
+            end=PoiRef(name="教五", type="poi"),
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+            weights={"distance": 0.9, "slope": 0.05, "scenery": 0.05},
+        )
+
+        processed = _t011_post_process(intent, "从珞珈门到教五", None)
+
+        assert processed.strategy_hint == "shortest"
+        assert processed.weights is None
+
+    @pytest.mark.parametrize(
+        "query,expected",
+        [
+            ("带朋友逛，从教五到图书馆，推荐路线", "recommended"),
+            ("从牌坊到樱顶，走风景好的路", "scenery"),
+            ("从牌坊到樱顶，尽量平坦", "flat"),
+        ],
+    )
+    def test_post_process_fixed_strategy_keeps_policy_numeric_free(self, query, expected):
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=PoiRef(name="珞珈门", type="poi"),
+            end=PoiRef(name="樱顶", type="poi"),
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+            weights={"distance": 0.2, "slope": 0.1, "scenery": 0.7},
+        )
+
+        processed = _t011_post_process(intent, query, None)
+
+        assert processed.strategy_hint == expected
+        assert processed.weights is None
+
+    def test_mode_only_followup_retains_strategy_and_endpoints(self):
+        intent = TaskIntent(
+            task_type="path_planning",
+            start=None,
+            end=None,
+            constraints=Constraints(distance="medium", slope="normal", scenery="normal"),
+        )
+        context = {
+            "start": {"name": "珞珈门", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "previous_intent": {
+                "start": {"name": "珞珈门", "type": "poi"},
+                "end": {"name": "樱顶", "type": "poi"},
+                "mode": "walk",
+                "strategy_hint": "scenery",
+            },
+        }
+
+        processed = _t011_post_process(intent, "还是骑车吧", context)
+
+        assert processed.mode == "bike"
+        assert processed.start is not None and processed.start.name == "珞珈门"
+        assert processed.end is not None and processed.end.name == "樱顶"
+        assert processed.strategy_hint == "scenery"
+
+    def test_parse_prompt_delegates_numeric_policy_to_backend(self):
+        from agents.parser import _load_system_prompt
+
+        prompt = _load_system_prompt()
+        assert "strategy_hint" in prompt
+        assert "0.90/0.05/0.05" not in prompt
 
 
 class TestFourTaskTypes:
