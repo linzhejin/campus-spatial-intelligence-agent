@@ -33,6 +33,7 @@ from agents.route_state import (
     build_route_state,
     current_data_version,
     current_road_condition_version,
+    route_state_to_context,
     validate_route_state,
 )
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
@@ -947,6 +948,30 @@ def replan_route():
     return _ok(payload)
 
 
+def _normalize_chat_context(context):
+    """Use route_state as the source of truth for completed-route continuations."""
+    if not isinstance(context, dict):
+        return context
+    raw_state = context.get("previous_route_state")
+    if not raw_state:
+        return context
+    try:
+        projected = route_state_to_context(raw_state)
+    except (TypeError, ValueError):
+        logger.warning("忽略无效 previous_route_state")
+        clean = dict(context)
+        clean.pop("previous_route_state", None)
+        return clean
+
+    merged = dict(context)
+    merged["previous_route_state"] = projected["previous_route_state"]
+    # A pending ambiguity is newer than the last completed route. Otherwise the
+    # canonical state supplies every legacy parser field from one snapshot.
+    if not isinstance(merged.get("previous_intent"), dict):
+        merged.update(projected)
+    return merged
+
+
 @api_bp.route("/chat", methods=["POST"])
 def chat():
     """POST /api/chat — 一站式 NL → 完整流程（解析 + 路径 + 解释）
@@ -984,7 +1009,7 @@ def chat():
     if len(query) > 500:
         query = query[:500]
 
-    context = body.get("context")
+    context = _normalize_chat_context(body.get("context"))
 
     # v2 全 Agent 架构：所有输入优先进入 Agent 循环（LLM 决策 + 工具执行）。
     # LLM 本身故障（断网/鉴权/超时）时落回旧管道——停电保险，不是备用通道。

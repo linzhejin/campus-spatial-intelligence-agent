@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from agents.route_state import apply_change, validate_route_state
+from agents.route_state import apply_change, route_state_to_context, validate_route_state
 
 
 BASE = {
@@ -56,6 +56,17 @@ def test_strategy_change_preserves_hard_constraints_and_route_shape():
     assert changed["start"] == BASE["start"]
     assert changed["end"] == BASE["end"]
     assert changed["via"] == BASE["via"]
+
+
+def test_route_state_becomes_parser_context_without_losing_strategy_or_mode():
+    context = route_state_to_context(BASE)
+
+    assert context["start"] == BASE["start"]
+    assert context["end"] == BASE["end"]
+    assert context["constraints"] == BASE["hard_constraints"]
+    assert context["weights"] == BASE["strategy"]["weights"]
+    assert context["previous_intent"]["strategy_hint"] == "shortest"
+    assert context["previous_intent"]["mode"] == "walk"
 
 
 def test_validation_sanitizes_client_computed_fields_without_mutating_input():

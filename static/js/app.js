@@ -33,12 +33,12 @@
         loading: false,
         sessionId: null,
         conversationHistory: [],
-        lastIntent: null,  // 最近一轮完整意图快照（多轮对话承接用）
-        lastRouteRequest: null,  // 最近一次成功路线的 /api/route 请求体（切换交通方式直接重算）
+        pendingIntent: null,  // 尚未补全的路线意图；成功路线统一由 routeStore 持有
         activeMode: null,
         loadingTimer: null,  // 轮播加载语定时器
         requestSeq: 0,  // 请求序号：防止先发的请求后返回覆盖后发请求的结果
         travelMode: 'walk',  // 出行方式：walk / bike / drive（持久化偏好，默认步行）
+        routeStore: window.WHURouteState ? window.WHURouteState.createStore(null) : null,
         userLocation: null,  // GPS 定位结果（WGS-84）：{lng, lat, accuracy}
         userMarker: null,    // 藍点标记
         userAccuracyCircle: null,  // 定位精度圈
@@ -184,15 +184,58 @@
         }
     }
 
-    // 用户手动切换出行方式：更新状态 + 持久化 + 必要时用当前起终点自动重算
+    function strategyToShortcutMode(strategy) {
+        return {
+            shortest: 'distance_first',
+            scenery: 'scenery_first',
+            flat: 'slope_avoid',
+        }[strategy] || null;
+    }
+
+    function syncRouteStrategyUI() {
+        var current = state.routeStore ? state.routeStore.current() : null;
+        var selector = document.getElementById('route-strategy-switch');
+        if (!selector) return;
+        var results = document.getElementById('results-section');
+        var hasDisplayedRoute = !!current && !!state.latestRoute && !!results && !results.hidden;
+        selector.hidden = !hasDisplayedRoute;
+        selector.classList.toggle('is-drive', !!current && current.travel_mode === 'drive');
+        var strategyName = current && current.strategy ? current.strategy.name : null;
+        document.querySelectorAll('.route-strategy-btn').forEach(function (btn) {
+            var active = btn.getAttribute('data-route-strategy') === strategyName;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        state.activeMode = strategyToShortcutMode(strategyName);
+        document.querySelectorAll('.quick-chip').forEach(function (chip) {
+            chip.classList.toggle('active', chip.getAttribute('data-mode') === state.activeMode);
+        });
+    }
+
+    function adoptRouteState(data) {
+        if (!data || !data.route_state || !state.routeStore) return;
+        state.routeStore.replace(data.route_state);
+        if (TRAVEL_MODES[data.route_state.travel_mode]) {
+            state.travelMode = data.route_state.travel_mode;
+            syncTravelModeUI();
+        }
+        syncRouteStrategyUI();
+        saveContext();
+    }
+
+    // 用户手动切换出行方式：已有路线时先请求完整状态重规划，成功后才切换界面。
     function setTravelMode(mode) {
         if (!TRAVEL_MODES[mode]) mode = 'walk';
         if (mode === state.travelMode) return;
+        var current = state.routeStore ? state.routeStore.current() : null;
+        if (current) {
+            replanCurrentRoute({ travel_mode: mode }, '切换为' + TRAVEL_MODES[mode].label);
+            return;
+        }
         state.travelMode = mode;
         persistTravelMode();
         syncTravelModeUI();
         if (state.map) loadAndRenderRoadConditions(state.roadConditionAdminView);
-        maybeRecomputeRouteForMode();
     }
 
     // 服务端响应里的 mode（NL 识别"骑车/开车"）以服务端为准，回写选择器状态
@@ -205,79 +248,52 @@
         }
     }
 
-    // 切换出行方式后，若当前正展示路线，用上次的起终点直接重算 /api/route（不走 LLM，秒切）
-    function maybeRecomputeRouteForMode() {
-        var resultsSec = document.getElementById('results-section');
-        if (!resultsSec || resultsSec.hidden) return;  // 当前没有路线结果，不重算
-        if (!state.lastRouteRequest || !state.lastRouteRequest.start || !state.lastRouteRequest.end) return;
-        if (state.loading) {
-            // 上一轮请求还在飞：先挂起，等它落地后再按新方式重算（避免结果与选择器不一致）
-            state.pendingModeRecompute = true;
-            return;
-        }
-        replayRouteForMode();
-    }
+    // 用服务端签发的完整路线状态重规划。请求期间不修改已提交状态，失败时保留原路线。
+    async function replanCurrentRoute(change, actionText) {
+        if (!state.routeStore) return false;
+        var current = state.routeStore.current();
+        if (!current) return false;
 
-    // 保存一次成功路线的可复现请求体（start/end 可能是 POI 名或 WGS-84 坐标）
-    function saveRouteRequest(start, end, constraints, weights) {
-        if (!start || !end) return;
-        state.lastRouteRequest = {
-            start: JSON.parse(JSON.stringify(start)),
-            end: JSON.parse(JSON.stringify(end)),
-            constraints: constraints || {},
-            weights: weights || null,
-        };
-    }
-
-    // 用 lastRouteRequest + 当前交通方式直接调 /api/route 重算
-    async function replayRouteForMode() {
-        var req = state.lastRouteRequest;
-        var tm = TRAVEL_MODES[state.travelMode] || TRAVEL_MODES.walk;
+        var token = state.routeStore.begin(change);
         state.requestSeq += 1;
         var mySeq = state.requestSeq;
+        var targetMode = change.travel_mode || current.travel_mode;
+        var tm = TRAVEL_MODES[targetMode] || TRAVEL_MODES.walk;
         hideError();
         cancelRouteAccept();
-        showLoading('切换为' + tm.label + '…', tm.loadingSub);
-        var thinkingBubble = showChatBubble('', '🌸 正在按' + tm.label + '重新规划…');
+        showLoading((actionText || '更新路线') + '…', '起终点和途经安排保持不变');
+
         try {
-            var payload = {
-                task_type: 'path_planning',
-                start: req.start,
-                end: req.end,
-                constraints: req.constraints || {},
-                weights: req.weights || null,
-                travel_mode: state.travelMode,
-            };
-            var result = await apiRequest('/api/route', payload);
-            if (mySeq !== state.requestSeq) return;
-            if (result.recommended && result.recommended.length > 0) {
-                renderRoute(result);
-                showResults(result);
-                scheduleRouteAccept(result);
-                updateChatBubble(thinkingBubble, buildRouteSummary(result));
-            } else {
-                clearRouteResult();
-                updateChatBubble(thinkingBubble, '唔，' + tm.label + '路线没能规划出来😅 校内有些区域' + tm.label + '不可达，换步行或骑行试试？');
+            var result = await apiRequest('/api/route/replan', {
+                route_state: current,
+                change: change,
+            });
+            if (mySeq !== state.requestSeq) return false;
+            if (!result.recommended || result.recommended.length === 0 || !result.route_state) {
+                throw new Error(tm.label + '路线暂时不可达');
             }
+            if (!state.routeStore.commit(token, result.route_state)) return false;
+            state.travelMode = result.route_state.travel_mode;
+            persistTravelMode();
+            syncTravelModeUI();
+            syncRouteStrategyUI();
+            if (state.map) loadAndRenderRoadConditions(state.roadConditionAdminView);
+            renderRoute(result);
+            showResults(result);
+            scheduleRouteAccept(result);
+            return true;
         } catch (err) {
-            if (mySeq !== state.requestSeq) return;
-            clearRouteResult();
-            var msg = (err && err.message) || '重算失败';
-            // 后端对不可达场景返回中文原因（如"驾车无法到达…"），原样展示
-            updateChatBubble(thinkingBubble, '⚠️ ' + msg);
+            if (mySeq !== state.requestSeq) return false;
+            state.routeStore.rollback(token);
+            state.travelMode = current.travel_mode;
+            syncTravelModeUI();
+            syncRouteStrategyUI();
+            showError('没有切换路线', ((err && err.message) || '重算失败') + '，当前路线仍然保留。');
+            return false;
         } finally {
             if (mySeq === state.requestSeq) {
                 hideLoading();
-                flushPendingModeRecompute();
             }
-        }
-    }
-
-    // 一轮请求结束后，若用户在等待期间切换过出行方式，按最新方式补一次重算
-    function flushPendingModeRecompute() {
-        if (state.pendingModeRecompute && !state.loading) {
-            state.pendingModeRecompute = false;
-            maybeRecomputeRouteForMode();
         }
     }
 
@@ -358,11 +374,12 @@
             var raw = localStorage.getItem(getContextKey());
             if (raw) {
                 var parsed = JSON.parse(raw);
-                // 新结构 {history:[{role,content,...}], routeSlot:{...}}；
+                // 新结构 {history, routeState, pendingIntent}；
                 // 旧结构 [{query,...}] 直接丢弃，避免污染
                 if (parsed && Array.isArray(parsed.history)) {
                     state.conversationHistory = parsed.history;
-                    state.lastIntent = parsed.routeSlot || null;
+                    state.pendingIntent = parsed.pendingIntent || parsed.routeSlot || null;
+                    if (state.routeStore && parsed.routeState) state.routeStore.replace(parsed.routeState);
                 }
             }
         } catch (e) {
@@ -372,10 +389,11 @@
 
     function saveContext() {
         try {
-            // 最近 4 轮（8 条消息）+ 规划槽位
+            // 最近 4 轮（8 条消息）+ 服务端签发的路线状态 + 未补全意图
             localStorage.setItem(getContextKey(), JSON.stringify({
                 history: state.conversationHistory.slice(-8),
-                routeSlot: state.lastIntent,
+                routeState: state.routeStore ? state.routeStore.current() : null,
+                pendingIntent: state.pendingIntent,
             }));
         } catch (e) {}
     }
@@ -406,8 +424,10 @@
         // 规划槽位：路径规划轮次才更新（闲聊/候选/澄清不冲掉在途规划）
         var isPlanningTurn = result.task_type === 'path_planning'
             || (result.response_kind === 'route' && result.start && result.end);
-        if (isPlanningTurn) {
-            state.lastIntent = {
+        if (result.route_state) {
+            state.pendingIntent = null;
+        } else if (isPlanningTurn) {
+            state.pendingIntent = {
                 task_type: result.task_type || 'path_planning',
                 start: result.start || null,
                 end: result.end || null,
@@ -784,7 +804,6 @@
                 if (mySeq !== state.requestSeq) return;
                 hideLoading();
                 if (result.recommended && result.recommended.length > 0) {
-                    saveRouteRequest(startEp, endEp, {}, null);
                     renderRoute(result);
                     showResults(result);
                     scheduleRouteAccept(result);
@@ -820,8 +839,6 @@
             stopLoadingMessages();
             hideLoading();
             if (result.task_type === 'path_planning' || result.response_kind === 'route') {
-                saveRouteRequest(result.start || startEp, result.end || endEp,
-                    result.constraints, result.weights || result.applied_weights);
                 if (result.recommended) { renderRoute(result); showResults(result); }
                 updateChatBubble(viaBubble, result.explanation || result.message || buildRouteSummary(result));
             } else {
@@ -1985,10 +2002,17 @@
         if (arriveBox) arriveBox.hidden = true;
         syncMuteIcon();
 
+        var routeState = state.routeStore ? state.routeStore.current() : null;
+        var navRequest = routeState ? {
+            start: routeState.start,
+            end: routeState.end,
+            constraints: routeState.hard_constraints || {},
+            weights: routeState.strategy && routeState.strategy.weights,
+        } : { end: route.end || null };
         var ok = Nav.start({
             map: state.map,
             routeData: route,
-            request: state.lastRouteRequest || { end: route.end || null },
+            request: navRequest,
             onCard: renderNavCard,
             onGps: function (stale) {
                 var w = document.getElementById('nav-gps-warn');
@@ -2157,6 +2181,7 @@
         clearMap();
         var section = document.getElementById('results-section');
         if (section) section.hidden = true;
+        syncRouteStrategyUI();
     }
 
     // 定位单个 POI：清空现有覆盖物，移动地图中心到该 POI 并高亮标记
@@ -2205,6 +2230,9 @@
         if (suggestions) suggestions.hidden = true;
         // 6. 清空多轮对话上下文
         state.conversationHistory = [];
+        state.pendingIntent = null;
+        state.latestRoute = null;
+        if (state.routeStore) state.routeStore.replace(null);
         saveContext();
         // 7. 清空输入框
         var nlInput = document.getElementById('nl-input');
@@ -2216,6 +2244,7 @@
         hideLoading();
         // 9. 重置快捷 chip 高亮
         state.activeMode = null;
+        syncRouteStrategyUI();
         document.querySelectorAll('.quick-chip').forEach(function (c) { c.classList.remove('active'); });
     }
 
@@ -2234,6 +2263,7 @@
     }
 
     function showResults(data) {
+        adoptRouteState(data);
         // 隐藏欢迎气泡
         var welcomeBubble = document.getElementById('welcome-bubble');
         var shortcutCards = document.getElementById('shortcut-cards-row');
@@ -2242,6 +2272,7 @@
 
         var section = document.getElementById('results-section');
         section.hidden = false;
+        syncRouteStrategyUI();
 
         document.getElementById('recommended-distance').textContent =
             (data.recommended_length_m || data.distance_m || 0).toFixed(0) + ' m';
@@ -2595,15 +2626,17 @@
             // 上下文 = 真实对话消息流（最近 4 轮）+ 在途规划槽位。
             // 闲聊/景点查询不会清空规划槽位（见 addConversationTurn）。
             var context = null;
-            if (state.conversationHistory.length > 0 || state.lastIntent) {
+            var currentRouteState = state.routeStore ? state.routeStore.current() : null;
+            if (state.conversationHistory.length > 0 || state.pendingIntent || currentRouteState) {
                 context = { history: state.conversationHistory.slice(-8) };
-                if (state.lastIntent) {
-                    context.previous_intent = state.lastIntent;
-                    context.last_ambiguity = state.lastIntent.ambiguity;
-                    context.start = state.lastIntent.start;
-                    context.end = state.lastIntent.end;
-                    context.constraints = state.lastIntent.constraints;
-                    context.weights = state.lastIntent.weights;
+                if (currentRouteState) context.previous_route_state = currentRouteState;
+                if (state.pendingIntent) {
+                    context.previous_intent = state.pendingIntent;
+                    context.last_ambiguity = state.pendingIntent.ambiguity;
+                    context.start = state.pendingIntent.start;
+                    context.end = state.pendingIntent.end;
+                    context.constraints = state.pendingIntent.constraints;
+                    context.weights = state.pendingIntent.weights;
                 }
             }
 
@@ -2716,9 +2749,6 @@
             // path_planning → 渲染路线 + 对话反馈
             if (result.recommended && result.recommended.length > 0) {
                 syncModeFromServer(result);
-                // 保存可复现请求体（POI 名或 WGS-84 坐标），切换交通方式时直接重算
-                saveRouteRequest(result.start, result.end,
-                    result.constraints, result.weights || result.applied_weights);
                 renderRoute(result);
                 showResults(result);
                 scheduleRouteAccept(result);  // 埋点：曝光 + 20s 采纳判定
@@ -2938,9 +2968,6 @@
     async function handleShortcutMode(mode) {
         hideError();
 
-        state.requestSeq += 1;
-        var mySeq = state.requestSeq;
-
         var modeConfig = {
             distance_first: {
                 loadingText: '正在规划最短路径…',
@@ -2961,15 +2988,25 @@
 
         var cfg = modeConfig[mode] || {};
 
+        var strategyName = {
+            distance_first: 'shortest',
+            scenery_first: 'scenery',
+            slope_avoid: 'flat',
+        }[mode];
+        var current = state.routeStore ? state.routeStore.current() : null;
+        if (current && strategyName) {
+            return replanCurrentRoute({ strategy: strategyName }, cfg.loadingText || '更新路线');
+        }
+
+        state.requestSeq += 1;
+        var mySeq = state.requestSeq;
+
         // 优先复用上一次成功路线的端点（可能含 WGS-84 坐标，避免「我的位置」这类名无法解析）
         var startEp = { name: '珞珈门' };
         var endEp = { name: '樱顶' };
-        if (state.lastRouteRequest && state.lastRouteRequest.start && state.lastRouteRequest.end) {
-            startEp = state.lastRouteRequest.start;
-            endEp = state.lastRouteRequest.end;
-        } else if (state.lastIntent && state.lastIntent.start && state.lastIntent.end) {
-            startEp = state.lastIntent.start;
-            endEp = state.lastIntent.end;
+        if (state.pendingIntent && state.pendingIntent.start && state.pendingIntent.end) {
+            startEp = state.pendingIntent.start;
+            endEp = state.pendingIntent.end;
         }
         var startName = startEp.name || '珞珈门';
         var endName = endEp.name || '樱顶';
@@ -3001,8 +3038,6 @@
             if (mySeq !== state.requestSeq) return;
 
             if (routeResult.recommended && routeResult.recommended.length > 0) {
-                saveRouteRequest(routePayload.start, routePayload.end,
-                    routePayload.constraints, routePayload.weights);
                 renderRoute(routeResult);
                 showResults(routeResult);
                 // 快捷模式后端不返回 explanation，用兜底摘要
@@ -3019,7 +3054,6 @@
         } finally {
             if (mySeq === state.requestSeq) {
                 hideLoading();
-                flushPendingModeRecompute();
             }
         }
     }
@@ -3094,7 +3128,6 @@
         // 驾车模式下 S（平坦优先）无效
         if (chipMode === 'slope_avoid' && state.travelMode === 'drive') return;
         if (sourceEl) flashButton(sourceEl);
-        state.activeMode = chipMode;
         handleShortcutMode(chipMode);
     }
 
@@ -3159,6 +3192,16 @@
             btn.addEventListener('click', function () {
                 var travelMode = btn.getAttribute('data-travel-mode');
                 setTravelMode(travelMode);
+            });
+        });
+
+        // 路线偏好选择器：通过 route_state 原子重规划，保留途经点、游览点与硬约束。
+        document.querySelectorAll('.route-strategy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var strategy = btn.getAttribute('data-route-strategy');
+                if (strategy === 'flat' && state.travelMode === 'drive') return;
+                var shortcutMode = strategyToShortcutMode(strategy);
+                if (shortcutMode) handleShortcutMode(shortcutMode);
             });
         });
 
@@ -3346,6 +3389,7 @@
         loadTravelMode();  // 读取持久化的出行方式偏好（非法值回退 walk）
         bindEvents();
         syncTravelModeUI();  // 同步选择器选中态 / 图例 / 驾车隐藏平坦 chip
+        syncRouteStrategyUI();
         showWelcomeHint();
         initMap();
         restoreRecentBubbles();

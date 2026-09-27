@@ -141,3 +141,27 @@ def apply_change(state, change) -> dict:
         out["strategy"] = {"name": change["strategy"], "source": "button"}
     out["route_id"] = _route_id()
     return out
+
+
+def route_state_to_context(raw) -> dict:
+    """Project a validated route state into the legacy parser context shape."""
+    state = validate_route_state(raw)
+    strategy = state["strategy"]
+    previous_intent = {
+        "task_type": "path_planning",
+        "start": deepcopy(state["start"]),
+        "end": deepcopy(state["end"]),
+        "constraints": deepcopy(state["hard_constraints"]),
+        "weights": deepcopy(strategy.get("weights")),
+        "strategy_hint": strategy["name"],
+        "mode": state["travel_mode"],
+        "ambiguity": None,
+    }
+    return {
+        "start": deepcopy(state["start"]),
+        "end": deepcopy(state["end"]),
+        "constraints": deepcopy(state["hard_constraints"]),
+        "weights": deepcopy(strategy.get("weights")),
+        "previous_intent": previous_intent,
+        "previous_route_state": state,
+    }

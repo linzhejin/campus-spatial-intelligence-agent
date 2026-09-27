@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260916d">
+    <link rel="stylesheet" href="/css/style.css?v=20260928b">
 </head>
 <body>
 
@@ -149,6 +149,11 @@
                 <button type="button" class="travel-mode-btn" data-travel-mode="walk" aria-pressed="true">🚶 步行</button>
                 <button type="button" class="travel-mode-btn" data-travel-mode="bike" aria-pressed="false">🚴 骑行</button>
                 <button type="button" class="travel-mode-btn" data-travel-mode="drive" aria-pressed="false">🚗 驾车</button>
+            </div>
+            <div class="route-strategy-switch" id="route-strategy-switch" role="group" aria-label="路线偏好切换" hidden>
+                <button type="button" class="route-strategy-btn" data-route-strategy="shortest" aria-pressed="false">最短路径</button>
+                <button type="button" class="route-strategy-btn" data-route-strategy="scenery" aria-pressed="false">风景优先</button>
+                <button type="button" class="route-strategy-btn" data-route-strategy="flat" aria-pressed="false">平坦优先</button>
             </div>
         </div>
 
@@ -508,6 +513,8 @@
     <script src="/js/voice-input.js?v=20260916d"></script>
     <!-- 实时导航引擎：投影/偏航重算/指令状态机/北朝上跟随 -->
     <script src="/js/navigation.js?v=20260916d"></script>
-    <script src="/js/app.js?v=20260916d"></script>
+    <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
+    <script src="/js/route-state.js?v=20260928b"></script>
+    <script src="/js/app.js?v=20260928b"></script>
 </body>
 </html>

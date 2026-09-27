@@ -462,6 +462,55 @@ body {
 
 .travel-mode-btn:active { transform: scale(0.97); }
 
+/* ===== Route strategy segmented control（仅在已有路线时出现） ===== */
+.route-strategy-switch {
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+}
+
+.route-strategy-switch[hidden] { display: none; }
+
+.route-strategy-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 5px;
+    border: 1px solid rgba(139, 58, 58, 0.18);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+.route-strategy-btn:hover {
+    border-color: var(--cherry);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.route-strategy-btn:focus-visible {
+    outline: 2px solid var(--cherry);
+    outline-offset: 2px;
+}
+
+.route-strategy-btn.active {
+    border-color: var(--cherry-deep);
+    background: var(--cherry-soft);
+    color: var(--cherry-deep);
+    box-shadow: 0 1px 6px rgba(139, 58, 58, 0.14);
+}
+
+.route-strategy-btn:active { transform: scale(0.97); }
+
+.route-strategy-switch.is-drive .route-strategy-btn[data-route-strategy="flat"] {
+    display: none;
+}
+
 /* ===== Mini shortcut cards row ===== */
 .shortcut-cards-row {
     display: flex;

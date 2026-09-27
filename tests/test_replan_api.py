@@ -114,3 +114,18 @@ def test_replan_rejects_client_computed_fields_and_multiple_change(client):
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "invalid_route_state"
+
+
+def test_chat_context_uses_canonical_route_state_when_no_pending_intent():
+    state = _state_for("via")
+
+    context = routes._normalize_chat_context({
+        "history": [{"role": "user", "content": "上一轮"}],
+        "previous_route_state": state,
+    })
+
+    assert context["previous_intent"]["start"] == state["start"]
+    assert context["previous_intent"]["end"] == state["end"]
+    assert context["previous_intent"]["mode"] == "walk"
+    assert context["previous_intent"]["strategy_hint"] == "shortest"
+    assert context["constraints"] == state["hard_constraints"]
