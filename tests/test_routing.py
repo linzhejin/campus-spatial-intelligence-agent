@@ -43,6 +43,61 @@ def mock_graph():
     return _build_mock_graph()
 
 
+@pytest.fixture
+def detour_graph():
+    graph = nx.MultiDiGraph()
+    for node in (1, 2, 4):
+        graph.add_node(node, x=114.360, y=30.535)
+    graph.add_edge(1, 4, length=100.0, slope_level=5, scenery_level=1)
+    graph.add_edge(1, 2, length=80.0, slope_level=2, scenery_level=5)
+    graph.add_edge(2, 4, length=80.0, slope_level=2, scenery_level=5)
+    return graph
+
+
+def test_shortest_strategy_runs_one_search_and_returns_identical_paths(mock_graph):
+    result = compute_route(
+        mock_graph, 0, 5, strategy_name="shortest", road_conditions=[]
+    )
+
+    assert result["applied_weights"] == {
+        "distance": 1.0,
+        "slope": 0.0,
+        "scenery": 0.0,
+    }
+    assert result["recommended_edges"] == result["shortest_edges"]
+    assert result["recommended_length_m"] == result["shortest_length_m"]
+    assert result["dijkstra_runs"] == 1
+
+
+def test_weighted_strategy_never_returns_route_beyond_cap(detour_graph, monkeypatch):
+    monkeypatch.setattr(routing_module, "_should_degrade_annotations", lambda: None)
+    result = compute_route(
+        detour_graph,
+        1,
+        4,
+        strategy_name="scenery",
+        weights={"distance": 0.5, "slope": 0.1, "scenery": 0.4},
+        detour_cap=1.25,
+        road_conditions=[],
+    )
+
+    assert result["recommended_length_m"] <= result["shortest_length_m"] * 1.25 + 0.1
+    assert result["length_capped"] is True
+
+
+def test_shortest_still_obeys_hard_closure(detour_graph):
+    result = compute_route(
+        detour_graph,
+        1,
+        4,
+        strategy_name="shortest",
+        constraints={"slope": "avoid"},
+        road_conditions=[],
+    )
+
+    assert (1, 4, 0) not in result["recommended_edges"]
+
+
 class TestNormalizeWeights:
     def test_resolve_weights_default(self):
         result = resolve_weights(None)
@@ -636,6 +691,7 @@ class TestRoutingReliability:
 
         result = compute_route(graph, 0, 1,
                                weights={"distance": 0.1, "slope": 0.9, "scenery": 0.0},
+                               detour_cap=1.5,
                                road_conditions=[])
         assert result["recommended_edges"] == [(0, 1, 1)]
         assert result["shortest_edges"] == [(0, 1, 0)]

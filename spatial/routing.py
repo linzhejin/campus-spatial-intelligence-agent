@@ -898,6 +898,29 @@ def _select_path_edges(G: nx.MultiDiGraph, path: list, weight) -> list:
     return selected
 
 
+def _length_weight(u, v, data):
+    """Return physical edge length for an exact shortest-path search."""
+    if data and all(isinstance(value, dict) for value in data.values()):
+        return min(float(attrs.get("length", 0) or 0) for attrs in data.values())
+    return float((data or {}).get("length", 0) or 0)
+
+
+def _run_path(G: nx.MultiDiGraph, start_node: int, end_node: int, weight):
+    """Run one Dijkstra search and retain the exact parallel edges it selected."""
+    nodes = nx.dijkstra_path(G, start_node, end_node, weight=weight)
+    edges = _select_path_edges(G, nodes, weight)
+    return nodes, edges
+
+
+def _interpolate_to_distance(weights: dict, factor: float) -> dict:
+    """Move a soft preference toward pure distance by a deterministic factor."""
+    return {
+        "distance": factor * weights["distance"] + (1.0 - factor),
+        "slope": factor * weights["slope"],
+        "scenery": factor * weights["scenery"],
+    }
+
+
 def _compute_overlap(route_a: list, route_b: list) -> float:
     """
     计算两条路径的元素重叠率；主流程传入精确边 ID。
@@ -1024,6 +1047,9 @@ def compute_route(
     road_conditions: Optional[list] = None,
     weather_info: Optional[dict] = None,
     disable_hard_filter: bool = False,
+    strategy_name: str = "recommended",
+    detour_cap: float = 1.25,
+    prepared=None,
 ) -> dict:
     """
     多因素路径计算主函数。
@@ -1076,7 +1102,10 @@ def compute_route(
     constraints = constraints or {}
     mode = normalize_mode(mode)
 
-    if weights is None:
+    if strategy_name == "shortest":
+        resolved_weights = {"distance": 1.0, "slope": 0.0, "scenery": 0.0}
+        detour_cap = 1.0
+    elif weights is None:
         resolved_weights = dict(MODE_DEFAULT_WEIGHTS[mode])
     else:
         resolved_weights = resolve_weights(weights)
@@ -1179,63 +1208,64 @@ def compute_route(
         annotation_degraded, outside_road_penalty=outside_penalty,
     )
 
+    # 最短基线与推荐路线使用同一张已经完成方式、管制和硬约束过滤的图。
+    # 普通通勤直接复用这一次搜索，避免再运行一遍软成本 Dijkstra。
     try:
-        recommended = nx.dijkstra_path(
-            G_filtered, start_node, end_node, weight=edge_weight
+        shortest, shortest_edges = _run_path(
+            G_filtered, start_node, end_node, _length_weight
         )
     except nx.NetworkXNoPath:
         if constraints.get("slope") == "avoid" and not disable_hard_filter:
             filter_status = f"{filter_status}+slope_avoid"
         _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
 
-    # 最短路径基线使用同一张硬约束过滤图，避免对比路线经过封闭路或禁走陡坡。
-    # 步行模式还要叠加台阶/穿楼连廊的基础设施惩罚——否则灰虚线"最短路线"仍会
-    # 从食堂建筑里穿过去（物理距离最短但不可作为正常通道）。
-    def _single_baseline_cost(edge_data):
-        length = edge_data.get("length", 0) or 0
-        mult = 1.0
-        if mode == "walk":
-            if "steps" in _edge_highway_tags(edge_data):
-                mult *= _WALK_STEPS_PENALTY
-            wp = edge_data.get("walk_penalty")
-            if wp:
-                try:
-                    mult *= float(wp)
-                except (TypeError, ValueError):
-                    pass
-        return length * mult
+    dijkstra_runs = 1
+    if strategy_name == "shortest":
+        recommended, recommended_edges = shortest, shortest_edges
+    else:
+        try:
+            recommended, recommended_edges = _run_path(
+                G_filtered, start_node, end_node, edge_weight
+            )
+            dijkstra_runs += 1
+        except nx.NetworkXNoPath:
+            if constraints.get("slope") == "avoid" and not disable_hard_filter:
+                filter_status = f"{filter_status}+slope_avoid"
+            _raise_no_path(G, start_node, end_node, filter_status, G_filtered, mode=mode)
 
-    def _baseline_weight(u, v, data):
-        if data and all(isinstance(value, dict) for value in data.values()):
-            return min(_single_baseline_cost(attrs) for attrs in data.values())
-        return _single_baseline_cost(data or {})
-
-    try:
-        shortest = nx.dijkstra_path(G_filtered, start_node, end_node, weight=_baseline_weight)
-    except nx.NetworkXNoPath:
-        shortest = recommended
-
-    recommended_edges = _select_path_edges(G_filtered, recommended, edge_weight)
-    shortest_edges = _select_path_edges(G_filtered, shortest, _baseline_weight)
     recommended_len = _path_length(G, recommended, recommended_edges)
     shortest_len = _path_length(G, shortest, shortest_edges)
 
-    cap_multplier = _PATH_LENGTH_CAP_MULTIPLIER
-    cap_max = _PATH_LENGTH_CAP_MAX
     length_capped = False
-
-    if shortest_len > 0 and recommended_len > shortest_len * cap_multplier:
-        logger.info(
-            "推荐路径 %.0fm 超过最短路径 %.0fm 的 %.0f 倍，标记为超长",
-            recommended_len, shortest_len, cap_multplier
-        )
+    length_limit = shortest_len * max(1.0, float(detour_cap))
+    if strategy_name != "shortest" and shortest_len > 0 and recommended_len > length_limit:
         length_capped = True
-    elif recommended_len > cap_max:
         logger.info(
-            "推荐路径 %.0fm 超过上限 %.0fm，标记为超长",
-            recommended_len, cap_max
+            "推荐路径 %.0fm 超过最短路径 %.0fm 的 %.2f 倍上限，开始收敛偏好",
+            recommended_len, shortest_len, detour_cap,
         )
-        length_capped = True
+        for factor in (0.75, 0.50, 0.25):
+            candidate_weights = _interpolate_to_distance(resolved_weights, factor)
+            candidate_weight = _edge_cost_factory(
+                G_filtered,
+                norm_lengths,
+                candidate_weights,
+                penalty_map,
+                annotation_degraded,
+                outside_road_penalty=outside_penalty,
+            )
+            candidate, candidate_edges = _run_path(
+                G_filtered, start_node, end_node, candidate_weight
+            )
+            dijkstra_runs += 1
+            candidate_len = _path_length(G, candidate, candidate_edges)
+            if candidate_len <= length_limit:
+                recommended, recommended_edges = candidate, candidate_edges
+                recommended_len = candidate_len
+                break
+        else:
+            recommended, recommended_edges = shortest, shortest_edges
+            recommended_len = shortest_len
 
     overlap_rate = _compute_overlap(recommended_edges, shortest_edges)
 
@@ -1269,6 +1299,9 @@ def compute_route(
         "shortest_length_m": round(shortest_len, 1),
         "applied_weights": resolved_weights,
         "length_capped": length_capped,
+        "strategy": strategy_name,
+        "detour_cap": float(detour_cap),
+        "dijkstra_runs": dijkstra_runs,
         "max_len": max_len,
         "_annotation_degraded": annotation_degraded is not None,
         "mode": mode,
