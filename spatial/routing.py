@@ -1331,6 +1331,8 @@ def compute_route_with_annotations(
     mode: str = "walk",
     road_conditions: Optional[list] = None,
     weather_info: Optional[dict] = None,
+    strategy_name: str = "recommended",
+    detour_cap: float = 1.25,
 ) -> dict:
     """
     带路段标注的路径计算（slope_level / scenery_level 注入路网边属性）。
@@ -1372,6 +1374,7 @@ def compute_route_with_annotations(
     return compute_route(
         G_annotated, start_node, end_node, constraints, weights, mode=mode,
         road_conditions=road_conditions, weather_info=weather_info,
+        strategy_name=strategy_name, detour_cap=detour_cap,
     )
 
 
@@ -1448,6 +1451,8 @@ def compute_via_route(
     mode: str = "walk",
     road_conditions: Optional[list] = None,
     weather_info: Optional[dict] = None,
+    strategy_name: str = "recommended",
+    detour_cap: float = 1.25,
 ) -> dict:
     """起点 → 途经点 → 终点两段路径拼接。
 
@@ -1468,6 +1473,8 @@ def compute_via_route(
         road_conditions=road_conditions,
         weather_info=weather_info,
         prepared=prepared,
+        strategy_name=strategy_name,
+        detour_cap=detour_cap,
     )
     leg1 = compute_route(G, start_node, via_node, constraints, weights, **kwargs)
     leg2 = compute_route(G, via_node, end_node, constraints, weights, **kwargs)
@@ -1569,6 +1576,8 @@ def compute_tour_route(
     max_total_m: float = TOUR_MAX_TOTAL_M,
     road_conditions: Optional[list] = None,
     weather_info: Optional[dict] = None,
+    strategy_name: str = "recommended",
+    detour_cap: float = 1.25,
 ) -> dict:
     """多 POI 游览环线：贪心最近邻 + 2-opt 排序，逐段生成真实加权路径。
 
@@ -1654,7 +1663,8 @@ def compute_tour_route(
             continue
         leg = compute_route(G, a, b, constraints, weights, mode=mode,
                             road_conditions=road_conditions, weather_info=weather_info,
-                            prepared=prepared)
+                            prepared=prepared, strategy_name=strategy_name,
+                            detour_cap=detour_cap)
         legs.append(leg)
         total += leg["recommended_length_m"]
 

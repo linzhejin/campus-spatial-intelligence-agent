@@ -274,7 +274,9 @@ def run_agent(query: str, context: dict = None, history: list = None,
                     if avoid_slope:
                         args["constraints"] = {**(constraints if isinstance(constraints, dict) else {}),
                                                "slope": "avoid"}
-                result, artifact = agent_tools.execute_tool(name, args)
+                result, artifact = agent_tools.execute_tool(
+                    name, args, {"query": query, "uid": uid}
+                )
 
             if artifact:
                 if "route" in artifact:

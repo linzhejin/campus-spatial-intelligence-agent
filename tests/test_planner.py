@@ -207,6 +207,22 @@ class TestChatEndpointAgentFirst:
 
 
 class TestPreferenceReliability:
+    @pytest.mark.parametrize(
+        "query,expected,weights",
+        [
+            ("从教五到图书馆", "shortest", {"distance": 1.0, "slope": 0.0, "scenery": 0.0}),
+            ("带朋友逛武大，推荐路线", "recommended", {"distance": 0.5, "slope": 0.2, "scenery": 0.3}),
+            ("从教五到图书馆，走风景好的路", "scenery", {"distance": 0.5, "slope": 0.1, "scenery": 0.4}),
+        ],
+    )
+    def test_tool_policy_ignores_model_invented_numeric_weights(self, query, expected, weights):
+        decision = planner.agent_tools._strategy_for_args(
+            {"weights": {"distance": 0.1, "slope": 0.1, "scenery": 0.8}},
+            {"query": query},
+        )
+        assert decision.name == expected
+        assert decision.weights == weights
+
     def test_retry_keeps_explicit_weights(self):
         weights = {"distance": 0.2, "slope": 0.1, "scenery": 0.7}
         client = FakeClient([

@@ -26,18 +26,24 @@ from flask import Blueprint, request, jsonify, session
 import config
 from agents.parser import parse_query, detect_travel_mode
 from agents.planner import PlannerError
+from agents.routing_policy import select_route_strategy
+from agents.route_state import (
+    RouteStateVersionConflict,
+    apply_change,
+    build_route_state,
+    current_data_version,
+    current_road_condition_version,
+    validate_route_state,
+)
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import (
     compute_route,
-    resolve_weights,
     _path_length,
     TRAVEL_MODES,
     normalize_mode,
     filter_graph_for_mode,
-    MODE_DEFAULT_WEIGHTS,
-    DEFAULT_WEIGHTS,
     build_turn_by_turn,
 )
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
@@ -90,15 +96,18 @@ _network_initialized = False
 #   distance_first 最短路径 / scenery_first 风景优先 / slope_avoid 平坦优先（避开陡坡）
 SHORTCUT_MODE_PRESETS = {
     "distance_first": {
-        "weights": dict(DEFAULT_WEIGHTS),
+        "strategy": "shortest",
+        "weights": {"distance": 1.0, "slope": 0.0, "scenery": 0.0},
         "constraints": {"distance": "short", "slope": "normal", "scenery": "normal"},
     },
     "scenery_first": {
-        "weights": {"distance": 0.1, "slope": 0.1, "scenery": 0.8},
+        "strategy": "scenery",
+        "weights": {"distance": 0.5, "slope": 0.1, "scenery": 0.4},
         "constraints": {"distance": "medium", "slope": "normal", "scenery": "high"},
     },
     "slope_avoid": {
-        "weights": {"distance": 0.1, "slope": 0.8, "scenery": 0.1},
+        "strategy": "flat",
+        "weights": {"distance": 0.5, "slope": 0.4, "scenery": 0.1},
         "constraints": {"distance": "medium", "slope": "avoid", "scenery": "normal"},
     },
 }
@@ -111,6 +120,14 @@ def _ok(data, status=200):
 
 def _err(code, message, status):
     return jsonify({"error": code, "message": message}), status
+
+
+def _current_data_version(G=None):
+    return current_data_version(G)
+
+
+def _current_road_condition_version():
+    return current_road_condition_version()
 
 
 # ====== WGS-84 → GCJ-02 转换（前端高德底图用 GCJ-02）======
@@ -185,7 +202,7 @@ def _weights_for_destination(end_poi, mode, explicit_weights=None):
     if explicit_weights is not None:
         return explicit_weights
     mode = normalize_mode(mode)
-    return dict(MODE_DEFAULT_WEIGHTS[mode])
+    return {"distance": 1.0, "slope": 0.0, "scenery": 0.0}
 
 
 def _mode_filtered_graph(G, mode):
@@ -480,7 +497,7 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
                   "recommended_length_m", "shortest_length_m", "length_capped", "degraded",
                   "distance_m", "shortest_distance_m", "applied_weights", "mode",
                   "duration_min", "shortest_duration_min", "speed_kmh",
-                  "legs", "via", "tour", "detour_ratio"):
+                  "legs", "via", "tour", "detour_ratio", "strategy", "route_state"):
             if k in route:
                 out[k] = route[k]
         out.setdefault("shortest", out.get("recommended", []))
@@ -607,6 +624,7 @@ def parse():
             "end": end,
             "constraints": preset["constraints"],
             "weights": preset["weights"],
+            "strategy_hint": preset["strategy"],
             # 出行方式：快捷按钮链路携带 travel_mode（步行/骑行/驾车），非法值兜底 walk
             "mode": normalize_mode(body.get("travel_mode")),
             "input_method": "shortcut",
@@ -727,10 +745,19 @@ def route():
         return _err("same_poi", "起点和终点相同，请选择不同的地点", 400)
 
     constraints = body.get("constraints", {})
-    # 智能默认：无显式 weights 时根据终点 POI 类型选权重（坐标终点 → 纯距离主导）
+    # 路线策略由统一策略中心决定，解析层和终点类型不再自行发明数值权重。
     raw_weights = body.get("weights")
-    weights = _weights_for_destination(end_poi, final_mode, explicit_weights=raw_weights)
-    resolved_weights = resolve_weights(weights)
+    explicit_strategy = body.get("strategy") or body.get("strategy_hint")
+    if explicit_strategy is None and raw_weights is not None:
+        explicit_strategy = "custom"
+    decision = select_route_strategy(
+        query=body.get("query", ""),
+        end_poi=end_poi,
+        explicit_strategy=explicit_strategy,
+        strategy_source=body.get("strategy_source", "explicit_nl"),
+        custom_weights=raw_weights,
+    )
+    weights = decision.weights
 
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
     weather_snap = _weather_snapshot()
@@ -745,6 +772,8 @@ def route():
             weights=weights,
             mode=final_mode,
             weather_info=weather_info,
+            strategy_name=decision.name,
+            detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
@@ -755,6 +784,7 @@ def route():
 
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
+    resolved_weights = route_result["applied_weights"]
 
     recommended_edges = route_result["recommended_edges"]
     shortest_edges = route_result["shortest_edges"]
@@ -805,9 +835,116 @@ def route():
         "road_conditions_applied": route_result.get("road_conditions_applied", 0),
         "weather_applied": route_result.get("weather_applied", False),
         "weather": _weather_public(weather_snap),
+        "strategy": decision.as_dict(),
     }
 
+    response["route_state"] = build_route_state(
+        route_kind="direct",
+        original_query=body.get("query", ""),
+        start=start,
+        end=end,
+        travel_mode=final_mode,
+        hard_constraints=constraints,
+        strategy=decision.as_dict(),
+        data_version=_current_data_version(G),
+        road_condition_version=_current_road_condition_version(),
+    )
+
     return _ok(response)
+
+
+def _replan_tool_request(state):
+    """Convert validated route semantics into one deterministic tool request."""
+    common = {
+        "start": state["start"],
+        "constraints": state["hard_constraints"],
+        "strategy": state["strategy"]["name"],
+        "strategy_source": state["strategy"].get("source", "button"),
+    }
+    if state["strategy"]["name"] == "custom":
+        common["weights"] = state["strategy"].get("weights")
+
+    kind = state["route_kind"]
+    if kind == "direct":
+        return "plan_route", {
+            **common,
+            "end": state["end"],
+            "mode": state["travel_mode"],
+        }
+    if kind == "via":
+        via = state["via"]
+        args = {
+            **common,
+            "end": state["end"],
+            "mode": state["travel_mode"],
+        }
+        coords = via.get("coordinates") if isinstance(via, dict) else None
+        if coords:
+            args["via_coord"] = coords
+        else:
+            args["via_name"] = via.get("name", "")
+        return "plan_via_route", args
+    if kind == "tour":
+        tour = state["tour"]
+        return "plan_tour", {
+            **common,
+            "mode": state["travel_mode"],
+            "theme": tour.get("theme", "scenery"),
+            "loop": bool(tour.get("loop", True)),
+            "poi_names": [p.get("name") for p in tour.get("pois", []) if p.get("name")],
+            "max_pois": max(2, len(tour.get("pois", []))),
+        }
+
+    legs = []
+    for leg in state["legs"]:
+        legs.append({
+            "end": leg.get("end"),
+            "mode": leg.get("travel_mode") or leg.get("mode") or state["travel_mode"],
+            **({"via_name": leg["via"]["name"]}
+               if isinstance(leg.get("via"), dict) and leg["via"].get("name") else {}),
+        })
+    return "plan_multimodal_route", {**common, "legs": legs}
+
+
+@api_bp.route("/route/replan", methods=["POST"])
+def replan_route():
+    """Recompute a route-state change without invoking the LLM."""
+    body = request.get_json(silent=True) or {}
+    try:
+        prior = validate_route_state(body.get("route_state"))
+        current_data_version = _current_data_version()
+        if prior.get("data_version") != current_data_version:
+            raise RouteStateVersionConflict(
+                "路线数据已更新，请按当前地点重新规划"
+            )
+        requested = apply_change(prior, body.get("change"))
+        prior_strategy = requested["strategy"]
+        decision = select_route_strategy(
+            query=requested["original_query"],
+            explicit_strategy=prior_strategy["name"],
+            strategy_source=prior_strategy.get("source", "button"),
+            custom_weights=prior_strategy.get("weights"),
+        )
+        requested["strategy"] = decision.as_dict()
+        requested["road_condition_version"] = _current_road_condition_version()
+    except RouteStateVersionConflict as exc:
+        return _err("route_state_version_conflict", str(exc), 409)
+    except ValueError as exc:
+        return _err("invalid_route_state", str(exc), 400)
+
+    from agents.tools import execute_tool
+
+    tool_name, args = _replan_tool_request(requested)
+    result, artifact = execute_tool(
+        tool_name,
+        args,
+        {"query": requested["original_query"], "replan": True},
+    )
+    if result.get("error"):
+        return _err(result["error"], result.get("message", "路线重新规划失败"), 404)
+    payload = (artifact or {}).get("route") or result
+    payload["route_state"] = validate_route_state(requested)
+    return _ok(payload)
 
 
 @api_bp.route("/chat", methods=["POST"])
@@ -1032,9 +1169,19 @@ def chat():
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
     constraints = intent_data.get("constraints", {})
-    # 智能默认：LLM 未输出显式 weights 时，根据终点 POI 类型选权重
+    # 旧管道仅作为 Agent 不可用时的保险，也必须使用同一策略中心。
     raw_weights = intent_data.get("weights")
-    weights = _weights_for_destination(end_poi, final_mode, explicit_weights=raw_weights)
+    explicit_strategy = intent_data.get("strategy_hint")
+    if explicit_strategy is None and raw_weights is not None:
+        explicit_strategy = "custom"
+    decision = select_route_strategy(
+        query=query,
+        end_poi=end_poi,
+        explicit_strategy=explicit_strategy,
+        strategy_source=("explicit_nl" if explicit_strategy else "commute_default"),
+        custom_weights=raw_weights,
+    )
+    weights = decision.weights
 
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
     weather_snap = _weather_snapshot()
@@ -1049,6 +1196,8 @@ def chat():
             weights=weights,
             mode=final_mode,
             weather_info=weather_info,
+            strategy_name=decision.name,
+            detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
@@ -1059,7 +1208,7 @@ def chat():
 
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
-    resolved_weights = resolve_weights(weights)
+    resolved_weights = route_result["applied_weights"]
 
     recommended_edges = route_result["recommended_edges"]
     shortest_edges = route_result["shortest_edges"]
@@ -1141,7 +1290,19 @@ def chat():
         "weather": weather_pub,
         "explanation": explanation,
         "suggestions": suggestions,
+        "strategy": decision.as_dict(),
     }
+    result["route_state"] = build_route_state(
+        route_kind="direct",
+        original_query=query,
+        start=start,
+        end=end,
+        travel_mode=final_mode,
+        hard_constraints=constraints,
+        strategy=decision.as_dict(),
+        data_version=_current_data_version(G),
+        road_condition_version=_current_road_condition_version(),
+    )
     return _ok(result)
 
 

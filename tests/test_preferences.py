@@ -32,7 +32,7 @@ def test_followup_keeps_explicit_preference():
 
 def test_legacy_default_weights_do_not_depend_on_destination():
     from api.routes import _weights_for_destination, SHORTCUT_MODE_PRESETS
-    commute = {"distance": 0.90, "slope": 0.05, "scenery": 0.05}
+    commute = {"distance": 1.0, "slope": 0.0, "scenery": 0.0}
     for mode in ("walk", "bike", "drive"):
         for poi in ({"type": "study"}, {"type": "scenery"}, {"type": "coord"}):
             assert _weights_for_destination(poi, mode) == commute

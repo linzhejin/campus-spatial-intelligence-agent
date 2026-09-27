@@ -30,6 +30,13 @@ from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import list_conditions, CONDITION_LABELS
 from spatial import weather as weather_mod
+from agents.routing_policy import select_route_strategy
+from agents.preferences import detect_strategy_hint
+from agents.route_state import (
+    build_route_state,
+    current_data_version,
+    current_road_condition_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -610,6 +617,45 @@ def _plan_common(args, ctx):
     return G, G_mode, mode, (snap["live"] if snap else None)
 
 
+def _strategy_for_args(args, ctx=None, end_poi=None):
+    explicit = args.get("strategy") or args.get("strategy_name")
+    raw_weights = args.get("weights")
+    context = ctx if isinstance(ctx, dict) else {}
+    if explicit is None and context.get("query"):
+        explicit = detect_strategy_hint(context["query"])
+    elif explicit is None and raw_weights is not None:
+        explicit = "custom"
+    return select_route_strategy(
+        query=context.get("query", ""),
+        end_poi=end_poi,
+        explicit_strategy=explicit,
+        strategy_source=args.get("strategy_source", "explicit_nl"),
+        profile=context.get("profile"),
+        custom_weights=raw_weights,
+    )
+
+
+def _attach_route_state(
+    payload, route_kind, args, ctx, graph, decision, start, end,
+    *, via=None, tour=None, legs=None, travel_mode="walk",
+):
+    payload["route_state"] = build_route_state(
+        route_kind=route_kind,
+        original_query=(ctx or {}).get("query", "") if isinstance(ctx, dict) else "",
+        start=start,
+        end=end,
+        via=via,
+        tour=tour,
+        legs=legs or [],
+        travel_mode=travel_mode,
+        hard_constraints=args.get("constraints") or {},
+        strategy=decision.as_dict(),
+        data_version=current_data_version(graph),
+        road_condition_version=current_road_condition_version(),
+    )
+    return payload
+
+
 def _tool_plan_route(args, ctx):
     G, G_mode, mode, weather_info = _plan_common(args, ctx)
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_mode)
@@ -621,16 +667,25 @@ def _tool_plan_route(args, ctx):
     if start_node == end_node:
         return {"error": "same_poi", "message": "起点和终点相同（或距离太近），换个目的地试试"}, None
 
+    end_poi, _ = find_poi_ambiguous((args.get("end") or {}).get("name", ""))
+    decision = _strategy_for_args(args, ctx, end_poi=end_poi)
+
     try:
         result = compute_route(
             G=G, start_node=start_node, end_node=end_node,
             constraints=args.get("constraints") or {},
-            weights=args.get("weights"), mode=mode, weather_info=weather_info,
+            weights=decision.weights, mode=mode, weather_info=weather_info,
+            strategy_name=decision.name, detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         return {"error": "route_not_found", "message": str(e)}, None
 
     payload = _route_payload(G, result, start_name, end_name, mode)
+    payload["strategy"] = decision.as_dict()
+    _attach_route_state(
+        payload, "direct", args, ctx, G, decision,
+        args["start"], args["end"], travel_mode=mode,
+    )
     return payload, {"route": payload}
 
 
@@ -693,11 +748,13 @@ def _tool_plan_via_route(args, ctx):
         via_info = _poi_public(via_poi)
         via_display = via_poi["name"]
 
+    decision = _strategy_for_args(args, ctx)
     try:
         result = compute_via_route(
             G, start_node, via_node, end_node,
             constraints=args.get("constraints") or {},
-            weights=args.get("weights"), mode=mode, weather_info=weather_info,
+            weights=decision.weights, mode=mode, weather_info=weather_info,
+            strategy_name=decision.name, detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         return {"error": "route_not_found", "message": str(e)}, None
@@ -720,8 +777,15 @@ def _tool_plan_via_route(args, ctx):
         "detour_ratio_shortest": detour_ratio,
         "duration_min": round(estimate_duration_min(result["total_length_m"], mode), 1),
         "mode": mode,
+        "strategy": decision.as_dict(),
         "pois": leg1["pois"] + leg2["pois"],
     }
+    via_ref = ({"name": via_display, "type": "poi"}
+               if not via_coord else {"name": via_display, "type": "coord", "coordinates": via_coord})
+    _attach_route_state(
+        payload, "via", args, ctx, G, decision,
+        args["start"], args["end"], via=via_ref, travel_mode=mode,
+    )
     return payload, {"route": payload, "route_kind": "via"}
 
 
@@ -758,6 +822,7 @@ def _tool_plan_multimodal_route(args, ctx):
     if err:
         return err, None
 
+    decision = _strategy_for_args(args, ctx)
     legs_payload = []
     prev_node = start_node
     prev_name = start_name
@@ -804,8 +869,9 @@ def _tool_plan_multimodal_route(args, ctx):
                 result = compute_via_route(
                     G, prev_node, via_node, end_node,
                     constraints=args.get("constraints") or {},
-                    weights=args.get("weights"), mode=mode,
+                    weights=decision.weights, mode=mode,
                     weather_info=weather_info,
+                    strategy_name=decision.name, detour_cap=decision.detour_cap,
                 )
                 leg1 = _route_payload(G, result["leg1"], prev_name, via_display, mode)
                 leg2 = _route_payload(G, result["leg2"], via_display, end_name, mode)
@@ -824,8 +890,9 @@ def _tool_plan_multimodal_route(args, ctx):
                 result = compute_route(
                     G=G, start_node=prev_node, end_node=end_node,
                     constraints=args.get("constraints") or {},
-                    weights=args.get("weights"), mode=mode,
+                    weights=decision.weights, mode=mode,
                     weather_info=weather_info,
+                    strategy_name=decision.name, detour_cap=decision.detour_cap,
                 )
                 leg_payload = _route_payload(G, result, prev_name, end_name, mode)
         except ValueError as e:
@@ -857,8 +924,23 @@ def _tool_plan_multimodal_route(args, ctx):
         "duration_min": round(cumulative_dur, 1),
         # 整体 mode 用第一段（前端默认渲染色），每段 mode 在 legs[].mode 里
         "mode": legs_payload[0]["mode"],
+        "strategy": decision.as_dict(),
         "pois": pois_all,
     }
+    state_legs = [
+        {
+            "end": leg.get("end"),
+            "travel_mode": leg.get("mode") or "walk",
+            **({"via": {"name": leg["via_name"], "type": "poi"}}
+               if leg.get("via_name") else {}),
+        }
+        for leg in legs_in
+    ]
+    _attach_route_state(
+        payload, "multimodal", args, ctx, G, decision,
+        args["start"], legs_in[-1]["end"], legs=state_legs,
+        travel_mode=legs_payload[0]["mode"],
+    )
     return payload, {"route": payload, "route_kind": "multimodal"}
 
 
@@ -874,7 +956,15 @@ def _tool_plan_tour(args, ctx):
     }
     sel = theme_map.get(theme, {"poi_type": "scenery"})
     max_pois = max(2, min(int(args.get("max_pois", _TOUR_DEFAULT_MAX_POIS) or _TOUR_DEFAULT_MAX_POIS), 8))
-    pois = search_by_category(season=args.get("season"), include_minor=False, limit=max_pois, **sel)
+    requested_names = [str(name).strip() for name in (args.get("poi_names") or []) if str(name).strip()]
+    if requested_names:
+        pois = []
+        for name in requested_names[:8]:
+            poi, _ = find_poi_ambiguous(name)
+            if poi:
+                pois.append(poi)
+    else:
+        pois = search_by_category(season=args.get("season"), include_minor=False, limit=max_pois, **sel)
     if theme != "scenery" and len(pois) < 2:
         # 主题点太少时并入全校风景点
         pois = (pois + search_by_category(poi_type="scenery", season=args.get("season"),
@@ -902,10 +992,12 @@ def _tool_plan_tour(args, ctx):
         poi_nodes.append((p2, node))
 
     loop = bool(args.get("loop", True)) if start_node is None else bool(args.get("loop", True))
+    decision = _strategy_for_args(args, ctx)
     result = compute_tour_route(
         G, poi_nodes, start_node=start_node, loop=loop,
-        constraints=args.get("constraints") or {}, weights=args.get("weights"),
+        constraints=args.get("constraints") or {}, weights=decision.weights,
         mode=mode, max_total_m=_TOUR_MAX_TOTAL_M, weather_info=weather_info,
+        strategy_name=decision.name, detour_cap=decision.detour_cap,
     )
     if not result["legs"]:
         return {"error": "tour_failed", "message": "这些景点之间暂时无法连通，换一批试试"}, None
@@ -939,7 +1031,17 @@ def _tool_plan_tour(args, ctx):
         "steps": _merge_leg_steps(legs_payload),
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
+        "strategy": decision.as_dict(),
     }
+    state_pois = [{"name": p["name"], "type": "poi"} for p in ordered_public]
+    state_start = args.get("start") or state_pois[0]
+    state_end = state_start if result["loop"] else state_pois[-1]
+    _attach_route_state(
+        payload, "tour", args, ctx, G, decision,
+        state_start, state_end,
+        tour={"theme": theme, "pois": state_pois, "loop": result["loop"]},
+        travel_mode=mode,
+    )
     return payload, {"route": payload, "route_kind": "tour"}
 
 
@@ -1003,7 +1105,7 @@ _EXECUTORS = {
 }
 
 
-def execute_tool(name: str, args: dict) -> tuple:
+def execute_tool(name: str, args: dict, ctx: dict = None) -> tuple:
     """执行工具。返回 (result_for_llm, artifact_or_None)。
 
     artifact 用于 planner 组装最终响应（route / candidates / clarify）。
@@ -1015,7 +1117,7 @@ def execute_tool(name: str, args: dict) -> tuple:
     if not isinstance(args, dict):
         args = {}
     try:
-        return executor(args, None)
+        return executor(args, ctx)
     except Exception as e:
         logger.exception("工具 %s 执行异常", name)
         return {"error": "tool_exception", "message": f"{type(e).__name__}: {e}"}, None
