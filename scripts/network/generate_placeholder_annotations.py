@@ -9,10 +9,17 @@ import math
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+try:
+    from scripts.network.edge_attribute_paths import LEGACY_ANNOTATIONS_PATH, ROOT
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.network.edge_attribute_paths import LEGACY_ANNOTATIONS_PATH, ROOT
+
+PROJECT_ROOT = str(ROOT)
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from spatial.coord_transform import gcj02_to_wgs84
 from spatial.network import get_node_coords, load_or_download_network
@@ -22,7 +29,7 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "road_annotations.json")
+OUTPUT_PATH = str(LEGACY_ANNOTATIONS_PATH)
 
 SCENERY_KEYWORDS = (
     "樱花", "环山", "月湖", "星湖", "枫", "桂", "梅", "樱",
@@ -109,7 +116,7 @@ def _clean_name(raw):
     return text
 
 
-def main():
+def legacy_audit():
     print("[1/3] 加载当前真实路网...")
     G = load_or_download_network()
     print(f"  节点 {G.number_of_nodes()}, 边 {G.number_of_edges()}")
@@ -165,11 +172,22 @@ def main():
         "edges": edges,
     }
 
-    print("[3/3] 写入 road_annotations.json ...")
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=1)
-    print(f"  完成: {len(edges)} 条边, coverage_rate={coverage}, 文件={OUTPUT_PATH}")
+    print("[3/3] 仅审计占位生成结果，不写入 road_annotations.json")
+    print(f"  候选: {len(edges)} 条边, 表面覆盖率={coverage}")
+    return output
+
+
+def main(audit=False):
+    if not audit:
+        print(
+            "该旧命令已停止发布占位属性。请使用 build_edge_attribute_master.py、"
+            "derive_scenery_attributes.py 和 publish_edge_attributes.py。"
+            "若只审计旧启发式，请加 --audit。"
+        )
+        return 2
+    legacy_audit()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main(audit="--audit" in sys.argv))

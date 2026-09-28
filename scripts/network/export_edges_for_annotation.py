@@ -9,22 +9,33 @@ export_edges_for_annotation.py — 导出路网边用于手动标注 (TDD §11)
   5. 打印统计摘要
 """
 
+import argparse
 import csv
 import json
 import os
 import sys
+from pathlib import Path
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+try:
+    from scripts.network.edge_attribute_paths import DATA_DIR, GRAPH_PATH, ROOT
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.network.edge_attribute_paths import DATA_DIR, GRAPH_PATH, ROOT
+
+PROJECT_ROOT = str(ROOT)
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import networkx as nx
 
 from spatial.network import load_or_download_network, get_node_coords
 
 
-OUTPUT_DIR = os.path.join(PROJECT_ROOT, "data")
+OUTPUT_DIR = str(DATA_DIR)
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 def filter_pedestrian_edges(G):
@@ -229,7 +240,14 @@ def print_summary(edges, G_filtered):
     print("=" * 55)
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="导出路网边供人工核查")
+    parser.add_argument("--graph", default=str(GRAPH_PATH))
+    parser.add_argument("--output-dir", default=str(DATA_DIR))
+    args = parser.parse_args(argv)
+    global OUTPUT_DIR
+    OUTPUT_DIR = str(Path(args.output_dir).resolve())
+
     print("=" * 55)
     print("  武大校园步行道路网 — 标注清单导出工具")
     print("=" * 55)
@@ -238,7 +256,9 @@ def main():
 
     print("\n[1/4] 加载路网...")
     try:
-        G = load_or_download_network()
+        graph_path = Path(args.graph)
+        G = (nx.read_graphml(graph_path, node_type=int)
+             if graph_path.is_file() else load_or_download_network())
     except RuntimeError as e:
         print(f"  ✗ 路网加载失败: {e}")
         return 1

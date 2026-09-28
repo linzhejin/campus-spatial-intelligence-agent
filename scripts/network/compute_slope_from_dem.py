@@ -23,9 +23,16 @@ import os
 import sys
 import time
 from collections import Counter
+from pathlib import Path
 
 import httpx
 import networkx as nx
+
+try:
+    from scripts.network.edge_attribute_paths import GRAPH_PATH, LEGACY_ANNOTATIONS_PATH
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.network.edge_attribute_paths import GRAPH_PATH, LEGACY_ANNOTATIONS_PATH
 
 MIN_LEN_M = 50.0        # 只更新长度 ≥ 50m 的主干道
 SMOOTH_RADIUS_M = 60.0  # 节点高程中位数平滑半径（米）
@@ -41,9 +48,8 @@ SLOPE_BINS = [
     (math.inf, 5),  # ≥15%   很陡
 ]
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GRAPHML = os.path.join(PROJECT_ROOT, "data", "whu_road_network.graphml")
-ANN_PATH = os.path.join(PROJECT_ROOT, "data", "road_annotations.json")
+GRAPHML = str(GRAPH_PATH)
+ANN_PATH = str(LEGACY_ANNOTATIONS_PATH)
 ELEV_API = "https://api.open-elevation.com/api/v1/lookup"
 
 
@@ -126,7 +132,7 @@ def smooth_elevations(node_ids, points, elev, radius_m=SMOOTH_RADIUS_M):
     return out
 
 
-def main(dry_run=False):
+def legacy_audit():
     print("加载路网节点坐标（WGS-84）...")
     G = nx.read_graphml(GRAPHML, node_type=int)
     node_coords = {
@@ -196,22 +202,20 @@ def main(dry_run=False):
     print("slope_level 分布:", dict(sorted(dist.items(), key=lambda x: str(x[0]))))
     print(f"更新条数: {updated}，最大坡度: {max_grad * 100:.1f}%")
 
-    if dry_run:
-        print("[dry-run] 未写文件")
-        return
+    print("[audit] 仅报告旧在线 DEM 推导结果，未写入任何文件")
+    return 0
 
-    bak = ANN_PATH + ".bak"
-    with open(ANN_PATH, encoding="utf-8") as f:
-        original = f.read()
-    with open(bak, "w", encoding="utf-8") as f:
-        f.write(original)
-    print(f"已备份原文件 → {os.path.basename(bak)}")
 
-    ann["slope_source"] = "open-elevation DEM (SRTM/ASTER), computed by scripts/compute_slope_from_dem.py"
-    with open(ANN_PATH, "w", encoding="utf-8") as f:
-        json.dump(ann, f, ensure_ascii=False, indent=2)
-    print(f"已写回 {ANN_PATH}，更新 {updated} 条边 slope_level")
+def main(audit=False):
+    if not audit:
+        print(
+            "该旧命令已停止写入 road_annotations.json。请使用 "
+            "build_edge_attribute_master.py、derive_terrain_attributes.py 和 "
+            "publish_edge_attributes.py。若只审计旧方法，请加 --audit。"
+        )
+        return 2
+    return legacy_audit()
 
 
 if __name__ == "__main__":
-    main(dry_run="--dry-run" in sys.argv)
+    raise SystemExit(main(audit="--audit" in sys.argv))
