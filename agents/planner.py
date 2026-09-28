@@ -121,8 +121,8 @@ def _build_messages(query: str, context: dict = None, history: list = None,
     if not allow_preferences and re.search(r"从.{1,20}(?:到|去)|路线|怎么走|通勤|上课|宿舍", query):
         messages.append({"role": "system", "content":
                          "本次为普通通勤或距离优先请求。所有规划工具省略 weights，"
-                         "使用固定默认 distance/slope/scenery=0.90/0.05/0.05。"
-                         "目的地为景点、天气、任务卡和历史画像均不能改变这组权重。"})
+                         "由策略层执行纯最短路径 distance/slope/scenery=1.00/0.00/0.00。"
+                         "目的地为景点、天气、任务卡和历史画像均不能改变这个策略。"})
 
     # 出行方式注入：前端切换了步行/骑行/驾车，LLM 应在 plan_route 等工具调用中设 mode
     if travel_mode and travel_mode in ("walk", "bike", "drive"):

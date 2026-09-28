@@ -29,21 +29,50 @@ W = {"distance": 0.7, "slope": 0.2, "scenery": 0.1}
 
 
 class TestTelemetry:
-    def test_route_accept_updates_profile(self, client):
+    def test_navigation_start_updates_profile_once_with_complete_route_signal(self, client):
         r = client.post("/api/telemetry",
-                        json={"uid": "u1", "event": "route_accept", "applied_weights": W})
+                        json={
+                            "uid": "u1", "event": "navigation_started",
+                            "route_id": "r1", "strategy": "scenery",
+                            "strategy_source": "button", "applied_weights": W,
+                        })
         assert r.status_code == 200
         assert r.get_json()["data"]["recorded"] is True
         p = profile.get_profile("u1")
         assert p["accepted_count"] == 1
-        assert p["weights"]["distance"] == pytest.approx(0.84, abs=1e-3)
+
+        client.post("/api/telemetry", json={
+            "uid": "u1", "event": "navigation_completed",
+            "route_id": "r1", "strategy": "scenery",
+            "strategy_source": "button", "applied_weights": W,
+        })
+        assert profile.get_profile("u1")["accepted_count"] == 1
 
     def test_route_shown_only_exposure(self, client):
         client.post("/api/telemetry",
-                    json={"uid": "u1", "event": "route_shown", "applied_weights": W})
+                    json={
+                        "uid": "u1", "event": "route_shown", "route_id": "r1",
+                        "strategy": "scenery", "strategy_source": "button",
+                        "applied_weights": W,
+                    })
         p = profile.get_profile("u1")
         assert p["exposure_count"] == 1
         assert p["accepted_count"] == 0
+
+    def test_strategy_selection_does_not_update_weights(self, client):
+        client.post("/api/telemetry", json={
+            "uid": "u1", "event": "strategy_selected", "route_id": "r1",
+            "strategy": "flat", "strategy_source": "button",
+            "applied_weights": W,
+        })
+        assert profile.get_profile("u1")["accepted_count"] == 0
+
+    def test_route_signal_missing_identity_is_not_recorded(self, client):
+        r = client.post("/api/telemetry", json={
+            "uid": "u1", "event": "navigation_started", "applied_weights": W,
+        })
+        assert r.get_json()["data"]["recorded"] is False
+        assert profile.get_profile("u1") is None
 
     def test_events_written_to_jsonl(self, client, tmp_path):
         client.post("/api/telemetry",
@@ -60,7 +89,10 @@ class TestTelemetry:
         assert r.get_json()["data"]["recorded"] is False
 
     def test_missing_uid_not_recorded(self, client):
-        r = client.post("/api/telemetry", json={"event": "route_accept", "applied_weights": W})
+        r = client.post("/api/telemetry", json={
+            "event": "navigation_started", "route_id": "r1",
+            "strategy": "scenery", "strategy_source": "button", "applied_weights": W,
+        })
         assert r.status_code == 200
         assert r.get_json()["data"]["recorded"] is False
 

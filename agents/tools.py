@@ -78,7 +78,7 @@ _PREFERENCE_SCHEMA = {
     },
     "weights": {
         "type": "object",
-        "description": "软权重，三项均在 0.05~0.90 且和为 1。普通通勤不填（默认 0.90/0.05/0.05）",
+        "description": "仅当用户明确给出数值比例时填写。普通通勤不填，由策略层执行纯最短路径 1.00/0.00/0.00",
         "properties": {
             "distance": {"type": "number"},
             "slope": {"type": "number"},

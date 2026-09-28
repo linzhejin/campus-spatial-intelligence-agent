@@ -1733,8 +1733,12 @@ def delete_road_condition(cond_id):
 # ===== 行为埋点（P4：用户画像学习 + 产品观测）=====
 
 _TELEMETRY_PATH = Path(__file__).parent.parent / "data" / "telemetry.jsonl"
+_ROUTE_SIGNAL_EVENTS = {
+    "route_shown", "strategy_selected", "strategy_abandoned",
+    "navigation_started", "navigation_completed",
+}
 _TELEMETRY_EVENTS = {
-    "route_shown", "route_accept", "candidate_click",
+    *_ROUTE_SIGNAL_EVENTS, "candidate_click",
     "clarify_answer", "chat", "error",
 }
 
@@ -1743,9 +1747,8 @@ _TELEMETRY_EVENTS = {
 def telemetry():
     """POST /api/telemetry — 前端行为埋点。
 
-    入参: {"uid": "whu_uid", "event": "route_accept", ...事件字段}
-    - route_shown:  路径曝光（记 exposure，不学权重）
-    - route_accept: 路径采纳（EMA 更新用户画像，需带 applied_weights）
+    路线信号必须同时携带 route_id、strategy、strategy_source、applied_weights。
+    曝光和策略点选只作统计；只有显式休闲策略开始/完成导航才更新画像。
     所有事件追加写入 data/telemetry.jsonl 供离线分析。
     埋点是锦上添花：任何失败都返回 ok，绝不影响前端主流程。
     """
@@ -1755,6 +1758,16 @@ def telemetry():
 
     if not uid or event not in _TELEMETRY_EVENTS:
         return _ok({"recorded": False})
+
+    if event in _ROUTE_SIGNAL_EVENTS:
+        route_id = body.get("route_id")
+        strategy = body.get("strategy")
+        strategy_source = body.get("strategy_source")
+        weights = body.get("applied_weights")
+        if not all(isinstance(value, str) and value for value in (
+            route_id, strategy, strategy_source,
+        )) or not isinstance(weights, dict):
+            return _ok({"recorded": False})
 
     record = {
         "ts": time.time(),
@@ -1768,14 +1781,18 @@ def telemetry():
     except Exception as e:
         logger.warning("埋点写入失败: %s", e)
 
-    # 画像学习：曝光/采纳反馈
+    # 画像学习：只由已验证的路线信号入口决定是否更新。
     try:
         from agents import profile
-        weights = body.get("applied_weights")
-        if event == "route_shown":
-            profile.record_route_feedback(uid, weights, accepted=False)
-        elif event == "route_accept":
-            profile.record_route_feedback(uid, weights, accepted=True)
+        if event in _ROUTE_SIGNAL_EVENTS:
+            profile.record_strategy_signal(
+                uid=uid,
+                route_id=body["route_id"],
+                strategy=body["strategy"],
+                strategy_source=body["strategy_source"],
+                applied_weights=body["applied_weights"],
+                signal=event,
+            )
     except Exception as e:
         logger.warning("画像更新失败: %s", e)
 

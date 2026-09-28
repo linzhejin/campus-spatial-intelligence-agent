@@ -25,7 +25,7 @@
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `query` | string | 必填，≤500 字 |
-| `context` | object | 多轮上下文（start/end/history/previous_intent） |
+| `context` | object | 多轮上下文（history、previous_route_state；未补全时含 previous_intent） |
 | `travel_mode` | string | walk / bike / drive，前端方式切换传入 |
 | `coord_start` / `coord_end` | object | GPS 端点 `{lng, lat}`，**WGS-84**；"我这/到我这"用 |
 | `coord_waypoints` | array | 地图途经点 `[{lng, lat}, ...]`，WGS-84 |
@@ -192,11 +192,12 @@ Query 参数：`type`（类型）、`season`（spring/summer/autumn/winter）、
 前端行为回流，**任何失败都返回 ok，绝不影响主流程**；事件追加写入 `data/telemetry.jsonl`。
 
 ```json
-{"uid": "whu_uid", "event": "route_accept", "applied_weights": {"distance": 0.2, "slope": 0.6, "scenery": 0.2}}
+{"uid":"whu_uid","event":"navigation_started","route_id":"route-...","strategy":"scenery","strategy_source":"button","applied_weights":{"distance":0.5,"slope":0.1,"scenery":0.4}}
 ```
 
-- `route_shown`：路线曝光，仅计 exposure，不学习权重
-- `route_accept`：路线采纳，触发 profile.py 的 EMA 画像更新（需带 applied_weights）
+- 路线类事件必须同时带 `route_id`、`strategy`、`strategy_source` 和 `applied_weights`。
+- `route_shown`、`strategy_selected`、`strategy_abandoned` 只计行为，不学习权重。
+- `navigation_started` / `navigation_completed` 仅对用户明确选择的非最短休闲策略学习；同一 `route_id` 最多更新一次。
 
 ## 路网
 

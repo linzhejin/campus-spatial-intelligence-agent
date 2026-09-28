@@ -44,7 +44,6 @@
         userAccuracyCircle: null,  // 定位精度圈
         locateWatchId: null, // navigator.geolocation.watchPosition 句柄
         _hadUserLocation: false,  // 是否已获得过定位（首次居中用）
-        routeAcceptTimer: null,  // 路线采纳判定定时器（20s 未覆盖视为采纳）
         latestRoute: null,       // 最近一次路径响应完整数据（含 steps，供开始导航）
         locSubscribers: [],      // 定位更新订阅者（导航引擎用），不干预蓝点渲染
         _navUnsubscribe: null,   // 导航引擎的定位订阅注销函数
@@ -52,7 +51,6 @@
 
     // ========== 用户标识与行为埋点（P4：画像学习 + 产品观测） ==========
     var UID_KEY = 'whu_walker:uid';
-    var ROUTE_ACCEPT_DELAY_MS = 20000;  // 路线展示 20s 未被新请求覆盖/重置 → 视为采纳
 
     // 匿名用户 ID：首次访问生成并持久化，用于后端用户画像（EMA 权重先验）
     function getUid() {
@@ -83,27 +81,22 @@
         } catch (e) { /* 埋点失败静默 */ }
     }
 
-    function cancelRouteAccept() {
-        if (state.routeAcceptTimer) {
-            clearTimeout(state.routeAcceptTimer);
-            state.routeAcceptTimer = null;
-        }
+    function trackRouteSignal(event, routeState, extra) {
+        if (!routeState || !routeState.route_id || !routeState.strategy) return;
+        var strategy = routeState.strategy;
+        if (!strategy.weights) return;
+        trackEvent(event, Object.assign({
+            route_id: routeState.route_id,
+            strategy: strategy.name,
+            strategy_source: strategy.source,
+            applied_weights: strategy.weights,
+            route_kind: routeState.route_kind,
+        }, extra || {}));
     }
 
-    // 路线渲染后记曝光；20s 内用户没发新请求/重置 → 视为采纳，回传画像学习
-    function scheduleRouteAccept(data) {
-        cancelRouteAccept();
-        if (!data || !data.applied_weights) return;
-        trackEvent('route_shown', {
-            applied_weights: data.applied_weights,
-            route_kind: data.route_kind || 'direct',
-        });
-        var weights = data.applied_weights;
-        var routeKind = data.route_kind || 'direct';
-        state.routeAcceptTimer = setTimeout(function () {
-            state.routeAcceptTimer = null;
-            trackEvent('route_accept', { applied_weights: weights, route_kind: routeKind });
-        }, ROUTE_ACCEPT_DELAY_MS);
+    function trackRouteShown() {
+        var current = state.routeStore ? state.routeStore.current() : null;
+        trackRouteSignal('route_shown', current);
     }
 
     // ========== 出行方式配置（珞珈秋色：步行=樱花粉 / 骑行=松绿 / 驾车=黛蓝） ==========
@@ -260,7 +253,6 @@
         var targetMode = change.travel_mode || current.travel_mode;
         var tm = TRAVEL_MODES[targetMode] || TRAVEL_MODES.walk;
         hideError();
-        cancelRouteAccept();
         showLoading((actionText || '更新路线') + '…', '起终点和途经安排保持不变');
 
         try {
@@ -273,6 +265,10 @@
                 throw new Error(tm.label + '路线暂时不可达');
             }
             if (!state.routeStore.commit(token, result.route_state)) return false;
+            if (change.strategy) {
+                trackRouteSignal('strategy_abandoned', current);
+                trackRouteSignal('strategy_selected', result.route_state);
+            }
             state.travelMode = result.route_state.travel_mode;
             persistTravelMode();
             syncTravelModeUI();
@@ -280,7 +276,10 @@
             if (state.map) loadAndRenderRoadConditions(state.roadConditionAdminView);
             renderRoute(result);
             showResults(result);
-            scheduleRouteAccept(result);
+            trackRouteShown();
+            if (window.WhuWalkerNavigation && window.WhuWalkerNavigation.isActive()) {
+                trackRouteSignal('navigation_started', result.route_state);
+            }
             return true;
         } catch (err) {
             if (mySeq !== state.requestSeq) return false;
@@ -778,7 +777,6 @@
         var vias = state.mapPoints.via;
 
         hideError();
-        cancelRouteAccept();
         hideWelcomeElements();
         state.requestSeq += 1;
         var mySeq = state.requestSeq;
@@ -806,7 +804,7 @@
                 if (result.recommended && result.recommended.length > 0) {
                     renderRoute(result);
                     showResults(result);
-                    scheduleRouteAccept(result);
+                    trackRouteShown();
                     updateChatBubble(thinkingBubble, buildRouteSummary(result));
                 } else {
                     clearRouteResult();
@@ -839,7 +837,7 @@
             stopLoadingMessages();
             hideLoading();
             if (result.task_type === 'path_planning' || result.response_kind === 'route') {
-                if (result.recommended) { renderRoute(result); showResults(result); }
+                if (result.recommended) { renderRoute(result); showResults(result); trackRouteShown(); }
                 updateChatBubble(viaBubble, result.explanation || result.message || buildRouteSummary(result));
             } else {
                 updateChatBubble(viaBubble, result.message || result.reply || '路线规划完成');
@@ -2023,6 +2021,10 @@
                 var nm = document.getElementById('nav-arrive-name');
                 if (nm) nm.textContent = endName || '';
                 if (box) box.hidden = false;
+                trackRouteSignal(
+                    'navigation_completed',
+                    state.routeStore ? state.routeStore.current() : null
+                );
                 trackEvent('nav_arrive', { mode: route.mode || 'walk' });
             },
             onToast: showNavToast,
@@ -2043,6 +2045,7 @@
             showError('导航启动失败', '路线数据不完整，重新规划一次试试～');
             return;
         }
+        trackRouteSignal('navigation_started', routeState);
 
         document.body.classList.add('nav-running');
         if (overlay) overlay.hidden = false;
@@ -2201,7 +2204,6 @@
 
     // 返回键：清空路线 + 清空对话 + 复位地图，回到初始欢迎状态
     function handleReset() {
-        cancelRouteAccept();  // 重置 → 当前路线不计为采纳
         stopNavigation();     // 退出实时导航
         // 1. 清空地图路线和标记
         clearMap();
@@ -2610,7 +2612,6 @@
 
     async function handleNlSubmit(query) {
         hideError();
-        cancelRouteAccept();  // 新请求到来 → 上一条路线不再计为采纳
         state._autoLocated = false;  // 每轮新查询重置自动定位标记
         startLoadingMessages(query);
         hideWelcomeElements();
@@ -2751,7 +2752,7 @@
                 syncModeFromServer(result);
                 renderRoute(result);
                 showResults(result);
-                scheduleRouteAccept(result);  // 埋点：曝光 + 20s 采纳判定
+                trackRouteShown();
                 // 用后端 explanation 作为对话反馈，没有则兜底文案
                 var reply = result.explanation || buildRouteSummary(result);
                 updateChatBubble(thinkingBubble, reply);
@@ -3040,6 +3041,7 @@
             if (routeResult.recommended && routeResult.recommended.length > 0) {
                 renderRoute(routeResult);
                 showResults(routeResult);
+                trackRouteShown();
                 // 快捷模式后端不返回 explanation，用兜底摘要
                 updateChatBubble(thinkingBubble, buildRouteSummary(routeResult));
             } else {

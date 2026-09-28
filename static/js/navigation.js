@@ -540,7 +540,7 @@
          * @param {Object} opts
          *   map         Leaflet 地图实例
          *   routeData   /api/route|/chat 的路径响应（含 recommended/steps/mode）
-         *   request     state.lastRouteRequest（{start,end,constraints,weights}，重算用）
+         *   request     canonical route_state 投影（{start,end,constraints,weights}，偏航重算用）
          *   onCard(d)   顶部指令卡刷新
          *   onGps(stale) GPS 弱网黄条
          *   onArrive(endName)

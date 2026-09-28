@@ -52,6 +52,41 @@ class TestRecordFeedback:
         assert p["accepted_count"] == 1
 
 
+class TestStrategySignals:
+    def test_exposure_and_selection_do_not_learn(self):
+        weights = {"distance": 0.5, "slope": 0.1, "scenery": 0.4}
+        for signal in ("route_shown", "strategy_selected"):
+            profile.record_strategy_signal(
+                "u1", "r1", "scenery", "button", weights, signal,
+            )
+        assert profile.get_profile("u1").get("accepted_count", 0) == 0
+
+    def test_navigation_start_learns_once_and_shortest_never_learns(self):
+        weights = {"distance": 0.5, "slope": 0.1, "scenery": 0.4}
+        profile.record_strategy_signal(
+            "u1", "r1", "scenery", "button", weights, "navigation_started",
+        )
+        profile.record_strategy_signal(
+            "u1", "r1", "scenery", "button", weights, "navigation_completed",
+        )
+        assert profile.get_profile("u1")["accepted_count"] == 1
+
+        profile.record_strategy_signal(
+            "u1", "r2", "shortest", "commute_default",
+            {"distance": 1.0, "slope": 0.0, "scenery": 0.0},
+            "navigation_started",
+        )
+        assert profile.get_profile("u1")["accepted_count"] == 1
+
+    def test_inferred_leisure_default_does_not_learn_without_explicit_choice(self):
+        profile.record_strategy_signal(
+            "u1", "r1", "recommended", "tour_default",
+            {"distance": 0.5, "slope": 0.2, "scenery": 0.3},
+            "navigation_started",
+        )
+        assert profile.get_profile("u1")["accepted_count"] == 0
+
+
 class TestBuildProfileMessage:
     def test_none_below_min_samples(self):
         profile.record_route_feedback("u1", W)
