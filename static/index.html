@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260928b">
+    <link rel="stylesheet" href="/css/style.css?v=20260928d">
 </head>
 <body>
 
@@ -160,6 +160,15 @@
         <!-- 对话区：滚动内容 -->
         <div class="chat-content" id="chat-content">
 
+            <aside class="desktop-mode-card desktop-only" id="desktop-mode-card" aria-label="电脑规划模式说明">
+                <div class="desktop-mode-card__icon" aria-hidden="true">🖥️</div>
+                <div class="desktop-mode-card__body">
+                    <strong>电脑规划模式</strong>
+                    <p>电脑定位难以满足校园导航精度，因此这里不会请求定位。请搜索地点，或用地图右上角的“起点 / 途经 / 终点”选点。</p>
+                </div>
+                <span class="desktop-mode-card__status">不使用电脑定位</span>
+            </aside>
+
             <!-- 欢迎语 -->
             <div class="welcome-bubble" id="welcome-bubble">
                 <div class="bubble-avatar">🌸</div>
@@ -210,13 +219,41 @@
                     </div>
                 </div>
 
-                <!-- 开始实时导航（语音播报 + 偏航重算） -->
-                <button type="button" class="start-nav-btn" id="start-nav-btn">
+                <!-- 手机端：开始实时导航（语音播报 + 偏航重算） -->
+                <button type="button" class="start-nav-btn navigation-only" id="start-nav-btn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
                     </svg>
                     开始导航
                 </button>
+
+                <!-- 电脑端：路线规划解释与手机接力 -->
+                <section class="desktop-route-workbench desktop-only" id="desktop-route-workbench" aria-labelledby="desktop-route-title">
+                    <div class="desktop-route-workbench__head">
+                        <div>
+                            <span class="desktop-route-workbench__eyebrow">路线生成过程</span>
+                            <h3 id="desktop-route-title">规划完成，可逐段核对</h3>
+                        </div>
+                        <span class="desktop-route-workbench__strategy" id="desktop-route-strategy">—</span>
+                    </div>
+                    <div class="desktop-route-checks" aria-label="路线处理状态">
+                        <div class="desktop-route-check"><span>✓</span><div><strong>需求已解析</strong><small id="desktop-route-mode">—</small></div></div>
+                        <div class="desktop-route-check"><span>✓</span><div><strong>偏好已应用</strong><small id="desktop-route-weights">—</small></div></div>
+                        <div class="desktop-route-check"><span>✓</span><div><strong>路况已检查</strong><small id="desktop-route-conditions">—</small></div></div>
+                    </div>
+                    <div class="desktop-route-steps-wrap">
+                        <div class="desktop-route-steps-title">
+                            <strong>分段路线</strong>
+                            <span>点击步骤可在地图查看</span>
+                        </div>
+                        <ol class="desktop-route-steps" id="desktop-route-steps"></ol>
+                    </div>
+                    <div class="desktop-route-actions">
+                        <button type="button" class="desktop-route-action desktop-route-action--primary" id="copy-mobile-link-btn">复制手机打开链接</button>
+                        <button type="button" class="desktop-route-action" id="copy-route-summary-btn">复制路线说明</button>
+                    </div>
+                    <p class="desktop-route-workbench__hint" id="desktop-route-handoff-hint">把链接发送到手机后，可继续使用实时定位和导航。</p>
+                </section>
 
                 <!-- 途经景点 -->
                 <div class="poi-section">
@@ -474,10 +511,13 @@
     <script src="/js/config.js"></script>
     <!-- Leaflet 本地化加载（高德瓦片 GCJ-02，与后端坐标统一） -->
     <script src="/vendor/leaflet/leaflet.js"></script>
-    <!-- 高德 JS SDK（仅用于 Geolocation 插件：WiFi+基站+GPS 混合定位） -->
-    <!-- async 异步加载，不阻塞主页面 -->
+    <!-- 高德 JS SDK 只在手机导航模式加载；电脑规划模式不启用任何定位服务。 -->
     <script>
         (function () {
+            var mobile = (navigator.userAgentData && navigator.userAgentData.mobile === true)
+                || /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (!mobile) return;
             var cfg = window.WHU_WALKER_CONFIG || {};
             var key = cfg.amapKey;
             var scode = cfg.amapSecurityCode;
@@ -515,6 +555,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20260928c"></script>
+    <script src="/js/app.js?v=20260928d"></script>
 </body>
 </html>

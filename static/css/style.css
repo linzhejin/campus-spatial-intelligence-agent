@@ -560,6 +560,297 @@ body {
 }
 .results-section[hidden] { display: none !important; }
 
+/* ===== Device-specific product modes ===== */
+.desktop-only,
+.navigation-only {
+    display: none !important;
+}
+
+body.is-navigation-mode .navigation-only {
+    display: flex !important;
+}
+
+body.is-planning-mode .desktop-mode-card {
+    display: flex !important;
+}
+
+body.is-planning-mode .desktop-route-workbench {
+    display: block !important;
+}
+
+.desktop-mode-card {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(44, 95, 45, 0.2);
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(232, 239, 232, 0.96), rgba(245, 241, 232, 0.96));
+    box-shadow: var(--shadow-sm);
+}
+
+.desktop-mode-card__icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 1px 5px rgba(44, 95, 45, 0.12);
+}
+
+.desktop-mode-card__body {
+    min-width: 0;
+    flex: 1;
+}
+
+.desktop-mode-card__body strong {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--jade-deep);
+    font-size: 0.84rem;
+}
+
+.desktop-mode-card__body p {
+    color: var(--ink-soft);
+    font-size: 0.74rem;
+    line-height: 1.55;
+}
+
+.desktop-mode-card__status {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: rgba(44, 95, 45, 0.1);
+    color: var(--jade-deep);
+    font-size: 0.64rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.desktop-route-workbench {
+    padding: 15px;
+    border: 1px solid rgba(139, 58, 58, 0.15);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow-sm);
+}
+
+.desktop-route-workbench__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.desktop-route-workbench__eyebrow {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--ink-light);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.desktop-route-workbench__head h3 {
+    color: var(--ink);
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.desktop-route-workbench__strategy {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: var(--cherry-tint);
+    color: var(--cherry-deep);
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.desktop-route-checks {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 13px;
+}
+
+.desktop-route-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 9px;
+    border-radius: 10px;
+    background: #F8F7F3;
+}
+
+.desktop-route-check > span {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border-radius: 50%;
+    background: var(--jade-soft);
+    color: var(--jade-deep);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.desktop-route-check div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.desktop-route-check strong {
+    color: var(--ink);
+    font-size: 0.72rem;
+}
+
+.desktop-route-check small {
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 0.65rem;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.desktop-route-steps-wrap {
+    border-top: 1px solid var(--divider);
+    padding-top: 12px;
+}
+
+.desktop-route-steps-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 7px;
+}
+
+.desktop-route-steps-title strong {
+    font-size: 0.78rem;
+}
+
+.desktop-route-steps-title span {
+    color: var(--ink-light);
+    font-size: 0.62rem;
+}
+
+.desktop-route-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 235px;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.desktop-route-step__button {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.desktop-route-step__button:hover,
+.desktop-route-step.is-active .desktop-route-step__button {
+    border-color: rgba(139, 58, 58, 0.16);
+    background: var(--cherry-soft);
+}
+
+.desktop-route-step__button:disabled {
+    cursor: default;
+}
+
+.desktop-route-step__index {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--cherry-deep);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.desktop-route-step__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.desktop-route-step__body strong {
+    color: var(--ink);
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.desktop-route-step__body small,
+.desktop-route-step--empty {
+    color: var(--ink-light);
+    font-size: 0.65rem;
+    line-height: 1.45;
+}
+
+.desktop-route-step--empty {
+    padding: 9px;
+}
+
+.desktop-route-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.desktop-route-action {
+    min-height: 38px;
+    padding: 7px 9px;
+    border: 1px solid var(--stone);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.desktop-route-action--primary {
+    border-color: var(--cherry-deep);
+    background: var(--cherry-deep);
+    color: #fff;
+}
+
+.desktop-route-action.is-copied {
+    border-color: var(--jade);
+    background: var(--jade-soft);
+    color: var(--jade-deep);
+}
+
+.desktop-route-workbench__hint {
+    margin-top: 8px;
+    color: var(--ink-light);
+    font-size: 0.64rem;
+    line-height: 1.5;
+}
+
 @keyframes result-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

@@ -24,6 +24,15 @@
     var PREFS_KEY = 'whu_walker:preferences';
     var TRAVEL_MODE_KEY = 'whu_walker:travel_mode';  // 出行方式持久化偏好
 
+    // 产品能力边界：原生 App、手机和平板进入导航模式；普通电脑进入规划模式。
+    // PC 不做定位能力探测，避免权限弹窗、IP/WiFi 粗定位和错误蓝点。
+    function isNavigationDevice() {
+        if (window.WhuWalkerLocation && typeof window.WhuWalkerLocation.start === 'function') return true;
+        if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+        if (/Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+        return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    }
+
     var state = {
         map: null,
         recommendedLine: null,
@@ -47,7 +56,24 @@
         latestRoute: null,       // 最近一次路径响应完整数据（含 steps，供开始导航）
         locSubscribers: [],      // 定位更新订阅者（导航引擎用），不干预蓝点渲染
         _navUnsubscribe: null,   // 导航引擎的定位订阅注销函数
+        productMode: null,       // navigation（手机/App）/ planning（电脑）
     };
+
+    function applyProductMode() {
+        state.productMode = isNavigationDevice() ? 'navigation' : 'planning';
+        document.body.classList.toggle('is-navigation-mode', state.productMode === 'navigation');
+        document.body.classList.toggle('is-planning-mode', state.productMode === 'planning');
+        var tagline = document.querySelector('.header-tagline');
+        if (tagline) {
+            tagline.textContent = state.productMode === 'planning'
+                ? '电脑规划模式 · AI 路线工作台'
+                : '武大校园 · AI 出行向导';
+        }
+        var welcomeText = document.querySelector('#welcome-bubble .bubble-text');
+        if (welcomeText && state.productMode === 'planning') {
+            welcomeText.textContent = '搜索起终点或在地图上选点，我会说明路线策略、约束和每一段走法。';
+        }
+    }
 
     // ========== 用户标识与行为埋点（P4：画像学习 + 产品观测） ==========
     var UID_KEY = 'whu_walker:uid';
@@ -1063,6 +1089,11 @@
     // 对外：启动持续跟踪（原生 GPS 优先，0 等待；AMap 仅作为台式机等无 GPS 环境的兜底）
     // 原生 GPS 手机上通常 1-3 秒出首个定位点，比等 AMap SDK 加载 + 服务器 WiFi 定位快
     function startTracking(silent) {
+        if (state.productMode === 'planning' || !isNavigationDevice()) {
+            _clearWatch();
+            console.log('[TRACK] 电脑规划模式不启动定位');
+            return false;
+        }
         _clearWatch();
         state._amapFallbackStarted = false;
         // APK 内走原生定位桥：无授权时序问题，且带罗盘/GPS 融合航向
@@ -1088,6 +1119,11 @@
 
     // ===== 页面加载自动定位（静默版，持续跟踪） =====
     function autoLocateSilent() {
+        if (state.productMode === 'planning' || !isNavigationDevice()) {
+            _clearWatch();
+            console.log('[AUTO_LOC] 电脑规划模式已禁用自动定位');
+            return;
+        }
         if (!state.map) { console.warn('[AUTO_LOC] map 未就绪，跳过'); _setLocStatus('地图未就绪，跳过自动定位', 'warn'); return; }
         // PC 端无 GPS，缓存位置可能来自上次 IP 定位（偏差数百米到公里），
         // 直接显示会误导用户，跳过缓存只走实时定位（不达标则引导手动选点）
@@ -1115,6 +1151,11 @@
     }
 
     function renderUserLocation(lng, lat, accuracy, isManual, isCached, heading, speed) {
+        // 电脑端只接受用户在地图上的明确选点；系统、浏览器和地图商定位一律不进入状态。
+        if ((state.productMode === 'planning' || !isNavigationDevice()) && !isManual) {
+            console.log('[TRACK] 电脑规划模式忽略非手动位置');
+            return;
+        }
         // ===== PC 端精度门槛 =====
         // PC 无 GPS，定位多走 Windows 位置服务（WiFi 指纹）或纯 IP，精度差时会乱跳到
         // 校外/其他校区。手机端 GPS/网络定位稳定，不受此门槛影响。
@@ -1982,6 +2023,10 @@
     }
 
     function startNavigation() {
+        if (state.productMode === 'planning' || !isNavigationDevice()) {
+            showTopBanner('电脑端用于路线规划，请复制手机打开链接后开始实时导航。', 'info');
+            return;
+        }
         var route = state.latestRoute;
         var Nav = window.WhuWalkerNavigation;
         if (!Nav || !state.map) return;
@@ -2264,6 +2309,253 @@
         return '约 ' + Math.max(1, Math.round(min)) + ' 分钟';
     }
 
+    var STRATEGY_LABELS = {
+        shortest: '最短路径',
+        recommended: '综合推荐',
+        scenery: '风景优先',
+        flat: '平坦优先',
+        custom: '个性化路线',
+    };
+
+    function endpointLabel(endpoint, fallback) {
+        if (!endpoint || typeof endpoint !== 'object') return fallback;
+        return endpoint.name || endpoint.label || fallback;
+    }
+
+    function strategyWeightsText(strategy) {
+        var weights = strategy && strategy.weights;
+        if (!weights) return '使用当前路线策略';
+        var d = Number(weights.distance || 0);
+        var s = Number(weights.slope || 0);
+        var c = Number(weights.scenery || 0);
+        return '距离 ' + Math.round(d * 100) + '% · 平坦 ' + Math.round(s * 100) + '% · 风景 ' + Math.round(c * 100) + '%';
+    }
+
+    function formatStepDistance(value) {
+        var metres = Number(value || 0);
+        if (!isFinite(metres) || metres <= 0) return '';
+        return metres >= 1000 ? (metres / 1000).toFixed(1) + ' km' : Math.round(metres) + ' m';
+    }
+
+    function renderDesktopRouteWorkbench(data) {
+        if (state.productMode !== 'planning') return;
+        var current = state.routeStore ? state.routeStore.current() : null;
+        var strategy = (current && current.strategy) || data.strategy || {};
+        var strategyName = strategy.name || 'recommended';
+        var strategyEl = document.getElementById('desktop-route-strategy');
+        if (strategyEl) strategyEl.textContent = STRATEGY_LABELS[strategyName] || '综合推荐';
+
+        var mode = (current && current.travel_mode) || data.mode || state.travelMode;
+        var modeEl = document.getElementById('desktop-route-mode');
+        if (modeEl) modeEl.textContent = (TRAVEL_MODES[mode] || TRAVEL_MODES.walk).label + '路线已生成';
+        var weightsEl = document.getElementById('desktop-route-weights');
+        if (weightsEl) weightsEl.textContent = strategyWeightsText(strategy);
+
+        var conditionCount = Number(data.road_conditions_applied || 0);
+        var conditionEl = document.getElementById('desktop-route-conditions');
+        if (conditionEl) {
+            conditionEl.textContent = conditionCount > 0
+                ? '已处理 ' + conditionCount + ' 条生效路况'
+                : '未发现需绕行的生效路况';
+        }
+
+        var stepsList = document.getElementById('desktop-route-steps');
+        if (!stepsList) return;
+        stepsList.innerHTML = '';
+        var steps = Array.isArray(data.steps) ? data.steps : [];
+        if (!steps.length) {
+            var empty = document.createElement('li');
+            empty.className = 'desktop-route-step desktop-route-step--empty';
+            empty.textContent = '当前路线暂无分段指引，可结合地图路线和说明查看。';
+            stepsList.appendChild(empty);
+            return;
+        }
+        steps.forEach(function (step, index) {
+            var li = document.createElement('li');
+            li.className = 'desktop-route-step';
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'desktop-route-step__button';
+            var marker = document.createElement('span');
+            marker.className = 'desktop-route-step__index';
+            marker.textContent = step.type === 'arrive' ? '✓' : String(index + 1);
+            var body = document.createElement('span');
+            body.className = 'desktop-route-step__body';
+            var text = document.createElement('strong');
+            text.textContent = step.text || step.instruction || '沿路线继续前行';
+            var meta = document.createElement('small');
+            var metaParts = [];
+            var dist = formatStepDistance(step.distance_m);
+            if (dist) metaParts.push('本段 ' + dist);
+            if (step.road_name) metaParts.push(step.road_name);
+            meta.textContent = metaParts.join(' · ') || '点击查看位置';
+            body.appendChild(text);
+            body.appendChild(meta);
+            button.appendChild(marker);
+            button.appendChild(body);
+            if (step.point && isFinite(step.point.lng) && isFinite(step.point.lat)) {
+                button.addEventListener('click', function () {
+                    if (!state.map) return;
+                    document.querySelectorAll('.desktop-route-step').forEach(function (el) {
+                        el.classList.remove('is-active');
+                    });
+                    li.classList.add('is-active');
+                    state.map.setView(gcjToLatLng(Number(step.point.lng), Number(step.point.lat)), Math.max(state.map.getZoom(), 17));
+                });
+            } else {
+                button.disabled = true;
+            }
+            li.appendChild(button);
+            stepsList.appendChild(li);
+        });
+    }
+
+    function routePlanText() {
+        var data = state.latestRoute || {};
+        var current = state.routeStore ? state.routeStore.current() : null;
+        var strategy = (current && current.strategy) || data.strategy || {};
+        var lines = [];
+        if (current) {
+            lines.push(endpointLabel(current.start, '起点') + ' → ' + endpointLabel(current.end, '终点'));
+        } else {
+            lines.push('珞珈智行路线方案');
+        }
+        lines.push('方式：' + (TRAVEL_MODES[data.mode || state.travelMode] || TRAVEL_MODES.walk).label);
+        lines.push('策略：' + (STRATEGY_LABELS[strategy.name] || '综合推荐') + '（' + strategyWeightsText(strategy) + '）');
+        lines.push('距离：' + Number(data.recommended_length_m || data.distance_m || 0).toFixed(0) + ' m；用时：' + estimateDurationText(data));
+        if (data.explanation) lines.push('说明：' + data.explanation);
+        var steps = Array.isArray(data.steps) ? data.steps : [];
+        if (steps.length) {
+            lines.push('分段路线：');
+            steps.forEach(function (step, index) {
+                var dist = formatStepDistance(step.distance_m);
+                lines.push((index + 1) + '. ' + (step.text || step.instruction || '沿路线继续前行') + (dist ? '（' + dist + '）' : ''));
+            });
+        }
+        return lines.join('\n');
+    }
+
+    function encodeRouteState(routeState) {
+        if (!routeState) return '';
+        try {
+            return btoa(unescape(encodeURIComponent(JSON.stringify(routeState))))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function decodeRouteState(encoded) {
+        if (!encoded) return null;
+        try {
+            var base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            return JSON.parse(decodeURIComponent(escape(atob(base64))));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function mobileHandoffUrl() {
+        var current = state.routeStore ? state.routeStore.current() : null;
+        var query = current && current.original_query ? current.original_query.trim() : '';
+        if (!query && current) {
+            query = '从' + endpointLabel(current.start, '起点') + '到' + endpointLabel(current.end, '终点');
+        }
+        if (!query) query = '查看刚才规划的校园路线';
+        var strategyName = current && current.strategy ? current.strategy.name : null;
+        var strategyPrompt = { shortest: '最短路径', scenery: '风景优先', flat: '平坦优先' }[strategyName];
+        if (strategyPrompt && query.indexOf(strategyPrompt) < 0) query += '，' + strategyPrompt;
+        var mode = (current && current.travel_mode) || state.travelMode;
+        if (mode === 'bike' && !/骑|自行车/.test(query)) query += '，骑行';
+        if (mode === 'drive' && !/驾车|开车/.test(query)) query += '，驾车';
+        var url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        url.searchParams.set('plan', query);
+        url.searchParams.set('mode', mode);
+        var encodedState = encodeRouteState(current);
+        if (encodedState) url.searchParams.set('route_state', encodedState);
+        return url.toString();
+    }
+
+    function copyText(text, button, successLabel) {
+        function done() {
+            if (!button) return;
+            var old = button.textContent;
+            button.textContent = successLabel;
+            button.classList.add('is-copied');
+            setTimeout(function () { button.textContent = old; button.classList.remove('is-copied'); }, 1800);
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done).catch(function () { fallback(); });
+            return;
+        }
+        fallback();
+        function fallback() {
+            var area = document.createElement('textarea');
+            area.value = text;
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            try { document.execCommand('copy'); done(); }
+            catch (e) { showTopBanner('复制失败，请手动复制路线说明。', 'warning'); }
+            area.remove();
+        }
+    }
+
+    function consumeMobileHandoff() {
+        var params = new URLSearchParams(window.location.search);
+        var query = (params.get('plan') || '').trim();
+        var sharedState = decodeRouteState(params.get('route_state'));
+        if (!query && !sharedState) return;
+        var mode = params.get('mode');
+        if (TRAVEL_MODES[mode]) {
+            state.travelMode = mode;
+            persistTravelMode();
+            syncTravelModeUI();
+        }
+        try { localStorage.setItem('whu_welcome_seen', '1'); } catch (e) { /* ignore */ }
+        params.delete('plan');
+        params.delete('mode');
+        params.delete('route_state');
+        var clean = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+        try { history.replaceState(null, '', clean); } catch (e) { /* ignore */ }
+        var attempts = 0;
+        function submitWhenReady() {
+            attempts += 1;
+            if (state.map || attempts >= 12) {
+                if (sharedState && sharedState.strategy && sharedState.strategy.name) {
+                    hideWelcomeElements();
+                    showUserBubble(query || '打开电脑端规划的路线');
+                    var bubble = showChatBubble('', '🌸 正在恢复电脑端规划的路线…');
+                    showLoading('正在恢复路线…', '保留起终点、途经点和路线偏好');
+                    apiRequest('/api/route/replan', {
+                        route_state: sharedState,
+                        change: { strategy: sharedState.strategy.name },
+                    }).then(function (result) {
+                        hideLoading();
+                        if (!result || !result.recommended || !result.recommended.length) throw new Error('路线恢复失败');
+                        renderRoute(result);
+                        showResults(result);
+                        trackRouteShown();
+                        updateChatBubble(bubble, buildRouteSummary(result));
+                    }).catch(function () {
+                        hideLoading();
+                        updateChatBubble(bubble, '电脑端路线状态已过期，正在按原需求重新规划。');
+                        if (query) handleNlSubmit(query);
+                    });
+                } else if (query) {
+                    handleNlSubmit(query);
+                }
+                return;
+            }
+            setTimeout(submitWhenReady, 250);
+        }
+        setTimeout(submitWhenReady, 400);
+    }
+
     function showResults(data) {
         adoptRouteState(data);
         // 隐藏欢迎气泡
@@ -2364,6 +2656,8 @@
                 roadNoticeEl.style.display = 'none';
             }
         }
+
+        renderDesktopRouteWorkbench(data);
 
         // 跟进建议
         showSuggestions(data);
@@ -2586,6 +2880,9 @@
     // 确保有定位：优先用已有的 state.userLocation（页面加载自动跟踪已赋值），
     // 如果还没有（比如用户拒绝了权限），则主动启动跟踪并等第一次回调。
     function ensureUserLocation() {
+        if (state.productMode === 'planning' || !isNavigationDevice()) {
+            return Promise.reject(new Error('电脑规划模式不使用自动定位，请用地图右上角“起点”选点，或输入明确的出发地点。'));
+        }
         if (state.userLocation) return Promise.resolve(state.userLocation);
 
         return new Promise(function (resolve, reject) {
@@ -3232,6 +3529,19 @@
         var startNavBtn = document.getElementById('start-nav-btn');
         if (startNavBtn) startNavBtn.addEventListener('click', startNavigation);
 
+        var copyMobileLinkBtn = document.getElementById('copy-mobile-link-btn');
+        if (copyMobileLinkBtn) {
+            copyMobileLinkBtn.addEventListener('click', function () {
+                copyText(mobileHandoffUrl(), copyMobileLinkBtn, '链接已复制');
+            });
+        }
+        var copyRouteSummaryBtn = document.getElementById('copy-route-summary-btn');
+        if (copyRouteSummaryBtn) {
+            copyRouteSummaryBtn.addEventListener('click', function () {
+                copyText(routePlanText(), copyRouteSummaryBtn, '路线说明已复制');
+            });
+        }
+
         function bindNavStop(id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('click', stopNavigation);
@@ -3386,6 +3696,7 @@
     }
 
     function init() {
+        applyProductMode();
         state.sessionId = generateSessionId();
         loadContext();
         loadTravelMode();  // 读取持久化的出行方式偏好（非法值回退 walk）
@@ -3399,8 +3710,9 @@
         // 暴露公开函数给欢迎卡片等模块调用
         window.submitNaturalLanguageQuery = handleNlSubmit;
 
-        // 页面加载自动定位（延迟 1.5s 等地图 + AMap SDK 就绪，静默失败不打扰用户）
-        setTimeout(autoLocateSilent, 1500);
+        // 手机/App 才启动定位；电脑只做路线规划，不探测定位能力。
+        if (state.productMode === 'navigation') setTimeout(autoLocateSilent, 1500);
+        consumeMobileHandoff();
     }
 
     if (document.readyState === 'loading') {
