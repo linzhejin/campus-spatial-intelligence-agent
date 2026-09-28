@@ -58,7 +58,7 @@ def _base_graph():
     return graph
 
 
-def test_matched_course_geometry_replaces_old_shape_without_dropping_osm_lineage():
+def test_matched_course_geometry_adds_walk_variant_without_changing_osm_lineage():
     graph = _base_graph()
     feature = _feature("course:matched", [
         [114.360, 30.530005], [114.3605, 30.530003], [114.361, 30.530005],
@@ -68,20 +68,73 @@ def test_matched_course_geometry_replaces_old_shape_without_dropping_osm_lineage
         graph, [feature], _matched_report("course:matched", [["1", "2", 0], ["2", "1", 0]])
     )
 
-    forward = wkt.loads(fused[1][2][0]["geometry"])
-    reverse = wkt.loads(fused[2][1][0]["geometry"])
+    forward_osm = wkt.loads(fused[1][2][0]["geometry"])
+    reverse_osm = wkt.loads(fused[2][1][0]["geometry"])
+    forward_key = next(key for key, data in fused[1][2].items()
+                       if data.get("course_geometry_replaced"))
+    reverse_key = next(key for key, data in fused[2][1].items()
+                       if data.get("course_geometry_replaced"))
+    forward = wkt.loads(fused[1][2][forward_key]["geometry"])
+    reverse = wkt.loads(fused[2][1][reverse_key]["geometry"])
+    assert list(forward_osm.coords) == [(114.36, 30.53), (114.361, 30.53)]
+    assert list(reverse_osm.coords) == list(reversed(forward_osm.coords))
     assert len(forward.coords) == 3
     assert abs(forward.coords[0][0] - 114.360) < 1e-9
     assert abs(forward.coords[0][1] - 30.530) < 1e-9
     assert forward.coords[1][1] < 30.530005
     assert list(reverse.coords) == list(reversed(forward.coords))
-    assert fused[1][2][0]["name"] == "玉兰路"
-    assert fused[1][2][0]["osmid"] == 10
-    assert fused[1][2][0]["course_road_class"] == "pedestrian"
-    assert migration["course_feature_dispositions"][0]["geometry_replaced_edges"]
+    assert fused[1][2][forward_key]["name"] == "玉兰路"
+    assert fused[1][2][forward_key]["osmid"] == 10
+    assert fused[1][2][forward_key]["course_road_class"] == "pedestrian"
+    replacement_ids = migration["course_feature_dispositions"][0]["geometry_replaced_edges"]
+    assert ["1", "2", forward_key] in replacement_ids
     disposition = next(row for row in migration["old_edge_dispositions"]
                        if row["edge_id"] == ["1", "2", 0])
-    assert disposition["disposition"] == "course_geometry_replaced"
+    assert disposition["disposition"] == "retained_osm_with_walk_only_course_variant"
+    assert disposition["replacement_edge_ids"] == [["1", "2", forward_key]]
+
+
+def test_matched_course_geometry_is_walk_only_and_preserves_osm_geometry_for_other_modes():
+    graph = _base_graph()
+    original_geometry = graph[1][2][0]["geometry"]
+    graph[1][2][0]["bicycle"] = "yes"
+    graph[1][2][0]["motor_vehicle"] = "yes"
+    graph[2][1][0]["bicycle"] = "yes"
+    graph[2][1][0]["motor_vehicle"] = "yes"
+    feature = _feature("course:mode-isolation", [
+        [114.360, 30.530005], [114.3605, 30.530003], [114.361, 30.530005],
+    ], name="玉兰路")
+
+    fused, _ = fuse_network(
+        graph, [feature], _matched_report(
+            "course:mode-isolation", [["1", "2", 0], ["2", "1", 0]]
+        )
+    )
+
+    from spatial.routing import filter_graph_for_mode
+
+    course_forward = [
+        data for _, _, _, data in fused.edges(keys=True, data=True)
+        if "course:mode-isolation" in data.get("course_source_ids", [])
+        and data.get("course_geometry_replaced")
+    ]
+    assert course_forward
+    assert all(json.loads(edge["allowed_modes"]) == ["walk"] for edge in course_forward)
+    assert fused[1][2][0]["geometry"] == original_geometry
+
+    for mode in ("bike", "drive"):
+        filtered, _, _ = filter_graph_for_mode(fused, mode)
+        assert filtered[1][2][0]["geometry"] == original_geometry
+        assert not any(
+            "course:mode-isolation" in data.get("course_source_ids", [])
+            for _, _, _, data in filtered.edges(keys=True, data=True)
+        )
+
+    walk, _, _ = filter_graph_for_mode(fused, "walk")
+    assert any(
+        "course:mode-isolation" in data.get("course_source_ids", [])
+        for _, _, _, data in walk.edges(keys=True, data=True)
+    )
 
 
 def test_unique_match_applies_course_static_attributes_when_geometry_tolerance_fails():
@@ -165,7 +218,8 @@ def test_geometry_replacement_keeps_course_provenance_when_static_values_conflic
 
     fused, migration = fuse_network(graph, features, report)
 
-    edge = fused[1][2][0]
+    edge = next(data for data in fused[1][2].values()
+                if data.get("course_geometry_replaced"))
     assert edge["course_geometry_replaced"] is True
     assert edge["course_source_ids"] == ["course:geometry"]
     assert edge["course_geometry_source"] == "WHU coursework"

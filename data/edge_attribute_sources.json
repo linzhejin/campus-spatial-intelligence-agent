@@ -16,11 +16,11 @@
     {
       "source_id": "osm_graphml_current",
       "source_type": "directed_routing_graph",
-      "version": "df09e317248b3ebc84f03fcbb68e8934a8129201aaf19cbb94df707c4a68be93",
+      "version": "faee1c2f44dc2a3bd761e21c5fedd39809e0dc927bc35a44ca60ebea42248a93",
       "acquired_at": "2026-09-28",
       "crs": "EPSG:4326",
       "resolution_m": null,
-      "sha256": "cf2372cff39f60de8572b773db04853ce18d6a5569d73709aad043c4bd64c370",
+      "sha256": "1da9a12bc56a182cdb97f669979615abf2733eddec1d3c424ee736d51a9849c4",
       "license": "mixed_sources_license_review_required",
       "redistribution": "not_established",
       "local_path": "data/whu_road_network.graphml",

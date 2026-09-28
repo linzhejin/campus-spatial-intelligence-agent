@@ -87,6 +87,12 @@ def _physical_edges(graph, to_metric):
     from shapely.ops import transform
 
     for u, v, key, data in graph.edges(keys=True, data=True):
+        # A matched course geometry is a separate walk-only variant of an OSM
+        # edge. Do not use that parallel variant as an attachment candidate;
+        # otherwise it can make a nearby endpoint look ambiguously attached
+        # to two nearly coincident lines.
+        if data.get("course_geometry_replaced"):
+            continue
         line = _line_from_edge(graph, u, v, data)
         if line is None:
             continue
@@ -396,6 +402,7 @@ def _replace_matched_edges(graph, course_features, match_by_source,
                 "line": segment,
             })
 
+    geometry_variants = {}
     for edge_id, edge_proposals in proposals.items():
         u, v, key = edge_id
         if len(edge_proposals) != 1:
@@ -403,19 +410,28 @@ def _replace_matched_edges(graph, course_features, match_by_source,
                 dispositions[proposal["source_id"]]["reason"] = "multiple_course_features_target_same_edge"
             continue
         proposal = edge_proposals[0]
-        edge = graph[u][v][key]
-        _set_geometry(graph, u, v, edge, proposal["line"], from_metric)
-        _append_course_provenance(edge, proposal["source_id"])
-        edge["course_geometry_source"] = "WHU coursework"
-        edge["course_geometry_replaced"] = True
+        # Keep the original OSM edge intact for bike/drive routing. The
+        # coursework line is a parallel walk-only edge, so geometry provenance
+        # cannot silently widen access to an unverified mode.
+        course_edge = deepcopy(graph[u][v][key])
+        course_key = graph.add_edge(u, v, **course_edge)
+        course_edge = graph[u][v][course_key]
+        _set_geometry(graph, u, v, course_edge, proposal["line"], from_metric)
+        _append_course_provenance(course_edge, proposal["source_id"])
+        course_edge["course_geometry_source"] = "WHU coursework"
+        course_edge["course_geometry_replaced"] = True
+        course_edge["allowed_modes"] = json.dumps(["walk"])
+        geometry_variants[edge_id] = (u, v, course_key)
         # Geometry-specific evidence cannot be carried across a changed line.
         for key_name in ("slope_level", "scenery_level", "grade_abs_pct",
                          "grade_signed_pct", "elevation_start_m", "elevation_end_m"):
-            edge.pop(key_name, None)
+            course_edge.pop(key_name, None)
         record = dispositions[proposal["source_id"]]
-        record["geometry_replaced_edges"].append([str(u), str(v), int(key)])
+        record["geometry_replaced_edges"].append(
+            [str(u), str(v), int(course_key)]
+        )
         record["active_release"] = True
-        record["reason"] = "course_geometry_replaced_on_unique_edge_correspondence"
+        record["reason"] = "walk_only_course_geometry_added_on_unique_osm_correspondence"
 
     for edge_id, edge_proposals in attribute_proposals.items():
         u, v, key = edge_id
@@ -432,7 +448,9 @@ def _replace_matched_edges(graph, course_features, match_by_source,
                     "attribute_conflict_edges", []
                 ).append([str(u), str(v), int(key)])
             continue
-        edge = graph[u][v][key]
+        target_edge_id = geometry_variants.get(edge_id, edge_id)
+        target_u, target_v, target_key = target_edge_id
+        edge = graph[target_u][target_v][target_key]
         seen_source_ids = set()
         for proposal in edge_proposals:
             source_id = proposal["source_id"]
@@ -441,7 +459,7 @@ def _replace_matched_edges(graph, course_features, match_by_source,
             seen_source_ids.add(source_id)
             _append_course_attributes(edge, proposal["properties"], source_id)
             record = dispositions[source_id]
-            edge_id_json = [str(u), str(v), int(key)]
+            edge_id_json = [str(target_u), str(target_v), int(target_key)]
             if edge_id_json not in record["attributes_applied_edges"]:
                 record["attributes_applied_edges"].append(edge_id_json)
             record["active_release"] = True
@@ -452,7 +470,7 @@ def _replace_matched_edges(graph, course_features, match_by_source,
         if record["match_action"] == "matched" and not record["geometry_replaced_edges"]:
             if not record["attributes_applied_edges"] and record["reason"] is None:
                 record["reason"] = "no_edge_fully_covered_within_endpoint_tolerance"
-    return dispositions
+    return dispositions, geometry_variants
 
 
 def _course_edge_static_match(edge_line, course_line, along_start, along_end,
@@ -941,7 +959,7 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
         for edge_id in old_edge_ids
     }
 
-    course_dispositions = _replace_matched_edges(
+    course_dispositions, geometry_variants = _replace_matched_edges(
         graph, course_features, match_by_source, to_metric, from_metric
     )
     for source_id, disposition in course_dispositions.items():
@@ -962,19 +980,19 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
             # is reconsidered as a separate walk-only course edge below.
             disposition["match_action"] = "new_candidate"
             disposition["activation_policy"] = "trusted_course_geometry_walk_only"
-    # Keep an explicit migration audit for any legacy directed edge whose
-    # geometry was replaced in place.  Edge identity is intentionally stable,
-    # so this is the only place the report can show that its payload changed.
-    for edge_id in old_graph.edges(keys=True):
-        u, v, key = edge_id
-        if graph.has_edge(u, v, key) and graph[u][v][key].get("course_geometry_replaced"):
-            disposition_key = (str(u), str(v), int(key))
-            old_edge_dispositions[disposition_key] = {
-                "edge_id": [str(u), str(v), int(key)],
-                "disposition": "course_geometry_replaced",
-                "replacement_edge_ids": [[str(u), str(v), int(key)]],
-                "reason": "unique_course_correspondence_replaced_geometry_in_place",
-            }
+    # Keep both sides explicit in the migration audit: the original OSM edge
+    # remains available to its existing modes, and the parallel source edge is
+    # only available to walking.
+    for old_edge_id, course_edge_id in geometry_variants.items():
+        u, v, key = old_edge_id
+        course_u, course_v, course_key = course_edge_id
+        disposition_key = (str(u), str(v), int(key))
+        old_edge_dispositions[disposition_key] = {
+            "edge_id": [str(u), str(v), int(key)],
+            "disposition": "retained_osm_with_walk_only_course_variant",
+            "replacement_edge_ids": [[str(course_u), str(course_v), int(course_key)]],
+            "reason": "course_geometry_added_as_walk_only_parallel_edge",
+        }
     new_features = [feature for feature in course_features
                     if course_dispositions.get(
                         (feature.get("properties") or {}).get("source_id"), {}
@@ -1283,7 +1301,7 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
 
     migration = {
         "schema_version": 1,
-        "priority_policy": "course_geometry_and_nonempty_static_attributes_win_on_proven_match; trusted course walk lines are added without deleting OSM topology",
+        "priority_policy": "course geometry is added as walk-only parallel edges on proven matches; OSM edges remain unchanged for their existing modes",
         "unknown_course_values_policy": "preserve_existing_values",
         "elevation_policy": "course_z_all_zero_is_unavailable",
         "new_course_mode_policy": "walk_only_until_nonwalk_access_is_verified",

@@ -606,7 +606,7 @@ def _validate_release(base_graph, fused_graph, source_features, match_report,
         "course_road_count": len(source_features),
         "spatial_geometry_sanity": spatial_sanity,
         "course_match_counts": match_report["course"]["counts_by_action"],
-        "course_active_geometry_replacements": sum(
+        "course_active_geometry_variants": sum(
             bool(row.get("geometry_replaced_edges")) for row in course_rows
         ),
         "course_active_static_attribute_rows": sum(
@@ -743,7 +743,7 @@ def _validate_serialized_runtime_graph(graph_path: Path, expected_counts: dict,
         if "WHU coursework" not in ref_sources or "OpenStreetMap" not in ref_sources:
             raise ValueError("course-replaced edge lost OSM or course provenance at runtime")
     expected_replaced = sum(
-        row["disposition"] == "course_geometry_replaced"
+        row["disposition"] == "retained_osm_with_walk_only_course_variant"
         for row in migration["old_edge_dispositions"]
     )
     if replaced_edges != expected_replaced:
@@ -753,7 +753,7 @@ def _validate_serialized_runtime_graph(graph_path: Path, expected_counts: dict,
         "node_count": graph.number_of_nodes(),
         "directed_edge_count": graph.number_of_edges(),
         "spatial_geometry_sanity": spatial_sanity,
-        "course_geometry_replaced_edges_with_both_sources": replaced_edges,
+        "course_geometry_variant_edges_with_both_sources": replaced_edges,
         "annotation_coverage": round(float(annotation_coverage), 4),
         "overrides_applied": override_count,
         "verified_road_reviews_applied": review_count,
