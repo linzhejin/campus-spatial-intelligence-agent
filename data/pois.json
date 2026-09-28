@@ -1,6 +1,6 @@
 {
  "source": "历史高德等来源整理的 POI；新增开放 OSM 候选均单独注明来源，历史条目待逐项核实",
- "count": 439,
+ "count": 440,
  "provenance_defaults": {
   "source_refs": [],
   "verification_status": "legacy_unverified"
@@ -11431,6 +11431,59 @@
    "campus_boundary_refs": [
     "relation/20349098"
    ]
+  },
+  {
+   "id": "poi_449",
+   "name": "玉兰2门",
+   "aliases": [
+    "玉兰二门",
+    "武汉大学玉兰2门",
+    "武汉大学玉兰二门"
+   ],
+   "coordinates": {
+    "lng": 114.360093058,
+    "lat": 30.531618517
+   },
+   "type": "gate",
+   "campus": "信息学部",
+   "category": "gate",
+   "description": "信息学部与文理学部连接区域的校门。门名与存在由用户确认；坐标绑定到附近 OSM gate node，并由高德底图截图位置估点佐证，尚未现场复核。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "gate",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/1204194363",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/1204194363"
+    },
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:road:0209",
+     "license": "not_provided_with_source"
+    },
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:road:0210",
+     "license": "not_provided_with_source"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "user_confirmed_gate_and_amap_screenshot_estimate_snapped_to_nearby_osm_gate_node",
+   "coordinate_method": "WGS84 OSM gate node transformed to GCJ-02 once",
+   "coordinate_uncertainty_m": 25,
+   "coordinate_estimate_offset_m": 14.4,
+   "access": {
+    "barrier": "gate",
+    "foot": "yes",
+    "bicycle": "yes",
+    "motor_vehicle": "no"
+   }
   }
  ]
 }

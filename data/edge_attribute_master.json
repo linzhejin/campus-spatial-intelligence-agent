@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "network_version": "91540d5278de1f0b1ee2458ecdd3c48e65d0e5e6df3f70fb85e4ba62a7f7bac1",
-  "source_manifest_fingerprint": "a8e1d9693792c31da81cf744dcd0618859da3481952cede363365b4a399e1422",
-  "generated_at": "2026-09-28T12:26:46.993782+00:00",
+  "network_version": "25e5692affe27660b5f1908d49e39472e1b58be64f557326b13853b307177075",
+  "source_manifest_fingerprint": "e237728851bd5f29a13549ac4fd3cc05ac871fe13b44dfd0f6cbf1198eb0b992",
+  "generated_at": "2026-09-28T13:41:36.545244+00:00",
   "records": [
     {
       "network_bindings": [
@@ -71542,6 +71542,70 @@
       "length_m": 34.847,
       "road_name": null,
       "highway": "service"
+    },
+    {
+      "network_bindings": [
+        {
+          "edge_id": [
+            1204194363,
+            13732671009,
+            0
+          ],
+          "geometry_hash": "db7fe1a0bfb28f33236fc4d402baf1560e2add5312cba4aa6174b24892f3b857",
+          "source_refs": [
+            {
+              "id": "node/1204194363",
+              "license": "ODbL-1.0",
+              "source": "OpenStreetMap",
+              "url": "https://www.openstreetmap.org/node/1204194363"
+            },
+            {
+              "id": "whu_course_4392126ae0613239:road:0210",
+              "license": "not_provided_with_source",
+              "source": "WHU coursework"
+            },
+            {
+              "id": "whu_course_4392126ae0613239:road:0270",
+              "license": "not_provided_with_source",
+              "source": "WHU coursework"
+            }
+          ]
+        }
+      ],
+      "terrain": {
+        "elevation_start_m": null,
+        "elevation_end_m": null,
+        "grade_signed_pct": null,
+        "grade_abs_pct": null,
+        "grade_p90_pct": null,
+        "elevation_gain_m": null,
+        "elevation_loss_m": null,
+        "facility_type": null,
+        "slope_level": null,
+        "source_refs": [],
+        "method_version": "legacy_placeholder",
+        "confidence": "unknown",
+        "verification_status": "source_only"
+      },
+      "scenery": {
+        "greenery": null,
+        "shade": null,
+        "water": null,
+        "heritage": null,
+        "quietness": null,
+        "seasonality": null,
+        "viewpoint": null,
+        "scenery_score": null,
+        "scenery_level": null,
+        "source_refs": [],
+        "method_version": "legacy_poi_name_heuristic",
+        "confidence": "unknown",
+        "verification_status": "source_only"
+      },
+      "segment_id": "seg_afb6ff8ad81cc50940c4",
+      "length_m": 4.937,
+      "road_name": null,
+      "highway": "footway"
     },
     {
       "network_bindings": [
@@ -597375,6 +597439,70 @@
       "length_m": 49.15,
       "road_name": null,
       "highway": "service"
+    },
+    {
+      "network_bindings": [
+        {
+          "edge_id": [
+            13732671009,
+            1204194363,
+            0
+          ],
+          "geometry_hash": "43339e33570a6b859320d417630a5a3b1ebab116b7cd6b0fdc2612f62457813e",
+          "source_refs": [
+            {
+              "id": "node/1204194363",
+              "license": "ODbL-1.0",
+              "source": "OpenStreetMap",
+              "url": "https://www.openstreetmap.org/node/1204194363"
+            },
+            {
+              "id": "whu_course_4392126ae0613239:road:0210",
+              "license": "not_provided_with_source",
+              "source": "WHU coursework"
+            },
+            {
+              "id": "whu_course_4392126ae0613239:road:0270",
+              "license": "not_provided_with_source",
+              "source": "WHU coursework"
+            }
+          ]
+        }
+      ],
+      "terrain": {
+        "elevation_start_m": null,
+        "elevation_end_m": null,
+        "grade_signed_pct": null,
+        "grade_abs_pct": null,
+        "grade_p90_pct": null,
+        "elevation_gain_m": null,
+        "elevation_loss_m": null,
+        "facility_type": null,
+        "slope_level": null,
+        "source_refs": [],
+        "method_version": "legacy_placeholder",
+        "confidence": "unknown",
+        "verification_status": "source_only"
+      },
+      "scenery": {
+        "greenery": null,
+        "shade": null,
+        "water": null,
+        "heritage": null,
+        "quietness": null,
+        "seasonality": null,
+        "viewpoint": null,
+        "scenery_score": null,
+        "scenery_level": null,
+        "source_refs": [],
+        "method_version": "legacy_poi_name_heuristic",
+        "confidence": "unknown",
+        "verification_status": "source_only"
+      },
+      "segment_id": "seg_cf80cb3c1b98fa9f203e",
+      "length_m": 4.937,
+      "road_name": null,
+      "highway": "footway"
     },
     {
       "network_bindings": [

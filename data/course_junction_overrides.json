@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "overrides": [
+    {
+      "id": "yulan-2-gate-to-information-liberal-arts-course-path",
+      "course_sources": [
+        {
+          "source_row": 210,
+          "source_id": "whu_course_4392126ae0613239:road:0210"
+        },
+        {
+          "source_row": 270,
+          "source_id": "whu_course_4392126ae0613239:road:0270"
+        }
+      ],
+      "target_osm_node_id": "1204194363",
+      "target_osm_access": {
+        "barrier": "gate",
+        "foot": "yes",
+        "bicycle": "yes",
+        "motor_vehicle": "no"
+      },
+      "max_gap_m": 5.5,
+      "allowed_modes": ["walk"],
+      "verification_status": "source_only",
+      "evidence_status": "user_confirmed_gate_and_course_path;osm_gate_node_and_course_geometry_correlated",
+      "reason": "Rows 210 and 270 share the information–liberal arts course-road junction. Connect that existing walk-only course component to the nearby OSM gate node; the measured gap is 4.94 m. The user confirms the gate and path exist. This is a source-correlated connection, not a field survey.",
+      "building_clearance_audit": {
+        "source": "OSM campus building-footprint snapshot",
+        "snapshot_sha256": "15f276631dd84d6c47855fe8e80813dd539d91b7ac860b85acb89cf7e9388a8a",
+        "features_checked": 750,
+        "intersections": 0,
+        "nearest_building_clearance_m": 5.048
+      }
+    }
+  ]
+}

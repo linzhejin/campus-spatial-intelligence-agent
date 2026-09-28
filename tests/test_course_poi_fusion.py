@@ -108,7 +108,7 @@ def test_reviewed_course_spots_are_in_the_live_poi_master_with_lineage():
     data = json.loads((root / "data/pois.json").read_text(encoding="utf-8"))
     pois = {row["id"]: row for row in data["pois"]}
 
-    assert len(pois) == 439
+    assert len(pois) == 440
     expected = {
         "poi_247": {"遥感学院", "信息学部遥感学院"},
         "poi_140": {"武汉大学校门牌坊"},
@@ -141,6 +141,8 @@ def test_live_poi_lookup_resolves_course_names_and_aliases(monkeypatch):
             "校史馆": "poi_034",
             "行政楼": "poi_035",
             "万林博物馆": "poi_004",
+            "玉兰二门": "poi_449",
+            "武汉大学玉兰2门": "poi_449",
         }
         for query, expected_id in queries.items():
             assert poi_module.get_poi(query)["id"] == expected_id

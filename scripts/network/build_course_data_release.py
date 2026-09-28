@@ -20,7 +20,10 @@ if str(ROOT) not in sys.path:
 
 from scripts.network.match_course_network import match_files  # noqa: E402
 from spatial.course_data import import_course_data  # noqa: E402
-from spatial.course_fusion import fuse_network  # noqa: E402
+from spatial.course_fusion import (  # noqa: E402
+    apply_course_junction_overrides,
+    fuse_network,
+)
 from spatial.course_poi_fusion import fuse_course_pois, write_json_atomic  # noqa: E402
 from spatial.course_topology_policy import validate_topology_exceptions  # noqa: E402
 from spatial.network import (  # noqa: E402
@@ -259,6 +262,34 @@ def _validate_course_poi_snap_distances(graph: nx.MultiDiGraph,
     return result
 
 
+def _validate_junction_override_edges(graph: nx.MultiDiGraph, migration: dict) -> int:
+    """Confirm audited gate connectors survived GraphML serialization as walk-only edges."""
+    checked = 0
+    for override in migration.get("course_junction_overrides", []):
+        edge_ids = override.get("edge_ids") or []
+        if len(edge_ids) != 2:
+            raise ValueError(f"junction override {override.get('id')} is not bidirectional")
+        for raw_u, raw_v, raw_key in edge_ids:
+            u = next((node for node in graph.nodes if str(node) == str(raw_u)), None)
+            v = next((node for node in graph.nodes if str(node) == str(raw_v)), None)
+            key = int(raw_key)
+            if (u is None or v is None or not graph.has_edge(u, v, key)):
+                raise ValueError("junction override edge is missing after GraphML round-trip")
+            edge = graph[u][v][key]
+            if edge.get("course_junction_override_id") != override.get("id"):
+                raise ValueError("junction override provenance was lost after GraphML round-trip")
+            raw_modes = edge.get("allowed_modes") or []
+            if isinstance(raw_modes, str):
+                try:
+                    raw_modes = json.loads(raw_modes)
+                except json.JSONDecodeError:
+                    raw_modes = [raw_modes]
+            if set(map(str, raw_modes)) != {"walk"}:
+                raise ValueError("junction override is not walk-only after GraphML round-trip")
+            checked += 1
+    return checked
+
+
 def _validate_release(base_graph, fused_graph, source_features, match_report,
                       network_migration, poi_migration, merged_pois,
                       topology_exceptions):
@@ -333,6 +364,9 @@ def _validate_release(base_graph, fused_graph, source_features, match_report,
         "course_poi_route_snaps": _validate_course_poi_snap_distances(
             fused_graph, poi_migration
         ),
+        "course_junction_overrides": network_migration.get(
+            "course_junction_overrides", []
+        ),
         "routable_course_components": route_checks,
         "intentional_topology_exceptions": topology_checks,
     }
@@ -392,6 +426,9 @@ def _validate_serialized_runtime_graph(graph_path: Path, expected_counts: dict,
         raise ValueError("GraphML round-trip changed the directed-edge count")
     if not graph.graph.get("course_release_fingerprint"):
         raise ValueError("course release fingerprint was not saved into GraphML")
+    if (migration.get("course_junction_overrides")
+            and not graph.graph.get("course_junction_override_policy_sha256")):
+        raise ValueError("junction override policy fingerprint was not saved into GraphML")
     spatial_sanity = _validate_spatial_geometry(graph)
 
     _mark_osm_provenance(graph)
@@ -438,13 +475,15 @@ def _validate_serialized_runtime_graph(graph_path: Path, expected_counts: dict,
         "annotation_coverage": round(float(annotation_coverage), 4),
         "overrides_applied": override_count,
         "verified_road_reviews_applied": review_count,
+        "junction_override_edges_checked": _validate_junction_override_edges(graph, migration),
         "routable_course_components": route_checks,
     }
 
 
 def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
                   crosswalk_path: Path, output_dir: Path,
-                  topology_exceptions_path: Path | None = None) -> dict:
+                  topology_exceptions_path: Path | None = None,
+                  junction_overrides_path: Path | None = None) -> dict:
     source_dir = source_dir.resolve()
     base_graph_path = base_graph_path.resolve()
     pois_path = pois_path.resolve()
@@ -452,11 +491,16 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
     topology_exceptions_path = (
         topology_exceptions_path or ROOT / "data/course_topology_exceptions.json"
     ).resolve()
+    junction_overrides_path = (
+        junction_overrides_path or ROOT / "data/course_junction_overrides.json"
+    ).resolve()
     output_dir = output_dir.resolve()
     if (not base_graph_path.is_file() or not pois_path.is_file()
-            or not crosswalk_path.is_file() or not topology_exceptions_path.is_file()):
+            or not crosswalk_path.is_file() or not topology_exceptions_path.is_file()
+            or not junction_overrides_path.is_file()):
         raise FileNotFoundError(
-            "base graph, POI library, crosswalk, and topology exception policy must exist"
+            "base graph, POI library, crosswalk, topology exceptions, and "
+            "junction override policy must exist"
         )
 
     source_dir_out = output_dir / "source"
@@ -472,10 +516,14 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
     if topology_policy.get("schema_version") != 1:
         raise ValueError("unsupported course topology exception schema")
     topology_exceptions = topology_policy.get("exceptions") or []
+    junction_policy = _read_json(junction_overrides_path)
+    if junction_policy.get("schema_version") != 1:
+        raise ValueError("unsupported course junction override policy schema")
     base_graph = nx.read_graphml(base_graph_path, node_type=int)
     fused_graph, network_migration = fuse_network(
         base_graph, source_features, match_report
     )
+    apply_course_junction_overrides(fused_graph, network_migration, junction_policy)
     merged_pois, poi_migration = fuse_course_pois(
         _read_json(pois_path), poi_features, _read_json(crosswalk_path)
     )
@@ -484,6 +532,7 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
     poi_source_sha = _sha256(pois_path)
     crosswalk_sha = _sha256(crosswalk_path)
     topology_policy_sha = _sha256(topology_exceptions_path)
+    junction_policy_sha = _sha256(junction_overrides_path)
     source_manifest = source_result["manifest"]
     release_identity = {
         "schema_version": 1,
@@ -492,6 +541,7 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
         "poi_source_sha256": poi_source_sha,
         "poi_crosswalk_sha256": crosswalk_sha,
         "topology_exception_policy_sha256": topology_policy_sha,
+        "course_junction_override_policy_sha256": junction_policy_sha,
         "network_fusion_schema": network_migration["schema_version"],
     }
     release_fingerprint = hashlib.sha256(json.dumps(
@@ -504,6 +554,7 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
     fused_graph.graph["course_release_fingerprint"] = release_fingerprint
     fused_graph.graph["course_source_priority"] = "course_wins_static_conflicts"
     fused_graph.graph["course_ambiguous_match_policy"] = "not_activated"
+    fused_graph.graph["course_junction_override_policy_sha256"] = junction_policy_sha
 
     validation = _validate_release(
         base_graph, fused_graph, source_features, match_report,
@@ -535,6 +586,7 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
             "course_source_fingerprint_sha256": source_manifest["source_fingerprint_sha256"],
             "crosswalk_sha256": crosswalk_sha,
             "topology_exception_policy_sha256": topology_policy_sha,
+            "course_junction_override_policy_sha256": junction_policy_sha,
         },
         "outputs": {
             "road_network": {
@@ -566,12 +618,14 @@ def main(argv=None) -> int:
                         default=ROOT / "data/course_poi_crosswalk.json")
     parser.add_argument("--topology-exceptions", type=Path,
                         default=ROOT / "data/course_topology_exceptions.json")
+    parser.add_argument("--junction-overrides", type=Path,
+                        default=ROOT / "data/course_junction_overrides.json")
     parser.add_argument("--output-dir", type=Path,
                         default=ROOT / "output/course_fusion/release")
     args = parser.parse_args(argv)
     manifest = build_release(args.source_dir, args.base_graph, args.pois,
                              args.crosswalk, args.output_dir,
-                             args.topology_exceptions)
+                             args.topology_exceptions, args.junction_overrides)
     print(json.dumps({
         "release_fingerprint": manifest["release_fingerprint"],
         "outputs": manifest["outputs"],

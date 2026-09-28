@@ -614,6 +614,251 @@ def _add_course_edge(graph, u, v, metric_line, properties, source_id,
     return graph.add_edge(u, v, **attrs)
 
 
+def apply_course_junction_overrides(graph, migration, policy):
+    """Connect an audited course-road junction to a known OSM access node.
+
+    This is deliberately separate from automatic edge matching: the policy
+    must identify the exact course source rows and OSM node, declare a small
+    maximum gap, and keep the connector walk-only.
+    """
+    from math import isfinite
+    from pyproj import Transformer
+    from shapely.geometry import LineString, Point
+    from shapely.ops import transform
+
+    if not isinstance(policy, dict) or policy.get("schema_version") != 1:
+        raise ValueError("unsupported course junction override schema")
+    overrides = policy.get("overrides") or []
+    if not isinstance(overrides, list):
+        raise ValueError("course junction overrides must be a list")
+
+    to_metric = Transformer.from_crs("EPSG:4326", "EPSG:4547",
+                                     always_xy=True).transform
+    from_metric = Transformer.from_crs("EPSG:4547", "EPSG:4326",
+                                       always_xy=True).transform
+    rows_by_id = {
+        row.get("source_id"): row
+        for row in migration.get("course_feature_dispositions", [])
+        if row.get("source_id")
+    }
+    applied = []
+    seen_override_ids = set()
+    for override in overrides:
+        override_id = str(override.get("id") or "").strip()
+        if not override_id or override_id in seen_override_ids:
+            raise ValueError("course junction override IDs must be non-empty and unique")
+        seen_override_ids.add(override_id)
+
+        source_records = override.get("course_sources") or []
+        source_rows_by_id = {
+            str(row.get("source_id")): int(row["source_row"])
+            for row in source_records
+            if isinstance(row, dict) and row.get("source_id") and row.get("source_row") is not None
+        }
+        source_ids = sorted(source_rows_by_id)
+        expected_rows = sorted(source_rows_by_id.values())
+        if (len(source_ids) < 2 or len(source_ids) != len(expected_rows)
+                or len(set(expected_rows)) != len(expected_rows)):
+            raise ValueError(f"{override_id} must identify matching course source IDs and rows")
+        dispositions = []
+        endpoint_sets = []
+        for source_id in source_ids:
+            disposition = rows_by_id.get(source_id)
+            if not disposition:
+                raise ValueError(f"{override_id} references an unknown course source: {source_id}")
+            if (not disposition.get("active_release")
+                    or disposition.get("match_action") != "new_candidate"):
+                raise ValueError(f"{override_id} source is not an active new course road: {source_id}")
+            if int(disposition.get("source_row", -1)) != source_rows_by_id[source_id]:
+                raise ValueError(f"{override_id} source row does not match {source_id}")
+            component_ids = set(map(str, disposition.get("component_source_ids") or []))
+            if not set(source_ids).issubset(component_ids):
+                raise ValueError(f"{override_id} course roads are not in the same active component")
+            edge_ids = disposition.get("added_edge_ids") or []
+            endpoints = set()
+            for edge_id in edge_ids:
+                if len(edge_id) != 3:
+                    continue
+                u, v, key = edge_id
+                node_u = next((node for node in graph.nodes if str(node) == str(u)), None)
+                node_v = next((node for node in graph.nodes if str(node) == str(v)), None)
+                if (node_u is None or node_v is None
+                        or not graph.has_edge(node_u, node_v, int(key))):
+                    raise ValueError(f"{override_id} references a missing released course edge")
+                endpoints.update((str(node_u), str(node_v)))
+            if not endpoints:
+                raise ValueError(f"{override_id} course source has no released edges")
+            dispositions.append(disposition)
+            endpoint_sets.append(endpoints)
+        if sorted(int(row["source_row"]) for row in dispositions) != expected_rows:
+            raise ValueError(f"{override_id} source row list does not match the course sources")
+
+        shared_nodes = set.intersection(*endpoint_sets)
+        if len(shared_nodes) != 1:
+            raise ValueError(f"{override_id} does not resolve to one shared course junction")
+        course_node_id_text = next(iter(shared_nodes))
+        course_node = next(node for node in graph.nodes
+                           if str(node) == course_node_id_text)
+
+        target_id_text = str(override.get("target_osm_node_id") or "").strip()
+        target_node = next((node for node in graph.nodes
+                            if str(node) == target_id_text), None)
+        if target_node is None:
+            raise ValueError(f"{override_id} target OSM node is absent from the release graph")
+        if str(graph.nodes[target_node].get("course_source_node", "")).lower() == "true":
+            raise ValueError(f"{override_id} target must be an existing OSM graph node")
+        if course_node == target_node:
+            raise ValueError(f"{override_id} course junction already is the target OSM node")
+
+        try:
+            max_gap_m = float(override["max_gap_m"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"{override_id} requires a numeric max_gap_m") from exc
+        if not isfinite(max_gap_m) or not 0 < max_gap_m <= 10.0:
+            raise ValueError(f"{override_id} max_gap_m must be within (0, 10] meters")
+        modes = sorted(set(map(str, override.get("allowed_modes") or [])))
+        if modes != ["walk"]:
+            raise ValueError(f"{override_id} junction connectors must be walk-only")
+        if override.get("verification_status") != "source_only":
+            raise ValueError(f"{override_id} must retain source_only verification status")
+        target_access = override.get("target_osm_access") or {}
+        if target_access.get("barrier") != "gate" or target_access.get("foot") != "yes":
+            raise ValueError(f"{override_id} target OSM node is not evidenced as a walkable gate")
+        building_audit = override.get("building_clearance_audit") or {}
+        try:
+            checked_buildings = int(building_audit.get("features_checked", 0))
+            intersections = int(building_audit.get("intersections", -1))
+            clearance_m = float(building_audit.get("nearest_building_clearance_m", -1))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{override_id} building-clearance evidence is invalid") from exc
+        if (checked_buildings <= 0 or intersections != 0 or not isfinite(clearance_m)
+                or clearance_m <= 0 or len(str(building_audit.get("snapshot_sha256", ""))) != 64):
+            raise ValueError(f"{override_id} requires clear, hashed building-footprint evidence")
+        evidence_status = str(override.get("evidence_status") or "").strip()
+        reason = str(override.get("reason") or "").strip()
+        if not evidence_status or not reason:
+            raise ValueError(f"{override_id} requires evidence_status and reason")
+
+        course_data = graph.nodes[course_node]
+        target_data = graph.nodes[target_node]
+        course_point = (float(course_data["x"]), float(course_data["y"]))
+        target_point = (float(target_data["x"]), float(target_data["y"]))
+        course_metric = transform(to_metric, Point(*course_point))
+        target_metric = transform(to_metric, Point(*target_point))
+        gap_m = float(course_metric.distance(target_metric))
+        if gap_m <= 0 or gap_m > max_gap_m:
+            raise ValueError(
+                f"{override_id} gap {gap_m:.2f} m exceeds the declared maximum "
+                f"{max_gap_m:.2f} m"
+            )
+
+        override_edges = [
+            (u, v, key, data)
+            for u, v, key, data in graph.edges(keys=True, data=True)
+            if data.get("course_junction_override_id") == override_id
+        ]
+        if override_edges:
+            if len(override_edges) != 2 or not all(
+                    {str(u), str(v)} == {course_node_id_text, target_id_text}
+                    for u, v, _, _ in override_edges):
+                raise ValueError(f"{override_id} has a conflicting pre-existing connector")
+            edge_ids = [[str(u), str(v), int(key)]
+                        for u, v, key, _ in override_edges]
+        else:
+            line_metric = LineString([course_metric.coords[0], target_metric.coords[0]])
+            line_wgs = transform(from_metric, line_metric)
+            course_refs = [_source_ref(source_id) for source_id in source_ids]
+            osm_ref = {
+                "source": "OpenStreetMap",
+                "id": f"node/{target_id_text}",
+                "license": "ODbL-1.0",
+                "url": f"https://www.openstreetmap.org/node/{target_id_text}",
+            }
+            refs = sorted([osm_ref, *course_refs],
+                          key=lambda row: (row["source"], row["id"]))
+            attrs = {
+                "length": gap_m,
+                "geometry": line_wgs.wkt,
+                "highway": "footway",
+                "course_connector": "true",
+                "course_junction_override_id": override_id,
+                "course_source_ids": json.dumps(source_ids, ensure_ascii=False),
+                "source_refs": json.dumps(refs, ensure_ascii=False, sort_keys=True),
+                "course_geometry_source": "WHU coursework junction to OSM gate node",
+                "verification_status": "source_only",
+                "evidence_status": evidence_status,
+                "access_metadata_status": "unknown",
+                "current_status": "unknown",
+                "source_priority": "course_wins_static_conflicts",
+                "allowed_modes": json.dumps(modes),
+                "description": reason,
+            }
+            forward_key = graph.add_edge(course_node, target_node, **deepcopy(attrs))
+            reverse_attrs = deepcopy(attrs)
+            reverse_attrs["geometry"] = LineString(list(line_wgs.coords)[::-1]).wkt
+            reverse_key = graph.add_edge(target_node, course_node, **reverse_attrs)
+            edge_ids = [[str(course_node), str(target_node), int(forward_key)],
+                        [str(target_node), str(course_node), int(reverse_key)]]
+
+        component_ids = set(map(str, dispositions[0].get("component_source_ids") or []))
+        anchor = {
+            "attachment": {
+                "kind": "node",
+                "node_id": str(target_node),
+                "osm_node_id": target_id_text,
+                "gap_m": gap_m,
+                "evidence_status": evidence_status,
+            },
+            "cluster_ids": [],
+            "source_endpoints": [
+                {"source_id": source_id,
+                 "source_row": int(disposition["source_row"]),
+                 "side": "course_junction"}
+                for source_id, disposition in zip(source_ids, dispositions)
+            ],
+            "release_node_ids": [str(target_node)],
+            "override_id": override_id,
+        }
+        for disposition in migration["course_feature_dispositions"]:
+            if (disposition.get("active_release")
+                    and set(map(str, disposition.get("component_source_ids") or []))
+                    == component_ids):
+                anchors = disposition.setdefault("component_anchors", [])
+                if not any(
+                        str(node_id) == str(target_node)
+                        for old in anchors
+                        for node_id in old.get("release_node_ids", [])):
+                    anchors.append(deepcopy(anchor))
+                disposition["component_anchor_count"] = len({
+                    str(node_id)
+                    for old in anchors
+                    for node_id in old.get("release_node_ids", [])
+                })
+
+        record = {
+            "id": override_id,
+            "course_source_ids": source_ids,
+            "course_source_rows": expected_rows,
+            "course_junction_node_id": course_node_id_text,
+            "target_osm_node_id": target_id_text,
+            "distance_m": round(gap_m, 3),
+            "max_gap_m": max_gap_m,
+            "allowed_modes": modes,
+            "target_osm_access": target_access,
+            "building_clearance_audit": building_audit,
+            "evidence_status": evidence_status,
+            "reason": reason,
+            "edge_ids": edge_ids,
+        }
+        applied.append(record)
+
+    migration["course_junction_overrides"] = applied
+    migration["new_graph_counts"] = {
+        "nodes": graph.number_of_nodes(), "edges": graph.number_of_edges()
+    }
+    return applied
+
+
 def fuse_network(old_graph, course_features, match_report, *, attachment_tolerance_m=2.0):
     """Fuse only unique matches and well-anchored new course components.
 

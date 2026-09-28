@@ -275,6 +275,7 @@ class TestGateCoordinates:
         "凌波门", "珞南门", "武汉大学科技门", "珞珈门", "武汉大学茶港门",
         "洪波门", "武汉大学文澜门", "珞瑜二门", "珞瑜门", "弘毅门",
         "北门", "扬波门", "澄波门", "珞东二门", "珞南二门", "珞南三门",
+        "玉兰2门",
     }
 
     @pytest.fixture(scope="class")
@@ -319,6 +320,8 @@ class TestGateCoordinates:
         assert find_poi("附中门")["name"] == "珞南门"
         assert find_poi("武大东门")["name"] == "扬波门"
         assert find_poi("牌坊")["name"] == "珞珈门"
+        assert find_poi("玉兰二门")["id"] == "poi_449"
+        assert find_poi("武汉大学玉兰2门")["name"] == "玉兰2门"
 
     def test_chagang_gate_belongs_engineering_campus(self, gates):
         """校保卫部将茶港门列在工学部：https://www.whu.edu.cn/info/5231/240334.htm"""
