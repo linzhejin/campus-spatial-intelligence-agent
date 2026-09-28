@@ -1,4 +1,42 @@
 {
   "schema_version": 1,
-  "sources": []
+  "sources": [
+    {
+      "source_id": "legacy_road_annotations",
+      "source_type": "legacy_edge_attributes",
+      "version": "8be901406c32aa77f1f831ece2f365b3be51cc61bc6753f1e4eb401879e60c74",
+      "acquired_at": "2026-09-15",
+      "crs": "EPSG:4326",
+      "resolution_m": null,
+      "sha256": "8be901406c32aa77f1f831ece2f365b3be51cc61bc6753f1e4eb401879e60c74",
+      "license": "unverified_internal_derivation",
+      "redistribution": "internal_audit_only",
+      "local_path": "data/road_annotations.json"
+    },
+    {
+      "source_id": "osm_graphml_current",
+      "source_type": "directed_routing_graph",
+      "version": "07a67418c3da6f4a26aa4df576e0a1ed3657ab41915257193142c6667ab9990f",
+      "acquired_at": "2026-09-26",
+      "crs": "EPSG:4326",
+      "resolution_m": null,
+      "sha256": "af58538aff521da25149121d7c4c9d4e3130fb6201a20626f0dbeecb189bb185",
+      "license": "ODbL-1.0",
+      "redistribution": "share_alike",
+      "local_path": "data/whu_road_network.graphml"
+    },
+    {
+      "source_id": "poi_master_current",
+      "source_type": "poi_master",
+      "version": "0924838142f3728ecb25bc9cbe9da6cdbd76456663273325d30c4d732e209878",
+      "acquired_at": "2026-09-26",
+      "crs": "GCJ-02",
+      "resolution_m": null,
+      "sha256": "0924838142f3728ecb25bc9cbe9da6cdbd76456663273325d30c4d732e209878",
+      "license": "per_record_source_refs",
+      "redistribution": "mixed_requires_record_review",
+      "local_path": "data/pois.json",
+      "notes": "Publication scope follows each POI source_refs and verification_status."
+    }
+  ]
 }

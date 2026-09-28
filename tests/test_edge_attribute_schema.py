@@ -106,3 +106,18 @@ def test_legacy_generators_refuse_default_publication(legacy_main):
     before = annotations.read_bytes()
     assert legacy_main() == 2
     assert annotations.read_bytes() == before
+
+
+def test_registered_sources_have_reproducibility_and_license_fields():
+    import json
+
+    path = project_root() / "data" / "edge_attribute_sources.json"
+    sources = json.loads(path.read_text(encoding="utf-8"))["sources"]
+    required = {
+        "source_id", "source_type", "version", "acquired_at", "crs",
+        "resolution_m", "sha256", "license", "redistribution", "local_path",
+    }
+    assert {row["source_id"] for row in sources} >= {
+        "osm_graphml_current", "poi_master_current", "legacy_road_annotations"
+    }
+    assert all(required <= set(row) for row in sources)
