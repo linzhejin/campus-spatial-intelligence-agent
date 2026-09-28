@@ -17,6 +17,7 @@
 import ast
 import logging
 import os
+import time
 from typing import Optional
 
 import networkx as nx
@@ -1099,6 +1100,7 @@ def compute_route(
     Raises:
         ValueError: 起终点不可达时
     """
+    timing_started = time.perf_counter()
     constraints = constraints or {}
     mode = normalize_mode(mode)
 
@@ -1209,6 +1211,9 @@ def compute_route(
         annotation_degraded, outside_road_penalty=outside_penalty,
     )
 
+    graph_prepare_ms = (time.perf_counter() - timing_started) * 1000
+    path_search_started = time.perf_counter()
+
     # 最短基线与推荐路线使用同一张已经完成方式、管制和硬约束过滤的图。
     # 普通通勤直接复用这一次搜索，避免再运行一遍软成本 Dijkstra。
     try:
@@ -1268,6 +1273,9 @@ def compute_route(
             recommended, recommended_edges = shortest, shortest_edges
             recommended_len = shortest_len
 
+    path_search_ms = (time.perf_counter() - path_search_started) * 1000
+    response_build_started = time.perf_counter()
+
     overlap_rate = _compute_overlap(recommended_edges, shortest_edges)
 
     # 从实际结果路径计算 degraded_count（避免闭包中 Dijkstra 重复评估边导致计数虚高）
@@ -1287,7 +1295,7 @@ def compute_route(
     slope_avg_short = _weighted_avg_attr(G, shortest, "slope_level", shortest_edges)
     scenery_avg_short = _weighted_avg_attr(G, shortest, "scenery_level", shortest_edges)
 
-    return {
+    result = {
         "recommended": recommended,
         "shortest": shortest,
         "recommended_edges": recommended_edges,
@@ -1319,6 +1327,16 @@ def compute_route(
         "slope_avg_shortest": round(slope_avg_short, 3),
         "scenery_avg_shortest": round(scenery_avg_short, 3),
     }
+    result["timings_ms"] = {
+        "agent": 0.0,
+        "poi_resolution": 0.0,
+        "graph_prepare": round(graph_prepare_ms, 3),
+        "path_search": round(path_search_ms, 3),
+        "response_build": round(
+            (time.perf_counter() - response_build_started) * 1000, 3
+        ),
+    }
+    return result
 
 
 def compute_route_with_annotations(

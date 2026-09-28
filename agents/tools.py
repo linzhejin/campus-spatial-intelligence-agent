@@ -37,6 +37,7 @@ from agents.route_state import (
     current_data_version,
     current_road_condition_version,
 )
+from agents.timings import add_timings, normalize_timings
 
 logger = logging.getLogger(__name__)
 
@@ -527,11 +528,12 @@ def _weather_public(snap):
 
 def _route_payload(G, route_result, start_name, end_name, mode):
     """compute_route 结果 → 前端/LLM 可用的路径包（坐标 GCJ-02）。"""
+    response_started = time.perf_counter()
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
     recommended_edges = route_result["recommended_edges"]
     shortest_edges = route_result["shortest_edges"]
-    return {
+    payload = {
         "start_name": start_name,
         "end_name": end_name,
         "recommended": _coords_wgs_to_gcj(
@@ -556,6 +558,13 @@ def _route_payload(G, route_result, start_name, end_name, mode):
         "mode": route_result["mode"],
         "speed_kmh": route_result.get("speed_kmh", MODE_SPEEDS_KMH.get(mode, 4.5)),
     }
+    timings = normalize_timings(route_result.get("timings_ms"))
+    timings["response_build"] = round(
+        timings["response_build"] + (time.perf_counter() - response_started) * 1000,
+        3,
+    )
+    payload["timings_ms"] = normalize_timings(timings)
+    return payload
 
 
 # ===========================================================================
@@ -657,7 +666,10 @@ def _attach_route_state(
 
 
 def _tool_plan_route(args, ctx):
+    graph_started = time.perf_counter()
     G, G_mode, mode, weather_info = _plan_common(args, ctx)
+    common_graph_ms = (time.perf_counter() - graph_started) * 1000
+    poi_started = time.perf_counter()
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_mode)
     if err:
         return err, None
@@ -668,6 +680,7 @@ def _tool_plan_route(args, ctx):
         return {"error": "same_poi", "message": "起点和终点相同（或距离太近），换个目的地试试"}, None
 
     end_poi, _ = find_poi_ambiguous((args.get("end") or {}).get("name", ""))
+    poi_resolution_ms = (time.perf_counter() - poi_started) * 1000
     decision = _strategy_for_args(args, ctx, end_poi=end_poi)
 
     try:
@@ -681,6 +694,11 @@ def _tool_plan_route(args, ctx):
         return {"error": "route_not_found", "message": str(e)}, None
 
     payload = _route_payload(G, result, start_name, end_name, mode)
+    payload["timings_ms"]["graph_prepare"] = round(
+        payload["timings_ms"]["graph_prepare"] + common_graph_ms, 3
+    )
+    payload["timings_ms"]["poi_resolution"] = round(poi_resolution_ms, 3)
+    payload["timings_ms"] = normalize_timings(payload["timings_ms"])
     payload["strategy"] = decision.as_dict()
     _attach_route_state(
         payload, "direct", args, ctx, G, decision,
@@ -1116,8 +1134,33 @@ def execute_tool(name: str, args: dict, ctx: dict = None) -> tuple:
         return {"error": "unknown_tool", "message": f"工具 {name} 不存在"}, None
     if not isinstance(args, dict):
         args = {}
+    started = time.perf_counter()
     try:
-        return executor(args, ctx)
+        result, artifact = executor(args, ctx)
+        route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+        if isinstance(route, dict):
+            timings = route.get("timings_ms")
+            if not isinstance(timings, dict):
+                leg_timings = []
+                for leg in route.get("legs") or []:
+                    if isinstance(leg, dict):
+                        leg_timings.append(leg.get("timings_ms"))
+                tour = route.get("tour")
+                if isinstance(tour, dict):
+                    for leg in tour.get("legs") or []:
+                        if isinstance(leg, dict):
+                            leg_timings.append(leg.get("timings_ms"))
+                timings = add_timings(*leg_timings)
+            timings = normalize_timings(timings)
+            measured = sum(timings[key] for key in timings if key != "agent")
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            timings["response_build"] = round(
+                timings["response_build"] + max(0.0, elapsed_ms - measured), 3
+            )
+            route["timings_ms"] = normalize_timings(timings)
+            if isinstance(result, dict):
+                result["timings_ms"] = route["timings_ms"]
+        return result, artifact
     except Exception as e:
         logger.exception("工具 %s 执行异常", name)
         return {"error": "tool_exception", "message": f"{type(e).__name__}: {e}"}, None

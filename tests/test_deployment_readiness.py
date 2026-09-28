@@ -1,6 +1,7 @@
 """发布门槛只接受有来源和现场证据的数据。"""
 
 from scripts.validate.check_deployment_readiness import assess
+from scripts.validate.check_agent_research_readiness import assess_research_readiness
 
 
 def _verified_inputs():
@@ -80,3 +81,33 @@ def test_candidate_graph_deviation_and_building_crossing_block_replacement():
 
     assert {"candidate_route_disagreements", "candidate_building_crossing_suspicions"} <= {
         row["code"] for row in result["blockers"]}
+
+
+def test_research_readiness_requires_code_checks_data_and_attributes():
+    ready_checks = {
+        "routing_policy": {"passed": True},
+        "route_state": {"passed": True},
+        "profile_telemetry": {"passed": True},
+        "routing": {"passed": True},
+        "frontend_state": {"passed": True},
+    }
+    result = assess_research_readiness(
+        ready_checks,
+        deployment={"ready": True, "blockers": []},
+        attributes={"ready": False, "degraded": True, "blockers": ["placeholder data"]},
+    )
+    assert result["ready"] is False
+    assert "attribute_master_data" in result["blockers"]
+
+
+def test_research_readiness_passes_only_when_every_gate_passes():
+    checks = {name: {"passed": True} for name in (
+        "routing_policy", "route_state", "profile_telemetry", "routing", "frontend_state"
+    )}
+    result = assess_research_readiness(
+        checks,
+        deployment={"ready": True, "blockers": []},
+        attributes={"ready": True, "degraded": False, "blockers": []},
+    )
+    assert result["ready"] is True
+    assert result["blockers"] == {}

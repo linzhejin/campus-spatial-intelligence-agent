@@ -17,6 +17,7 @@ import time
 import sys
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 # ---- path setup ----
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -121,6 +122,43 @@ STANDARD_QUERIES = [
 BASE_URL = os.environ.get("WHU_WALKER_BASE_URL", "http://localhost:5000")
 API_CHAT_URL = f"{BASE_URL}/api/chat"
 API_PARSE_URL = f"{BASE_URL}/api/parse"
+
+
+def test_chat_route_exposes_research_timing_breakdown():
+    import app as app_module
+
+    app_module.app.config["TESTING"] = True
+    route = {
+        "start_name": "珞珈门",
+        "end_name": "樱顶",
+        "recommended": [],
+        "shortest": [],
+        "timings_ms": {
+            "agent": 12.5,
+            "poi_resolution": 1.0,
+            "graph_prepare": 2.0,
+            "path_search": 3.0,
+            "response_build": 4.0,
+        },
+    }
+    agent_response = {
+        "response_kind": "route",
+        "route_kind": "direct",
+        "message": "已规划",
+        "route": route,
+    }
+
+    with patch("agents.planner.run_agent", return_value=agent_response):
+        response = app_module.app.test_client().post(
+            "/api/chat", json={"query": "从珞珈门到樱顶"}
+        )
+
+    assert response.status_code == 200
+    timings = response.get_json()["data"]["timings_ms"]
+    assert set(timings) == {
+        "agent", "poi_resolution", "graph_prepare", "path_search", "response_build"
+    }
+    assert timings["agent"] == 12.5
 
 
 def _send_chat(query: str, timeout: int = 120) -> dict:

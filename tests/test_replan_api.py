@@ -64,7 +64,16 @@ def client():
 )
 def test_replan_preserves_route_kind_and_skips_llm(client, route_kind, tool_name):
     state = _state_for(route_kind)
-    route_payload = {"recommended": [], "distance_m": 0, "mode": "bike"}
+    route_payload = {
+        "recommended": [], "distance_m": 0, "mode": "bike",
+        "timings_ms": {
+            "agent": 91.0,
+            "poi_resolution": 1.0,
+            "graph_prepare": 2.0,
+            "path_search": 3.0,
+            "response_build": 4.0,
+        },
+    }
 
     with patch("agents.planner.run_agent", side_effect=AssertionError("LLM called")), \
          patch("agents.tools.execute_tool", return_value=(route_payload, {"route": route_payload})) as execute:
@@ -81,6 +90,10 @@ def test_replan_preserves_route_kind_and_skips_llm(client, route_kind, tool_name
     assert data["route_state"]["end"] == state["end"]
     assert data["route_state"]["hard_constraints"] == state["hard_constraints"]
     assert data["route_state"]["road_condition_version"] == routes._current_road_condition_version()
+    assert set(data["timings_ms"]) == {
+        "agent", "poi_resolution", "graph_prepare", "path_search", "response_build"
+    }
+    assert data["timings_ms"]["agent"] == 0.0
     assert execute.call_args.args[0] == tool_name
 
 

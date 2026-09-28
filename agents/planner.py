@@ -21,6 +21,7 @@ import config
 from agents import tools as agent_tools
 from agents import knowledge, profile
 from agents.preferences import route_preference_requested
+from agents.timings import normalize_timings
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +218,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
     artifact_suggestions = None
     final_message = ""
     turns = 0
+    agent_elapsed_ms = 0.0
     allow_preferences = route_preference_requested(query, context, history)
     previous = (context or {}).get("previous_intent") or {}
     prev_constraints = previous.get("constraints") or (context or {}).get("constraints") or {}
@@ -233,6 +235,7 @@ def run_agent(query: str, context: dict = None, history: list = None,
         turns += 1
 
         try:
+            llm_started = time.perf_counter()
             response = client.chat.completions.create(
                 model=config.LLM_MODEL,
                 messages=messages,
@@ -240,7 +243,9 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 temperature=0.0,
                 max_tokens=LLM_MAX_TOKENS,
             )
+            agent_elapsed_ms += (time.perf_counter() - llm_started) * 1000
         except Exception as e:
+            agent_elapsed_ms += (time.perf_counter() - llm_started) * 1000
             raise PlannerError(f"LLM 调用失败: {type(e).__name__}: {e}") from e
 
         msg = response.choices[0].message
@@ -305,6 +310,10 @@ def run_agent(query: str, context: dict = None, history: list = None,
             break
 
     # ---- 收尾：组装响应 ----
+    if artifact_route:
+        artifact_route["timings_ms"] = normalize_timings(
+            artifact_route.get("timings_ms"), agent=agent_elapsed_ms
+        )
     if artifact_clarify:
         return {
             "response_kind": "clarify",

@@ -36,6 +36,7 @@ from agents.route_state import (
     route_state_to_context,
     validate_route_state,
 )
+from agents.timings import normalize_timings
 from agents.explainer import generate_explanation, generate_chat_response, generate_suggestions, generate_poi_guidance
 from spatial.poi import get_poi, search_pois, list_all_pois, load_pois, find_poi_ambiguous, importance_score
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
@@ -498,7 +499,8 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
                   "recommended_length_m", "shortest_length_m", "length_capped", "degraded",
                   "distance_m", "shortest_distance_m", "applied_weights", "mode",
                   "duration_min", "shortest_duration_min", "speed_kmh",
-                  "legs", "via", "tour", "detour_ratio", "strategy", "route_state"):
+                  "legs", "via", "tour", "detour_ratio", "strategy", "route_state",
+                  "timings_ms"):
             if k in route:
                 out[k] = route[k]
         out.setdefault("shortest", out.get("recommended", []))
@@ -683,6 +685,7 @@ def route():
     if not start or not end:
         return _err("missing_endpoints", "start 和 end 字段必填", 400)
 
+    request_started = time.perf_counter()
     G, err = _ensure_network()
     if err:
         return err
@@ -697,6 +700,7 @@ def route():
     # 按出行方式过滤路网：snap 用过滤后的图（驾车吸附到最近车行节点）；
     # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
     G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
+    api_graph_prepare_ms = (time.perf_counter() - request_started) * 1000
 
     def _resolve_endpoint(ep, label):
         """端点 → (node, display_name, poi_or_None, error_response_or_None)。
@@ -734,12 +738,14 @@ def route():
             return None, None, None, _err("nearest_node_failed", f"{label}最近节点查找失败: {e}", 500)
         return node, poi["name"], poi, None
 
+    poi_started = time.perf_counter()
     start_node, start_name, start_poi, start_err = _resolve_endpoint(start, "起点")
     if start_err:
         return start_err
     end_node, end_name, end_poi, end_err = _resolve_endpoint(end, "终点")
     if end_err:
         return end_err
+    poi_resolution_ms = (time.perf_counter() - poi_started) * 1000
 
     # 起终点同名 POI 才拦截（坐标端点可能恰好重合，交给 compute_route 处理）
     if start_poi and end_poi and start_poi["name"] == end_poi["name"]:
@@ -783,6 +789,7 @@ def route():
         logger.exception("路径计算异常")
         return _err("route_computation_failed", f"路径计算失败: {e}", 500)
 
+    response_started = time.perf_counter()
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
     resolved_weights = route_result["applied_weights"]
@@ -850,6 +857,12 @@ def route():
         data_version=_current_data_version(G),
         road_condition_version=_current_road_condition_version(),
     )
+
+    timings = normalize_timings(route_result.get("timings_ms"))
+    timings["graph_prepare"] += api_graph_prepare_ms
+    timings["poi_resolution"] += poi_resolution_ms
+    timings["response_build"] += (time.perf_counter() - response_started) * 1000
+    response["timings_ms"] = normalize_timings(timings, agent=0.0)
 
     return _ok(response)
 
@@ -945,6 +958,7 @@ def replan_route():
         return _err(result["error"], result.get("message", "路线重新规划失败"), 404)
     payload = (artifact or {}).get("route") or result
     payload["route_state"] = validate_route_state(requested)
+    payload["timings_ms"] = normalize_timings(payload.get("timings_ms"), agent=0.0)
     return _ok(payload)
 
 
@@ -1010,6 +1024,8 @@ def chat():
         query = query[:500]
 
     context = _normalize_chat_context(body.get("context"))
+    agent_started = time.perf_counter()
+    fallback_agent_ms = 0.0
 
     # v2 全 Agent 架构：所有输入优先进入 Agent 循环（LLM 决策 + 工具执行）。
     # LLM 本身故障（断网/鉴权/超时）时落回旧管道——停电保险，不是备用通道。
@@ -1028,6 +1044,7 @@ def chat():
                     coord_start=body.get("coord_start"),
                     coord_end=body.get("coord_end")))
     except PlannerError as e:
+        fallback_agent_ms = (time.perf_counter() - agent_started) * 1000
         logger.warning("Agent 规划器不可用（%s: %s），落回旧管道", type(e).__name__, e)
     except Exception:
         logger.exception("Agent 规划处理发生内部错误")
@@ -1231,6 +1248,7 @@ def chat():
         logger.exception("路径计算异常")
         return _err("route_computation_failed", f"路径计算失败: {e}", 500)
 
+    response_started = time.perf_counter()
     recommended_nodes = route_result["recommended"]
     shortest_nodes = route_result["shortest"]
     resolved_weights = route_result["applied_weights"]
@@ -1328,6 +1346,13 @@ def chat():
         data_version=_current_data_version(G),
         road_condition_version=_current_road_condition_version(),
     )
+    fallback_timings = normalize_timings(
+        route_result.get("timings_ms"), agent=fallback_agent_ms
+    )
+    fallback_timings["response_build"] += (
+        time.perf_counter() - response_started
+    ) * 1000
+    result["timings_ms"] = normalize_timings(fallback_timings)
     return _ok(result)
 
 
