@@ -14,6 +14,7 @@ from typing import Optional
 
 _POIS_CACHE: list = []
 _LOADED = False
+_PENDING_POI_QUERY_NAMES: set | None = None
 
 # 搜索频率统计（用于途经点重要度排序）：{poi_id: count}
 # 冷启动时无真实数据，重要度靠景观分 + 类型加权兜底
@@ -148,6 +149,59 @@ def reload_pois() -> list:
     global _LOADED
     _LOADED = False
     return load_pois()
+
+
+def _pending_osm_poi_names() -> set:
+    """Names of OSM POIs explicitly held for review, not safe to fuzzy-route to."""
+    global _PENDING_POI_QUERY_NAMES
+    if _PENDING_POI_QUERY_NAMES is not None:
+        return _PENDING_POI_QUERY_NAMES
+    names = set()
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+    try:
+        with open(os.path.join(data_dir, "campus_review_decisions.json"),
+                  "r", encoding="utf-8") as handle:
+            review = json.load(handle)
+        with open(os.path.join(data_dir, "pois_osm_candidates.json"),
+                  "r", encoding="utf-8") as handle:
+            candidate_doc = json.load(handle)
+        pending_ids = {
+            row.get("source_id") for row in review.get("poi_decisions", [])
+            if row.get("source") == "OpenStreetMap"
+            and row.get("decision") == "pending_review"
+        }
+        for candidate in candidate_doc.get("candidates", []):
+            if candidate.get("osm_id") not in pending_ids:
+                continue
+            candidate_name = re.sub(r"\s+", "", str(candidate.get("name") or "")).casefold()
+            if candidate_name:
+                names.add(candidate_name)
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+        names = set()
+    _PENDING_POI_QUERY_NAMES = names
+    return names
+
+
+def _normalize_poi_query(name: str) -> str:
+    return re.sub(r"\s+", "", str(name or "")).casefold()
+
+
+def _exact_master_poi_matches(name: str, pois: list) -> list:
+    query = _normalize_poi_query(name)
+    if not query:
+        return []
+    matches = []
+    for poi in pois:
+        labels = [poi.get("name", ""), *poi.get("aliases", [])]
+        if any(_normalize_poi_query(label) == query for label in labels):
+            matches.append(poi)
+    return matches
+
+
+def _is_pending_poi_query(name: str) -> bool:
+    query = _normalize_poi_query(name)
+    return bool(query and any(candidate_name in query
+                              for candidate_name in _pending_osm_poi_names()))
 
 
 def list_pois() -> list:
@@ -289,6 +343,12 @@ def find_poi(name: str, min_score: float = 0.6) -> Optional[dict]:
     pois = load_pois()
     if _is_external_query(name) or not name.strip():
         return None
+    exact_matches = _exact_master_poi_matches(name, pois)
+    if exact_matches:
+        _record_search(exact_matches[0].get("id", ""))
+        return exact_matches[0]
+    if _is_pending_poi_query(name):
+        return None
     # 过短输入（≤2字）提高阈值：精确名/别名命中为1.0不受影响，模糊近似（如"扬波门"误中"凌波门"）被拦
     threshold = max(min_score, 0.75) if len(name.strip()) <= 2 else min_score
     best_poi = None
@@ -326,6 +386,11 @@ def find_poi_candidates(name: str, limit: int = 5, min_score: float = 0.3) -> li
     """
     pois = load_pois()
     if _is_external_query(name) or not name.strip():
+        return []
+    exact_matches = _exact_master_poi_matches(name, pois)
+    if exact_matches:
+        return [(poi, 1.0) for poi in exact_matches[:limit]]
+    if _is_pending_poi_query(name):
         return []
     scored = []
 

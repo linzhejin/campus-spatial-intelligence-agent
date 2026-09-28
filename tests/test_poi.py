@@ -133,6 +133,21 @@ class TestGetPoi:
         result = poi_module.get_poi("某某某不存在的地点", fuzzy=False)
         assert result is None
 
+    def test_real_master_resolves_xinghuyuan_canteen_without_merging_xingyuan(self):
+        with patch.object(poi_module, "_load_from_config", return_value=[]):
+            poi_module._LOADED = False
+            poi_module._POIS_CACHE = []
+            dining = poi_module.find_poi("星湖园食堂")
+            xingyuan = poi_module.find_poi("星园食堂")
+            search_results = poi_module.search_pois("星湖园食堂")
+
+        assert dining is not None
+        assert dining["id"] == "poi_307"
+        assert dining["name"] == "星湖园食堂"
+        assert "星湖园餐厅" in dining["aliases"]
+        assert xingyuan is None
+        assert search_results[0]["id"] == "poi_307"
+
 
 MOCK_POIS_WITH_SUB = [
     {

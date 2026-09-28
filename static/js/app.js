@@ -38,6 +38,10 @@
         recommendedLine: null,
         shortestLine: null,
         poiMarkers: [],
+        campusRoadLayer: null,
+        campusPoiLayer: null,
+        courseSpotLayer: null,
+        campusSourceCounts: null,
         roadConditionMarkers: [],  // 路况事件标记
         loading: false,
         sessionId: null,
@@ -634,7 +638,11 @@
                 defaultLayer = amap;
             }
 
+            state.campusRoadLayer = L.layerGroup().addTo(state.map);
+            state.campusPoiLayer = L.layerGroup().addTo(state.map);
+            state.courseSpotLayer = L.layerGroup().addTo(state.map);
             L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(state.map);
+            setupCampusLayerControls();
             L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(state.map);
 
             addLocateControl();
@@ -644,12 +652,207 @@
 
             // 加载路况事件标记
             loadAndRenderRoadConditions();
+            // 加载校方完整道路/点位和校园 POI，不参与路线计算
+            loadCampusSpatialLayers();
             // 加载实时天气徽章
             loadWeatherBadge();
         } catch (e) {
             console.error('地图初始化失败:', e);
             showError('地图加载失败', '无法初始化地图组件，请刷新页面重试');
         }
+    }
+
+    function campusRoadStatusLabel(disposition) {
+        if (disposition === 'active_in_route') return '已纳入步行路网（校方线形；当前通行状态待核实）';
+        if (disposition === 'construction_excluded') return '校方标注为施工路段，未纳入步行路网';
+        if (disposition === 'ambiguous_not_changed') return 'OSM 对应关系未确认，当前路网未按校方线改动';
+        if (disposition === 'matched_not_applied') return '已找到 OSM 对应候选，未通过逐边安全门槛';
+        if (disposition === 'candidate_not_activated') return '新路段候选待核验，暂不参与算路';
+        return '校方参考线，通行状态待核验';
+    }
+
+    function campusRoadStyle(feature) {
+        var properties = feature && feature.properties ? feature.properties : {};
+        var disposition = properties.routing_disposition || '';
+        if (properties.display_name === '玉兰二门连接小路'
+                && disposition === 'active_in_route') {
+            return { color: '#C25814', weight: 4.8, opacity: 0.98 };
+        }
+        if (disposition === 'active_in_route') {
+            return { color: '#008F79', weight: 3.2, opacity: 0.88 };
+        }
+        if (disposition === 'candidate_not_activated') {
+            return { color: '#D88713', weight: 2.8, opacity: 0.9, dashArray: '5,5' };
+        }
+        if (disposition === 'matched_not_applied') {
+            return { color: '#6A5AA8', weight: 2.2, opacity: 0.72, dashArray: '3,4' };
+        }
+        if (disposition === 'construction_excluded') {
+            return { color: '#737B87', weight: 2.4, opacity: 0.82, dashArray: '2,5' };
+        }
+        return { color: '#2875B8', weight: 2, opacity: 0.7, dashArray: '6,5' };
+    }
+
+    function setupCampusLayerControls() {
+        [
+            ['toggle-campus-roads', state.campusRoadLayer],
+            ['toggle-campus-pois', state.campusPoiLayer],
+            ['toggle-course-spots', state.courseSpotLayer],
+        ].forEach(function (entry) {
+            var input = document.getElementById(entry[0]);
+            var layer = entry[1];
+            if (!input || !layer || input.dataset.layerBound === 'true') return;
+            input.checked = state.map.hasLayer(layer);
+            input.dataset.layerBound = 'true';
+            input.addEventListener('change', function () {
+                if (input.checked) layer.addTo(state.map);
+                else state.map.removeLayer(layer);
+            });
+        });
+    }
+
+    function addCampusPoiMarkers(pois) {
+        if (!state.campusPoiLayer || !Array.isArray(pois)) return;
+        var colors = {
+            scenery: '#D46A91', landmark: '#B44B52', gate: '#2D8A67',
+            study: '#4A77B8', dining: '#DC8A32', sports: '#8A62B5',
+            service: '#6E8791', dorm: '#73865B',
+        };
+        pois.forEach(function (poi) {
+            var coords = poi.coordinates || {};
+            var lat = Number(poi.lat != null ? poi.lat : coords.lat);
+            var lng = Number(poi.lon != null ? poi.lon : coords.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng) || !poi.name) return;
+            var marker = L.circleMarker(gcjToLatLng(lng, lat), {
+                radius: poi.id === 'poi_307' ? 5.5 : 3.2,
+                color: poi.id === 'poi_307' ? '#7A302D' : '#fff',
+                weight: poi.id === 'poi_307' ? 2 : 1,
+                fillColor: poi.id === 'poi_307' ? '#F3AA51' : (colors[poi.type] || '#667085'),
+                fillOpacity: 0.9,
+            });
+            var popup = '<strong>' + escapeHTML(poi.name) + '</strong>'
+                + (poi.campus ? '<br>' + escapeHTML(poi.campus) : '')
+                + (Array.isArray(poi.aliases) && poi.aliases.length
+                    ? '<br><small>常用名：' + escapeHTML(poi.aliases.slice(0, 4).join('、')) + '</small>' : '')
+                + (poi.description ? '<br><span>' + escapeHTML(poi.description) + '</span>' : '')
+                + '<br><small>校园 POI 主库 · 坐标 GCJ-02</small>';
+            marker.bindPopup(popup);
+            if (poi.id === 'poi_307') {
+                marker.bindTooltip(poi.name, {
+                    permanent: true,
+                    direction: 'top',
+                    offset: [0, -5],
+                    className: 'campus-poi-label',
+                });
+            }
+            state.campusPoiLayer.addLayer(marker);
+        });
+    }
+
+    function loadCampusSpatialLayers() {
+        if (!state.map || !state.campusRoadLayer || !state.courseSpotLayer) return;
+        var sourceRequest = fetch(API_BASE + '/api/course-spatial-reference', {
+            method: 'GET', cache: 'no-store',
+        }).then(function (response) {
+            if (!response.ok) throw new Error('校方道路图层暂不可用');
+            return response.json();
+        }).then(function (body) {
+            var collection = body && body.data;
+            if (!collection || collection.type !== 'FeatureCollection'
+                    || !Array.isArray(collection.features)) {
+                throw new Error('校方道路图层数据格式不完整');
+            }
+            var roads = collection.features.filter(function (feature) {
+                return feature.geometry && feature.geometry.type === 'LineString';
+            });
+            var spots = collection.features.filter(function (feature) {
+                return feature.geometry && feature.geometry.type === 'Point';
+            });
+            if (roads.length !== 647 || spots.length !== 5) {
+                throw new Error('校方数据要素数量校验未通过');
+            }
+            var roadCount = document.getElementById('campus-road-count');
+            var spotCount = document.getElementById('course-spot-count');
+            if (roadCount) roadCount.textContent = String(roads.length);
+            if (spotCount) spotCount.textContent = String(spots.length);
+            var roadLayer = L.geoJSON({ type: 'FeatureCollection', features: roads }, {
+                coordsToLatLng: function (coords) {
+                    var gcj = wgs84ToGcj02(coords[0], coords[1]);
+                    return L.latLng(gcj[1], gcj[0]);
+                },
+                style: campusRoadStyle,
+                onEachFeature: function (feature, layer) {
+                    var p = feature.properties || {};
+                    var coverage = p.network_coverage
+                        && p.network_coverage.release_within_8m_pct;
+                    var popup = '<strong>' + escapeHTML(p.display_name || p.name || '未命名道路') + '</strong>'
+                        + '<br>校方道路第 ' + escapeHTML(p.source_row) + ' 行'
+                        + '<br>' + escapeHTML(campusRoadStatusLabel(p.routing_disposition))
+                        + (p.road_class_raw ? '<br>道路类型：' + escapeHTML(p.road_class_raw) : '')
+                        + (Number.isFinite(Number(coverage))
+                            ? '<br>与当前路网 8 米内线形覆盖：' + Number(coverage).toFixed(1) + '%（仅几何邻近指标）' : '')
+                        + '<br><small>源坐标 EPSG:4547；状态不是现场通行核验</small>';
+                    layer.bindPopup(popup);
+                },
+            });
+            roadLayer.addTo(state.campusRoadLayer);
+            spots.forEach(function (feature) {
+                var coords = feature.geometry.coordinates || [];
+                if (coords.length < 2) return;
+                var gcj = wgs84ToGcj02(coords[0], coords[1]);
+                var p = feature.properties || {};
+                var marker = L.circleMarker(gcjToLatLng(gcj[0], gcj[1]), {
+                    radius: 6,
+                    color: '#fff',
+                    weight: 2,
+                    fillColor: '#7046A8',
+                    fillOpacity: 0.95,
+                });
+                marker.bindPopup('<strong>' + escapeHTML(p.name || '校方地点') + '</strong>'
+                    + '<br>校方点位 · 来源行 ' + escapeHTML((p.source_rows || []).join('、'))
+                    + (p.formal_poi_ids && p.formal_poi_ids.length
+                        ? '<br>正式地点：' + escapeHTML(p.formal_poi_ids.join('、')) : '')
+                    + '<br><small>来源坐标尚非现场测量</small>');
+                state.courseSpotLayer.addLayer(marker);
+            });
+            state.campusSourceCounts = collection.counts;
+            return collection;
+        });
+
+        var poiRequest = fetch(API_BASE + '/api/pois', {
+            method: 'GET', cache: 'no-store',
+        }).then(function (response) {
+            if (!response.ok) throw new Error('校园地点清单暂不可用');
+            return response.json();
+        }).then(function (body) {
+            var pois = body && body.data && body.data.pois;
+            if (!Array.isArray(pois) || pois.length < 440) {
+                throw new Error('校园地点清单数量校验未通过');
+            }
+            var poiCount = document.getElementById('campus-poi-count');
+            if (poiCount) poiCount.textContent = String(pois.length);
+            addCampusPoiMarkers(pois);
+            return pois.length;
+        });
+
+        Promise.all([sourceRequest, poiRequest]).then(function (results) {
+            var status = document.getElementById('campus-data-status');
+            if (status) {
+                var activeRoadCount = results[0].features.filter(function (feature) {
+                    return feature.geometry && feature.geometry.type === 'LineString'
+                        && feature.properties
+                        && feature.properties.routing_disposition === 'active_in_route';
+                }).length;
+                status.textContent = '校方道路 ' + results[0].counts.roads + ' 条（'
+                    + activeRoadCount + ' 条纳入步行图），校方点位 '
+                    + results[0].counts.spots + ' 个，校园 POI ' + results[1]
+                    + ' 个；当前封路/通行状态仍需核实';
+            }
+        }).catch(function (error) {
+            console.error('[campus spatial layers]', error);
+            var status = document.getElementById('campus-data-status');
+            if (status) status.textContent = '校园空间数据图层加载不完整，请检查网络后刷新';
+        });
     }
 
     // ========== 地图选点控制（起点/途经/终点） ==========

@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260928d">
+    <link rel="stylesheet" href="/css/style.css?v=20260929d">
 </head>
 <body>
 
@@ -35,6 +35,20 @@
                 <div class="placeholder-spinner"></div>
                 <p>地图加载中…</p>
             </div>
+        </div>
+        <div class="campus-layer-toolbar" role="group" aria-label="校园空间数据图层">
+            <label class="campus-layer-toggle">
+                <input id="toggle-campus-roads" type="checkbox" checked>
+                <span>校方道路 <span id="campus-road-count">647</span></span>
+            </label>
+            <label class="campus-layer-toggle">
+                <input id="toggle-campus-pois" type="checkbox" checked>
+                <span>校园地点 <span id="campus-poi-count">440</span></span>
+            </label>
+            <label class="campus-layer-toggle">
+                <input id="toggle-course-spots" type="checkbox" checked>
+                <span>课程点位 <span id="course-spot-count">5</span></span>
+            </label>
         </div>
         <!-- 地图图例浮层 -->
         <div class="map-legend" id="map-legend">
@@ -49,6 +63,21 @@
             <div class="legend-item">
                 <span class="legend-dot poi"></span>
                 <span>景点</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line course-active"></span>
+                <span>校方线：已进入算路图</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line course-connector"></span>
+                <span>玉兰二门连接小路</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-line course-review"></span>
+                <span>校方线：教学断点或施工线暂不算路</span>
+            </div>
+            <div class="legend-item campus-data-status" id="campus-data-status" aria-live="polite">
+                正在载入校方道路和地点…
             </div>
             <div class="legend-item" id="legend-closure-item" hidden>
                 <span class="legend-line road-closure"></span>
@@ -555,6 +584,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20260928d"></script>
+    <script src="/js/app.js?v=20260929f"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v52';
+var CACHE_NAME = 'whu-walker-v59';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -79,6 +79,14 @@ self.addEventListener('fetch', function (event) {
     var isApiCall = url.pathname.startsWith('/api/');
 
     if (isApiCall) {
+        /* 校园 POI 主库与源路网必须使用当前发布版；非 GET 请求也不进入 Cache API。 */
+        var isCampusMasterApi = request.method !== 'GET' ||
+            url.pathname === '/api/pois' ||
+            url.pathname === '/api/course-spatial-reference';
+        if (isCampusMasterApi) {
+            event.respondWith(fetch(request));
+            return;
+        }
         /* 路况管制 / 管理员接口：NETWORK-ONLY（强一致）。
            管理者结束/删除事件后立即刷新列表，SWR 会返回旧快照导致"删了还在"；
            管制信息时效性高，宁可离线不可用（前端已静默 catch），也不展示过期状态。 */

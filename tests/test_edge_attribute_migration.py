@@ -129,6 +129,13 @@ def test_generated_master_binds_every_current_directed_edge_once():
     replacements = 0
     for u, v, key, data in graph.edges(keys=True, data=True):
         if str(data.get("course_geometry_replaced", "")).lower() != "true":
+            if (data.get("course_source_id")
+                    or str(data.get("course_connector", "")).lower() == "true"
+                    or data.get("course_junction_override_id")):
+                record = by_edge[(u, v, int(key))]
+                assert record["terrain"]["confidence"] == "unknown"
+                assert record["terrain"]["slope_level"] is None
+                assert record["scenery"]["confidence"] == "unknown"
             continue
         replacements += 1
         record = by_edge[(u, v, int(key))]

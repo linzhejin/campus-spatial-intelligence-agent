@@ -1383,6 +1383,30 @@ def list_pois():
         return _err("poi_list_failed", f"POI 列表获取失败: {e}", 500)
 
 
+@api_bp.route("/course-spatial-reference", methods=["GET"])
+def course_spatial_reference():
+    """Return the complete school-supplied road/spot reference layer.
+
+    Source geometries remain WGS-84 in the API. The map converts them once to
+    GCJ-02 at the display boundary; this endpoint never changes route behavior.
+    """
+    path = Path(__file__).resolve().parents[1] / "data" / "course_spatial_reference.geojson"
+    try:
+        with path.open("r", encoding="utf-8") as source_file:
+            document = json.load(source_file)
+        if document.get("type") != "FeatureCollection":
+            raise ValueError("school source layer is not a GeoJSON FeatureCollection")
+        response, status = _ok(document)
+        response.headers["Cache-Control"] = "no-store"
+        return response, status
+    except FileNotFoundError:
+        return _err("course_spatial_reference_unavailable",
+                    "校方空间数据图层尚未发布", 503)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        logger.exception("校方空间数据图层读取失败")
+        return _err("course_spatial_reference_invalid", str(exc), 500)
+
+
 @api_bp.route("/pois/<name>", methods=["GET"])
 def get_single_poi(name):
     """GET /api/pois/<name> — 单 POI 查询（支持模糊匹配）

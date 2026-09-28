@@ -220,13 +220,13 @@ def fuse_course_pois(poi_data, course_features, crosswalk):
     return output, report
 
 
-def write_json_atomic(path, payload):
+def write_json_atomic(path, payload, *, indent=2):
     """Write JSON atomically so interrupted merges cannot truncate live data."""
     from pathlib import Path
 
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     temp = target.with_suffix(target.suffix + ".tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=indent, allow_nan=False) + "\n",
                     encoding="utf-8")
     temp.replace(target)

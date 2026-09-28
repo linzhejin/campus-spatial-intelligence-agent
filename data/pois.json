@@ -7753,9 +7753,9 @@
   },
   {
    "id": "poi_307",
-   "name": "星湖园餐厅",
+   "name": "星湖园食堂",
    "aliases": [
-    "星湖园餐厅(暂停营业)"
+    "星湖园餐厅"
    ],
    "coordinates": {
     "lng": 114.36058,
@@ -7764,7 +7764,7 @@
    "type": "dining",
    "campus": "信息学部",
    "category": "dining",
-   "description": "信息学部校内地点。信息学部星湖旁餐厅（暂停营业）（高德餐饮POI逆地核实为校内）。",
+   "description": "信息学部星湖旁校园餐饮点；当前营业状态待核实。",
    "season_tags": [
     "all"
    ],

@@ -240,6 +240,93 @@ def test_ambiguous_course_match_leaves_existing_graph_unchanged():
     assert migration["course_feature_dispositions"][0]["reason"] == "ambiguous_correspondence"
 
 
+def test_authoritative_course_rows_activate_walk_geometry_but_preserve_intentional_gap():
+    graph = _base_graph()
+    trusted = _feature("course:trusted-walk", [
+        [114.360, 30.530], [114.361, 30.530],
+    ], row=10, name="课程步行小路", road_class="electric_vehicle")
+    preserved = _feature("course:preserved-gap", [
+        [114.360, 30.530], [114.361, 30.530],
+    ], row=393, name="自强大道", road_class="motor_vehicle")
+    report = {"matches": [
+        {"source_id": "course:trusted-walk", "action": "ambiguous", "candidates": []},
+        {"source_id": "course:preserved-gap", "action": "matched",
+         "candidates": [{"candidate_id": "track-1",
+                         "edge_ids": [["1", "2", 0], ["2", "1", 0]]}]},
+    ]}
+
+    fused, migration = fuse_network(
+        graph, [trusted, preserved], report,
+        trusted_walk_source_rows={10, 393},
+        preserved_source_rows={393},
+    )
+
+    rows = {row["source_id"]: row for row in migration["course_feature_dispositions"]}
+    assert rows["course:trusted-walk"]["active_release"] is True
+    assert rows["course:trusted-walk"]["match_action"] == "new_candidate"
+    assert rows["course:trusted-walk"]["source_match_action"] == "ambiguous"
+    course_edges = [edge for _, _, edge in fused.edges(data=True)
+                    if edge.get("course_source_id") == "course:trusted-walk"]
+    assert len(course_edges) == 2
+    assert all(json.loads(edge["allowed_modes"]) == ["walk"] for edge in course_edges)
+    assert rows["course:preserved-gap"]["active_release"] is False
+    assert rows["course:preserved-gap"]["source_match_action"] == "matched"
+    assert "course_source_ids" not in fused[1][2][0]
+    assert nx.has_path(fused, 1, 2)
+
+
+def test_trusted_dead_end_path_activates_with_one_safe_anchor():
+    graph = _base_graph()
+    trail = _feature("course:trusted-dead-end", [
+        [114.361, 30.530], [114.362, 30.530],
+    ], row=320, name="环山小路", road_class=None)
+    report = {"matches": [{
+        "source_id": "course:trusted-dead-end",
+        "action": "ambiguous",
+        "candidates": [],
+    }]}
+
+    fused, migration = fuse_network(
+        graph, [trail], report,
+        trusted_walk_source_rows={320},
+    )
+
+    disposition = migration["course_feature_dispositions"][0]
+    assert disposition["active_release"] is True
+    assert disposition["component_anchor_count"] == 1
+    assert disposition["reason"] == "trusted_dead_end_connected_at_one_network_anchor"
+    course_edges = [edge for _, _, edge in fused.edges(data=True)
+                    if edge.get("course_source_id") == "course:trusted-dead-end"]
+    assert len(course_edges) == 2
+
+
+def test_short_trusted_segment_near_one_node_keeps_geometry_without_self_loop():
+    graph = _base_graph()
+    short_segment = _feature("course:short-segment", [
+        [114.360001, 30.530], [114.3600005, 30.530],
+    ], row=23, name="短步道", road_class="motor_vehicle")
+
+    fused, migration = fuse_network(
+        graph, [short_segment], _new_report([short_segment]),
+        trusted_walk_source_rows={23},
+    )
+
+    disposition = migration["course_feature_dispositions"][0]
+    assert disposition["active_release"] is True
+    course_edges = [
+        (u, v, edge)
+        for u, v, edge in fused.edges(data=True)
+        if edge.get("course_source_id") == "course:short-segment"
+    ]
+    assert len(course_edges) == 2
+    assert all(u != v for u, v, _ in course_edges)
+    assert all(float(edge["length"]) > 0 for _, _, edge in course_edges)
+    assert all(json.loads(edge["allowed_modes"]) == ["walk"]
+               for _, _, edge in course_edges)
+    assert any(fused.nodes[node].get("course_source_node") == "true"
+               for u, v, _ in course_edges for node in (u, v))
+
+
 def test_connected_course_chain_audits_component_external_anchors():
     graph = _base_graph()
     first = _feature("course:chain-a", [[114.360, 30.530], [114.3605, 30.530]], row=4)
@@ -367,26 +454,53 @@ def test_live_yulan_gate_connects_course_path_only_in_walking_graph():
     root = Path(__file__).resolve().parents[1]
     graph = nx.read_graphml(root / "data/whu_road_network.graphml", node_type=int)
     gate_node = next(node for node in graph.nodes if str(node) == "1204194363")
-    course_node = next(node for node in graph.nodes if str(node) == "13732671009")
-    forward = [edge for edge in graph[gate_node][course_node].values()
-               if edge.get("course_junction_override_id")
-               == "yulan-2-gate-to-information-liberal-arts-course-path"]
-    reverse = [edge for edge in graph[course_node][gate_node].values()
-               if edge.get("course_junction_override_id")
-               == "yulan-2-gate-to-information-liberal-arts-course-path"]
+    override_id = "yulan-2-gate-to-information-liberal-arts-course-path"
+    override_edges = [
+        (u, v, edge) for u, v, edge in graph.edges(data=True)
+        if edge.get("course_junction_override_id") == override_id
+    ]
 
-    assert len(forward) == len(reverse) == 1
-    assert 4.9 <= float(forward[0]["length"]) <= 5.0
-    assert json.loads(forward[0]["allowed_modes"]) == ["walk"]
-    assert json.loads(reverse[0]["allowed_modes"]) == ["walk"]
+    assert len(override_edges) == 2
+    course_node = next(v if u == gate_node else u
+                       for u, v, _ in override_edges)
+    assert { (u, v) for u, v, _ in override_edges } == {
+        (gate_node, course_node), (course_node, gate_node),
+    }
+    assert all(4.9 <= float(edge["length"]) <= 5.0
+               for _, _, edge in override_edges)
+    assert all(json.loads(edge["allowed_modes"]) == ["walk"]
+               for _, _, edge in override_edges)
 
     from spatial.routing import filter_graph_for_mode
     walk_graph, _, _ = filter_graph_for_mode(graph, "walk")
     bike_graph, _, _ = filter_graph_for_mode(graph, "bike")
     drive_graph, _, _ = filter_graph_for_mode(graph, "drive")
-    component_anchor_a = next(node for node in graph.nodes if str(node) == "13732671011")
-    component_anchor_b = next(node for node in graph.nodes if str(node) == "13732671013")
-    assert nx.has_path(walk_graph, gate_node, component_anchor_a)
-    assert nx.has_path(walk_graph, gate_node, component_anchor_b)
-    assert not bike_graph.has_edge(gate_node, course_node)
-    assert not drive_graph.has_edge(gate_node, course_node)
+    reference = json.loads(
+        (root / "data/course_spatial_reference.geojson").read_text(encoding="utf-8")
+    )
+    path_source_ids = {
+        feature["properties"]["source_id"]
+        for feature in reference["features"]
+        if feature["geometry"]["type"] == "LineString"
+        and feature["properties"].get("source_row") in {210, 270}
+    }
+    path_nodes = set()
+    for u, v, edge in graph.edges(data=True):
+        raw_ids = edge.get("course_source_ids") or "[]"
+        if isinstance(raw_ids, str):
+            try:
+                raw_ids = json.loads(raw_ids)
+            except json.JSONDecodeError:
+                raw_ids = [raw_ids]
+        source_ids = set(map(str, raw_ids))
+        if edge.get("course_source_id"):
+            source_ids.add(str(edge["course_source_id"]))
+        if source_ids & path_source_ids:
+            path_nodes.update((u, v))
+
+    assert path_nodes
+    assert all(nx.has_path(walk_graph, gate_node, node) for node in path_nodes)
+    assert all(not bike_graph.has_edge(u, v)
+               for u, v, _ in override_edges)
+    assert all(not drive_graph.has_edge(u, v)
+               for u, v, _ in override_edges)

@@ -60,3 +60,61 @@ def test_release_spatial_validation_rejects_geometry_outside_campus_extent():
 
     with pytest.raises(ValueError, match="outside campus extent"):
         build_course_data_release._validate_spatial_geometry(graph)
+
+
+def test_component_route_audit_uses_one_reverse_multi_source_search(monkeypatch):
+    graph = nx.MultiDiGraph()
+    for node in (1, 2, 3, 4):
+        graph.add_node(node, x=114.35 + node / 10000, y=30.53)
+    for u, v, length in ((2, 1, 10.0), (3, 4, 20.0),
+                         (2, 3, 100.0), (3, 2, 100.0)):
+        graph.add_edge(u, v, key=0, length=length, highway="footway",
+                       allowed_modes='["walk"]',
+                       course_source_id="course:component" if {u, v} == {2, 3} else "")
+    migration = {"course_feature_dispositions": [{
+        "active_release": True,
+        "component_source_ids": ["course:component"],
+        "component_anchors": [
+            {"release_node_ids": ["1"]}, {"release_node_ids": ["4"]},
+        ],
+    }]}
+    calls = 0
+    original = nx.multi_source_dijkstra
+
+    def tracked(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(nx, "multi_source_dijkstra", tracked)
+
+    result = build_course_data_release._validate_component_routes(graph, migration)
+
+    assert calls == 1
+    assert result[0]["maximum_terminal_to_anchor_distance_m"] == 20.0
+
+
+def test_authoritative_dead_end_course_component_needs_one_existing_anchor():
+    graph = nx.MultiDiGraph()
+    for node in (1, 2, 3):
+        graph.add_node(node, x=114.35 + node / 10000, y=30.53)
+    graph.add_edge(2, 1, key=0, length=10.0, highway="residential",
+                   allowed_modes='["walk"]')
+    for u, v in ((2, 3), (3, 2)):
+        graph.add_edge(u, v, key=0, length=100.0, highway="service",
+                       allowed_modes='["walk"]', course_source_id="course:320")
+    migration = {
+        "trusted_walk_source_rows": [320],
+        "course_feature_dispositions": [{
+            "source_id": "course:320",
+            "source_row": 320,
+            "active_release": True,
+            "component_source_ids": ["course:320"],
+            "component_anchors": [{"release_node_ids": ["1"]}],
+        }],
+    }
+
+    result = build_course_data_release._validate_component_routes(graph, migration)
+
+    assert result[0]["anchor_nodes"] == ["1"]
+    assert result[0]["maximum_terminal_to_anchor_distance_m"] == 110.0

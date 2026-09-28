@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "source_layer": "whu_road",
+  "source_authority": "explicit_user_instruction",
+  "authority_note": "The user confirmed this school-supplied coursework road dataset is reliable for campus static geometry and should be used where OSM is missing or conflicts.",
+  "included_road_classes": [
+    "electric_vehicle",
+    "motor_vehicle",
+    "pedestrian"
+  ],
+  "include_unclassified": true,
+  "excluded_road_classes": [
+    "construction"
+  ],
+  "allowed_modes": [
+    "walk"
+  ],
+  "attachment_tolerance_m": 3.5,
+  "allow_single_anchor_for_trusted_source": true,
+  "excluded_source_rows": [
+    393,
+    394
+  ],
+  "topology_exception_policy": "course_topology_exceptions.json",
+  "course_geometry_policy": "Add trusted school road geometry as walk-only edges without deleting existing OSM edges; retain the original OSM match decision for audit.",
+  "non_walk_access_policy": "Do not enable cycling or driving from these rows until those modes are independently verified.",
+  "current_passability_policy": "Source geometry does not certify current closures or on-site accessibility; preserve current_status=unknown and verification_status=source_only."
+}

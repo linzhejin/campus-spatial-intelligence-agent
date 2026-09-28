@@ -215,6 +215,11 @@ def _cluster_course_endpoints(endpoint_rows, tolerance_m=0.15):
     for left in range(len(endpoint_rows)):
         point_left = endpoint_rows[left]["point_metric"]
         for right in range(left + 1, len(endpoint_rows)):
+            # A very short source segment can have endpoints closer than the
+            # junction tolerance. Never merge the two ends of the same line:
+            # doing so collapses valid source geometry into a zero-length loop.
+            if endpoint_rows[left]["source_id"] == endpoint_rows[right]["source_id"]:
+                continue
             point_right = endpoint_rows[right]["point_metric"]
             if point_left.distance(point_right) <= tolerance_m:
                 union(left, right)
@@ -859,7 +864,8 @@ def apply_course_junction_overrides(graph, migration, policy):
     return applied
 
 
-def fuse_network(old_graph, course_features, match_report, *, attachment_tolerance_m=2.0):
+def fuse_network(old_graph, course_features, match_report, *, attachment_tolerance_m=2.0,
+                 trusted_walk_source_rows=None, preserved_source_rows=()):
     """Fuse only unique matches and well-anchored new course components.
 
     Ambiguous features remain in the review layer. New components are published
@@ -875,7 +881,59 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
     to_metric = Transformer.from_crs("EPSG:4326", "EPSG:4547", always_xy=True).transform
     from_metric = Transformer.from_crs("EPSG:4547", "EPSG:4326", always_xy=True).transform
     match_rows = match_report.get("matches", []) if isinstance(match_report, dict) else match_report
-    match_by_source = {row["source_id"]: row for row in match_rows if row.get("source_id")}
+    source_matches = {row["source_id"]: deepcopy(row)
+                      for row in match_rows if row.get("source_id")}
+    trusted_rows = {int(row) for row in (trusted_walk_source_rows or [])}
+    preserved_rows = {int(row) for row in (preserved_source_rows or [])}
+    features_by_source = {
+        str((feature.get("properties") or {}).get("source_id")): feature
+        for feature in course_features
+    }
+    known_rows = {
+        int(properties["source_row"])
+        for feature in course_features
+        if (properties := (feature.get("properties") or {})).get("source_row") is not None
+    }
+    unknown_policy_rows = (trusted_rows | preserved_rows) - known_rows
+    if unknown_policy_rows:
+        raise ValueError(
+            f"course routing policy references unknown source rows: {sorted(unknown_policy_rows)}"
+        )
+
+    match_by_source = {}
+    source_match_actions = {}
+    activation_policies = {}
+    for source_id, feature in features_by_source.items():
+        properties = feature.get("properties") or {}
+        raw_match = source_matches.get(source_id, {})
+        match = deepcopy(raw_match)
+        original_action = raw_match.get("action", "unaccounted")
+        source_match_actions[source_id] = original_action
+        source_row = properties.get("source_row")
+        source_row = int(source_row) if source_row is not None else None
+        road_class = properties.get("road_class")
+
+        if source_row in preserved_rows:
+            match["action"] = "ambiguous"
+            activation_policies[source_id] = "preserve_existing_topology"
+        elif source_row in trusted_rows and road_class == "construction":
+            match["action"] = "ambiguous"
+            activation_policies[source_id] = "excluded_construction_class"
+        elif source_row in trusted_rows and original_action != "matched":
+            match["action"] = "new_candidate"
+            activation_policies[source_id] = "trusted_course_geometry_walk_only"
+        elif source_row in trusted_rows:
+            activation_policies[source_id] = "trusted_course_match_or_geometry_fallback"
+        else:
+            activation_policies[source_id] = "conservative_osm_correspondence"
+        match["source_match_action"] = original_action
+        match_by_source[source_id] = match
+
+    missing_course_ids = set(source_matches) - set(features_by_source)
+    if missing_course_ids:
+        raise ValueError(
+            f"OSM match report references unknown course features: {sorted(missing_course_ids)}"
+        )
     old_edge_ids = [(str(u), str(v), int(k)) for u, v, k in old_graph.edges(keys=True)]
     old_edge_dispositions = {
         tuple(edge_id): {"edge_id": list(edge_id), "disposition": "unchanged",
@@ -886,6 +944,24 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
     course_dispositions = _replace_matched_edges(
         graph, course_features, match_by_source, to_metric, from_metric
     )
+    for source_id, disposition in course_dispositions.items():
+        source_row = (features_by_source[source_id].get("properties") or {}).get("source_row")
+        if source_row is not None:
+            source_row = int(source_row)
+        disposition["source_match_action"] = source_match_actions.get(
+            source_id, "unaccounted"
+        )
+        disposition["activation_policy"] = activation_policies.get(
+            source_id, "conservative_osm_correspondence"
+        )
+        if (source_row in trusted_rows and source_row not in preserved_rows
+                and disposition.get("match_action") == "matched"
+                and not disposition.get("active_release")):
+            # A unique OSM candidate that failed the full-edge geometry safety
+            # gate remains in OSM untouched, while its trusted campus geometry
+            # is reconsidered as a separate walk-only course edge below.
+            disposition["match_action"] = "new_candidate"
+            disposition["activation_policy"] = "trusted_course_geometry_walk_only"
     # Keep an explicit migration audit for any legacy directed edge whose
     # geometry was replaced in place.  Edge identity is intentionally stable,
     # so this is the only place the report can show that its payload changed.
@@ -900,8 +976,9 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
                 "reason": "unique_course_correspondence_replaced_geometry_in_place",
             }
     new_features = [feature for feature in course_features
-                    if match_by_source.get((feature.get("properties") or {}).get("source_id"), {})
-                    .get("action") == "new_candidate"
+                    if course_dispositions.get(
+                        (feature.get("properties") or {}).get("source_id"), {}
+                    ).get("match_action") == "new_candidate"
                     and (feature.get("properties") or {}).get("road_class") != "construction"]
 
     endpoint_rows = []
@@ -988,7 +1065,14 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
         ))
         component_source_ids = sorted(feature["properties"]["source_id"]
                                       for feature in component)
-        if len(anchor_details) < 2:
+        component_rows = {
+            int(feature["properties"]["source_row"])
+            for feature in component
+            if feature["properties"].get("source_row") is not None
+        }
+        trusted_component = bool(component_rows) and component_rows.issubset(trusted_rows)
+        minimum_anchor_count = 1 if trusted_component else 2
+        if len(anchor_details) < minimum_anchor_count:
             for feature in component:
                 source_id = feature["properties"]["source_id"]
                 record = course_dispositions[source_id]
@@ -1121,6 +1205,40 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
                                                       float(graph.nodes[start_node]["y"])))
             end_point = transform(to_metric, Point(float(graph.nodes[end_node]["x"]),
                                                     float(graph.nodes[end_node]["y"])))
+            collapsed_anchor_fallback = None
+            if start_node == end_node:
+                # When both ends of a short campus line snap to one existing
+                # node, retain the nearer endpoint as the junction and keep
+                # the other source endpoint as a walkable dead end. This
+                # preserves the source segment without creating a zero-length
+                # self-loop or inventing a second junction.
+                source_start = Point(source_line.coords[0])
+                source_end = Point(source_line.coords[-1])
+                anchor_point = start_point
+                start_offset = float(source_start.distance(anchor_point))
+                end_offset = float(source_end.distance(anchor_point))
+                keep_anchor_side = "start" if start_offset <= end_offset else "end"
+                source_endpoint = source_end if keep_anchor_side == "start" else source_start
+                source_node_id = allocate_node_id()
+                source_endpoint_wgs = transform(from_metric, source_endpoint)
+                graph.add_node(
+                    source_node_id,
+                    x=float(source_endpoint_wgs.x),
+                    y=float(source_endpoint_wgs.y),
+                    course_source_node="true",
+                )
+                collapsed_anchor_fallback = {
+                    "kept_anchor_side": keep_anchor_side,
+                    "anchor_node_id": str(start_node),
+                    "source_endpoint_node_id": str(source_node_id),
+                    "source_endpoint_offset_m": float(source_endpoint.distance(anchor_point)),
+                }
+                if keep_anchor_side == "start":
+                    end_node = source_node_id
+                    end_point = source_end
+                else:
+                    start_node = source_node_id
+                    start_point = source_start
             coords = list(source_line.coords)
             coords[0] = (start_point.x, start_point.y)
             coords[-1] = (end_point.x, end_point.y)
@@ -1134,10 +1252,15 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
             record = course_dispositions[source_id]
             record.update({
                 "active_release": True,
-                "reason": "new_course_geometry_connected_at_two_existing_network_anchors",
+                "reason": (
+                    "trusted_dead_end_connected_at_one_network_anchor"
+                    if component["anchor_count"] == 1
+                    else "new_course_geometry_connected_at_two_existing_network_anchors"
+                ),
                 "component_source_ids": component["source_ids"],
                 "component_anchor_count": component["anchor_count"],
                 "component_anchors": component["anchors"],
+                "collapsed_anchor_fallback": collapsed_anchor_fallback,
                 "added_edge_ids": [[str(start_node), str(end_node), int(forward_key)],
                                    [str(end_node), str(start_node), int(reverse_key)]],
                 "endpoint_attachments": [
@@ -1160,10 +1283,12 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
 
     migration = {
         "schema_version": 1,
-        "priority_policy": "course_geometry_and_nonempty_static_attributes_win_on_proven_match",
+        "priority_policy": "course_geometry_and_nonempty_static_attributes_win_on_proven_match; trusted course walk lines are added without deleting OSM topology",
         "unknown_course_values_policy": "preserve_existing_values",
         "elevation_policy": "course_z_all_zero_is_unavailable",
         "new_course_mode_policy": "walk_only_until_nonwalk_access_is_verified",
+        "trusted_walk_source_rows": sorted(trusted_rows),
+        "preserved_source_rows": sorted(preserved_rows),
         "attachment_tolerance_m": attachment_tolerance_m,
         "old_graph_counts": {"nodes": old_graph.number_of_nodes(),
                              "edges": old_graph.number_of_edges()},
