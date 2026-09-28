@@ -64,8 +64,8 @@
     "艺术馆"
    ],
    "coordinates": {
-    "lng": 114.363056,
-    "lat": 30.536666
+    "lng": 114.362591282,
+    "lat": 30.537305318
    },
    "type": "study",
    "campus": "文理学部",
@@ -77,7 +77,54 @@
    "scenery_score": 1,
    "rating": 4.7,
    "subcategory": "culture",
-   "is_minor": false
+   "is_minor": false,
+   "coordinate_system": "GCJ-02",
+   "coordinate_source": "WHU coursework",
+   "coordinate_source_ids": [
+    "whu_course_4392126ae0613239:spot:0004"
+   ],
+   "coordinate_source_crs": "EPSG:4547",
+   "coordinate_transform": "WGS84_to_GCJ02_once",
+   "coordinate_verification_status": "course_source_only",
+   "verification_status": "source_only",
+   "coordinate_history": [
+    {
+     "coordinates": {
+      "lng": 114.363056,
+      "lat": 30.536666
+     },
+     "coordinate_system": "GCJ-02",
+     "superseded_by_source_ids": [
+      "whu_course_4392126ae0613239:spot:0004"
+     ],
+     "superseded_by": "WHU coursework",
+     "previous_verification_status": null
+    }
+   ],
+   "source_refs": [
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0004",
+     "source_rows": [
+      4
+     ],
+     "license": "not_provided_with_source"
+    }
+   ],
+   "course_source_records": [
+    {
+     "source_row": 4,
+     "source_id": "whu_course_4392126ae0613239:spot:0004",
+     "raw_source_properties": {
+      "name": "万林博物馆"
+     }
+    }
+   ],
+   "course_source_ids": [
+    "whu_course_4392126ae0613239:spot:0004"
+   ],
+   "course_match_basis": "exact existing alias 万林博物馆; course point is 81.2 m from current POI",
+   "source_priority": "course_wins_static_conflicts"
   },
   {
    "id": "poi_005",
@@ -812,8 +859,8 @@
     "老图书馆大楼"
    ],
    "coordinates": {
-    "lng": 114.363673,
-    "lat": 30.540194
+    "lng": 114.363647705,
+    "lat": 30.540075657
    },
    "type": "study",
    "campus": "文理学部",
@@ -825,7 +872,54 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "coordinate_system": "GCJ-02",
+   "coordinate_source": "WHU coursework",
+   "coordinate_source_ids": [
+    "whu_course_4392126ae0613239:spot:0002"
+   ],
+   "coordinate_source_crs": "EPSG:4547",
+   "coordinate_transform": "WGS84_to_GCJ02_once",
+   "coordinate_verification_status": "course_source_only",
+   "verification_status": "source_only",
+   "coordinate_history": [
+    {
+     "coordinates": {
+      "lng": 114.363673,
+      "lat": 30.540194
+     },
+     "coordinate_system": "GCJ-02",
+     "superseded_by_source_ids": [
+      "whu_course_4392126ae0613239:spot:0002"
+     ],
+     "superseded_by": "WHU coursework",
+     "previous_verification_status": null
+    }
+   ],
+   "source_refs": [
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0002",
+     "source_rows": [
+      2
+     ],
+     "license": "not_provided_with_source"
+    }
+   ],
+   "course_source_records": [
+    {
+     "source_row": 2,
+     "source_id": "whu_course_4392126ae0613239:spot:0002",
+     "raw_source_properties": {
+      "name": "校史馆"
+     }
+    }
+   ],
+   "course_source_ids": [
+    "whu_course_4392126ae0613239:spot:0002"
+   ],
+   "course_match_basis": "exact existing alias 校史馆; course point is 13.3 m from current POI",
+   "source_priority": "course_wins_static_conflicts"
   },
   {
    "id": "poi_035",
@@ -838,8 +932,8 @@
     "行政楼"
    ],
    "coordinates": {
-    "lng": 114.366458,
-    "lat": 30.537558
+    "lng": 114.366537471,
+    "lat": 30.537688258
    },
    "type": "study",
    "campus": "文理学部",
@@ -851,7 +945,54 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "coordinate_system": "GCJ-02",
+   "coordinate_source": "WHU coursework",
+   "coordinate_source_ids": [
+    "whu_course_4392126ae0613239:spot:0003"
+   ],
+   "coordinate_source_crs": "EPSG:4547",
+   "coordinate_transform": "WGS84_to_GCJ02_once",
+   "coordinate_verification_status": "course_source_only",
+   "verification_status": "source_only",
+   "coordinate_history": [
+    {
+     "coordinates": {
+      "lng": 114.366458,
+      "lat": 30.537558
+     },
+     "coordinate_system": "GCJ-02",
+     "superseded_by_source_ids": [
+      "whu_course_4392126ae0613239:spot:0003"
+     ],
+     "superseded_by": "WHU coursework",
+     "previous_verification_status": null
+    }
+   ],
+   "source_refs": [
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0003",
+     "source_rows": [
+      3
+     ],
+     "license": "not_provided_with_source"
+    }
+   ],
+   "course_source_records": [
+    {
+     "source_row": 3,
+     "source_id": "whu_course_4392126ae0613239:spot:0003",
+     "raw_source_properties": {
+      "name": "行政楼"
+     }
+    }
+   ],
+   "course_source_ids": [
+    "whu_course_4392126ae0613239:spot:0003"
+   ],
+   "course_match_basis": "exact existing alias 行政楼; course point is 16.0 m from current POI",
+   "source_priority": "course_wins_static_conflicts"
   },
   {
    "id": "poi_036",
@@ -3399,11 +3540,13 @@
     "正门",
     "武大正门",
     "珞珈门",
-    "国立武汉大学牌楼"
+    "国立武汉大学牌楼",
+    "校门牌坊",
+    "武汉大学校门牌坊"
    ],
    "coordinates": {
-    "lng": 114.358238,
-    "lat": 30.53334
+    "lng": 114.358902689,
+    "lat": 30.533853811
    },
    "type": "gate",
    "campus": "文理学部",
@@ -3415,7 +3558,54 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "coordinate_system": "GCJ-02",
+   "coordinate_source": "WHU coursework",
+   "coordinate_source_ids": [
+    "whu_course_4392126ae0613239:spot:0001"
+   ],
+   "coordinate_source_crs": "EPSG:4547",
+   "coordinate_transform": "WGS84_to_GCJ02_once",
+   "coordinate_verification_status": "course_source_only",
+   "verification_status": "source_only",
+   "coordinate_history": [
+    {
+     "coordinates": {
+      "lng": 114.358238,
+      "lat": 30.53334
+     },
+     "coordinate_system": "GCJ-02",
+     "superseded_by_source_ids": [
+      "whu_course_4392126ae0613239:spot:0001"
+     ],
+     "superseded_by": "WHU coursework",
+     "previous_verification_status": null
+    }
+   ],
+   "source_refs": [
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0001",
+     "source_rows": [
+      1
+     ],
+     "license": "not_provided_with_source"
+    }
+   ],
+   "course_source_records": [
+    {
+     "source_row": 1,
+     "source_id": "whu_course_4392126ae0613239:spot:0001",
+     "raw_source_properties": {
+      "name": "校门牌坊"
+     }
+    }
+   ],
+   "course_source_ids": [
+    "whu_course_4392126ae0613239:spot:0001"
+   ],
+   "course_match_basis": "same main gate/archway entity; existing aliases include 牌坊, 校门 and 正门; course point is 80.3 m from current entrance pin",
+   "source_priority": "course_wins_static_conflicts"
   },
   {
    "id": "poi_141",
@@ -5986,11 +6176,13 @@
     "信息学部五教",
     "信息学部五教学楼",
     "信部5教",
-    "信部五教"
+    "信部五教",
+    "遥感学院",
+    "信息学部遥感学院"
    ],
    "coordinates": {
-    "lng": 114.360006,
-    "lat": 30.525889
+    "lng": 114.360155042,
+    "lat": 30.525773709
    },
    "type": "study",
    "campus": "信息学部",
@@ -6002,7 +6194,74 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "coordinate_system": "GCJ-02",
+   "coordinate_source": "WHU coursework",
+   "coordinate_source_ids": [
+    "whu_course_4392126ae0613239:spot:0000",
+    "whu_course_4392126ae0613239:spot:0005"
+   ],
+   "coordinate_source_crs": "EPSG:4547",
+   "coordinate_transform": "WGS84_to_GCJ02_once",
+   "coordinate_verification_status": "course_source_only",
+   "verification_status": "source_only",
+   "coordinate_history": [
+    {
+     "coordinates": {
+      "lng": 114.360006,
+      "lat": 30.525889
+     },
+     "coordinate_system": "GCJ-02",
+     "superseded_by_source_ids": [
+      "whu_course_4392126ae0613239:spot:0000",
+      "whu_course_4392126ae0613239:spot:0005"
+     ],
+     "superseded_by": "WHU coursework",
+     "previous_verification_status": null
+    }
+   ],
+   "source_refs": [
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0000",
+     "source_rows": [
+      0,
+      5
+     ],
+     "license": "not_provided_with_source"
+    },
+    {
+     "source": "WHU coursework",
+     "id": "whu_course_4392126ae0613239:spot:0005",
+     "source_rows": [
+      0,
+      5
+     ],
+     "license": "not_provided_with_source"
+    }
+   ],
+   "course_source_records": [
+    {
+     "source_row": 0,
+     "source_id": "whu_course_4392126ae0613239:spot:0000",
+     "raw_source_properties": {
+      "name": "遥感学院"
+     }
+    },
+    {
+     "source_row": 5,
+     "source_id": "whu_course_4392126ae0613239:spot:0005",
+     "raw_source_properties": {
+      "name": "遥感学院"
+     }
+    }
+   ],
+   "course_source_ids": [
+    "whu_course_4392126ae0613239:spot:0000",
+    "whu_course_4392126ae0613239:spot:0005"
+   ],
+   "course_match_basis": "same remote-sensing engineering college; course point is 18.0 m from current POI",
+   "source_priority": "course_wins_static_conflicts"
   },
   {
    "id": "poi_248",

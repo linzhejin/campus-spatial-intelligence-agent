@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "source_id_prefix": "whu_course_4392126ae0613239",
+  "coordinate_policy": "source_wgs84_to_gcj02_once",
+  "source_authority": "user_designated_course_data_priority_for_static_conflicts",
+  "decisions": [
+    {
+      "source_id": "whu_course_4392126ae0613239:spot:0000",
+      "source_ids": [
+        "whu_course_4392126ae0613239:spot:0000",
+        "whu_course_4392126ae0613239:spot:0005"
+      ],
+      "target_poi_id": "poi_247",
+      "aliases": ["信息学部遥感学院"],
+      "match_basis": "same remote-sensing engineering college; course point is 18.0 m from current POI",
+      "coordinate_priority": "course"
+    },
+    {
+      "source_id": "whu_course_4392126ae0613239:spot:0001",
+      "source_ids": ["whu_course_4392126ae0613239:spot:0001"],
+      "target_poi_id": "poi_140",
+      "aliases": ["武汉大学校门牌坊"],
+      "match_basis": "same main gate/archway entity; existing aliases include 牌坊, 校门 and 正门; course point is 80.3 m from current entrance pin",
+      "coordinate_priority": "course"
+    },
+    {
+      "source_id": "whu_course_4392126ae0613239:spot:0002",
+      "source_ids": ["whu_course_4392126ae0613239:spot:0002"],
+      "target_poi_id": "poi_034",
+      "aliases": [],
+      "match_basis": "exact existing alias 校史馆; course point is 13.3 m from current POI",
+      "coordinate_priority": "course"
+    },
+    {
+      "source_id": "whu_course_4392126ae0613239:spot:0003",
+      "source_ids": ["whu_course_4392126ae0613239:spot:0003"],
+      "target_poi_id": "poi_035",
+      "aliases": [],
+      "match_basis": "exact existing alias 行政楼; course point is 16.0 m from current POI",
+      "coordinate_priority": "course"
+    },
+    {
+      "source_id": "whu_course_4392126ae0613239:spot:0004",
+      "source_ids": ["whu_course_4392126ae0613239:spot:0004"],
+      "target_poi_id": "poi_004",
+      "aliases": [],
+      "match_basis": "exact existing alias 万林博物馆; course point is 81.2 m from current POI",
+      "coordinate_priority": "course"
+    }
+  ]
+}

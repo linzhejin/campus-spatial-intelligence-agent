@@ -6,6 +6,7 @@
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -33,6 +34,7 @@ from spatial.routing import compute_route, filter_graph_for_mode  # noqa: E402
 
 AMAP_WALK_URL = "https://restapi.amap.com/v5/direction/walking"
 TO_METERS = Transformer.from_crs(4326, 32650, always_xy=True).transform
+COMPARISON_WEIGHTS = {"distance": 1.0, "slope": 0.0, "scenery": 0.0}
 
 
 def _navigation_anchor(poi, client):
@@ -43,6 +45,34 @@ def _navigation_anchor(poi, client):
     gcj = entrance or center
     return gcj02_to_wgs84(gcj["lng"], gcj["lat"]), gcj, (
         "amap_entr_location" if entrance else "poi_center")
+
+
+def _uses_candidate_geometry_assessment(graph_attrs):
+    return (graph_attrs.get("annotation_policy") == "source_scoped_only"
+            or bool(graph_attrs.get("course_release_fingerprint")))
+
+
+def _candidate_edge_line(G, u, v, data):
+    """Return the selected edge's stored shape, oriented from u to v."""
+    raw = data.get("geometry")
+    if raw:
+        try:
+            line = wkt_loads(raw) if isinstance(raw, str) else raw
+            if line.geom_type == "LineString" and len(line.coords) >= 2:
+                points = list(line.coords)
+                u_point = (float(G.nodes[u]["x"]), float(G.nodes[u]["y"]))
+                direct = math.hypot(points[0][0] - u_point[0],
+                                    points[0][1] - u_point[1])
+                reverse = math.hypot(points[-1][0] - u_point[0],
+                                     points[-1][1] - u_point[1])
+                if reverse < direct:
+                    points.reverse()
+                return LineString(points)
+        except (AttributeError, TypeError, ValueError):
+            pass
+    return LineString([
+        (float(G.nodes[node]["x"]), float(G.nodes[node]["y"])) for node in (u, v)
+    ])
 
 
 def _key():
@@ -110,6 +140,13 @@ def _reference_walk(client, key, start, end):
     return float(path["distance"]), points
 
 
+def _reference_walk_at_navigation_anchors(client, key, start_anchor, end_anchor):
+    """Request the provider route from the exact anchors used by our graph route."""
+    start = (float(start_anchor["lng"]), float(start_anchor["lat"]))
+    end = (float(end_anchor["lng"]), float(end_anchor["lat"]))
+    return _reference_walk(client, key, start, end)
+
+
 def _project_pair(point, origin):
     lng, lat = point
     return ((lng - origin[0]) * 111320 * math.cos(math.radians(origin[1])),
@@ -136,11 +173,25 @@ def _candidate_hazards(G, selected_edges, buildings_path):
         return {"status": "building_layer_missing", "suspected_crossing_edge_ids": [],
                 "step_tagged_edge_ids": []}
     try:
-        document = json.loads(buildings_path.read_text(encoding="utf-8"))
+        raw_document = buildings_path.read_bytes()
+        document = json.loads(raw_document.decode("utf-8"))
+        metadata = document.get("metadata") or {}
+        footprint_source = {
+            "source": metadata.get("source"),
+            "license": metadata.get("license"),
+            "created_at_utc": metadata.get("created_at_utc"),
+            "sha256": hashlib.sha256(raw_document).hexdigest(),
+        }
         features = document.get("features", [])
-        building_geometries = [shapely_transform(TO_METERS, shape(feature["geometry"]))
-                               for feature in features if feature.get("geometry")]
-        building_ids = [feature.get("id") for feature in features if feature.get("geometry")]
+        footprint_rows = [feature for feature in features if feature.get("geometry")]
+        building_geometries = [
+            shapely_transform(TO_METERS, shape(feature["geometry"]))
+            for feature in footprint_rows
+        ]
+        building_ids = [feature.get("id") for feature in footprint_rows]
+        building_names = [
+            (feature.get("properties") or {}).get("name") for feature in footprint_rows
+        ]
         tree = STRtree(building_geometries) if building_geometries else None
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
         return {"status": "building_layer_invalid", "suspected_crossing_edge_ids": [],
@@ -154,21 +205,23 @@ def _candidate_hazards(G, selected_edges, buildings_path):
             step_edges.append([u, v, key])
         if tree is None:
             continue
-        line = shapely_transform(TO_METERS, LineString([
-            (float(G.nodes[u]["x"]), float(G.nodes[u]["y"])),
-            (float(G.nodes[v]["x"]), float(G.nodes[v]["y"])),
-        ]))
+        line = shapely_transform(TO_METERS, _candidate_edge_line(G, u, v, data))
         for match in tree.query(line):
             index = int(match) if isinstance(match, Integral) else next(
                 (i for i, geom in enumerate(building_geometries) if geom.equals(match)), -1
             )
-            if index >= 0 and line.intersection(building_geometries[index]).length > 1.0:
+            overlap_length = (line.intersection(building_geometries[index]).length
+                              if index >= 0 else 0.0)
+            if index >= 0 and overlap_length > 1.0:
                 crossings.append({"edge_id": [u, v, key],
                                   "building_source_id": building_ids[index],
+                                  "building_name": building_names[index],
+                                  "intersection_length_m": round(float(overlap_length), 1),
                                   "way_tags": {name: data.get(name) for name in
                                                ("highway", "covered", "bridge", "tunnel", "indoor")
                                                if data.get(name) is not None}})
     return {"status": "checked", "building_footprint_count": len(building_geometries),
+            "building_footprint_source": footprint_source,
             "suspected_crossing_edge_ids": crossings,
             "step_tagged_edge_ids": step_edges}
 
@@ -202,7 +255,7 @@ def main():
         (item["u"], item["v"], item.get("k", 0))
         for item in issues.get("near_steps_edges", [])
     }
-    candidate_source = G.graph.get("annotation_policy") == "source_scoped_only"
+    candidate_source = _uses_candidate_geometry_assessment(G.graph)
     buildings_path = ROOT / "scripts" / "audit_output" / "osm_buildings.geojson"
     results = []
 
@@ -225,7 +278,7 @@ def main():
                 end_node = get_nearest_node(G_walk, *end_wgs)
                 own_route = compute_route(
                     G, start_node, end_node,
-                    weights={"distance": 0.90, "slope": 0.05, "scenery": 0.05},
+                    weights=COMPARISON_WEIGHTS,
                     mode="walk",
                 )
                 selected = own_route["recommended_edges"]
@@ -239,20 +292,21 @@ def main():
                     crossing_ids = [list(edge) for edge in selected if edge in crossing_edges]
                     step_ids = [list(edge) for edge in selected if edge in near_steps_edges]
                 own_points = _own_polyline(G, selected)
-                ref_distance, ref_points = _reference_walk(
-                    client, key, start_gcj, end_gcj,
+                ref_distance, ref_points = _reference_walk_at_navigation_anchors(
+                    client, key, start_anchor, end_anchor,
                 )
-                own_start = _project_pair(own_points[0], start_gcj)
-                own_end = _project_pair(own_points[-1], end_gcj)
-                own_start_anchor = _project_pair(own_points[0], (
-                    start_anchor["lng"], start_anchor["lat"]))
-                own_end_anchor = _project_pair(own_points[-1], (
-                    end_anchor["lng"], end_anchor["lat"]))
-                ref_start = _project_pair(ref_points[0], start_gcj)
-                ref_end = _project_pair(ref_points[-1], end_gcj)
+                start_anchor_gcj = (start_anchor["lng"], start_anchor["lat"])
+                end_anchor_gcj = (end_anchor["lng"], end_anchor["lat"])
+                own_start = _project_pair(own_points[0], start_anchor_gcj)
+                own_end = _project_pair(own_points[-1], end_anchor_gcj)
+                ref_start = _project_pair(ref_points[0], start_anchor_gcj)
+                ref_end = _project_pair(ref_points[-1], end_anchor_gcj)
+                poi_start_offset = _project_pair(start_anchor_gcj, start_gcj)
+                poi_end_offset = _project_pair(end_anchor_gcj, end_gcj)
                 row.update({
                     "status": "compared",
                     "own_distance_m": own_route["recommended_length_m"],
+                    "own_route_weights": COMPARISON_WEIGHTS,
                     "reference_distance_m": round(ref_distance, 1),
                     "distance_difference_m": round(
                         own_route["recommended_length_m"] - ref_distance, 1),
@@ -267,8 +321,12 @@ def main():
                         "start": start_anchor_source, "end": end_anchor_source,
                     },
                     "navigation_snap_offset_m": {
-                        "start": round(math.hypot(*own_start_anchor), 1),
-                        "end": round(math.hypot(*own_end_anchor), 1),
+                        "start": round(math.hypot(*own_start), 1),
+                        "end": round(math.hypot(*own_end), 1),
+                    },
+                    "poi_center_to_navigation_anchor_m": {
+                        "start": round(math.hypot(*poi_start_offset), 1),
+                        "end": round(math.hypot(*poi_end_offset), 1),
                     },
                     "suspected_crossing_edge_ids": crossing_ids,
                     "near_steps_edge_ids": step_ids,
@@ -292,6 +350,11 @@ def main():
                    else str(args.graph) if args.graph else "production_cache",
             "source_sha256": G.graph.get("source_sha256"),
             "source": G.graph.get("source", "unknown"),
+            "course_release_fingerprint": G.graph.get("course_release_fingerprint"),
+        },
+        "own_route_policy": {
+            "name": "shortest_distance",
+            "weights": COMPARISON_WEIGHTS,
         },
         "reference": "高德 v5 步行路线，仅统计对照，不保存 API 折线",
         "interpretation": "几何差异是待核查线索，不代表任一来源已被现场证实。",

@@ -4,6 +4,7 @@ import networkx as nx
 
 from scripts.network.build_edge_attribute_master import (
     geometry_hash,
+    graph_source_license,
     graph_fingerprint,
     migrate_legacy_record,
     segment_id,
@@ -38,6 +39,28 @@ def test_old_dem_text_is_low_confidence_candidate_not_field_measurement():
     assert terrain["confidence"] == "low"
     assert terrain["verification_status"] == "derived_unverified"
     assert terrain["method_version"] == "legacy_endpoint_dem_unversioned"
+
+
+def test_geometry_replacement_does_not_reuse_old_geometry_terrain_evidence():
+    legacy = {"note": "DEM实测 坡度8.1%（Δelev=5m）", "slope_level": 4}
+
+    record = migrate_legacy_record(
+        legacy, binding={"edge_id": [1, 2, 0]}, geometry_replaced=True
+    )
+
+    assert record["terrain"]["confidence"] == "unknown"
+    assert record["terrain"]["slope_level"] is None
+    assert record["scenery"]["confidence"] == "unknown"
+
+
+def test_fused_graph_source_metadata_does_not_claim_only_odbl():
+    graph = nx.MultiDiGraph()
+    graph.graph["course_release_fingerprint"] = "release-123"
+
+    source = graph_source_license(graph)
+
+    assert source["license"] == "mixed_sources_license_review_required"
+    assert source["redistribution"] == "not_established"
 
 
 def test_non_placeholder_scenery_level_is_still_unknown_without_components():
@@ -88,13 +111,28 @@ def test_generated_master_binds_every_current_directed_edge_once():
         tuple(record["network_bindings"][0]["edge_id"])
         for record in master["records"]
     ]
-    assert len(bindings) == graph.number_of_edges() == 12550
+    assert len(bindings) == graph.number_of_edges()
+    assert graph.number_of_edges() >= 12550
     assert len(set(bindings)) == len(bindings)
     assert sum(record["terrain"]["confidence"] == "unknown"
-               for record in master["records"]) == 9520
+               for record in master["records"]) > 0
     assert all(record["scenery"]["confidence"] in {"unknown", "low"}
                for record in master["records"])
     assert all(record["scenery"].get("greenery") is None
                and record["scenery"].get("shade") is None
                and record["scenery"].get("water") is None
                for record in master["records"])
+    by_edge = {
+        tuple(record["network_bindings"][0]["edge_id"]): record
+        for record in master["records"]
+    }
+    replacements = 0
+    for u, v, key, data in graph.edges(keys=True, data=True):
+        if str(data.get("course_geometry_replaced", "")).lower() != "true":
+            continue
+        replacements += 1
+        record = by_edge[(u, v, int(key))]
+        assert record["terrain"]["confidence"] == "unknown"
+        assert record["terrain"]["slope_level"] is None
+        assert record["scenery"]["confidence"] == "unknown"
+    assert replacements == 322

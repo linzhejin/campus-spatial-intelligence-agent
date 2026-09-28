@@ -160,7 +160,10 @@ def _unknown_scenery(source_refs=None):
     }
 
 
-def migrate_legacy_record(legacy, binding):
+def migrate_legacy_record(legacy, binding, *, geometry_replaced=False):
+    if geometry_replaced:
+        # The legacy measurements describe the old shape, not the replacement.
+        legacy = None
     legacy = legacy or {}
     note = str(legacy.get("note") or "")
     source_refs = ["legacy_road_annotations"] if legacy else []
@@ -213,6 +216,25 @@ def _source_entry(source_id, source_type, path, *, version, license_name, redist
     return entry
 
 
+def graph_source_license(graph):
+    """Describe the current graph's combined-source redistribution status."""
+    if graph.graph.get("course_release_fingerprint"):
+        return {
+            "license": "mixed_sources_license_review_required",
+            "redistribution": "not_established",
+            "notes": (
+                "Graph combines OSM ODbL data with WHU coursework geometry; "
+                "course-source redistribution permission is not established. "
+                "See the course release manifest before distribution."
+            ),
+        }
+    return {
+        "license": "ODbL-1.0",
+        "redistribution": "share_alike",
+        "notes": "OpenStreetMap-derived routing graph.",
+    }
+
+
 def _write_sources(path, entries):
     existing = {"schema_version": 1, "sources": []}
     if path.exists():
@@ -235,11 +257,13 @@ def build_master(graph_path, legacy_path, output_path, sources_path):
     }
     poi_path = project_root() / "data" / "pois.json"
     graph_version = graph_fingerprint(graph)
+    graph_source = graph_source_license(graph)
     entries = [
         _source_entry(
             "osm_graphml_current", "directed_routing_graph", graph_path,
-            version=graph_version, license_name="ODbL-1.0", redistribution="share_alike",
-            crs="EPSG:4326",
+            version=graph_version, license_name=graph_source["license"],
+            redistribution=graph_source["redistribution"], crs="EPSG:4326",
+            notes=graph_source["notes"],
         ),
         _source_entry(
             "poi_master_current", "poi_master", poi_path,
@@ -259,6 +283,7 @@ def build_master(graph_path, legacy_path, output_path, sources_path):
     matched = 0
     placeholder = 0
     dem_candidates = 0
+    geometry_stale_skipped = 0
     for u, v, key, data in sorted(
         graph.edges(keys=True, data=True), key=lambda row: (str(row[0]), str(row[1]), int(row[2]))
     ):
@@ -271,13 +296,18 @@ def build_master(graph_path, legacy_path, output_path, sources_path):
             "source_refs": refs,
         }
         legacy = legacy_by_key.get(edge_key(edge_id))
-        if legacy:
+        geometry_replaced = str(data.get("course_geometry_replaced", "")).lower() == "true"
+        if legacy and geometry_replaced:
+            geometry_stale_skipped += 1
+        elif legacy:
             matched += 1
             if "占位" in str(legacy.get("note") or ""):
                 placeholder += 1
             if "DEM实测" in str(legacy.get("note") or ""):
                 dem_candidates += 1
-        migrated = migrate_legacy_record(legacy, binding)
+        migrated = migrate_legacy_record(
+            legacy, binding, geometry_replaced=geometry_replaced
+        )
         migrated.update({
             "segment_id": segment_id(refs, geom_hash, f"{u}>{v}:{key}"),
             "length_m": round(float(data.get("length") or 0.0), 3),
@@ -301,6 +331,7 @@ def build_master(graph_path, legacy_path, output_path, sources_path):
         "records": len(records),
         "legacy_matched": matched,
         "legacy_unmatched": len(legacy_by_key) - matched,
+        "legacy_geometry_stale_skipped": geometry_stale_skipped,
         "placeholder_unknown": placeholder,
         "legacy_dem_candidates": dem_candidates,
         "network_version": graph_version,

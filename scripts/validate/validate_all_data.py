@@ -255,6 +255,52 @@ report["annotations"] = {
     "placeholder_records": sum("占位" in str(e.get("note", "")) for e in ann_edges),
 }
 
+# The legacy annotation file is an overlay, not the canonical edge inventory.
+# The edge master may intentionally state that newly added geometry has unknown
+# slope/scenery; a unique geometry-bound record is still complete data custody.
+master_path = os.path.join(PROJECT_ROOT, "data", "edge_attribute_master.json")
+if os.path.isfile(master_path):
+    from scripts.network.build_edge_attribute_master import graph_fingerprint, geometry_hash
+
+    with open(master_path, encoding="utf-8") as f:
+        master = json.load(f)
+    graph_edge_ids = {
+        (str(u), str(v), int(key)) for u, v, key in G.edges(keys=True)
+    }
+    bound_edge_ids = []
+    geometry_mismatches = 0
+    for record in master.get("records", []):
+        for binding in record.get("network_bindings", []):
+            raw_id = binding.get("edge_id")
+            if not isinstance(raw_id, list) or len(raw_id) != 3:
+                continue
+            try:
+                edge_id = (str(raw_id[0]), str(raw_id[1]), int(raw_id[2]))
+            except (TypeError, ValueError):
+                continue
+            bound_edge_ids.append(edge_id)
+            if edge_id in graph_edge_ids and binding.get("geometry_hash"):
+                actual_hash = geometry_hash(
+                    G, int(raw_id[0]), int(raw_id[1]), int(raw_id[2])
+                )
+                geometry_mismatches += int(actual_hash != binding["geometry_hash"])
+    unique_bound = set(bound_edge_ids)
+    report["edge_attribute_master"] = {
+        "records": len(master.get("records", [])),
+        "current_graph_edges": len(graph_edge_ids),
+        "bound_current_edges": len(unique_bound & graph_edge_ids),
+        "coverage_pct": round(100 * len(unique_bound & graph_edge_ids) /
+                               max(len(graph_edge_ids), 1), 2),
+        "duplicate_bindings": len(bound_edge_ids) - len(unique_bound),
+        "stale_bindings": len(set(bound_edge_ids) - graph_edge_ids),
+        "geometry_binding_mismatches": geometry_mismatches,
+        "network_version_matches_current_graph": (
+            master.get("network_version") == graph_fingerprint(G)
+        ),
+    }
+else:
+    report["edge_attribute_master"] = None
+
 # ============ 输出 ============
 with open(os.path.join(PROJECT_ROOT, "data_validation_report.json"), "w", encoding="utf-8") as f:
     json.dump(report, f, ensure_ascii=False, indent=1, default=str)

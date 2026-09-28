@@ -130,7 +130,7 @@ def load_or_download_network(bbox: Optional[dict] = None) -> nx.MultiDiGraph:
 
 
 def _mark_osm_provenance(G: nx.MultiDiGraph) -> None:
-    """给 OSM 底稿路段附来源和核实状态；自动标注不等于实地核实。"""
+    """合并 OSM 底稿来源；不得覆盖已附加的其他数据来源。"""
     for _, _, _, edge in G.edges(keys=True, data=True):
         raw = edge.get("osmid")
         if isinstance(raw, str) and raw.startswith("["):
@@ -139,10 +139,27 @@ def _mark_osm_provenance(G: nx.MultiDiGraph) -> None:
             except (ValueError, SyntaxError):
                 pass
         ids = raw if isinstance(raw, (list, tuple)) else [raw]
-        edge["source_refs"] = [
+        osm_refs = [
             {"source": "OpenStreetMap", "id": f"way/{osm_id}", "license": "ODbL-1.0"}
             for osm_id in ids if osm_id is not None
         ]
+        existing_refs = edge.get("source_refs") or []
+        if isinstance(existing_refs, str):
+            try:
+                existing_refs = ast.literal_eval(existing_refs)
+            except (ValueError, SyntaxError):
+                try:
+                    existing_refs = json.loads(existing_refs)
+                except (json.JSONDecodeError, TypeError):
+                    existing_refs = []
+        if isinstance(existing_refs, dict):
+            existing_refs = [existing_refs]
+        merged_refs = list(existing_refs) if isinstance(existing_refs, (list, tuple)) else []
+        for source_ref in osm_refs:
+            if source_ref not in merged_refs:
+                merged_refs.append(source_ref)
+        if merged_refs:
+            edge["source_refs"] = merged_refs
         edge.setdefault("verification_status", "source_only")
 
 
@@ -204,12 +221,29 @@ def _save_graphml(G: nx.MultiDiGraph, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     # 清洗非原始类型属性值（osmnx 2.x 可能产生 list/dict/geometry，GraphML 不支持）
     G_clean = G.copy()
+    for key, value in list(G_clean.graph.items()):
+        if key in {"node_default", "edge_default"}:
+            if value is None:
+                G_clean.graph[key] = {}
+            elif not isinstance(value, dict):
+                del G_clean.graph[key]
+            continue
+        if value is None:
+            del G_clean.graph[key]
+        else:
+            G_clean.graph[key] = _graphml_safe_value(value)
     for _, _, data in G_clean.edges(data=True):
         for key in list(data.keys()):
-            data[key] = _graphml_safe_value(data[key])
+            if data[key] is None:
+                del data[key]
+            else:
+                data[key] = _graphml_safe_value(data[key])
     for _, data in G_clean.nodes(data=True):
         for key in list(data.keys()):
-            data[key] = _graphml_safe_value(data[key])
+            if data[key] is None:
+                del data[key]
+            else:
+                data[key] = _graphml_safe_value(data[key])
     nx.write_graphml(G_clean, path)
 
 
@@ -412,17 +446,21 @@ def _merge_annotations(G: nx.MultiDiGraph, annotations_path: str) -> float:
         orig_u, orig_v, orig_k = orig
 
         edge_data = G[orig_u][orig_v][orig_k]
-        if "slope_level" in ann and ann["slope_level"] is not None:
+        course_geometry_replaced = str(edge_data.get("course_geometry_replaced", "")).lower() == "true"
+        course_name_authoritative = edge_data.get("course_name_source") == "course"
+        if (not course_geometry_replaced and "slope_level" in ann
+                and ann["slope_level"] is not None):
             try:
                 edge_data["slope_level"] = int(ann["slope_level"])
             except (ValueError, TypeError):
                 pass
-        if "scenery_level" in ann and ann["scenery_level"] is not None:
+        if (not course_geometry_replaced and "scenery_level" in ann
+                and ann["scenery_level"] is not None):
             try:
                 edge_data["scenery_level"] = int(ann["scenery_level"])
             except (ValueError, TypeError):
                 pass
-        if "name" in ann and ann["name"]:
+        if "name" in ann and ann["name"] and not course_name_authoritative:
             edge_data["name"] = str(ann["name"])
         # 人工标注的步行成本倍数：用于处理 OSM 把建筑内台阶/连廊画成穿楼捷径等问题
         # （只软惩罚不封死：起终点就在该边时仍可通行）

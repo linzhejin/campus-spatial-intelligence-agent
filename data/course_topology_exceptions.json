@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "id": "ziqiang-avenue-luojia-square-intentional-gap",
+      "source_layer": "whu_road",
+      "source_rows": [393, 394],
+      "expected_name": "自强大道",
+      "from_endpoint": "end",
+      "to_endpoint": "start",
+      "gap_distance_m": {
+        "min": 120,
+        "max": 160
+      },
+      "max_endpoint_snap_m": 10,
+      "walk_must_remain_connected": true,
+      "active_new_candidate_forbidden": true,
+      "evidence_status": "user_provided_context_not_field_verified",
+      "reason": "The coursework intentionally leaves this topology break for a topology exercise. It must not be treated as a closure or filled with a straight-line connector; preserve and validate the existing OSM walking connection."
+    }
+  ]
+}

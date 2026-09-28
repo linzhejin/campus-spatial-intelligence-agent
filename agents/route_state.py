@@ -43,6 +43,7 @@ def current_data_version(graph=None) -> str:
     if graph is not None:
         parts.extend([
             str(graph.graph.get("source_sha256") or ""),
+            str(graph.graph.get("course_release_fingerprint") or ""),
             str(graph.number_of_nodes()),
             str(graph.number_of_edges()),
         ])

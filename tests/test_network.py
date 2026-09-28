@@ -87,6 +87,38 @@ class TestMergeAnnotations:
         assert G["0"]["1"][0]["scenery_level"] == 4
         assert G["0"]["1"][0]["name"] == "test road"
 
+    def test_course_geometry_does_not_receive_stale_shape_annotations(self, tmp_path):
+        G = _make_graph(1)
+        edge = G["0"]["1"][0]
+        edge.update({"name": "course name", "course_name_source": "course",
+                     "course_geometry_replaced": True})
+        ann_path = tmp_path / "road_annotations.json"
+        ann_path.write_text(json.dumps({"edges": [{
+            "edge_id": ["0", "1", 0], "u": "0", "v": "1",
+            "slope_level": 5, "scenery_level": 5,
+            "name": "stale OSM name", "walk_penalty": 2.5,
+        }]}), encoding="utf-8")
+
+        network._merge_annotations(G, str(ann_path))
+
+        assert "slope_level" not in edge
+        assert "scenery_level" not in edge
+        assert edge["name"] == "course name"
+        assert edge["walk_penalty"] == 2.5
+
+
+def test_osm_provenance_merge_preserves_course_source_refs():
+    G = _make_graph(1)
+    course_ref = {"source": "WHU coursework", "id": "course:road:0001",
+                  "license": "not_provided_with_source"}
+    G["0"]["1"][0].update({"osmid": "123", "source_refs": [course_ref]})
+
+    network._mark_osm_provenance(G)
+
+    refs = G["0"]["1"][0]["source_refs"]
+    assert course_ref in refs
+    assert {"source": "OpenStreetMap", "id": "way/123", "license": "ODbL-1.0"} in refs
+
 
 class TestGraphmlRoundTrip:
     def test_load_graphml_preserves_int_node_ids(self, tmp_path):
@@ -102,6 +134,20 @@ class TestGraphmlRoundTrip:
         assert 13239152642 in loaded.nodes
         assert 286074417 in loaded.nodes
         assert all(isinstance(n, int) for n in loaded.nodes)
+
+    def test_graphml_round_trip_omits_null_attributes_without_serializing_fake_values(self, tmp_path):
+        G = nx.MultiDiGraph()
+        G.graph.update(node_default={}, edge_default={})
+        G.add_node(1, x=114.35, y=30.53, optional=None)
+        G.add_node(2, x=114.36, y=30.53)
+        G.add_edge(1, 2, length=10.0, course_surface=None)
+        path = str(tmp_path / "null-attributes.graphml")
+
+        network._save_graphml(G, path)
+        loaded = network._load_graphml(path)
+
+        assert "optional" not in loaded.nodes[1]
+        assert all("course_surface" not in data for _, _, data in loaded.edges(data=True))
 
 
 def test_routing_index_reuses_mode_graph_and_invalidates_on_reload():

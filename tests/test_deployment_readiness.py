@@ -26,6 +26,24 @@ def test_verified_campus_data_passes_readiness_gate():
     assert assess(*_verified_inputs())["ready"] is True
 
 
+def test_complete_attribute_master_allows_explicit_unknowns_on_new_edges():
+    validation, audit, comparison, samples, reviews = _verified_inputs()
+    validation["annotations"]["coverage_pct_of_edges"] = 99.9
+    validation["edge_attribute_master"] = {
+        "current_graph_edges": 12568,
+        "bound_current_edges": 12568,
+        "coverage_pct": 100.0,
+        "duplicate_bindings": 0,
+        "stale_bindings": 0,
+        "geometry_binding_mismatches": 0,
+        "network_version_matches_current_graph": True,
+    }
+
+    result = assess(validation, audit, comparison, samples, reviews)
+
+    assert "road_annotation_gap" not in {row["code"] for row in result["blockers"]}
+
+
 def test_unreviewed_candidate_and_route_block_deployment():
     validation, audit, comparison, samples, reviews = _verified_inputs()
     audit["poi"]["missing_open_candidates"] = [{"osm_id": "way/123"}]
@@ -65,6 +83,51 @@ def test_unreviewed_large_provider_route_disagreement_blocks_deployment():
     })
     result = assess(validation, audit, comparison, samples, reviews)
     assert "unresolved_route_disagreements" in {
+        row["code"] for row in result["blockers"]}
+
+
+def test_release_route_without_building_geometry_check_blocks_deployment():
+    validation, audit, comparison, samples, reviews = _verified_inputs()
+    comparison["own_network"] = {"course_release_fingerprint": "release-123"}
+    comparison["samples"][0]["hazard_assessment"] = {
+        "status": "building_layer_missing",
+    }
+
+    result = assess(validation, audit, comparison, samples, reviews)
+
+    assert "unassessed_route_geometry_hazards" in {
+        row["code"] for row in result["blockers"]}
+
+
+def test_unreviewed_building_crossing_edge_blocks_release_route():
+    validation, audit, comparison, samples, reviews = _verified_inputs()
+    comparison["own_network"] = {"course_release_fingerprint": "release-123"}
+    comparison["samples"][0]["hazard_assessment"] = {
+        "status": "checked",
+        "suspected_crossing_edge_ids": [{"edge_id": [1, 2, 0]}],
+    }
+
+    result = assess(validation, audit, comparison, samples, reviews)
+
+    assert "unreviewed_route_building_crossings" in {
+        row["code"] for row in result["blockers"]}
+
+
+def test_evidence_backed_review_resolves_building_crossing_gate():
+    validation, audit, comparison, samples, reviews = _verified_inputs()
+    comparison["own_network"] = {"course_release_fingerprint": "release-123"}
+    comparison["samples"][0]["hazard_assessment"] = {
+        "status": "checked",
+        "suspected_crossing_edge_ids": [{"edge_id": [1, 2, 0]}],
+    }
+    reviews["road_decisions"] = [{
+        "edge_id": [1, 2, 0], "verification_status": "institution_verified",
+        "evidence": "校方通行说明", "verified_at": "2026-09-28",
+    }]
+
+    result = assess(validation, audit, comparison, samples, reviews)
+
+    assert "unreviewed_route_building_crossings" not in {
         row["code"] for row in result["blockers"]}
 
 

@@ -35,8 +35,20 @@ def assess(validation, audit, comparison, samples, reviews, candidate_comparison
         add("structural_errors", n, "POI 字段、位置或名称存在结构错误")
         add("count_mismatch", int(not validation.get("poi_count_matches_declared")),
             "正式库声明条数与实际不符")
-        add("road_annotation_gap", int(validation.get("annotations", {}).get(
-            "coverage_pct_of_edges", 0) < 100), "路网边缺少标注")
+        master = validation.get("edge_attribute_master")
+        if master is not None:
+            master_complete = (
+                master.get("coverage_pct", 0) >= 100
+                and master.get("duplicate_bindings", 1) == 0
+                and master.get("stale_bindings", 1) == 0
+                and master.get("geometry_binding_mismatches", 1) == 0
+                and master.get("network_version_matches_current_graph") is True
+            )
+            add("road_annotation_gap", int(not master_complete),
+                "路段属性主表未为当前路网的每条边提供唯一、几何匹配的记录")
+        else:
+            add("road_annotation_gap", int(validation.get("annotations", {}).get(
+                "coverage_pct_of_edges", 0) < 100), "路网边缺少标注主记录")
 
     if audit is None:
         add("master_audit_missing", 1, "尚未生成校园主数据审计")
@@ -101,6 +113,37 @@ def assess(validation, audit, comparison, samples, reviews, candidate_comparison
                 unresolved_differences += 1
         add("unresolved_route_disagreements", unresolved_differences,
             "自有路线与地图商路线差异明显，需逐段核实，不直接判定任一方错误")
+        if comparison.get("own_network", {}).get("course_release_fingerprint"):
+            unassessed_hazards = sum(
+                compared.get(sample.get("id"), {}).get("status") == "compared"
+                and compared.get(sample.get("id"), {}).get(
+                    "hazard_assessment", {}).get("status") != "checked"
+                for sample in sample_rows
+            )
+            add("unassessed_route_geometry_hazards", unassessed_hazards,
+                "融合路网的代表路线未完成建筑轮廓相交检查")
+            reviewed_edges = {
+                tuple(map(str, row.get("edge_id", [])))
+                for row in reviews.get("road_decisions", [])
+                if row.get("verification_status") in
+                {"field_verified", "institution_verified"}
+                and row.get("evidence") and row.get("verified_at")
+                and isinstance(row.get("edge_id"), list)
+                and len(row.get("edge_id")) == 3
+            }
+            suspected_edges = set()
+            for sample in sample_rows:
+                route = compared.get(sample.get("id"), {})
+                hazards = route.get("hazard_assessment", {})
+                if hazards.get("status") != "checked":
+                    continue
+                for item in hazards.get("suspected_crossing_edge_ids", []):
+                    edge_id = item.get("edge_id") if isinstance(item, dict) else item
+                    if isinstance(edge_id, list) and len(edge_id) == 3:
+                        suspected_edges.add(tuple(map(str, edge_id)))
+            add("unreviewed_route_building_crossings",
+                len(suspected_edges - reviewed_edges),
+                "路线与开放建筑轮廓相交的路段尚无现场或校方通行证据")
 
     if candidate_comparison is not None:
         compared = {row.get("id"): row for row in candidate_comparison.get("samples", [])}

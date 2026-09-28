@@ -220,6 +220,7 @@ __marimo__/
 # ===== 漫步珞珈 (WHU-Walker) =====
 .env
 data/*.graphml
+!data/whu_road_network_osm_base.graphml
 output/*.html
 __pycache__/
 .venv/
@@ -228,6 +229,7 @@ venv/
 .playwright-mcp/
 # 路网审计产物（HTML 内含全量坐标、截图体积大，仅本地核查）
 scripts/audit_output/
+/data_validation_report.json
 prototype/
 .pytest_tmp/
 
@@ -253,6 +255,7 @@ _tmp_*.py
 # 部署产物
 output/*.zip
 output/*.bak
+output/course_fusion/
 
 # 临时调试脚本
 scripts/_tmp_*.py
