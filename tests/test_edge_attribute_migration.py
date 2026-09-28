@@ -92,5 +92,9 @@ def test_generated_master_binds_every_current_directed_edge_once():
     assert len(set(bindings)) == len(bindings)
     assert sum(record["terrain"]["confidence"] == "unknown"
                for record in master["records"]) == 9520
-    assert all(record["scenery"]["scenery_level"] is None
+    assert all(record["scenery"]["confidence"] in {"unknown", "low"}
+               for record in master["records"])
+    assert all(record["scenery"].get("greenery") is None
+               and record["scenery"].get("shade") is None
+               and record["scenery"].get("water") is None
                for record in master["records"])
