@@ -1,7 +1,7 @@
 {
   "type": "FeatureCollection",
   "source_id": "whu_course_4392126ae0613239:road",
-  "release_fingerprint": "80bb253771d59c3ea1ef578b7b8a98760157c3c4aac28498339e87e84fc8af1a",
+  "release_fingerprint": "2e79c725044b3f3e5466aae7304ec6a5978399d43b1c773ff91e5650baa969ab",
   "source_crs": "EPSG:4547",
   "coordinate_system": "EPSG:4326",
   "license_status": "not_provided_with_source",
@@ -12594,15 +12594,26 @@
         "source_crs": "EPSG:4547",
         "source_verification": "course_supplied_not_field_verified",
         "match_action": "ambiguous",
-        "activation_policy": "conservative_osm_correspondence",
-        "routing_disposition": "construction_excluded",
-        "active_in_routing_graph": false,
-        "routing_reason": "ambiguous_correspondence",
+        "activation_policy": "explicit_user_walkable_construction_override",
+        "routing_disposition": "active_in_route",
+        "active_in_routing_graph": true,
+        "routing_reason": "new_course_geometry_connected_at_two_existing_network_anchors",
+        "routing_override": {
+          "source_row": 265,
+          "allowed_modes": [
+            "walk"
+          ],
+          "verification_status": "source_only",
+          "authority": "explicit_user_instruction",
+          "evidence_status": "user_confirmed_important_technology_gate_path",
+          "reason": "The user identified the dashed school-supplied path by Technology Gate as important and requested that it be connected for routing. Preserve the source construction label; enable only walking.",
+          "id": "walkable-construction-source-row-265"
+        },
         "network_coverage": {
           "osm_base_within_3m_pct": 37.81,
           "osm_base_within_8m_pct": 93.73,
           "osm_base_within_15m_pct": 100.0,
-          "release_within_3m_pct": 45.64,
+          "release_within_3m_pct": 100.0,
           "release_within_8m_pct": 100.0,
           "release_within_15m_pct": 100.0
         },

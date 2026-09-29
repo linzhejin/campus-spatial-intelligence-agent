@@ -49,6 +49,37 @@ def test_release_graphml_keeps_base_key_ids_and_remains_readable(tmp_path):
     assert reloaded_edge["course_source_id"] == "course:row:1"
 
 
+def test_release_graphml_preserves_keys_from_previous_release(tmp_path):
+    base = nx.MultiDiGraph()
+    base.add_node(1, x=114.0, y=30.0)
+    base.add_node(2, x=114.001, y=30.0)
+    base.add_edge(1, 2, key=0, length=95.0, osmid=11)
+    base_path = tmp_path / "base.graphml"
+    nx.write_graphml(base, base_path)
+
+    previous = base.copy()
+    previous.graph["course_release_fingerprint"] = "previous"
+    previous[1][2][0]["course_source_id"] = "course:row:1"
+    previous_path = tmp_path / "previous.graphml"
+    nx.write_graphml(previous, previous_path)
+    _stabilize_graphml_key_ids(previous_path, base_path)
+    previous_keys = _key_map(previous_path)
+
+    current = previous.copy()
+    current[1][2][0]["course_routeability_override_id"] = "walkable-row-1"
+    current[1][2][0]["course_routeability_override_reason"] = "user-confirmed path"
+    current_path = tmp_path / "current.graphml"
+    nx.write_graphml(current, current_path)
+
+    _stabilize_graphml_key_ids(
+        current_path, base_path, previous_graph_path=previous_path
+    )
+
+    current_keys = _key_map(current_path)
+    assert all(current_keys[key] == key_id for key, key_id in previous_keys.items())
+    assert len(set(current_keys.values())) == len(current_keys)
+
+
 def test_release_spatial_validation_rejects_geometry_outside_campus_extent():
     graph = nx.MultiDiGraph()
     graph.add_node(1, x=114.35, y=30.53)

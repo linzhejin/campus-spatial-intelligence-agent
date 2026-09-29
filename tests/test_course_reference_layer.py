@@ -82,11 +82,12 @@ def test_every_course_road_has_an_explicit_runtime_status():
               for feature in roads}
     active_rows = {row for row, properties in by_row.items()
                    if properties["routing_disposition"] == "active_in_route"}
-    assert len(active_rows) == 644
+    assert len(active_rows) == 645
     assert {row for row, properties in by_row.items()
             if properties["routing_disposition"] == "ambiguous_not_changed"} == {393, 394}
-    assert by_row[265]["routing_disposition"] == "construction_excluded"
-    assert by_row[265]["active_in_routing_graph"] is False
+    assert by_row[265]["routing_disposition"] == "active_in_route"
+    assert by_row[265]["active_in_routing_graph"] is True
+    assert by_row[265]["routing_override"]["id"] == "walkable-construction-source-row-265"
 
 
 def test_authoritative_course_roads_are_materialized_in_walk_graph():
@@ -98,10 +99,14 @@ def test_authoritative_course_roads_are_materialized_in_walk_graph():
     features = [feature for feature in reference["features"]
                 if feature["geometry"]["type"] == "LineString"]
     protected_rows = {393, 394}
+    policy = json.loads((ROOT / "data" / "course_routing_policy.json")
+                        .read_text(encoding="utf-8"))
+    walkable_construction_rows = set(policy["walkable_construction_source_rows"])
     expected_active_ids = {
         feature["properties"]["source_id"] for feature in features
         if feature["properties"].get("source_row") not in protected_rows
-        and feature["properties"].get("road_class") != "construction"
+        and (feature["properties"].get("road_class") != "construction"
+             or feature["properties"].get("source_row") in walkable_construction_rows)
     }
     graph = nx.read_graphml(ROOT / "data" / "whu_road_network.graphml",
                             node_type=int, force_multigraph=True)
@@ -120,7 +125,7 @@ def test_authoritative_course_roads_are_materialized_in_walk_graph():
             source_ids = [*source_ids, edge["course_source_id"]]
         materialized_ids.update(map(str, source_ids))
 
-    assert len(expected_active_ids) == 644
+    assert len(expected_active_ids) == 645
     assert expected_active_ids <= materialized_ids
     rows_by_id = {feature["properties"]["source_id"]: feature
                   for feature in features}
@@ -130,8 +135,68 @@ def test_authoritative_course_roads_are_materialized_in_walk_graph():
             if not feature["properties"]["active_in_routing_graph"]} == {
                 *protected_rows,
                 *(feature["properties"]["source_row"] for feature in features
-                  if feature["properties"].get("road_class") == "construction"),
+                  if feature["properties"].get("road_class") == "construction"
+                  and feature["properties"].get("source_row") not in walkable_construction_rows),
             }
+
+
+def test_technology_gate_course_path_is_connected_walk_only():
+    import networkx as nx
+    from spatial.routing import filter_graph_for_mode
+
+    graph = nx.read_graphml(ROOT / "data" / "whu_road_network.graphml",
+                            node_type=int, force_multigraph=True)
+    def source_edges(source_id):
+        result = []
+        for u, v, key, edge in graph.edges(keys=True, data=True):
+            raw_ids = edge.get("course_source_ids") or []
+            if isinstance(raw_ids, str):
+                try:
+                    raw_ids = json.loads(raw_ids)
+                except json.JSONDecodeError:
+                    raw_ids = [raw_ids]
+            if edge.get("course_source_id"):
+                raw_ids = [*raw_ids, edge["course_source_id"]]
+            if source_id in set(map(str, raw_ids)):
+                result.append((u, v, key, edge))
+        return result
+
+    row = "whu_course_4392126ae0613239:road:0265"
+    row_edges = source_edges(row)
+
+    assert len(row_edges) >= 2
+    assert all(json.loads(edge["allowed_modes"]) == ["walk"]
+               for _, _, _, edge in row_edges)
+    walk_graph, _, _ = filter_graph_for_mode(graph, "walk")
+    bike_graph, _, _ = filter_graph_for_mode(graph, "bike")
+    drive_graph, _, _ = filter_graph_for_mode(graph, "drive")
+    assert all(walk_graph.has_edge(u, v, key) for u, v, key, _ in row_edges)
+    assert all(not bike_graph.has_edge(u, v, key) for u, v, key, _ in row_edges)
+    assert all(not drive_graph.has_edge(u, v, key) for u, v, key, _ in row_edges)
+
+    physical_endpoints = {node for u, v, _, _ in row_edges for node in (u, v)}
+    assert len(physical_endpoints) >= 2
+    adjacent_path_nodes = {
+        node for u, v, _, _ in source_edges("whu_course_4392126ae0613239:road:0266")
+        for node in (u, v)
+    }
+    gate_side_nodes = {
+        node
+        for source_id in (
+            "whu_course_4392126ae0613239:road:0222",
+            "whu_course_4392126ae0613239:road:0223",
+            "whu_course_4392126ae0613239:road:0286",
+        )
+        for u, v, _, _ in source_edges(source_id)
+        for node in (u, v)
+    }
+    assert physical_endpoints & adjacent_path_nodes
+    assert physical_endpoints & gate_side_nodes
+    assert all(nx.has_path(walk_graph, node, 1196701909)
+               for node in physical_endpoints)
+    base_graph = nx.read_graphml(ROOT / "data" / "whu_road_network_osm_base.graphml",
+                                 node_type=int)
+    assert base_graph.has_node(1196701909)
 
 
 def test_course_walk_activation_policy_keeps_user_designated_topology_rows():
@@ -143,6 +208,7 @@ def test_course_walk_activation_policy_keeps_user_designated_topology_rows():
     assert policy["source_layer"] == "whu_road"
     assert policy["allowed_modes"] == ["walk"]
     assert policy["include_unclassified"] is True
+    assert policy["walkable_construction_source_rows"] == [265]
     assert policy["excluded_source_rows"] == sorted({
         row for exception in topology["exceptions"]
         for row in exception["source_rows"]
@@ -166,7 +232,7 @@ def test_star_lake_canteen_is_returned_by_the_live_poi_api():
     assert result["name"] == "星湖园食堂"
 
 
-def test_campus_data_layers_have_visible_touch_controls():
+def test_raw_course_data_layers_are_not_exposed_as_user_map_controls():
     html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
     javascript = (ROOT / "static" / "js" / "app.js").read_text(encoding="utf-8")
 
@@ -175,6 +241,7 @@ def test_campus_data_layers_have_visible_touch_controls():
         "toggle-campus-pois",
         "toggle-course-spots",
     ):
-        assert f'id="{control_id}"' in html
-        assert control_id in javascript
-    assert "玉兰二门连接小路" in javascript
+        assert f'id="{control_id}"' not in html
+        assert control_id not in javascript
+    assert "loadCampusSpatialLayers" not in javascript
+    assert "玉兰二门连接小路" not in javascript

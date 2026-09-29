@@ -81,41 +81,6 @@ body {
     inset: 0;
 }
 
-.campus-layer-toolbar {
-    position: absolute;
-    z-index: 1200;
-    top: 116px;
-    left: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-width: calc(100% - 24px);
-    pointer-events: auto;
-}
-.campus-layer-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 36px;
-    padding: 0 9px;
-    border: 1px solid rgba(99, 83, 74, 0.18);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-    color: #493d38;
-    font-size: 0.72rem;
-    font-weight: 650;
-    white-space: nowrap;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-.campus-layer-toggle input {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: #8B3A3A;
-}
-
 .map-placeholder {
     position: absolute;
     inset: 0;
@@ -173,26 +138,6 @@ body {
 }
 
 .legend-line.recommended { background: var(--color-recommended); }
-.legend-line.course-active { background: #008F79; }
-.legend-line.course-connector { background: #C25814; height: 4px; }
-.legend-line.course-review {
-    background: repeating-linear-gradient(90deg, #2875B8 0 5px, transparent 5px 8px);
-}
-.campus-data-status {
-    max-width: 260px;
-    line-height: 1.35;
-    color: #58616B;
-}
-
-.leaflet-tooltip.campus-poi-label {
-    border: 1px solid #7A302D;
-    border-radius: 5px;
-    color: #572522;
-    font-weight: 700;
-    padding: 3px 6px;
-    box-shadow: 0 1px 5px rgba(44, 27, 20, 0.2);
-}
-
 .legend-line.road-closure {
     background: #C0392B;
     height: 5px;
@@ -1329,7 +1274,6 @@ body.is-planning-mode .desktop-route-workbench {
     .submit-btn { width: 40px; height: 40px; }
 
     .map-legend { bottom: 10px; right: 10px; padding: 8px 10px; font-size: 0.68rem; }
-    .campus-data-status { max-width: 210px; }
 
     /* 移动端没人用键盘快捷键，隐藏 */
     .kbd-hint-bar { display: none; }
@@ -2261,7 +2205,6 @@ body.is-planning-mode .desktop-route-workbench {
 
 /* 导航中收起地图杂物：图例 / 缩放 / 图层 / 选点控件组 / 定位按钮 */
 body.nav-running .map-legend { display: none; }
-body.nav-running .campus-layer-toolbar { display: none; }
 body.nav-running .leaflet-top.leaflet-left { opacity: 0; pointer-events: none; }
 body.nav-running .leaflet-top.leaflet-right { opacity: 0; pointer-events: none; }
 body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }

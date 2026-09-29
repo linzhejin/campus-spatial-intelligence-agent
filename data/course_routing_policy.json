@@ -17,6 +17,21 @@
   ],
   "attachment_tolerance_m": 3.5,
   "allow_single_anchor_for_trusted_source": true,
+  "walkable_construction_source_rows": [
+    265
+  ],
+  "construction_walk_overrides": [
+    {
+      "source_row": 265,
+      "allowed_modes": [
+        "walk"
+      ],
+      "verification_status": "source_only",
+      "authority": "explicit_user_instruction",
+      "evidence_status": "user_confirmed_important_technology_gate_path",
+      "reason": "The user identified the dashed school-supplied path by Technology Gate as important and requested that it be connected for routing. Preserve the source construction label; enable only walking."
+    }
+  ],
   "excluded_source_rows": [
     393,
     394

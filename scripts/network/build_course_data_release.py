@@ -56,8 +56,9 @@ _GRAPHML_KEY_RE = re.compile(
 _GRAPHML_DATA_KEY_RE = re.compile(r'<data\s+key="(?P<id>[^"]+)"')
 
 
-def _stabilize_graphml_key_ids(path: Path, base_graph_path: Path) -> None:
-    """Keep existing GraphML key IDs stable so diffs show data changes, not renumbering."""
+def _stabilize_graphml_key_ids(path: Path, base_graph_path: Path,
+                               previous_graph_path: Path | None = None) -> None:
+    """Keep base and previous-release GraphML keys stable across data updates."""
     base_xml = base_graph_path.read_bytes().decode("utf-8")
     release_xml = path.read_bytes().decode("utf-8")
 
@@ -65,20 +66,30 @@ def _stabilize_graphml_key_ids(path: Path, base_graph_path: Path) -> None:
         return [match.groupdict() for match in _GRAPHML_KEY_RE.finditer(content)]
 
     base_rows = key_rows(base_xml)
+    previous_rows = []
+    if (previous_graph_path is not None and previous_graph_path.is_file()
+            and previous_graph_path.resolve() != path.resolve()):
+        previous_rows = key_rows(previous_graph_path.read_bytes().decode("utf-8"))
     release_rows = key_rows(release_xml)
     base_by_signature = {
         (row["scope"], row["name"], row["type"]): row["id"]
         for row in base_rows
     }
-    numeric_ids = [int(row["id"][1:]) for row in base_rows
+    target_by_signature = dict(base_by_signature)
+    for row in previous_rows:
+        signature = (row["scope"], row["name"], row["type"])
+        existing_id = target_by_signature.get(signature)
+        if existing_id is not None and existing_id != row["id"]:
+            raise ValueError(f"GraphML key ID changed across releases for {signature}")
+        target_by_signature[signature] = row["id"]
+    numeric_ids = [int(row["id"][1:]) for row in [*base_rows, *previous_rows]
                    if row["id"].startswith("d") and row["id"][1:].isdigit()]
     next_id = max(numeric_ids, default=-1) + 1
     new_signatures = sorted({
         (row["scope"], row["name"], row["type"])
         for row in release_rows
-        if (row["scope"], row["name"], row["type"]) not in base_by_signature
+        if (row["scope"], row["name"], row["type"]) not in target_by_signature
     })
-    target_by_signature = dict(base_by_signature)
     for signature in new_signatures:
         target_by_signature[signature] = f"d{next_id}"
         next_id += 1
@@ -109,12 +120,13 @@ def _stabilize_graphml_key_ids(path: Path, base_graph_path: Path) -> None:
 
 
 def _write_graphml_atomic(graph: nx.MultiDiGraph, path: Path,
-                          base_graph_path: Path) -> None:
+                          base_graph_path: Path,
+                          previous_graph_path: Path | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     _save_graphml(graph, str(temporary))
     temporary.replace(path)
-    _stabilize_graphml_key_ids(path, base_graph_path)
+    _stabilize_graphml_key_ids(path, base_graph_path, previous_graph_path)
 
 
 def _publish_file_atomic(source: Path, destination: Path) -> None:
@@ -364,7 +376,7 @@ def _build_course_spatial_reference(source_features: list[dict], poi_features: l
         action = (disposition.get("source_match_action")
                   or disposition.get("match_action") or "unknown")
         active = bool(disposition.get("active_release"))
-        if source.get("road_class") == "construction":
+        if source.get("road_class") == "construction" and not active:
             routing_disposition = "construction_excluded"
         elif active:
             routing_disposition = "active_in_route"
@@ -399,6 +411,8 @@ def _build_course_spatial_reference(source_features: list[dict], poi_features: l
             "source_layer": "whu_road",
             "license_status": license_status,
         }
+        if disposition.get("routing_override"):
+            properties["routing_override"] = disposition["routing_override"]
         output_features.append({
             "type": "Feature",
             "id": source_id,
@@ -817,6 +831,36 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
         raise ValueError("course routing policy must explicitly handle unclassified roads")
     if routing_policy.get("allow_single_anchor_for_trusted_source") is not True:
         raise ValueError("trusted course branches require the reviewed single-anchor policy")
+    construction_override_rows = sorted({
+        int(row) for row in routing_policy.get("walkable_construction_source_rows", [])
+    })
+    raw_construction_override_rows = routing_policy.get(
+        "walkable_construction_source_rows", []
+    )
+    if len(construction_override_rows) != len(raw_construction_override_rows):
+        raise ValueError("walkable construction source rows must be unique")
+    construction_overrides = routing_policy.get("construction_walk_overrides") or []
+    if not isinstance(construction_overrides, list):
+        raise ValueError("construction walk overrides must be a list")
+    override_rows = [int(row["source_row"]) for row in construction_overrides
+                     if isinstance(row, dict) and row.get("source_row") is not None]
+    if (len(override_rows) != len(construction_overrides)
+            or sorted(set(override_rows)) != construction_override_rows):
+        raise ValueError(
+            "walkable construction rows must have exactly one explicit override each"
+        )
+    construction_override_by_row = {}
+    for override in construction_overrides:
+        row = int(override["source_row"])
+        if (sorted(set(map(str, override.get("allowed_modes") or []))) != ["walk"]
+                or override.get("verification_status") != "source_only"
+                or override.get("authority") != "explicit_user_instruction"
+                or not str(override.get("reason") or "").strip()
+                or not str(override.get("evidence_status") or "").strip()):
+            raise ValueError(
+                f"construction row {row} requires a reasoned, walk-only user override"
+            )
+        construction_override_by_row[row] = override
     try:
         attachment_tolerance_m = float(routing_policy["attachment_tolerance_m"])
     except (KeyError, TypeError, ValueError) as exc:
@@ -848,6 +892,14 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
         properties = feature.get("properties") or {}
         source_row = int(properties["source_row"])
         road_class = properties.get("road_class")
+        if source_row in construction_override_by_row:
+            if str(road_class) != "construction":
+                raise ValueError(
+                    f"construction walk override row {source_row} is not a construction feature"
+                )
+            trusted_walk_source_rows.add(source_row)
+            observed_classes.add(str(road_class))
+            continue
         if road_class is None:
             if routing_policy["include_unclassified"]:
                 trusted_walk_source_rows.add(source_row)
@@ -865,6 +917,8 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
         attachment_tolerance_m=attachment_tolerance_m,
         trusted_walk_source_rows=trusted_walk_source_rows,
         preserved_source_rows=preserved_rows,
+        walkable_construction_source_rows=construction_override_rows,
+        walkable_construction_overrides=construction_override_by_row,
     )
     apply_course_junction_overrides(fused_graph, network_migration, junction_policy)
     merged_pois, poi_migration = fuse_course_pois(
@@ -916,6 +970,7 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
         expected_active_source_ids,
     )
     validation["course_routing_policy_sha256"] = routing_policy_sha
+    validation["walkable_construction_source_rows"] = construction_override_rows
     validation["course_excluded_topology_rows"] = preserved_rows
     coverage_audit, road_coverage = _audit_course_road_coverage(
         base_graph, fused_graph, source_features, release_fingerprint
@@ -926,7 +981,10 @@ def build_release(source_dir: Path, base_graph_path: Path, pois_path: Path,
     )
     poi_dir.mkdir(parents=True, exist_ok=True)
     graph_path = output_dir / "whu_road_network.graphml"
-    _write_graphml_atomic(fused_graph, graph_path, base_graph_path)
+    _write_graphml_atomic(
+        fused_graph, graph_path, base_graph_path,
+        ROOT / "data/whu_road_network.graphml",
+    )
     runtime_validation = _validate_serialized_runtime_graph(
         graph_path, network_migration["new_graph_counts"], network_migration
     )

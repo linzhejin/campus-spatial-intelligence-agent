@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d30" for="edge" attr.name="connector_gap_m" attr.type="double"/>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d63" for="edge" attr.name="course_routeability_override_reason" attr.type="string"/>
+<key id="d62" for="edge" attr.name="course_routeability_override_id" attr.type="string"/>
+<key id="d30" for="edge" attr.name="connector_gap_m" attr.type="double"/>
 <key id="d27" for="edge" attr.name="junction" attr.type="string"/>
 <key id="d26" for="edge" attr.name="access" attr.type="string"/>
 <key id="d25" for="edge" attr.name="ref" attr.type="string"/>
@@ -67,11 +69,11 @@
 <data key="d3">True</data>
 <data key="d52">b8821150145c59cd7b564c8fa6f625117dc57d6cd86344ccf073fa4d47fa2e11</data>
 <data key="d57">4392126ae0613239b76fb22bbb902434e54974dbed447536c57baf1673dde626</data>
-<data key="d55">80bb253771d59c3ea1ef578b7b8a98760157c3c4aac28498339e87e84fc8af1a</data>
+<data key="d55">2e79c725044b3f3e5466aae7304ec6a5978399d43b1c773ff91e5650baa969ab</data>
 <data key="d58">course_wins_static_conflicts</data>
 <data key="d53">trusted_course_geometry_added_walk_only_without_deleting_osm_topology</data>
 <data key="d54">4626fed61a1de78da544b4c1dc5738cd57f23fe0d1153955aedf9b0d761de794</data>
-<data key="d56">4ef99a37b707c183a0ebeb123ba9fac014863c8bc84b50f48ed33086caeb9a2d</data>
+<data key="d56">3d44ef072315fb9a8261611d8b06fe9889ebcf85a017163a1c0772f477ec795c</data>
 <node id="286074435">
   <data key="d4">30.5367955</data>
   <data key="d5">114.3719583</data>
@@ -143794,6 +143796,29 @@
   <data key="d49">course_wins_static_conflicts</data>
   <data key="d29">["walk"]</data>
 </edge>
+<edge source="13732671130" target="13732671165" id="0">
+  <data key="d15">73.96210564864414</data>
+  <data key="d16">LINESTRING (114.35505677859877 30.534280179718305, 114.35506459345132 30.534313290435424, 114.35520593121797 30.534672797691876, 114.35524726553236 30.5349238590913)</data>
+  <data key="d11">service</data>
+  <data key="d39">construction</data>
+  <data key="d40">施工</data>
+  <data key="d43">concrete</data>
+  <data key="d44">水泥</data>
+  <data key="d36">1</data>
+  <data key="d32">650</data>
+  <data key="d38">{"Shape_Leng": 73.9621056494, "地理编": 650, "路面材": "水泥", "车道数": 1, "道路名": null, "道路类": "施工"}</data>
+  <data key="d41">whu_course_4392126ae0613239:road:0265</data>
+  <data key="d42">["whu_course_4392126ae0613239:road:0265"]</data>
+  <data key="d34">WHU coursework</data>
+  <data key="d50">[{"id": "whu_course_4392126ae0613239:road:0265", "license": "not_provided_with_source", "source": "WHU coursework"}]</data>
+  <data key="d51">source_only</data>
+  <data key="d28">unknown</data>
+  <data key="d45">unknown</data>
+  <data key="d49">course_wins_static_conflicts</data>
+  <data key="d29">["walk"]</data>
+  <data key="d62">walkable-construction-source-row-265</data>
+  <data key="d63">The user identified the dashed school-supplied path by Technology Gate as important and requested that it be connected for routing. Preserve the source construction label; enable only walking.</data>
+</edge>
 <edge source="13732671130" target="13713923937" id="0">
   <data key="d15">219.66014845317542</data>
   <data key="d16">LINESTRING (114.35505677859877 30.534280179718305, 114.35429494253144 30.53458718455733, 114.3538409198881 30.534833430748797, 114.35347585794099 30.53505890599482, 114.35317696455762 30.53523721578397, 114.35311450000002 30.53530629999999)</data>
@@ -145012,6 +145037,29 @@
   <data key="d45">unknown</data>
   <data key="d49">course_wins_static_conflicts</data>
   <data key="d29">["walk"]</data>
+</edge>
+<edge source="13732671165" target="13732671130" id="0">
+  <data key="d15">73.96210564864414</data>
+  <data key="d16">LINESTRING (114.35524726553236 30.5349238590913, 114.35520593121797 30.534672797691876, 114.35506459345132 30.534313290435424, 114.35505677859877 30.534280179718305)</data>
+  <data key="d11">service</data>
+  <data key="d39">construction</data>
+  <data key="d40">施工</data>
+  <data key="d43">concrete</data>
+  <data key="d44">水泥</data>
+  <data key="d36">1</data>
+  <data key="d32">650</data>
+  <data key="d38">{"Shape_Leng": 73.9621056494, "地理编": 650, "路面材": "水泥", "车道数": 1, "道路名": null, "道路类": "施工"}</data>
+  <data key="d41">whu_course_4392126ae0613239:road:0265</data>
+  <data key="d42">["whu_course_4392126ae0613239:road:0265"]</data>
+  <data key="d34">WHU coursework</data>
+  <data key="d50">[{"id": "whu_course_4392126ae0613239:road:0265", "license": "not_provided_with_source", "source": "WHU coursework"}]</data>
+  <data key="d51">source_only</data>
+  <data key="d28">unknown</data>
+  <data key="d45">unknown</data>
+  <data key="d49">course_wins_static_conflicts</data>
+  <data key="d29">["walk"]</data>
+  <data key="d62">walkable-construction-source-row-265</data>
+  <data key="d63">The user identified the dashed school-supplied path by Technology Gate as important and requested that it be connected for routing. Preserve the source construction label; enable only walking.</data>
 </edge>
 <edge source="13732671165" target="1196701909" id="0">
   <data key="d15">17.803416179386385</data>

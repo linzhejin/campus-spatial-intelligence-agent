@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_fingerprint": "80bb253771d59c3ea1ef578b7b8a98760157c3c4aac28498339e87e84fc8af1a",
+  "release_fingerprint": "2e79c725044b3f3e5466aae7304ec6a5978399d43b1c773ff91e5650baa969ab",
   "metric_crs": "EPSG:4547",
   "source_crs": "EPSG:4547",
   "course_road_count": 647,
@@ -18,7 +18,7 @@
       "within_15m_at_least_95pct": 628
     },
     "release": {
-      "within_3m_at_least_95pct": 613,
+      "within_3m_at_least_95pct": 614,
       "within_8m_at_least_95pct": 647,
       "within_15m_at_least_95pct": 647
     }
@@ -3213,7 +3213,7 @@
       "osm_base_within_3m_pct": 37.81,
       "osm_base_within_8m_pct": 93.73,
       "osm_base_within_15m_pct": 100.0,
-      "release_within_3m_pct": 45.64,
+      "release_within_3m_pct": 100.0,
       "release_within_8m_pct": 100.0,
       "release_within_15m_pct": 100.0
     },

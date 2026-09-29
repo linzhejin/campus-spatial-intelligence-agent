@@ -883,7 +883,9 @@ def apply_course_junction_overrides(graph, migration, policy):
 
 
 def fuse_network(old_graph, course_features, match_report, *, attachment_tolerance_m=2.0,
-                 trusted_walk_source_rows=None, preserved_source_rows=()):
+                 trusted_walk_source_rows=None, preserved_source_rows=(),
+                 walkable_construction_source_rows=(),
+                 walkable_construction_overrides=None):
     """Fuse only unique matches and well-anchored new course components.
 
     Ambiguous features remain in the review layer. New components are published
@@ -903,6 +905,13 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
                       for row in match_rows if row.get("source_id")}
     trusted_rows = {int(row) for row in (trusted_walk_source_rows or [])}
     preserved_rows = {int(row) for row in (preserved_source_rows or [])}
+    walkable_construction_rows = {
+        int(row) for row in (walkable_construction_source_rows or [])
+    }
+    construction_override_details = {
+        int(row): deepcopy(details)
+        for row, details in (walkable_construction_overrides or {}).items()
+    }
     features_by_source = {
         str((feature.get("properties") or {}).get("source_id")): feature
         for feature in course_features
@@ -912,11 +921,15 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
         for feature in course_features
         if (properties := (feature.get("properties") or {})).get("source_row") is not None
     }
-    unknown_policy_rows = (trusted_rows | preserved_rows) - known_rows
+    unknown_policy_rows = (trusted_rows | preserved_rows | walkable_construction_rows) - known_rows
     if unknown_policy_rows:
         raise ValueError(
             f"course routing policy references unknown source rows: {sorted(unknown_policy_rows)}"
         )
+    if not walkable_construction_rows.issubset(trusted_rows):
+        raise ValueError("walkable construction exceptions must be trusted walk rows")
+    if set(construction_override_details) != walkable_construction_rows:
+        raise ValueError("every walkable construction row needs exact override metadata")
 
     match_by_source = {}
     source_match_actions = {}
@@ -934,6 +947,15 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
         if source_row in preserved_rows:
             match["action"] = "ambiguous"
             activation_policies[source_id] = "preserve_existing_topology"
+        elif source_row in walkable_construction_rows:
+            if road_class != "construction":
+                raise ValueError(
+                    f"walkable construction exception row {source_row} is not construction"
+                )
+            # Preserve the source line as a separate walk-only route edge. Do
+            # not use a possibly ambiguous OSM match to replace other modes.
+            match["action"] = "new_candidate"
+            activation_policies[source_id] = "explicit_user_walkable_construction_override"
         elif source_row in trusted_rows and road_class == "construction":
             match["action"] = "ambiguous"
             activation_policies[source_id] = "excluded_construction_class"
@@ -997,7 +1019,9 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
                     if course_dispositions.get(
                         (feature.get("properties") or {}).get("source_id"), {}
                     ).get("match_action") == "new_candidate"
-                    and (feature.get("properties") or {}).get("road_class") != "construction"]
+                    and ((feature.get("properties") or {}).get("road_class") != "construction"
+                         or int((feature.get("properties") or {}).get("source_row", -1))
+                         in walkable_construction_rows)]
 
     endpoint_rows = []
     metric_lines = {}
@@ -1286,6 +1310,20 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
                     component["attachments"][end_cluster],
                 ],
             })
+            if int(properties.get("source_row", -1)) in walkable_construction_rows:
+                source_row = int(properties["source_row"])
+                override = deepcopy(construction_override_details[source_row])
+                override.setdefault(
+                    "id", f"walkable-construction-source-row-{source_row}"
+                )
+                override_id = override["id"]
+                record["routing_override"] = override
+                for edge in (
+                    graph[start_node][end_node][forward_key],
+                    graph[end_node][start_node][reverse_key],
+                ):
+                    edge["course_routeability_override_id"] = override_id
+                    edge["course_routeability_override_reason"] = override["reason"]
 
     for feature in course_features:
         source_id = feature["properties"]["source_id"]
@@ -1306,6 +1344,7 @@ def fuse_network(old_graph, course_features, match_report, *, attachment_toleran
         "elevation_policy": "course_z_all_zero_is_unavailable",
         "new_course_mode_policy": "walk_only_until_nonwalk_access_is_verified",
         "trusted_walk_source_rows": sorted(trusted_rows),
+        "walkable_construction_source_rows": sorted(walkable_construction_rows),
         "preserved_source_rows": sorted(preserved_rows),
         "attachment_tolerance_m": attachment_tolerance_m,
         "old_graph_counts": {"nodes": old_graph.number_of_nodes(),
