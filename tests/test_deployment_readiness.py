@@ -22,6 +22,52 @@ def _verified_inputs():
     return validation, audit, comparison, samples, {}
 
 
+def test_runtime_flask_floor_supports_per_request_upload_limits():
+    from pathlib import Path
+    requirements = Path(__file__).resolve().parents[1] / "requirements.txt"
+    flask_requirement = next(
+        line.strip().lower() for line in requirements.read_text(encoding="utf-8").splitlines()
+        if line.strip().lower().startswith("flask>=")
+    )
+    assert flask_requirement.startswith("flask>=3.1")
+
+
+def test_agent_worker_has_a_managed_service_and_deploy_installs_it():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    worker_unit = root / "ops" / "systemd" / "whu-agent-worker.service"
+    assert worker_unit.exists(), "Agent queue needs a systemd worker unit"
+    unit_text = worker_unit.read_text(encoding="utf-8")
+    assert "python -m jobs.worker" in unit_text
+    assert "@APP_DIR@" in unit_text
+    deploy_script = (root / "deploy.sh").read_text(encoding="utf-8")
+    assert "whu-agent-worker.service" in deploy_script
+    assert "systemctl enable --now" in deploy_script
+    assert "DATABASE_URL" in deploy_script
+    assert "SECRET_KEY" in deploy_script
+    worker_source = (root / "jobs" / "worker.py").read_text(encoding="utf-8")
+    assert "load_dotenv" in worker_source
+
+
+def test_vision_readiness_and_worker_share_optional_runtime_dependencies():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    optional_requirements = (root / "requirements-vision.txt").read_text(encoding="utf-8")
+    deployment_guide = (root / "docs" / "03_部署指南.md").read_text(encoding="utf-8")
+    assert "same venv" in optional_requirements
+    assert "Web 共用的虚拟环境" in deployment_guide
+    assert "venv/bin/pip install -r requirements-vision.txt" in deployment_guide
+    vision_unit = root / "ops" / "systemd" / "whu-vision-worker.service"
+    assert vision_unit.exists()
+    vision_unit_text = vision_unit.read_text(encoding="utf-8")
+    assert "python -m vision.worker" in vision_unit_text
+    assert "TimeoutStopSec=300" in vision_unit_text
+    assert "manager_vision_worker" in (root / "storage" / "migrations" / "006_vision_worker_heartbeat.sql").read_text(encoding="utf-8")
+    deploy_script = (root / "deploy.sh").read_text(encoding="utf-8")
+    assert "VISION_WORKER_ENABLED" in deploy_script
+    assert 'systemctl restart "${SERVICE_NAME}" "${AGENT_SERVICE_NAME}"' in deploy_script
+
+
 def test_verified_campus_data_passes_readiness_gate():
     assert assess(*_verified_inputs())["ready"] is True
 

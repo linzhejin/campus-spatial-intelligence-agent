@@ -502,20 +502,23 @@ class TestRoadConditionAPI:
 
     def test_session_login_then_patch_end_and_delete(self, client, G):
         # 网页 session 登录
-        assert client.post("/api/admin/login", json={"password": "test-pw-123"}).status_code == 200
+        login = client.post("/api/admin/login", json={"password": "test-pw-123"})
+        assert login.status_code == 200
+        csrf = login.get_json()["data"]["csrf_token"]
+        headers = {"X-CSRF-Token": csrf}
         gj = _mid_12_gcj(G)
         cid = client.post("/api/road-conditions", json={
             "type": "accident", "name": "session事故",
             "lng": gj[0], "lat": gj[1],
-        }).get_json()["data"]["condition"]["id"]
+        }, headers=headers).get_json()["data"]["condition"]["id"]
         # 立即结束
-        r = client.patch(f"/api/road-conditions/{cid}", json={"action": "end"})
+        r = client.patch(f"/api/road-conditions/{cid}", json={"action": "end"}, headers=headers)
         assert r.status_code == 200 and r.get_json()["data"]["condition"]["end_time"] > 0
         # 普通视图看不到，管理 all 视图能看到
         assert client.get("/api/road-conditions").get_json()["data"]["count"] == 0
         assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 1
         # 删除
-        assert client.delete(f"/api/road-conditions/{cid}").status_code == 200
+        assert client.delete(f"/api/road-conditions/{cid}", headers=headers).status_code == 200
         assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 0
 
     def test_public_list_shape(self, client, G):

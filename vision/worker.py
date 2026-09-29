@@ -1,0 +1,141 @@
+"""Isolated worker for bounded aerial image/video inference jobs."""
+from __future__ import annotations
+
+import logging
+import os
+import signal
+import importlib.util
+import threading
+import time
+import uuid
+from pathlib import Path
+
+import config
+from dotenv import load_dotenv
+from storage import database
+from storage import vision_repository
+from vision.engine import UltralyticsDetector, analyze_media
+
+logger = logging.getLogger(__name__)
+_STOP = threading.Event()
+
+
+def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90, *, detector=None):
+    job = vision_repository.claim_next_job(database_url, worker_id, lease_seconds)
+    if not job:
+        return None
+    job_id = job["job_id"]
+    stop_heartbeat = threading.Event()
+    lease_lost = threading.Event()
+
+    def keep_lease_alive():
+        while not stop_heartbeat.wait(max(1, lease_seconds // 3)):
+            if not vision_repository.heartbeat_job(database_url, job_id, worker_id, lease_seconds):
+                lease_lost.set()
+                return
+
+    heartbeat = threading.Thread(target=keep_lease_alive, name=f"vision-lease-{job_id[:8]}", daemon=True)
+    heartbeat.start()
+    try:
+        path = Path(config.VISION_UPLOAD_DIR) / job["media_path"]
+        result = analyze_media(
+            path, job["media_kind"], job["anchor_gcj"],
+            camera_stabilized=job["camera_stabilized"], detector=detector,
+        )
+        if lease_lost.is_set():
+            return {"job_id": job_id, "status": "lease_lost"}
+        status = "needs_review" if result.get("candidates") else "completed"
+        committed = vision_repository.finish_job(
+            database_url, job_id, worker_id, status=status, result=result,
+        )
+        return {"job_id": job_id, "status": status if committed else "lease_lost"}
+    except Exception as error:
+        logger.exception("Vision job failed (%s)", job_id)
+        if lease_lost.is_set():
+            return {"job_id": job_id, "status": "lease_lost"}
+        message = str(error)[:500] or "影像分析失败，请检查文件后重试。"
+        committed = vision_repository.finish_job(
+            database_url, job_id, worker_id, status="failed",
+            error={"code": "vision_analysis_failed", "message": message},
+        )
+        return {"job_id": job_id, "status": "failed" if committed else "lease_lost"}
+    finally:
+        stop_heartbeat.set()
+        heartbeat.join(timeout=2)
+
+
+def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
+    database_url = database.database_url(database_url)
+    database.initialize(database_url)
+    worker_id = f"whu-vision-{uuid.uuid4()}"
+    detector = None
+    ready = False
+    status_detail = ""
+    try:
+        missing = [
+            name for name in ("ultralytics", "cv2", "PIL")
+            if importlib.util.find_spec(name) is None
+        ]
+        if missing:
+            raise RuntimeError("missing vision dependencies: " + ", ".join(missing))
+        detector = UltralyticsDetector(config.VISION_MODEL_PATH)
+        ready = True
+    except Exception as error:
+        status_detail = f"{type(error).__name__}: {error}"[:500]
+        logger.exception("Vision worker model initialization failed; uploads remain disabled")
+
+    heartbeat_stop = threading.Event()
+
+    def keep_worker_heartbeat():
+        while not heartbeat_stop.is_set():
+            try:
+                vision_repository.heartbeat_worker(
+                    database_url, worker_id, ready=ready, status_detail=status_detail,
+                )
+            except Exception:
+                logger.exception("Could not publish vision worker readiness")
+            heartbeat_stop.wait(heartbeat_seconds)
+
+    heartbeat = threading.Thread(
+        target=keep_worker_heartbeat, name="vision-worker-heartbeat", daemon=True,
+    )
+    heartbeat.start()
+    try:
+        while not _STOP.is_set():
+            if not ready:
+                _STOP.wait(idle_seconds)
+                continue
+            try:
+                if process_next_job(database_url, worker_id, detector=detector) is None:
+                    _STOP.wait(idle_seconds)
+            except Exception:
+                logger.exception("Vision worker loop failed; retrying")
+                _STOP.wait(min(5, idle_seconds * 4))
+    finally:
+        heartbeat_stop.set()
+        heartbeat.join(timeout=2)
+        try:
+            vision_repository.heartbeat_worker(
+                database_url, worker_id, ready=False, status_detail="worker_stopped",
+            )
+        except Exception:
+            logger.exception("Could not mark vision worker stopped")
+
+
+def _request_stop(_signum, _frame):
+    _STOP.set()
+
+
+def main():
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO"),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+    signal.signal(signal.SIGINT, _request_stop)
+    signal.signal(signal.SIGTERM, _request_stop)
+    run_forever()
+
+
+if __name__ == "__main__":
+    main()

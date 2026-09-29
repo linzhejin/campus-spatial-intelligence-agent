@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260929e">
+    <link rel="stylesheet" href="/css/style.css?v=20260930b">
 </head>
 <body>
 
@@ -122,6 +122,14 @@
 
     <!-- ====== 对话面板 (毛玻璃) ====== -->
     <div class="chat-panel" id="chat-panel">
+
+        <div class="mobile-panel-resizer" id="mobile-panel-resizer"
+             role="separator" aria-orientation="horizontal"
+             aria-label="调整地图与对话面板高度" aria-controls="map-panel chat-content"
+             aria-valuemin="28" aria-valuemax="76" aria-valuenow="55"
+             aria-valuetext="地图约 55%，对话约 45%" tabindex="0">
+            <span aria-hidden="true"></span>
+        </div>
 
         <!-- 浮动顶栏 -->
         <header class="floating-header" id="floating-header">
@@ -555,6 +563,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20260929g"></script>
+    <script src="/js/app.js?v=20260930b"></script>
 </body>
 </html>

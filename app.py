@@ -40,10 +40,22 @@ def create_app() -> Flask:
         static_url_path="",
     )
 
-    # Session 密钥（管理员登录态用）；生产强烈建议配 SECRET_KEY 环境变量
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "whu-walker-dev-secret-change-me")
+    # Production must use one stable, high-entropy key shared by every web worker.
+    secret_key = os.getenv("SECRET_KEY", "")
+    is_production = os.getenv("FLASK_ENV", "development") == "production"
+    if is_production and (
+        len(secret_key) < 32
+        or secret_key == "whu-walker-dev-secret-change-me"
+        or secret_key.lower() in {"secret", "changeme", "change-me", "development"}
+    ):
+        raise RuntimeError("Production requires a strong SECRET_KEY of at least 32 characters")
+    app.config["SECRET_KEY"] = secret_key or "whu-walker-dev-secret-change-me"
+    app.config["DATABASE_URL"] = os.getenv("DATABASE_URL")
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 
     if os.getenv("FLASK_ENV", "development") == "production":
+        app.config["SESSION_COOKIE_SECURE"] = True
         origins_raw = os.getenv("CORS_ORIGINS", "")
         origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
         if origins:
@@ -54,16 +66,38 @@ def create_app() -> Flask:
         app.config["DEBUG"] = False
         app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB
     else:
+        app.config["SESSION_COOKIE_SECURE"] = False
         CORS(app)
         app.config["DEBUG"] = True
         app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB dev
 
     from api.routes import api_bp
     app.register_blueprint(api_bp)
+    from api.conversations import conversations_bp
+    app.register_blueprint(conversations_bp)
+    from api.runs import runs_bp
+    app.register_blueprint(runs_bp)
+
+    @app.before_request
+    def _set_manager_upload_limit():
+        if request.path == "/api/manager/vision-jobs" and request.method == "POST":
+            request.max_content_length = int(os.getenv("VISION_MAX_MEDIA_BYTES", str(24 * 1024 * 1024))) + 1024 * 1024
+
+    if app.config["DATABASE_URL"]:
+        from storage.database import initialize
+        # A configured durable store is authoritative; a migration error must
+        # stop startup instead of silently serving an empty in-memory session.
+        initialize(app.config["DATABASE_URL"])
 
     @app.route("/")
     def serve_index():
         resp = send_from_directory(app.static_folder, "index.html")
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return resp
+
+    @app.route("/manager")
+    def serve_manager():
+        resp = send_from_directory(app.static_folder, "manager.html")
         resp.headers["Cache-Control"] = "no-cache, must-revalidate"
         return resp
 
@@ -79,6 +113,12 @@ def create_app() -> Flask:
     @app.after_request
     def _add_cache_headers(resp):
         path = request.path
+        if (path == "/api/conversations" or path.startswith("/api/conversations/")
+                or path.startswith("/api/runs/") or path.startswith("/api/admin/")
+                or path == "/api/admin" or path.startswith("/api/manager/")
+                or path == "/api/manager"):
+            resp.headers["Cache-Control"] = "private, no-store"
+            resp.headers["Vary"] = "Cookie"
         if path.startswith("/static/") or path.startswith("/icons/") or path.startswith("/css/") or path.startswith("/js/"):
             resp.headers["Cache-Control"] = f"public, max-age={_cache_max_age(path)}"
         return resp

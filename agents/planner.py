@@ -173,6 +173,9 @@ def _build_messages(query: str, context: dict = None, history: list = None,
 
     # 旧 context 的规划槽位（上一轮路线状态），供承接"换一条/从那里出发"
     if context:
+        policy = context.get("context_policy")
+        if policy:
+            messages.append({"role": "system", "content": policy})
         slot = {k: context[k] for k in ("start", "end") if context.get(k)}
         if slot:
             messages.append({

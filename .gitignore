@@ -289,3 +289,6 @@ android-app/keystore-password.txt
 # ===== 运行时数据（本地产生，不入库）=====
 data/telemetry.jsonl
 data/user_profiles.json
+data/vision/uploads/
+models/vision/
+output/vision/

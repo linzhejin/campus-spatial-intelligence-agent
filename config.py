@@ -38,6 +38,14 @@ ROAD_CONDITION_ADMIN_PASSWORD = os.getenv("ROAD_CONDITION_ADMIN_PASSWORD", "")
 # 不设置时仅允许网页 session 登录
 ROAD_CONDITION_ADMIN_TOKEN = os.getenv("ROAD_CONDITION_ADMIN_TOKEN", "")
 
+# Aerial inspection is optional and isolated in `python -m vision.worker`.
+VISION_UPLOAD_DIR = os.getenv("VISION_UPLOAD_DIR", os.path.join(os.path.dirname(__file__), "data", "vision", "uploads"))
+VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", "")
+VISION_MAX_MEDIA_BYTES = int(os.getenv("VISION_MAX_MEDIA_BYTES", str(24 * 1024 * 1024)))
+VISION_MAX_FRAME_PIXELS = int(os.getenv("VISION_MAX_FRAME_PIXELS", "12500000"))
+VISION_MAX_VIDEO_FRAMES = int(os.getenv("VISION_MAX_VIDEO_FRAMES", "180"))
+VISION_MAX_ANALYSIS_SECONDS = float(os.getenv("VISION_MAX_ANALYSIS_SECONDS", "240"))
+
 # ===== 武汉大学校园范围 (经纬度边界) — .env 可覆盖 =====
 WHU_BBOX = {
     "north": _env_float("WHU_BBOX_NORTH", 30.5510),

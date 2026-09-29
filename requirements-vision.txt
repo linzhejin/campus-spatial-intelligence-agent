@@ -1,0 +1,7 @@
+# Optional dependencies for the separate `python -m vision.worker` process.
+# Install into the same venv as the web process so manager readiness reflects
+# the worker's installed dependencies; model loading/inference stays isolated
+# in the worker process and does not affect web cold starts or memory footprint.
+ultralytics>=8.3,<9
+opencv-python-headless>=4.10,<5
+Pillow>=10,<13

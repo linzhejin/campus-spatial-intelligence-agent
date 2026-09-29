@@ -6,12 +6,12 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v59';
+var CACHE_NAME = 'whu-walker-v63';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
-    '/css/style.css',
-    '/js/app.js',
+    '/css/style.css?v=20260930b',
+    '/js/app.js?v=20260930b',
     '/js/config.js',
     '/js/voice-output.js',
     '/js/voice-input.js',
@@ -28,20 +28,20 @@ var PRECACHE_URLS = [
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
-            return cache.addAll(PRECACHE_URLS).catch(function () {
-                /* 忽略个别资源失败，保证 SW 安装成功 */
-            });
+            return cache.addAll(PRECACHE_URLS);
+        }).then(function () {
+            /* 完整缓存首屏资源后才接管；失败时旧 worker 和旧缓存继续可用。 */
+            return self.skipWaiting();
         })
     );
-    self.skipWaiting();
 });
 
 /* ---------- activate: 清理旧版本缓存 ---------- */
 self.addEventListener('activate', function (event) {
     event.waitUntil(
-        caches.keys().then(function (keys) {
-            return Promise.all(
-                keys.filter(function (k) { return k !== CACHE_NAME; })
+            caches.keys().then(function (keys) {
+                return Promise.all(
+                    keys.filter(function (k) { return k.indexOf('whu-walker-') === 0 && k !== CACHE_NAME; })
                     .map(function (k) { return caches.delete(k); })
             );
         })
@@ -79,6 +79,16 @@ self.addEventListener('fetch', function (event) {
     var isApiCall = url.pathname.startsWith('/api/');
 
     if (isApiCall) {
+        /* 会话、运行结果和管理台包含私有数据：永不写入离线 Cache API。 */
+        var isPrivateApi = url.pathname === '/api/conversations' ||
+            url.pathname.indexOf('/api/conversations/') === 0 ||
+            url.pathname === '/api/runs' || url.pathname.indexOf('/api/runs/') === 0 ||
+            url.pathname === '/api/admin' || url.pathname.indexOf('/api/admin/') === 0 ||
+            url.pathname === '/api/manager' || url.pathname.indexOf('/api/manager/') === 0;
+        if (isPrivateApi) {
+            event.respondWith(fetch(request));
+            return;
+        }
         /* 校园 POI 主库与源路网必须使用当前发布版；非 GET 请求也不进入 Cache API。 */
         var isCampusMasterApi = request.method !== 'GET' ||
             url.pathname === '/api/pois' ||
@@ -136,12 +146,13 @@ self.addEventListener('fetch', function (event) {
      * 策略 ① 静态资源
      *   · navigate（HTML 导航）：network-first —— 有网必拿最新页面，
      *     成功后写缓存；离线才回退缓存的 index.html（SPA offline shell）
-     *   · 其他静态（CSS/JS/img/icon）：cache-first（配合 index.html 里的 ?v= 版本号失效）
+     *   · 其他静态（CSS/JS/img/icon）：cache-first（发版同步更新缓存名与资源版本号）
      * ─────────────────────────────────────────────── */
     if (request.mode === 'navigate') {
+        var isAppShell = url.pathname === '/' || url.pathname === '/index.html';
         event.respondWith(
             fetch(request).then(function (response) {
-                if (response && response.status === 200) {
+                if (isAppShell && response && response.status === 200) {
                     var copy = response.clone();
                     caches.open(CACHE_NAME).then(function (cache) {
                         cache.put('/index.html', copy);
@@ -149,7 +160,9 @@ self.addEventListener('fetch', function (event) {
                 }
                 return response;
             }).catch(function () {
-                return caches.match('/index.html');
+                return isAppShell
+                    ? caches.match('/index.html')
+                    : new Response('', { status: 504, statusText: 'Offline' });
             })
         );
         return;

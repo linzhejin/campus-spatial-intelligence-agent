@@ -13,15 +13,20 @@
   DELETE /api/road-conditions/<id> — 删除路况事件
 """
 import json
+import hmac
 import logging
 import math
+import mimetypes
 import os
 import re
+import secrets
 import time
+import uuid
 from pathlib import Path
 
 import networkx as nx
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app, send_file
+from werkzeug.utils import secure_filename
 
 import config
 from agents.parser import parse_query, detect_travel_mode
@@ -88,6 +93,11 @@ def _require_admin():
     identity = _admin_identity()
     if identity is None:
         return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    if identity == "web" and request.method in {"POST", "PATCH", "PUT", "DELETE"}:
+        expected = session.get("admin_csrf_token", "")
+        provided = request.headers.get("X-CSRF-Token", "")
+        if not expected or not provided or not hmac.compare_digest(expected, provided):
+            return _err("csrf_failed", "管理操作校验已过期，请刷新管理页面后重试。", 403)
     return None
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -561,9 +571,11 @@ def weather():
 @api_bp.route("/admin/status", methods=["GET"])
 def admin_status():
     """GET /api/admin/status — 是否已登录管理员"""
+    identity = _admin_identity()
     return _ok({
-        "is_admin": _is_admin(),
+        "is_admin": identity is not None,
         "login_enabled": _admin_login_enabled(),
+        "csrf_token": session.get("admin_csrf_token") if identity == "web" else None,
     })
 
 
@@ -574,10 +586,11 @@ def admin_login():
         return _err("admin_disabled", "管理员功能未配置", 403)
     body = request.get_json(silent=True) or {}
     password = str(body.get("password", "")).strip()
-    if password == config.ROAD_CONDITION_ADMIN_PASSWORD:
+    if hmac.compare_digest(password, config.ROAD_CONDITION_ADMIN_PASSWORD):
         session["is_admin"] = True
+        session["admin_csrf_token"] = secrets.token_urlsafe(32)
         session.permanent = True
-        return _ok({"is_admin": True})
+        return _ok({"is_admin": True, "csrf_token": session["admin_csrf_token"]})
     return _err("invalid_password", "密码错误", 401)
 
 
@@ -585,6 +598,7 @@ def admin_login():
 def admin_logout():
     """POST /api/admin/logout — 退出管理员登录"""
     session.pop("is_admin", None)
+    session.pop("admin_csrf_token", None)
     return _ok({"is_admin": False})
 
 
@@ -1639,8 +1653,9 @@ def snap_road_condition():
 
     返回边标识、吸附点(GCJ-02)、道路名、距离与边几何，供前端把标记移到路上并画线。
     """
-    if _require_admin():
-        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
     try:
         lng = float(request.args.get("lng"))
         lat = float(request.args.get("lat"))
@@ -1675,9 +1690,10 @@ def create_road_condition():
         "end_time": "2026-09-12T18:00"     # 可选，缺省=长期有效
     }
     """
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
     identity = _admin_identity()
-    if identity is None:
-        return _err("unauthorized", "需要管理员权限，请先登录", 401)
 
     body = request.get_json(silent=True)
     if body is None:
@@ -1740,8 +1756,9 @@ def patch_road_condition(cond_id):
       {"name": "..."} / {"description": "..."}  改名/补充描述
       {"start_time": ..., "end_time": ...}      调整生效时段（ISO 或时间戳）
     """
-    if _require_admin():
-        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
     body = request.get_json(silent=True) or {}
 
     changes = {}
@@ -1771,12 +1788,244 @@ def patch_road_condition(cond_id):
 @api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
 def delete_road_condition(cond_id):
     """DELETE /api/road-conditions/<id> — 删除路况事件（需管理员 session 或 Token）"""
-    if _require_admin():
-        return _err("unauthorized", "需要管理员权限，请先登录", 401)
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
     success = remove_condition(cond_id)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
     return _ok({"message": "已删除", "id": cond_id})
+
+
+def _public_vision_job(job: dict) -> dict:
+    visible = {key: value for key, value in job.items() if key not in {"media_path", "sha256"}}
+    if visible.get("job_id"):
+        visible["media_url"] = f"/api/manager/vision-jobs/{visible['job_id']}/media"
+    return visible
+
+
+def _vision_inference_readiness(database_url=None) -> tuple[bool, bool, bool, bool]:
+    import importlib.util
+
+    weights_ready = bool(config.VISION_MODEL_PATH and Path(config.VISION_MODEL_PATH).is_file())
+    dependencies_ready = all(importlib.util.find_spec(name) for name in ("ultralytics", "cv2", "PIL"))
+    worker_ready = False
+    if weights_ready and dependencies_ready:
+        try:
+            from storage import database, vision_repository
+            database.initialize(database_url)
+            worker_ready = vision_repository.has_ready_worker(database_url)
+        except Exception:
+            logger.info("Vision worker is not ready or its heartbeat is unavailable", exc_info=True)
+    return weights_ready and dependencies_ready and worker_ready, weights_ready, dependencies_ready, worker_ready
+
+
+@api_bp.route("/manager/vision-status", methods=["GET"])
+def manager_vision_status():
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    inference_ready, weights_ready, dependencies_ready, worker_ready = _vision_inference_readiness(
+        current_app.config.get("DATABASE_URL"),
+    )
+    return _ok({
+        "upload_enabled": inference_ready,
+        "inference_ready": inference_ready,
+        "weights_ready": weights_ready,
+        "dependencies_ready": dependencies_ready,
+        "worker_ready": worker_ready,
+        "max_media_bytes": config.VISION_MAX_MEDIA_BYTES,
+        "notice": (
+            "视觉分析已就绪，结果仍需人工核验。"
+            if inference_ready else
+            "任务上传与审核界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。"
+        ),
+    })
+
+
+@api_bp.route("/manager/vision-jobs", methods=["GET", "POST"])
+def manager_vision_jobs():
+    if request.method == "GET":
+        auth_error = _require_admin()
+        if auth_error:
+            return auth_error
+        try:
+            from storage import database, vision_repository
+            database.initialize(current_app.config.get("DATABASE_URL"))
+            try:
+                limit = int(request.args.get("limit", "50"))
+            except (TypeError, ValueError):
+                return _err("invalid_limit", "limit 必须是 1 到 200 之间的整数。", 400)
+            if not 1 <= limit <= 200:
+                return _err("invalid_limit", "limit 必须是 1 到 200 之间的整数。", 400)
+            items = vision_repository.list_jobs(current_app.config.get("DATABASE_URL"), limit=limit)
+            return _ok({"jobs": [_public_vision_job(item) for item in items]})
+        except RuntimeError as error:
+            return _err("vision_storage_unavailable", str(error), 503)
+
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    inference_ready, _, _, _ = _vision_inference_readiness(current_app.config.get("DATABASE_URL"))
+    if not inference_ready:
+        return _err(
+            "vision_not_ready",
+            "视觉模型、依赖或后台工作进程尚未就绪，暂不能提交任务。",
+            503,
+        )
+    uploaded = request.files.get("media")
+    if uploaded is None or not uploaded.filename:
+        return _err("missing_media", "请选择一张图片或一个视频文件。", 400)
+    safe_name = secure_filename(uploaded.filename)
+    extension = Path(safe_name).suffix.lower()
+    image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+    video_extensions = {".mp4", ".mov", ".avi", ".webm"}
+    if extension not in image_extensions | video_extensions:
+        return _err("unsupported_media", "只支持 JPG、PNG、WebP 图片和 MP4、MOV、AVI、WebM 视频。", 415)
+    try:
+        lng = float(request.form.get("lng", ""))
+        lat = float(request.form.get("lat", ""))
+    except (TypeError, ValueError):
+        return _err("invalid_anchor", "请先在地图上标注这段影像对应的校园区域。", 400)
+    bbox = config.WHU_BBOX
+    if not (bbox["west"] - .01 <= lng <= bbox["east"] + .01
+            and bbox["south"] - .01 <= lat <= bbox["north"] + .01):
+        return _err("outside_campus", "观察点需要落在武汉大学校园范围附近。", 400)
+    upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    job_id = secrets.token_hex(16)
+    stored_name = job_id + extension
+    target = upload_dir / stored_name
+    digest = __import__("hashlib").sha256()
+    size = 0
+    try:
+        with target.open("wb") as output:
+            while True:
+                chunk = uploaded.stream.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > config.VISION_MAX_MEDIA_BYTES:
+                    raise OverflowError
+                digest.update(chunk)
+                output.write(chunk)
+        if not size:
+            raise ValueError("上传文件为空。")
+        with target.open("rb") as source:
+            header = source.read(16)
+        if extension in image_extensions:
+            valid_header = (
+                header.startswith(b"\xff\xd8\xff")
+                or header.startswith(b"\x89PNG\r\n\x1a\n")
+                or (header.startswith(b"RIFF") and header[8:12] == b"WEBP")
+            )
+        else:
+            valid_header = (
+                (header[4:8] == b"ftyp")
+                or (header.startswith(b"RIFF") and header[8:12] == b"AVI ")
+                or header.startswith(b"\x1aE\xdf\xa3")
+            )
+        if not valid_header:
+            raise ValueError("文件内容与扩展名不匹配，或影像文件已损坏。")
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        job = vision_repository.create_job(
+            current_app.config.get("DATABASE_URL"),
+            created_by=_admin_identity() or "unknown",
+            original_name=safe_name[:180],
+            media_kind="image" if extension in image_extensions else "video",
+            media_path=stored_name,
+            sha256=digest.hexdigest(),
+            anchor_gcj={"lng": lng, "lat": lat, "crs": "GCJ02"},
+            camera_stabilized=(
+                extension in video_extensions
+                and request.form.get("camera_stabilized", "false").strip().lower() == "true"
+            ),
+        )
+        return _ok({"job": _public_vision_job(job)}, status=202)
+    except OverflowError:
+        target.unlink(missing_ok=True)
+        return _err("media_too_large", f"文件超过 {round(config.VISION_MAX_MEDIA_BYTES / (1024 * 1024))} MB。", 413)
+    except ValueError as error:
+        target.unlink(missing_ok=True)
+        return _err("invalid_media", str(error), 400)
+    except RuntimeError as error:
+        target.unlink(missing_ok=True)
+        return _err("vision_storage_unavailable", str(error), 503)
+    except Exception as error:
+        target.unlink(missing_ok=True)
+        logger.exception("影像任务入队失败")
+        return _err("vision_enqueue_failed", "影像任务暂时无法入队，请稍后重试。", 503)
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>", methods=["GET"])
+def manager_vision_job(job_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
+    except (ValueError, RuntimeError) as error:
+        if isinstance(error, ValueError):
+            return _err("invalid_job_id", "影像任务标识无效。", 400)
+        return _err("vision_storage_unavailable", str(error), 503)
+    if not job:
+        return _err("job_not_found", "影像任务不存在。", 404)
+    return _ok({"job": _public_vision_job(job)})
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>/media", methods=["GET"])
+def manager_vision_media(job_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
+    except (ValueError, RuntimeError) as error:
+        if isinstance(error, ValueError):
+            return _err("invalid_job_id", "影像任务标识无效。", 400)
+        return _err("vision_storage_unavailable", str(error), 503)
+    if not job:
+        return _err("job_not_found", "影像任务不存在。", 404)
+    path = Path(config.VISION_UPLOAD_DIR).resolve() / job["media_path"]
+    if path.parent != Path(config.VISION_UPLOAD_DIR).resolve() or not path.is_file():
+        return _err("media_not_found", "影像文件不存在。", 404)
+    return send_file(path, mimetype=mimetypes.guess_type(job["original_name"])[0],
+                     as_attachment=False, download_name=job["original_name"])
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>/review", methods=["POST"])
+def review_manager_vision_job(job_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    body = request.get_json(silent=True) or {}
+    review_status = body.get("status")
+    if review_status not in {"confirmed", "dismissed"}:
+        return _err("invalid_review", "审核状态只能为 confirmed 或 dismissed。", 400)
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        result = vision_repository.review_job(
+            current_app.config.get("DATABASE_URL"), job_id,
+            review_status=review_status,
+            review_note=str(body.get("note") or "")[:1000],
+            reviewed_by=_admin_identity() or "unknown",
+        )
+    except (ValueError, RuntimeError) as error:
+        if isinstance(error, ValueError):
+            return _err("invalid_job_id", "影像任务标识无效。", 400)
+        return _err("vision_storage_unavailable", str(error), 503)
+    if not result:
+        return _err("job_not_reviewable", "任务不存在，或当前状态不可审核。", 409)
+    return _ok({"job": result})
 
 
 # ===== 行为埋点（P4：用户画像学习 + 产品观测）=====

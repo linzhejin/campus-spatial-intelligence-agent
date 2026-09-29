@@ -1,0 +1,156 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { test } = require('node:test');
+
+const source = fs.readFileSync(path.join(__dirname, '../../static/js/manager.js'), 'utf8');
+
+function managerHarness() {
+  const elements = new Map();
+  const intervalCallbacks = [];
+  const mapListeners = {};
+  const requested = [];
+  const uploadResolvers = [];
+  let visionPostCount = 0;
+  let inferenceReady = false;
+  let visionStatusFailure = false;
+
+  function element(id) {
+    if (elements.has(id)) return elements.get(id);
+    const listeners = {};
+    const classes = new Set();
+    const node = {
+      id, hidden: false, value: '', textContent: '', innerHTML: '', disabled: false,
+      checked: false, files: [], style: {}, listeners, children: [],
+      classList: {
+        add: (value) => classes.add(value),
+        remove: (value) => classes.delete(value),
+        contains: (value) => classes.has(value),
+        toggle: (value, force) => force ? classes.add(value) : classes.delete(value),
+      },
+      addEventListener: (name, callback) => { listeners[name] = callback; },
+      appendChild(child) { this.children.push(child); return child; },
+      append(...children) { this.children.push(...children); },
+      replaceChildren(...children) { this.children = children; },
+    };
+    elements.set(id, node);
+    return node;
+  }
+
+  const map = {
+    setView() { return this; },
+    invalidateSize() {},
+    on(name, callback) { mapListeners[name] = callback; },
+    removeLayer() {},
+  };
+  const layer = { addTo() { return this; }, clearLayers() {} };
+  const L = {
+    map: () => map,
+    tileLayer: () => layer,
+    layerGroup: () => layer,
+    circleMarker: () => layer,
+    polyline: () => layer,
+  };
+  const window = {
+    WHU_WALKER_CONFIG: { mapCenter: [114.363, 30.5365], mapZoom: 15 },
+    setTimeout: (fn) => fn(),
+    setInterval: (fn) => { intervalCallbacks.push(fn); return intervalCallbacks.length; },
+    clearInterval() {},
+    alert() {}, confirm: () => true,
+  };
+  const context = {
+    document: { hidden: false, getElementById: element, createElement: (tag) => element('created-' + tag), createTextNode: (text) => ({ text }) },
+    window, L, FormData: class FormData { append() {} }, URLSearchParams, Date, Math, Promise, setTimeout,
+    fetch: async (url, options = {}) => {
+      requested.push(url);
+      if (url.startsWith('/api/manager/vision-jobs') && options.method === 'POST') {
+        visionPostCount += 1;
+        return new Promise((resolve) => uploadResolvers.push(resolve));
+      }
+      if (url.startsWith('/api/manager/vision-status') && visionStatusFailure) {
+        return { ok: false, json: async () => ({ message: '状态读取失败' }) };
+      }
+      let data = {};
+      if (url === '/api/admin/status') data = { is_admin: true, csrf_token: 'csrf' };
+      else if (url.startsWith('/api/manager/vision-status')) data = {
+        inference_ready: inferenceReady, max_media_bytes: 1024, notice: inferenceReady ? '已就绪' : '尚未就绪',
+      };
+      else if (url.startsWith('/api/manager/vision-jobs')) data = { jobs: [] };
+      else if (url.startsWith('/api/road-conditions')) data = { conditions: [] };
+      return { ok: true, json: async () => ({ data }) };
+    },
+  };
+  vm.runInNewContext(source, context);
+  return {
+    elements, intervalCallbacks, mapListeners, requested,
+    setInferenceReady: (value) => { inferenceReady = value; },
+    setVisionStatusFailure: (value) => { visionStatusFailure = value; },
+    getVisionPostCount: () => visionPostCount,
+    releaseVisionUploads: () => uploadResolvers.splice(0).forEach((resolve) => resolve({
+      ok: true, json: async () => ({ data: { job: { job_id: 'job-1' } } }),
+    })),
+  };
+}
+
+async function flush() {
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
+test('manager refreshes vision readiness and updates submission availability while open', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, intervalCallbacks, mapListeners } = harness;
+  assert.equal(intervalCallbacks.length, 1);
+
+  elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
+  elements.get('media-file').listeners.change();
+  elements.get('pick-anchor').listeners.click();
+  mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  assert.equal(elements.get('submit-vision').disabled, true);
+
+  harness.setInferenceReady(true);
+  intervalCallbacks[0]();
+  await flush();
+  assert.equal(elements.get('submit-vision').disabled, false);
+
+  harness.setVisionStatusFailure(true);
+  intervalCallbacks[0]();
+  await flush();
+  assert.equal(elements.get('submit-vision').disabled, true);
+  assert.equal(elements.get('vision-status').classList.contains('is-ready'), false);
+
+  harness.setVisionStatusFailure(false);
+  harness.setInferenceReady(false);
+  intervalCallbacks[0]();
+  await flush();
+  assert.equal(elements.get('submit-vision').disabled, true);
+});
+
+test('readiness polling cannot re-enable or duplicate an in-flight media upload', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, intervalCallbacks, mapListeners } = harness;
+  harness.setInferenceReady(true);
+  intervalCallbacks[0]();
+  await flush();
+
+  elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
+  elements.get('media-file').listeners.change();
+  elements.get('pick-anchor').listeners.click();
+  mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  assert.equal(elements.get('submit-vision').disabled, false);
+
+  const upload = elements.get('vision-form').listeners.submit({ preventDefault() {} });
+  await flush();
+  try {
+    intervalCallbacks[0]();
+    await flush();
+    assert.equal(elements.get('submit-vision').disabled, true);
+    await elements.get('vision-form').listeners.submit({ preventDefault() {} });
+    assert.equal(harness.getVisionPostCount(), 1);
+  } finally {
+    harness.releaseVisionUploads();
+    await upload;
+  }
+});

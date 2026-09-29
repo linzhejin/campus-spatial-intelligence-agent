@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
-MAX_EXPLANATION_LENGTH = 150
+MAX_EXPLANATION_LENGTH = 90
 
 # 出行方式中文标签（与 spatial.routing.TRAVEL_MODES 对应）
 MODE_LABELS = {"walk": "步行", "bike": "骑行", "drive": "驾车"}
@@ -100,11 +100,11 @@ def _build_costs_summary(route_data: dict) -> str:
 def _build_weight_source_prefix(weight_source: Optional[str]) -> str:
     """根据 weight_source 返回解释开头的偏好来源标注（T-024 §2）。"""
     if weight_source == "explicit_nl":
-        return "已按您的空间偏好推荐。"
+        return "按您的偏好"
     elif weight_source == "shortcut":
-        return "已按快捷按钮预设偏好推荐。"
+        return "按快捷偏好"
     elif weight_source == "default":
-        return "已按默认路线推荐。"
+        return "按默认偏好"
     return ""
 
 
@@ -114,57 +114,69 @@ def _build_template_explanation(
     user_weights: Optional[dict],
     weight_source: Optional[str] = None,
 ) -> str:
-    distance = route_data.get("distance_m", route_data.get("distance", 0))
-    shortest_distance = route_data.get("shortest_distance_m", route_data.get("shortest_distance", 0))
     pois = route_data.get("pois", [])
-    filter_status = route_data.get("filter_status", "no_filter")
+    filter_status = str(route_data.get("filter_status", "no_filter") or "no_filter")
+    filter_tokens = set(filter_status.split("+"))
     mode = route_data.get("mode")
 
     segments = []
+    prefix = _build_weight_source_prefix(weight_source)
+    segments.append(prefix if prefix else "路线已规划")
 
-    # 出行方式 + 预计用时片段放在最前面（如「已为您规划骑行路线，约 8 分钟」）
+    # 距离和用时已由摘要卡展示；说明只保留出行方式与预计时间，避免重复报数。
     mode_label = MODE_LABELS.get(mode)
     if mode_label:
         mins = _rounded_minutes(route_data.get("duration_min"))
         if mins:
-            segments.append(f"已为您规划{mode_label}路线，约 {mins} 分钟")
-        else:
-            segments.append(f"已为您规划{mode_label}路线")
-
-    prefix = _build_weight_source_prefix(weight_source)
-    if prefix:
-        segments.append(prefix.rstrip("。"))
+            segments.append(f"{mode_label}约{mins}分钟")
+        elif segments == ["路线已规划"]:
+            segments[0] = f"已规划{mode_label}路线"
 
     if user_constraints:
         slope = user_constraints.get("slope", "normal")
         scenery = user_constraints.get("scenery", "normal")
-        # 驾车模式不关心坡度（车行路网本身已剔除台阶/步道），不出现避坡文案
+        distance_pref = user_constraints.get("distance", "normal")
+        # 驾车模式不关心坡度；数据降级时优先说明限制，避免暗示完全避坡。
         if slope == "avoid" and mode != "drive":
-            if filter_status == "filtered":
-                segments.append("已避开陡坡路段")
-            elif filter_status == "degraded_slope":
-                segments.append("部分陡坡路段已放宽限制")
+            if "degraded_slope" in filter_tokens:
+                segments.append("部分陡坡限制已放宽")
+            elif "no_annotations" in filter_tokens or "degraded_annotations" in filter_tokens:
+                segments.append("坡度标注有限，避坡效果受限")
+            elif "filtered" in filter_tokens or "slope_avoid" in filter_tokens:
+                segments.append("已避开陡坡")
+            else:
+                segments.append("兼顾避坡偏好")
         if scenery == "high":
-            segments.append("优先选择了景观较好的路线")
+            segments.append("优先选景观较好的路")
+        if distance_pref == "short":
+            segments.append("优先较短路线")
+        elif distance_pref == "relaxed":
+            segments.append("按悠闲慢行偏好规划")
+
+    if "road_closure" in filter_tokens:
+        segments.append("已避开封闭路段")
+    if "degraded_annotations" in filter_tokens or "no_annotations" in filter_tokens:
+        segments.append("路况标注有限，结果仅供参考")
+    if route_data.get("length_capped"):
+        segments.append("路线受长度上限限制")
 
     if pois:
-        poi_names = [p["name"] if isinstance(p, dict) else str(p) for p in pois[:3]]
-        segments.append(f"途经 {', '.join(poi_names)}")
-
-    if distance and shortest_distance:
-        diff = distance - shortest_distance
-        if diff > 0.5:
-            segments.append(f"比最短路径多 {int(round(diff))} 米")
-        elif diff < -0.5:
-            segments.append(f"比最短路径少 {int(round(-diff))} 米")
-        else:
-            segments.append("与最短路径基本一致")
-
-    if not segments:
-        return "已为您规划好路线，祝您游览愉快。"
+        first_poi = pois[0]["name"] if isinstance(pois[0], dict) else str(pois[0])
+        if first_poi and len(first_poi) <= 24:
+            segments.append(f"途经{first_poi}")
 
     explanation = "，".join(segments) + "。"
-    return explanation[:MAX_EXPLANATION_LENGTH]
+    if len(explanation) > MAX_EXPLANATION_LENGTH:
+        poi_segment = next((i for i, part in enumerate(segments) if part.startswith("途经")), None)
+        if poi_segment is not None:
+            segments.pop(poi_segment)
+            explanation = "，".join(segments) + "。"
+    if len(explanation) > MAX_EXPLANATION_LENGTH:
+        mode_segment = next((i for i, part in enumerate(segments) if "分钟" in part), None)
+        if mode_segment is not None:
+            segments.pop(mode_segment)
+            explanation = "，".join(segments) + "。"
+    return explanation
 
 
 def generate_explanation(
@@ -228,14 +240,15 @@ def generate_explanation(
             )
             explanation = response.choices[0].message.content.strip()
             if len(explanation) > MAX_EXPLANATION_LENGTH:
-                explanation = explanation[:MAX_EXPLANATION_LENGTH - 1] + "…"
+                logger.info("路线解释超过 %s 字，改用精简模板", MAX_EXPLANATION_LENGTH)
+                return _build_template_explanation(route_data, user_constraints, user_weights, weight_source)
             return explanation
         except Exception as e:
             logger.warning(f"解释生成失败 (attempt {attempt + 1}): {type(e).__name__}: {e}")
             if attempt < 2:
                 messages.append({
                     "role": "user",
-                    "content": "请重新生成解释，注意控制在 150 字以内，并在开头说明偏好来源。",
+                    "content": "请重新生成不超过 90 字的短解释，开头标明偏好来源；不要重复摘要卡中的距离和耗时。",
                 })
 
     logger.error("解释生成全部失败，使用模板兜底")
