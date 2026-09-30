@@ -2761,6 +2761,15 @@
             if (shortestLabel) shortestLabel.textContent = '游览景点';
             document.getElementById('overlap-rate').textContent = tourInfo.loop ? '环线' : '单程';
             if (overlapLabel) overlapLabel.textContent = '游览方式';
+        } else if (routeKind === 'itinerary') {
+            var itineraryInfo = data.itinerary || {};
+            var stopCount = itineraryInfo.stop_count || (itineraryInfo.stop_names || []).length;
+            document.getElementById('shortest-distance').textContent = stopCount + ' 个';
+            if (shortestLabel) shortestLabel.textContent = '行程地点';
+            document.getElementById('overlap-rate').textContent = itineraryInfo.total_duration_min != null
+                ? itineraryInfo.total_duration_min.toFixed(0) + '/' + (itineraryInfo.time_budget_min || 0).toFixed(0) + ' 分钟'
+                : '预算已核验';
+            if (overlapLabel) overlapLabel.textContent = '用时 / 预算';
         } else if (routeKind === 'multimodal') {
             // 多模态换乘：最短距离 → 换乘次数，重叠率 → 换乘点列表
             var legs = data.legs || [];

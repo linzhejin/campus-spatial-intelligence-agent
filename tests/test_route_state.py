@@ -74,6 +74,48 @@ def test_route_state_becomes_parser_context_without_losing_strategy_or_mode():
     assert context["previous_intent"]["mode"] == "walk"
 
 
+def test_itinerary_state_preserves_budget_and_stop_duration_across_changes():
+    itinerary = deepcopy(BASE)
+    itinerary.update(
+        route_kind="itinerary",
+        via={"type": "multi", "points":[
+            {"name": "星湖园食堂", "type": "poi"},
+            {"name": "图书馆", "type": "poi"},
+        ]},
+        itinerary={"time_budget_min": 45, "stop_duration_min": 8},
+    )
+
+    changed = apply_change(validate_route_state(itinerary), {"strategy": "flat"})
+
+    assert changed["route_kind"] == "itinerary"
+    assert changed["itinerary"] == {"time_budget_min": 45, "stop_duration_min": 8}
+    assert changed["via"]["points"] == itinerary["via"]["points"]
+
+
+def test_itinerary_state_rejects_missing_or_invalid_budget():
+    itinerary = deepcopy(BASE)
+    itinerary.update(
+        route_kind="itinerary",
+        via={"type": "multi", "points":[{"name": "圖書館", "type": "poi"}]},
+        itinerary={"time_budget_min": -1, "stop_duration_min": 8},
+    )
+
+    with pytest.raises(ValueError, match="itinerary"):
+        validate_route_state(itinerary)
+
+
+def test_itinerary_state_rejects_boolean_budget_fields():
+    itinerary = deepcopy(BASE)
+    itinerary.update(
+        route_kind="itinerary",
+        via={"type": "multi", "points":[{"name": "图书馆", "type": "poi"}]},
+        itinerary={"time_budget_min": True, "stop_duration_min": 8},
+    )
+
+    with pytest.raises(ValueError, match="itinerary"):
+        validate_route_state(itinerary)
+
+
 def test_validation_sanitizes_client_computed_fields_without_mutating_input():
     poisoned = deepcopy(BASE)
     poisoned.update(

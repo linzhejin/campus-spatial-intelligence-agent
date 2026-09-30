@@ -38,6 +38,11 @@ def test_plan_itinerary_counts_travel_and_stop_time_and_returns_route(monkeypatc
     assert result["stop_duration_min"] == 10
     assert result["total_duration_min"] == 25
     assert artifact["route"]["itinerary"]["time_budget_min"] == 30
+    assert artifact["route"]["route_state"]["route_kind"] == "itinerary"
+    assert artifact["route"]["route_state"]["itinerary"] == {
+        "time_budget_min": 30,
+        "stop_duration_min": 5,
+    }
 
 
 def test_plan_itinerary_does_not_publish_route_when_budget_is_exceeded(monkeypatch):
@@ -60,6 +65,18 @@ def test_plan_itinerary_does_not_publish_route_when_budget_is_exceeded(monkeypat
 def test_plan_itinerary_requires_budget_and_at_least_one_stop():
     result, artifact = tools.execute_tool("plan_itinerary", {
         "start": {"name": "星湖园", "type": "poi"},
+    })
+
+    assert result["error"] == "invalid_itinerary"
+    assert artifact is None
+
+
+def test_plan_itinerary_rejects_boolean_budget_values():
+    result, artifact = tools.execute_tool("plan_itinerary", {
+        "start": {"name": "星湖园", "type": "poi"},
+        "stops": [{"name": "图书馆", "type": "poi"}],
+        "time_budget_min": True,
+        "stop_duration_min": False,
     })
 
     assert result["error"] == "invalid_itinerary"

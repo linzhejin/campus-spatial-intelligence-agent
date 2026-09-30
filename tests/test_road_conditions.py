@@ -726,6 +726,30 @@ class TestRoadConditionAPI:
         assert client.delete(f"/api/road-conditions/{cid}", headers=headers).status_code == 200
         assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 0
 
+    def test_patch_invalid_time_window_returns_400_and_keeps_record(self, client, G):
+        gj = _mid_12_gcj(G)
+        created = client.post("/api/road-conditions", json={
+            "type": "closure", "name": "时间窗校验",
+            "lng": gj[0], "lat": gj[1],
+            "start_time": 2000000000, "end_time": 2000003600,
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+        assert created.status_code == 201
+        condition_id = created.get_json()["data"]["condition"]["id"]
+
+        response = client.patch(
+            f"/api/road-conditions/{condition_id}",
+            json={"end_time": 1999999999},
+            headers={"X-Admin-Token": "test-token-xyz"},
+        )
+
+        assert response.status_code == 400
+        assert response.get_json()["error"] == "invalid_field"
+        saved = client.get(
+            "/api/road-conditions?all=1",
+            headers={"X-Admin-Token": "test-token-xyz"},
+        ).get_json()["data"]["conditions"][0]
+        assert saved["end_time"] == 2000003600
+
     def test_public_list_shape(self, client, G):
         gj = _mid_12_gcj(G)
         client.post("/api/road-conditions", json={

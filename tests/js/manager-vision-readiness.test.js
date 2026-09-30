@@ -12,16 +12,20 @@ function managerHarness() {
   const mapListeners = {};
   const requested = [];
   const uploadResolvers = [];
+  const impactPreviewResolvers = [];
   let visionPostCount = 0;
   let inferenceReady = false;
   let visionStatusFailure = false;
+  let deferImpactPreviews = false;
+  let createdNodeCount = 0;
 
   function element(id) {
     if (elements.has(id)) return elements.get(id);
     const listeners = {};
     const classes = new Set();
+    let textContent = '';
     const node = {
-      id, hidden: false, value: '', textContent: '', innerHTML: '', disabled: false,
+      id, hidden: false, value: '', innerHTML: '', disabled: false,
       checked: false, files: [], style: {}, listeners, children: [],
       classList: {
         add: (value) => classes.add(value),
@@ -34,6 +38,13 @@ function managerHarness() {
       append(...children) { this.children.push(...children); },
       replaceChildren(...children) { this.children = children; },
     };
+    Object.defineProperty(node, 'textContent', {
+      get: () => textContent,
+      set(value) {
+        textContent = value;
+        if (value === '') this.children = [];
+      },
+    });
     elements.set(id, node);
     return node;
   }
@@ -60,10 +71,19 @@ function managerHarness() {
     alert() {}, confirm: () => true,
   };
   const context = {
-    document: { hidden: false, getElementById: element, createElement: (tag) => element('created-' + tag), createTextNode: (text) => ({ text }) },
+    document: { hidden: false, getElementById: element, createElement: (tag) => {
+      const node = element('created-' + tag + '-' + createdNodeCount++);
+      node.tagName = tag;
+      return node;
+    }, createTextNode: (text) => ({ text }) },
     window, L, FormData: class FormData { append() {} }, URLSearchParams, Date, Math, Promise, setTimeout,
     fetch: async (url, options = {}) => {
       requested.push(url);
+      if (url.startsWith('/api/road-conditions/snap') && deferImpactPreviews) {
+        const match = url.match(/[?&]type=([^&]+)/);
+        const type = match ? decodeURIComponent(match[1]) : '';
+        return new Promise((resolve) => impactPreviewResolvers.push({ type, resolve }));
+      }
       if (url.startsWith('/api/manager/vision-jobs') && options.method === 'POST') {
         visionPostCount += 1;
         return new Promise((resolve) => uploadResolvers.push(resolve));
@@ -97,6 +117,21 @@ function managerHarness() {
     elements, intervalCallbacks, mapListeners, requested,
     setInferenceReady: (value) => { inferenceReady = value; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
+    deferImpactPreviews: () => { deferImpactPreviews = true; },
+    resolveImpactPreview: (type, roadName) => {
+      const index = impactPreviewResolvers.findIndex((item) => item.type === type);
+      if (index < 0) throw new Error('No pending impact preview for ' + type);
+      const item = impactPreviewResolvers.splice(index, 1)[0];
+      const preview = {
+        road_name: roadName, affected_road_segments: 1, affected_length_m: 80,
+        event_scope_note: '预览快照', route_sample_scope: '局部示例',
+        effects_by_mode: {}, sample_routes: {},
+      };
+      item.resolve({ ok: true, json: async () => ({ data: {
+        snap: { road_name: roadName, chain_length_m: 80, edges: [] },
+        impact_preview: preview,
+      } }) });
+    },
     getVisionPostCount: () => visionPostCount,
     releaseVisionUploads: () => uploadResolvers.splice(0).forEach((resolve) => resolve({
       ok: true, json: async () => ({ data: { job: { job_id: 'job-1' } } }),
@@ -181,4 +216,44 @@ test('manager impact preview discloses its active-condition snapshot and local s
   assert.match(noteText, /基于当前有效路况快照/);
   assert.match(noteText, /2 条当前生效路况/);
   assert.match(noteText, /所选路段两端/);
+});
+
+test('a late event-type preview cannot overwrite the newer selection', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  elements.get('pick-road').listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+
+  harness.deferImpactPreviews();
+  elements.get('event-type').value = 'accident';
+  const older = elements.get('event-type').listeners.change();
+  elements.get('event-type').value = 'closure';
+  const newer = elements.get('event-type').listeners.change();
+  harness.resolveImpactPreview('closure', '新选择的道路');
+  await newer;
+  harness.resolveImpactPreview('accident', '旧选择的道路');
+  await older;
+
+  const previewText = elements.get('impact-preview').children.map((child) => child.textContent).join(' ');
+  assert.match(previewText, /新选择的道路/);
+  assert.doesNotMatch(previewText, /旧选择的道路/);
+});
+
+test('a pending preview safely settles after the selected road is cleared', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  elements.get('pick-road').listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+
+  harness.deferImpactPreviews();
+  elements.get('event-type').value = 'closure';
+  const pending = elements.get('event-type').listeners.change();
+  const submit = elements.get('condition-form').listeners.submit({ preventDefault() {} });
+  await submit;
+  harness.resolveImpactPreview('closure', '已清除路段');
+
+  await assert.doesNotReject(pending);
+  assert.equal(elements.get('impact-preview').hidden, true);
 });

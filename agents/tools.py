@@ -1466,9 +1466,13 @@ def _tool_plan_itinerary(args, ctx):
     stops = args.get("stops")
     if not isinstance(stops, list) or not 1 <= len(stops) <= _MAX_VIA_POINTS:
         return {"error": "invalid_itinerary", "message": "行程至少需要 1 个、最多 10 个途经地点。"}, None
+    raw_budget = args.get("time_budget_min")
+    raw_dwell = args.get("stop_duration_min", 15)
+    if isinstance(raw_budget, bool) or isinstance(raw_dwell, bool):
+        return {"error": "invalid_itinerary", "message": "请提供有效的总时间和每站停留时间。"}, None
     try:
-        budget = float(args.get("time_budget_min"))
-        dwell = float(args.get("stop_duration_min", 15))
+        budget = float(raw_budget)
+        dwell = float(raw_dwell)
     except (TypeError, ValueError):
         return {"error": "invalid_itinerary", "message": "请提供有效的总时间和每站停留时间。"}, None
     if (not math.isfinite(budget) or budget <= 0 or budget > 1440
@@ -1533,7 +1537,11 @@ def _tool_plan_itinerary(args, ctx):
     route["itinerary_total_duration_min"] = round(total, 1)
     route["time_budget_min"] = round(budget, 1)
     if isinstance(route.get("route_state"), dict):
-        route["route_state"]["route_kind"] = "via"
+        route["route_state"]["route_kind"] = "itinerary"
+        route["route_state"]["itinerary"] = {
+            "time_budget_min": round(budget, 1),
+            "stop_duration_min": round(dwell, 1),
+        }
     route_artifact = dict(artifact) if isinstance(artifact, dict) else {}
     route_artifact["route"] = route
     route_artifact["route_kind"] = "itinerary"

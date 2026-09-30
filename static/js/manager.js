@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, picked: null, anchor: null, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, picked: null, anchor: null, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -120,19 +120,24 @@
 
   async function refreshImpactPreview() {
     if (!state.picked) return;
-    var query = '?lng=' + encodeURIComponent(state.picked.lng) +
-      '&lat=' + encodeURIComponent(state.picked.lat) +
-      '&type=' + encodeURIComponent(byId('event-type').value);
+    var picked = state.picked;
+    var type = byId('event-type').value;
+    var requestId = ++state.impactPreviewRequestId;
+    var query = '?lng=' + encodeURIComponent(picked.lng) +
+      '&lat=' + encodeURIComponent(picked.lat) +
+      '&type=' + encodeURIComponent(type);
     try {
       var data = await request('/api/road-conditions/snap' + query, 'GET');
-      state.picked.snap = data.snap;
-      state.picked.impactPreview = data.impact_preview;
+      if (requestId !== state.impactPreviewRequestId || state.picked !== picked || byId('event-type').value !== type) return;
+      picked.snap = data.snap;
+      picked.impactPreview = data.impact_preview;
       renderImpactPreview(data.impact_preview);
     } catch (error) {
+      if (requestId !== state.impactPreviewRequestId || state.picked !== picked || byId('event-type').value !== type) return;
       renderImpactPreview({
-        road_name: state.picked.snap && state.picked.snap.road_name,
-        affected_length_m: state.picked.snap && state.picked.snap.chain_length_m,
-        affected_road_segments: state.picked.snap && state.picked.snap.edges && state.picked.snap.edges.length,
+        road_name: picked.snap && picked.snap.road_name,
+        affected_length_m: picked.snap && picked.snap.chain_length_m,
+        affected_road_segments: picked.snap && picked.snap.edges && picked.snap.edges.length,
         effects_by_mode: {}, sample_routes: {},
         route_sample_scope: error.message || '路线影响预览暂时不可用，请核对所选路段和事件类型。',
       });
@@ -413,7 +418,7 @@
       byId('start-time').value = ''; byId('end-time').value = '';
       byId('selected-road').textContent = '尚未选择道路'; byId('selected-road').classList.remove('is-set');
       if (state.preview) state.map.removeLayer(state.preview);
-      state.preview = null; state.picked = null;
+      state.preview = null; state.picked = null; state.impactPreviewRequestId += 1;
       renderImpactPreview(null);
       refreshEvents();
     } catch (error) { message('form-message', error.message || '事件发布失败。'); }

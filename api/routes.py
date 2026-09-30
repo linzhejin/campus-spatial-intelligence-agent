@@ -972,6 +972,18 @@ def _replan_tool_request(state):
         else:
             args["via_name"] = via.get("name", "")
         return "plan_via_route", args
+    if kind == "itinerary":
+        via = state["via"]
+        stops = via.get("points", []) if via.get("type") == "multi" else [via]
+        itinerary = state["itinerary"]
+        return "plan_itinerary", {
+            **common,
+            "end": state["end"],
+            "mode": state["travel_mode"],
+            "stops": stops,
+            "time_budget_min": itinerary["time_budget_min"],
+            "stop_duration_min": itinerary["stop_duration_min"],
+        }
     if kind == "tour":
         tour = state["tour"]
         return "plan_tour", {
@@ -1038,8 +1050,22 @@ def replan_route():
     if result.get("error"):
         status = 503 if result["error"] == "road_conditions_unavailable" else 404
         return _err(result["error"], result.get("message", "路线重新规划失败"), status)
+    if requested["route_kind"] == "itinerary" and result.get("status") != "feasible":
+        if result.get("status") == "over_budget":
+            return _err(
+                "itinerary_over_budget",
+                f"当前路线预计超出行程预算 {result.get('over_by_min', 0)} 分钟，请增加时间或减少途经点。",
+                422,
+            )
+        return _err(
+            "itinerary_validation_failed",
+            "重算后的路线缺少有效的时间预算校验，未返回路线。",
+            503,
+        )
     payload = (artifact or {}).get("route") or result
     payload["route_state"] = validate_route_state(requested)
+    if requested["route_kind"] == "itinerary":
+        payload["route_kind"] = "itinerary"
     payload["timings_ms"] = normalize_timings(payload.get("timings_ms"), agent=0.0)
     return _ok(payload)
 
@@ -1979,6 +2005,8 @@ def patch_road_condition(cond_id):
     except RoadConditionsUnavailableError:
         logger.exception("路况存储无效，拒绝更新")
         return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
+    except ValueError as e:
+        return _err("invalid_field", str(e), 400)
     if updated is None:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
     updated["type_label"] = CONDITION_LABELS.get(updated.get("type"), updated.get("type"))

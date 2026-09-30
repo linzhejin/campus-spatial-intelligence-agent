@@ -3,12 +3,13 @@
 from copy import deepcopy
 import hashlib
 import json
+import math
 from pathlib import Path
 from uuid import uuid4
 
 
 SCHEMA_VERSION = 1
-ROUTE_KINDS = {"direct", "via", "tour", "multimodal"}
+ROUTE_KINDS = {"direct", "via", "itinerary", "tour", "multimodal"}
 TRAVEL_MODES = {"walk", "bike", "drive"}
 STRATEGIES = {"shortest", "recommended", "scenery", "flat", "custom"}
 STATE_FIELDS = {
@@ -19,6 +20,7 @@ STATE_FIELDS = {
     "start",
     "end",
     "via",
+    "itinerary",
     "tour",
     "legs",
     "travel_mode",
@@ -117,16 +119,36 @@ def validate_route_state(raw) -> dict:
         raise ValueError("hard_constraints must be an object")
     if not isinstance(state.get("legs"), list):
         raise ValueError("legs must be a list")
-    if state["route_kind"] == "via":
+    if state["route_kind"] in {"via", "itinerary"}:
         via = state.get("via")
         if not isinstance(via, dict):
-            raise ValueError("via route requires a via point")
+            raise ValueError(f"{state['route_kind']} route requires a via point")
         if via.get("type") == "multi":
             points = via.get("points")
             if not isinstance(points, list) or not 1 <= len(points) <= 10:
                 raise ValueError("multi-via route requires 1 to 10 ordered points")
             if any(not isinstance(point, dict) for point in points):
                 raise ValueError("multi-via points must be objects")
+    if state["route_kind"] == "itinerary":
+        itinerary = state.get("itinerary")
+        if not isinstance(itinerary, dict):
+            raise ValueError("itinerary route requires budget settings")
+        raw_budget = itinerary.get("time_budget_min")
+        raw_dwell = itinerary.get("stop_duration_min")
+        if isinstance(raw_budget, bool) or isinstance(raw_dwell, bool):
+            raise ValueError("itinerary budget settings are invalid")
+        try:
+            budget = float(raw_budget)
+            dwell = float(raw_dwell)
+        except (TypeError, ValueError):
+            raise ValueError("itinerary budget settings are invalid") from None
+        if (not math.isfinite(budget) or not 0 < budget <= 1440
+                or not math.isfinite(dwell) or not 0 <= dwell <= 240):
+            raise ValueError("itinerary budget settings are invalid")
+        state["itinerary"] = {
+            "time_budget_min": budget,
+            "stop_duration_min": dwell,
+        }
     if state["route_kind"] == "tour" and not isinstance(state.get("tour"), dict):
         raise ValueError("tour route requires tour settings")
     if state["route_kind"] == "multimodal" and not state["legs"]:

@@ -37,6 +37,12 @@ def _state_for(route_kind):
             "pois": [{"name": "老图书馆", "type": "poi"}],
             "loop": False,
         }
+    elif route_kind == "itinerary":
+        state["via"] = {"type": "multi", "points": [
+            {"name": "星湖园食堂", "type": "poi"},
+            {"name": "图书馆", "type": "poi"},
+        ]}
+        state["itinerary"] = {"time_budget_min": 45, "stop_duration_min": 8}
     elif route_kind == "multimodal":
         state["legs"] = [
             {"end": state["end"], "travel_mode": "walk"},
@@ -58,6 +64,7 @@ def client():
     [
         ("direct", "plan_route"),
         ("via", "plan_via_route"),
+        ("itinerary", "plan_itinerary"),
         ("tour", "plan_tour"),
         ("multimodal", "plan_multimodal_route"),
     ],
@@ -74,6 +81,9 @@ def test_replan_preserves_route_kind_and_skips_llm(client, route_kind, tool_name
             "response_build": 4.0,
         },
     }
+    if route_kind == "itinerary":
+        route_payload["status"] = "feasible"
+        route_payload["itinerary"] = {"status": "feasible", "stop_count": 2}
 
     with patch("agents.planner.run_agent", side_effect=AssertionError("LLM called")), \
          patch("agents.tools.execute_tool", return_value=(route_payload, {"route": route_payload})) as execute:
@@ -95,6 +105,24 @@ def test_replan_preserves_route_kind_and_skips_llm(client, route_kind, tool_name
     }
     assert data["timings_ms"]["agent"] == 0.0
     assert execute.call_args.args[0] == tool_name
+    if route_kind == "itinerary":
+        assert execute.call_args.args[1]["time_budget_min"] == 45
+        assert execute.call_args.args[1]["stop_duration_min"] == 8
+        assert execute.call_args.args[1]["stops"] == state["via"]["points"]
+
+
+def test_itinerary_replan_refuses_a_route_that_exceeds_budget(client):
+    state = _state_for("itinerary")
+    with patch("agents.tools.execute_tool", return_value=(
+        {"status": "over_budget", "over_by_min": 4}, None
+    )):
+        response = client.post(
+            "/api/route/replan",
+            json={"route_state": state, "change": {"travel_mode": "bike"}},
+        )
+
+    assert response.status_code == 422
+    assert response.get_json()["error"] == "itinerary_over_budget"
 
 
 def test_replan_rejects_stale_data_version_before_running_tool(client):
