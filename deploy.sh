@@ -77,7 +77,7 @@ fi
 echo "  检查 PostgreSQL 连接并应用数据库迁移..."
 if ! venv/bin/python - <<'PY'
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(".env")
 try:
     from storage.database import initialize
     initialize()
@@ -124,7 +124,7 @@ from dotenv import load_dotenv
 from importlib.util import find_spec
 from pathlib import Path
 import os
-load_dotenv()
+load_dotenv(".env")
 model = os.getenv("VISION_MODEL_PATH", "")
 ready = bool(model and Path(model).is_file()
              and find_spec("ultralytics") and find_spec("cv2"))

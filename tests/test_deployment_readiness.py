@@ -220,3 +220,8 @@ def test_research_readiness_passes_only_when_every_gate_passes():
     )
     assert result["ready"] is True
     assert result["blockers"] == {}
+
+def test_inline_deploy_checks_load_dotenv_from_the_project_directory():
+    from pathlib import Path
+    deploy_script = (Path(__file__).resolve().parents[1] / "deploy.sh").read_text(encoding="utf-8")
+    assert deploy_script.count('load_dotenv(".env")') == 2
