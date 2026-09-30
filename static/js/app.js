@@ -86,12 +86,12 @@
         var tagline = document.querySelector('.header-tagline');
         if (tagline) {
             tagline.textContent = state.productMode === 'planning'
-                ? '电脑规划模式 · AI 路线工作台'
-                : '武大校园 · AI 出行向导';
+                ? '电脑路线规划工作台'
+                : '武大校园 · 出行向导';
         }
         var welcomeText = document.querySelector('#welcome-bubble .bubble-text');
         if (welcomeText && state.productMode === 'planning') {
-            welcomeText.textContent = '搜索起终点或在地图上选点，我会说明路线策略、约束和每一段走法。';
+            welcomeText.textContent = '输入起点和终点，或在地图上选点；规划结果会列出路线和注意事项。';
         }
     }
 
@@ -824,8 +824,7 @@
                 btn.setAttribute('aria-pressed', 'false');
                 btn.title = def.title;
                 btn.innerHTML = '<span class="whu-point-icon" aria-hidden="true"></span>'
-                    + '<span class="whu-point-label">' + def.label + '</span>'
-                    + '<span class="whu-point-action" aria-hidden="true">选点</span>';
+                    + '<span class="whu-point-label">' + def.label + '</span>';
                 L.DomEvent.disableClickPropagation(btn);
                 L.DomEvent.disableScrollPropagation(btn);
                 btn.addEventListener('click', function () { togglePointPickMode(def.key); });

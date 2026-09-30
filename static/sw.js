@@ -6,12 +6,12 @@
  *   3. network-only       → 第三方资源（高德 JS API / amap.com / amapw.com）
  * =========================================================== */
 
-var CACHE_NAME = 'whu-walker-v63';
+var CACHE_NAME = 'whu-walker-v64';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
-    '/css/style.css?v=20260930b',
-    '/js/app.js?v=20260930b',
+    '/css/style.css?v=20260930d',
+    '/js/app.js?v=20260930d',
     '/js/config.js',
     '/js/voice-output.js',
     '/js/voice-input.js',

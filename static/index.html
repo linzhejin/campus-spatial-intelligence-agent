@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260930b">
+    <link rel="stylesheet" href="/css/style.css?v=20260930d">
 </head>
 <body>
 
@@ -144,7 +144,7 @@
                     <span id="weather-icon">🌤</span>
                     <span id="weather-text">—</span>
                 </span>
-                <span class="header-tagline">武大校园 · AI 出行向导</span>
+                <span class="header-tagline">武大校园 · 出行向导</span>
                 <button id="road-report-btn" class="road-report-btn" aria-label="上报路况" title="上报施工/活动/管制">🚧</button>
                 <button id="reset-btn" class="reset-btn" aria-label="重新开始" title="重新开始">↺</button>
                 <button id="help-btn" class="help-btn" aria-label="帮助引导" title="查看引导">?</button>
@@ -182,7 +182,7 @@
                 <div class="bubble-avatar">🌸</div>
                 <div class="bubble-body">
                     <p class="bubble-greeting">嗨！我是珞珈智行～</p>
-                    <p class="bubble-text">告诉我想从哪到哪，想看风景/不想爬坡/赶时间都行～</p>
+                    <p class="bubble-text">要去哪里？输入起点和终点，也可以加上想看风景、少爬坡或赶时间。</p>
                 </div>
             </div>
 
@@ -288,7 +288,7 @@
             <textarea
                 id="nl-input"
                 class="nl-input"
-                placeholder="我是你的智能助手，想去哪儿？"
+                placeholder="输入起点、终点或路线要求"
                 maxlength="200"
                 rows="1"
             ></textarea>
@@ -499,10 +499,10 @@
                 <details class="welcome-tips-details" open>
                     <summary class="welcome-tips-summary">新手提示 · 快速上手</summary>
                     <div class="welcome-tips-list">
-                        <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">直接说人话就行：「从珞珈门到樱顶，避开陡坡」</span></div>
-                        <div class="tip-item"><span class="tip-num">②</span><span class="tip-text">点地图上的景点标记，可快捷设出发/到达</span></div>
-                        <div class="tip-item"><span class="tip-num">③</span><span class="tip-text">规划后点「你可能想问」快速调整路线</span></div>
-                        <div class="tip-item"><span class="tip-num">④</span><span class="tip-text">支持 🚶 步行 / 🚴 骑行 / 🚗 驾车三种方式，点聊天区上方按钮切换</span></div>
+                        <div class="tip-item"><span class="tip-num">①</span><span class="tip-text">输入起点、终点和偏好，例如：「从珞珈门到樱顶，避开陡坡」</span></div>
+                        <div class="tip-item"><span class="tip-num">②</span><span class="tip-text">点地图上的地点标记，可设为出发点或终点</span></div>
+                        <div class="tip-item"><span class="tip-num">③</span><span class="tip-text">路线生成后，可切换风景优先、平坦优先或最短路径</span></div>
+                        <div class="tip-item"><span class="tip-num">④</span><span class="tip-text">出行方式可在聊天区上方切换：步行、骑行或驾车</span></div>
                     </div>
                 </details>
             </section>
@@ -563,6 +563,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20260930b"></script>
+    <script src="/js/app.js?v=20260930d"></script>
 </body>
 </html>

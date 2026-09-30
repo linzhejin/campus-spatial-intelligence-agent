@@ -194,6 +194,7 @@ body {
     min-height: 44px;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 0 10px;
     border: 1px solid rgba(44, 95, 45, 0.2);
@@ -237,8 +238,6 @@ body {
 .whu-point-btn--via .whu-point-icon { width: 11px; height: 11px; flex-basis: 11px; border-radius: 3px; transform: rotate(45deg); }
 .whu-point-btn--end .whu-point-icon { border-radius: 4px; }
 .whu-point-label { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; }
-.whu-point-action { margin-left: auto; color: var(--ink-light); font-size: 0.68rem; font-weight: 500; white-space: nowrap; }
-.whu-point-btn.is-picking .whu-point-action { color: rgba(255, 255, 255, 0.82); }
 
 /* ==============================
    CHAT PANEL — frosted glass
@@ -1330,23 +1329,25 @@ body.is-planning-mode .desktop-route-workbench {
     }
 
     .mobile-panel-resizer {
-        flex: 0 0 20px;
-        height: 20px;
+        flex: 0 0 48px;
+        height: 48px;
         display: grid;
         place-items: center;
         position: relative;
         z-index: 3;
         margin-top: 0;
+        margin-bottom: -28px;
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
         cursor: ns-resize;
     }
 
     .mobile-panel-resizer::before {
         content: "";
         position: absolute;
-        inset: -5px 0;
+        inset: -4px 0;
     }
 
     .mobile-panel-resizer span {
@@ -1355,6 +1356,7 @@ body.is-planning-mode .desktop-route-workbench {
         border-radius: 999px;
         background: #9B9590;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        transform: translateY(-14px);
         transition: width 0.16s ease, background 0.16s ease;
     }
 
@@ -1405,7 +1407,6 @@ body.is-planning-mode .desktop-route-workbench {
     .whu-locate-group { gap: 5px; padding: 6px; border-radius: 16px; }
     .whu-point-btn { width: 104px; min-height: 44px; padding: 0 9px; border-radius: 11px; }
     .whu-point-label { font-size: 0.78rem; }
-    .whu-point-action { font-size: 0.64rem; }
     .route-strategy-switch { gap: 5px; }
     .route-strategy-btn { font-size: 0.76rem; padding-inline: 5px; }
 
@@ -2639,4 +2640,9 @@ body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
     /* 导航中：地图占满整屏（高德同款沉浸态），退出导航恢复 */
     body.nav-running { grid-template-rows: 1fr; }
     body.nav-running .chat-panel { display: none; }
+}
+
+
+@media (pointer: coarse) {
+    .kbd-hint-bar { display: none !important; }
 }
