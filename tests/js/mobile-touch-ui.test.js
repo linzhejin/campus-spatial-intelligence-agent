@@ -37,6 +37,9 @@ test('coarse-pointer phones do not display keyboard shortcut hints', () => {
   const coarseStart = css.indexOf('@media (pointer: coarse)');
   assert.notEqual(coarseStart, -1, 'touchscreen-specific rule exists');
   assert.ok(cssBlock(css, '.kbd-hint-bar {', coarseStart).includes('display: none !important'));
+  const helpStart = app.indexOf('function showKbdHelp()');
+  assert.notEqual(helpStart, -1);
+  assert.ok(app.slice(helpStart, app.indexOf('\n    function hideKbdHelp()', helpStart)).includes("'(pointer: coarse)'"));
 });
 
 test('phone guidance uses plain wording and removes slang', () => {

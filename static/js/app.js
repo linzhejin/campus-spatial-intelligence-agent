@@ -3717,6 +3717,7 @@
     }
 
     function showKbdHelp() {
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
         var sec = document.getElementById('kbd-help-section');
         if (sec) sec.hidden = false;
     }
