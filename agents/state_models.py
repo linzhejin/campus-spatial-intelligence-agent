@@ -110,7 +110,7 @@ class RouteSpec(Contract):
     # Incomplete tasks retain known fields while awaiting only the missing facts.
     start: LocationRef | None = None
     end: LocationRef | None = None
-    stops: list[LocationRef] = Field(default_factory=list, max_length=50)
+    stops: list[LocationRef] = Field(default_factory=list, max_length=10)
     travel_mode: TravelMode = "walk"
     objective: Literal["shortest_distance", "fastest_time", "balanced"] = "shortest_distance"
     hard_constraints: HardConstraints = Field(default_factory=HardConstraints)

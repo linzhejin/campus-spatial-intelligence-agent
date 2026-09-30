@@ -906,6 +906,9 @@ def _replan_tool_request(state):
             "end": state["end"],
             "mode": state["travel_mode"],
         }
+        if via.get("type") == "multi":
+            args["via_points"] = via.get("points", [])
+            return "plan_via_route", args
         coords = via.get("coordinates") if isinstance(via, dict) else None
         if coords:
             args["via_coord"] = coords

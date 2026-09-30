@@ -152,12 +152,15 @@ def _build_messages(query: str, context: dict = None, history: list = None,
             if isinstance(wp, dict) and wp.get("lng") is not None and wp.get("lat") is not None:
                 wp_lines.append(
                     f"- 途经点{i+1}: WGS-84 坐标 lng={wp['lng']}, lat={wp['lat']}"
-                    f"（调用 plan_via_route 时用 via_coord={{lng:{wp['lng']}, lat:{wp['lat']}}} 传入）"
+                    f"（调用 plan_via_route 时按原顺序放入 via_points，使用"
+                    f"{{name:'地图途经点{i+1}', type:'coord', lng:{wp['lng']}, lat:{wp['lat']}}}）"
                 )
         if wp_lines:
             messages.append({
                 "role": "system",
-                "content": "用户在地图上标记了途经点，规划时必须经过这些点：\n" + "\n".join(wp_lines),
+                "content": "用户在地图上按顺序标记了途经点，规划必须依次经过所有点；"
+                           "调用 plan_via_route 时必须一次传入完整、有序的 via_points 数组：\n"
+                           + "\n".join(wp_lines),
             })
 
     # 多轮历史（前端在 P4 接入；兼容旧 context.history 形态）
@@ -207,6 +210,47 @@ def run_agent(query: str, context: dict = None, history: list = None,
     Raises:
         PlannerError: LLM API 不可用（调用方落回旧管道）
     """
+    # 地图端已经把起点、终点和每个途经点解析成精确坐标，不应再让 LLM
+    # 决定是否调用工具或重排用户选点。直接执行同一个 plan_via_route 工具，
+    # 使地图多点规划不受模型超时、漏调工具或无工具文本回答影响。
+    if ("地图标记" in (query or "") and isinstance(coord_start, dict)
+            and isinstance(coord_end, dict) and isinstance(coord_waypoints, list)
+            and coord_waypoints and len(coord_waypoints) <= agent_tools._MAX_VIA_POINTS):
+        refs = [coord_start, *coord_waypoints, coord_end]
+        if all(isinstance(ref, dict) and ref.get("lng") is not None and ref.get("lat") is not None
+               for ref in refs):
+            args = {
+                "start": {"name": coord_start.get("name") or "地图起点", "type": "coord",
+                          "lng": coord_start["lng"], "lat": coord_start["lat"]},
+                "end": {"name": coord_end.get("name") or "地图终点", "type": "coord",
+                        "lng": coord_end["lng"], "lat": coord_end["lat"]},
+                "via_points": [
+                    {"name": point.get("name") or f"地图途经点{index}", "type": "coord",
+                     "lng": point["lng"], "lat": point["lat"]}
+                    for index, point in enumerate(coord_waypoints, start=1)
+                ],
+                "mode": travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk",
+            }
+            result, artifact = agent_tools.execute_tool(
+                "plan_via_route", args, {"query": query, "uid": uid}
+            )
+            route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+            if route:
+                route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+                return {
+                    "response_kind": "route",
+                    "message": _build_route_message(route),
+                    "route": route,
+                    "route_kind": (artifact or {}).get("route_kind", "via"),
+                    "candidates": None, "clarify": None, "suggestions": None, "turns": 0,
+                }
+            return {
+                "response_kind": "chat",
+                "message": (result or {}).get("message", "多途经点路线暂时无法生成，请调整地点后重试。"),
+                "route": None, "route_kind": None, "candidates": None,
+                "clarify": None, "suggestions": None, "turns": 0,
+            }
+
     if not config.DEEPSEEK_API_KEY:
         raise PlannerError("DEEPSEEK_API_KEY 未配置")
 

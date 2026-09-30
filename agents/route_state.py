@@ -114,8 +114,16 @@ def validate_route_state(raw) -> dict:
         raise ValueError("hard_constraints must be an object")
     if not isinstance(state.get("legs"), list):
         raise ValueError("legs must be a list")
-    if state["route_kind"] == "via" and not isinstance(state.get("via"), dict):
-        raise ValueError("via route requires a via point")
+    if state["route_kind"] == "via":
+        via = state.get("via")
+        if not isinstance(via, dict):
+            raise ValueError("via route requires a via point")
+        if via.get("type") == "multi":
+            points = via.get("points")
+            if not isinstance(points, list) or not 1 <= len(points) <= 10:
+                raise ValueError("multi-via route requires 1 to 10 ordered points")
+            if any(not isinstance(point, dict) for point in points):
+                raise ValueError("multi-via points must be objects")
     if state["route_kind"] == "tour" and not isinstance(state.get("tour"), dict):
         raise ValueError("tour route requires tour settings")
     if state["route_kind"] == "multimodal" and not state["legs"]:

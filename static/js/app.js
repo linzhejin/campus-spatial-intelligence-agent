@@ -905,6 +905,10 @@
         var icons = { start: '🟢', via: '🚏', end: '🔴' };
 
         if (key === 'via') {
+            if (state.mapPoints.via.length >= 10) {
+                showTopBanner('最多可设置 10 个途经点', 'warning');
+                return;
+            }
             // 途经点可多个
             state.mapPoints.via.push(pt);
             var viaIdx = state.mapPoints.via.length;

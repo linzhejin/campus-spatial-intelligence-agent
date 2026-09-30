@@ -49,6 +49,7 @@ _ALONG_ROUTE_MIN_IMPORTANCE = 8.0
 # 游览默认选点数量与总长上限
 _TOUR_DEFAULT_MAX_POIS = 6
 _TOUR_MAX_TOTAL_M = 6000.0
+_MAX_VIA_POINTS = 10
 
 
 # ===========================================================================
@@ -169,6 +170,13 @@ TOOL_SCHEMAS = [
                                       "lat": {"type": "number", "description": "纬度 WGS-84"},
                                   },
                                   "required": ["lng", "lat"]},
+                    "via_points": {
+                        "type": "array",
+                        "description": "按用户给出的先后顺序必须经过的多个途经点；每项为地点名或 WGS-84 坐标。最多 10 个。与 via_name/via_subcategory/via_coord 单点参数互斥。",
+                        "minItems": 1,
+                        "maxItems": _MAX_VIA_POINTS,
+                        "items": _ENDPOINT_SCHEMA,
+                    },
                     **_PREFERENCE_SCHEMA,
                 },
                 "required": ["start", "end"],
@@ -716,13 +724,59 @@ def _tool_plan_via_route(args, ctx):
     if err:
         return err, None
 
+    requested_points = args.get("via_points")
     via_name = (args.get("via_name") or "").strip()
     via_sub = (args.get("via_subcategory") or "").strip()
     via_coord = args.get("via_coord")
-    if not via_name and not via_sub and not via_coord:
+    has_single_via = bool(via_name or via_sub or via_coord)
+    if requested_points is not None and has_single_via:
+        return {"error": "conflicting_via_arguments",
+                "message": "多个途经点 via_points 不能与单个途经点参数同时使用"}, None
+    if requested_points is not None:
+        if (not isinstance(requested_points, list) or not requested_points
+                or len(requested_points) > _MAX_VIA_POINTS):
+            return {"error": "invalid_via_points",
+                    "message": f"途经点需按顺序提供 1 到 {_MAX_VIA_POINTS} 个地点或坐标"}, None
+    elif not has_single_via:
         return {"error": "missing_via", "message": "缺少途经点：请用 via_name、via_subcategory 或 via_coord 指定"}, None
 
-    if via_coord:
+    via_entries = []
+    detour_ratio = None
+    if requested_points is not None:
+        for idx, ref in enumerate(requested_points, start=1):
+            if not isinstance(ref, dict):
+                return {"error": "invalid_via_points",
+                        "message": f"第 {idx} 个途经点格式无效，请提供地点名或坐标"}, None
+            if ref.get("type") == "coord":
+                coords = ref.get("coordinates") or ref
+                try:
+                    lng, lat = float(coords.get("lng")), float(coords.get("lat"))
+                except (AttributeError, TypeError, ValueError):
+                    return {"error": "via_coord_invalid",
+                            "message": f"第 {idx} 个途经点缺少有效的 WGS-84 坐标"}, None
+                if not (math.isfinite(lng) and math.isfinite(lat)
+                        and -180 <= lng <= 180 and -90 <= lat <= 90):
+                    return {"error": "via_coord_invalid",
+                            "message": f"第 {idx} 个途经点坐标超出有效范围"}, None
+                ref = {**ref, "coordinates": {"lng": lng, "lat": lat}}
+            node, display, err = _resolve_endpoint(ref, G_mode)
+            if err:
+                return {**err, "message": f"第 {idx} 个途经点无法解析：{err.get('message', '地点无效')}"}, None
+            via_info = {"name": display}
+            normalized_ref = {"name": display, "type": "poi"}
+            if isinstance(ref, dict) and ref.get("type") == "coord":
+                coords = ref.get("coordinates") or ref
+                normalized_coords = {"lng": float(coords["lng"]), "lat": float(coords["lat"])}
+                via_info["coordinates"] = normalized_coords
+                normalized_ref = {"name": display, "type": "coord",
+                                  "coordinates": normalized_coords}
+            else:
+                poi, _ = find_poi_ambiguous(display)
+                if poi:
+                    via_info = _poi_public(poi)
+            via_entries.append({"node": node, "name": display, "info": via_info,
+                                "ref": normalized_ref})
+    elif via_coord:
         # 坐标途经点：直接吸附到最近路网节点
         try:
             via_lng = float(via_coord.get("lng"))
@@ -730,6 +784,9 @@ def _tool_plan_via_route(args, ctx):
             via_node = get_nearest_node(G_mode, via_lng, via_lat)
             via_display = "地图途经点"
             via_info = {"name": via_display}
+            via_entries = [{"node": via_node, "name": via_display, "info": via_info,
+                            "ref": {"name": via_display, "type": "coord",
+                                    "coordinates": {"lng": via_lng, "lat": via_lat}}}]
             detour_ratio = None
         except (TypeError, ValueError, RuntimeError) as e:
             return {"error": "via_coord_invalid", "message": f"途经点坐标无效: {e}"}, None
@@ -739,6 +796,8 @@ def _tool_plan_via_route(args, ctx):
             return err, None
         via_poi, _ = find_poi_ambiguous(via_name)
         via_info = _poi_public(via_poi) if via_poi else {"name": via_display}
+        via_entries = [{"node": via_node, "name": via_display, "info": via_info,
+                        "ref": {"name": via_display, "type": "poi"}}]
         detour_ratio = None
     else:
         # 类别途经：检索候选 → 顺路性排序 → 取最顺路的
@@ -765,41 +824,95 @@ def _tool_plan_via_route(args, ctx):
         via_poi, via_node, detour_ratio = on_the_way[0]
         via_info = _poi_public(via_poi)
         via_display = via_poi["name"]
+        via_entries = [{"node": via_node, "name": via_display, "info": via_info,
+                        "ref": {"name": via_display, "type": "poi"}}]
+
+    ordered_nodes = [start_node] + [entry["node"] for entry in via_entries] + [end_node]
+    for idx, (first, second) in enumerate(zip(ordered_nodes, ordered_nodes[1:]), start=1):
+        if first == second:
+            return {"error": "duplicate_via_point",
+                    "message": f"第 {idx} 段的途经点与相邻地点落在同一路网位置，请调整途经点"}, None
 
     decision = _strategy_for_args(args, ctx)
     try:
-        result = compute_via_route(
-            G, start_node, via_node, end_node,
-            constraints=args.get("constraints") or {},
-            weights=decision.weights, mode=mode, weather_info=weather_info,
-            strategy_name=decision.name, detour_cap=decision.detour_cap,
-        )
+        route_kwargs = {
+            "constraints": args.get("constraints") or {},
+            "weights": decision.weights,
+            "mode": mode,
+            "weather_info": weather_info,
+            "strategy_name": decision.name,
+            "detour_cap": decision.detour_cap,
+        }
+        leg_results = [
+            compute_route(G, ordered_nodes[i], ordered_nodes[i + 1], **route_kwargs)
+            for i in range(len(ordered_nodes) - 1)
+        ]
+        direct = compute_route(G, start_node, end_node, **route_kwargs)
     except ValueError as e:
         return {"error": "route_not_found", "message": str(e)}, None
 
-    leg1 = _route_payload(G, result["leg1"], start_name, via_info["name"], mode)
-    leg2 = _route_payload(G, result["leg2"], via_info["name"], end_name, mode)
+    point_names = [entry["name"] for entry in via_entries]
+    waypoint_names = [start_name] + point_names + [end_name]
+    legs = [
+        _route_payload(G, result, waypoint_names[i], waypoint_names[i + 1], mode)
+        for i, result in enumerate(leg_results)
+    ]
+    direct_length = direct["recommended_length_m"] or direct["shortest_length_m"]
+    total_length = sum(result["recommended_length_m"] for result in leg_results)
+    total_shortest = sum(result["shortest_length_m"] for result in leg_results)
+    detour_ratio = total_length / direct_length if direct_length > 0 else float("inf")
+
+    def join_path(field):
+        merged = []
+        for leg in legs:
+            part = leg.get(field) or []
+            if merged and part and merged[-1] == part[0]:
+                part = part[1:]
+            merged.extend(part)
+        return merged
+
+    points_public = [entry["info"] for entry in via_entries]
+    via_public = (points_public[0] if len(points_public) == 1 else {
+        "name": "、".join(point_names), "type": "multi", "points": points_public,
+    })
+    direct_shortest = direct["shortest_length_m"]
+    shortest_detour = total_shortest / direct_shortest if direct_shortest > 0 else float("inf")
     payload = {
-        "via": via_info,
-        "legs": [leg1, leg2],
-        # 前端兼容：推荐路径为两段拼接，起终点标注
+        "via": via_public,
+        "legs": legs,
         "start_name": start_name,
         "end_name": end_name,
-        "recommended": leg1["recommended"] + leg2["recommended"],
-        "recommended_edge_ids": (
-            leg1["recommended_edge_ids"] + leg2["recommended_edge_ids"]),
-        "steps": _merge_leg_steps([leg1, leg2]),
-        "recommended_length_m": result["total_length_m"],
-        "distance_m": result["total_length_m"],
-        "detour_ratio": result["detour_ratio"],
-        "detour_ratio_shortest": detour_ratio,
-        "duration_min": round(estimate_duration_min(result["total_length_m"], mode), 1),
+        "recommended": join_path("recommended"),
+        "shortest": join_path("shortest"),
+        "recommended_edge_ids": [edge for leg in legs for edge in leg.get("recommended_edge_ids", [])],
+        "shortest_edge_ids": [edge for leg in legs for edge in leg.get("shortest_edge_ids", [])],
+        "steps": _merge_leg_steps(legs),
+        "recommended_length_m": round(total_length, 1),
+        "shortest_length_m": round(total_shortest, 1),
+        "distance_m": round(total_length, 1),
+        "detour_ratio": round(detour_ratio, 3),
+        "detour_ratio_shortest": round(shortest_detour, 3),
+        "duration_min": round(estimate_duration_min(total_length, mode), 1),
+        "shortest_duration_min": round(estimate_duration_min(total_shortest, mode), 1),
         "mode": mode,
         "strategy": decision.as_dict(),
-        "pois": leg1["pois"] + leg2["pois"],
+        "pois": [poi for leg in legs for poi in leg.get("pois", [])],
+        "filter_status": ";".join(dict.fromkeys(
+            status for leg in legs for status in (leg.get("filter_status") or "").split(";")
+            if status
+        )),
+        "overlap_rate": round(
+            sum((leg.get("overlap_rate") or 0) * (leg.get("recommended_length_m") or 0)
+                for leg in legs) / total_length, 4
+        ) if total_length > 0 else 1.0,
+        "applied_weights": decision.weights,
+        "degraded": any(bool(leg.get("degraded")) for leg in legs),
+        "length_capped": any(bool(leg.get("length_capped")) for leg in legs),
     }
-    via_ref = ({"name": via_display, "type": "poi"}
-               if not via_coord else {"name": via_display, "type": "coord", "coordinates": via_coord})
+    via_ref = (via_entries[0]["ref"] if len(via_entries) == 1 else {
+        "name": "、".join(point_names), "type": "multi",
+        "points": [entry["ref"] for entry in via_entries],
+    })
     _attach_route_state(
         payload, "via", args, ctx, G, decision,
         args["start"], args["end"], via=via_ref, travel_mode=mode,

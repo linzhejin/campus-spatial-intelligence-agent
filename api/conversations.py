@@ -218,8 +218,8 @@ def submit_message(conversation_id: str):
             if end is not None: route_spec["end"] = end
         if "coord_waypoints" in body:
             raw_waypoints = body["coord_waypoints"]
-            if not isinstance(raw_waypoints, list) or len(raw_waypoints) > 50:
-                raise ValueError("途经点必须是最多 50 个坐标组成的列表")
+            if not isinstance(raw_waypoints, list) or len(raw_waypoints) > 10:
+                raise ValueError("途经点必须是最多 10 个坐标组成的列表")
             route_spec["stops"] = [location_ref(point, f"途经点{i + 1}") for i, point in enumerate(raw_waypoints)]
             route_spec["route_kind"] = "via" if route_spec["stops"] else "direct"
         RouteSpec.model_validate({**RouteSpec().model_dump(mode="python"), **route_spec})
