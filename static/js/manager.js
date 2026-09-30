@@ -78,6 +78,67 @@
       : '选择路段后再填写事件';
   }
 
+  function renderImpactPreview(preview) {
+    var box = byId('impact-preview');
+    box.textContent = '';
+    if (!preview) { box.hidden = true; return; }
+    box.hidden = false;
+    var heading = document.createElement('strong');
+    heading.textContent = '发布影响预览';
+    box.appendChild(heading);
+    var extent = document.createElement('p');
+    extent.textContent = (preview.road_name || '所选道路') + ' · ' +
+      (preview.affected_road_segments || 0) + ' 个路段 · 约 ' +
+      (preview.affected_length_m || 0) + ' 米';
+    box.appendChild(extent);
+    var modes = document.createElement('p');
+    var labels = { walk: '步行', bike: '骑行', drive: '驾车' };
+    modes.textContent = Object.keys(preview.effects_by_mode || {}).map(function (mode) {
+      var effect = preview.effects_by_mode[mode] || {};
+      return labels[mode] + '：' + (effect.label || '影响未知');
+    }).join('；');
+    box.appendChild(modes);
+    var examples = Object.keys(preview.sample_routes || {}).map(function (mode) {
+      var sample = preview.sample_routes[mode] || {};
+      if (sample.status !== 'available') return null;
+      return labels[mode] + '示例：' + sample.before_distance_m + ' 米 → ' +
+        sample.after_distance_m + ' 米（' + (sample.detour_m >= 0 ? '+' : '') + sample.detour_m + ' 米）';
+    }).filter(Boolean);
+    if (examples.length) {
+      var routeSamples = document.createElement('p');
+      routeSamples.textContent = examples.join('；');
+      box.appendChild(routeSamples);
+    }
+    var note = document.createElement('small');
+    note.textContent = [
+      preview.event_scope_note,
+      typeof preview.active_event_count === 'number' ? '预览使用 ' + preview.active_event_count + ' 条当前生效路况' : '',
+      preview.route_sample_scope || '示例路线只反映所选路段附近的局部影响，不代表全校总影响。',
+    ].filter(Boolean).join('；');
+    box.appendChild(note);
+  }
+
+  async function refreshImpactPreview() {
+    if (!state.picked) return;
+    var query = '?lng=' + encodeURIComponent(state.picked.lng) +
+      '&lat=' + encodeURIComponent(state.picked.lat) +
+      '&type=' + encodeURIComponent(byId('event-type').value);
+    try {
+      var data = await request('/api/road-conditions/snap' + query, 'GET');
+      state.picked.snap = data.snap;
+      state.picked.impactPreview = data.impact_preview;
+      renderImpactPreview(data.impact_preview);
+    } catch (error) {
+      renderImpactPreview({
+        road_name: state.picked.snap && state.picked.snap.road_name,
+        affected_length_m: state.picked.snap && state.picked.snap.chain_length_m,
+        affected_road_segments: state.picked.snap && state.picked.snap.edges && state.picked.snap.edges.length,
+        effects_by_mode: {}, sample_routes: {},
+        route_sample_scope: error.message || '路线影响预览暂时不可用，请核对所选路段和事件类型。',
+      });
+    }
+  }
+
   async function handleMapClick(event) {
     if (!state.picking) return;
     var lng = event.latlng.lng;
@@ -97,10 +158,11 @@
     }
     message('form-message', '正在将点位匹配到校园路网…');
     try {
-      var snapData = await request('/api/road-conditions/snap?lng=' + encodeURIComponent(lng) + '&lat=' + encodeURIComponent(lat), 'GET');
+      var snapData = await request('/api/road-conditions/snap?lng=' + encodeURIComponent(lng) + '&lat=' + encodeURIComponent(lat) + '&type=' + encodeURIComponent(byId('event-type').value), 'GET');
       var snap = snapData.snap;
       if (!snap) throw new Error('这个位置没有匹配到校园道路，请放大后重选。');
-      state.picked = { lng: lng, lat: lat, snap: snap };
+      state.picked = { lng: lng, lat: lat, snap: snap, impactPreview: snapData.impact_preview };
+      renderImpactPreview(snapData.impact_preview);
       if (state.preview) state.map.removeLayer(state.preview);
       var geometry = (snap.geometry_gcj || []).map(function (point) { return [point[1], point[0]]; });
       if (geometry.length >= 2) {
@@ -352,6 +414,7 @@
       byId('selected-road').textContent = '尚未选择道路'; byId('selected-road').classList.remove('is-set');
       if (state.preview) state.map.removeLayer(state.preview);
       state.preview = null; state.picked = null;
+      renderImpactPreview(null);
       refreshEvents();
     } catch (error) { message('form-message', error.message || '事件发布失败。'); }
     finally { button.innerHTML = '发布事件 <span>→</span>'; button.disabled = !state.picked; }
@@ -367,6 +430,7 @@
     } catch (error) { message('login-message', error.message || '无法登录管理台。'); }
   });
   byId('pick-road').addEventListener('click', function () { setPicking(!(state.picking && state.pickPurpose === 'road'), 'road'); });
+  byId('event-type').addEventListener('change', refreshImpactPreview);
   byId('pick-anchor').addEventListener('click', function () { setPicking(true, 'vision'); });
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];

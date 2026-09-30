@@ -43,3 +43,15 @@ def test_limited_road_annotations_are_disclosed_concisely():
     )
     assert len(text) <= 90
     assert "标注有限" in text
+
+
+def test_step_avoidance_explains_unverified_edges():
+    text = _build_template_explanation(
+        {"mode": "walk", "filter_status": "steps_avoid+steps_unverified"},
+        {"avoid_steps": True},
+        None,
+    )
+
+    assert len(text) <= 90
+    assert "已避开路网中已标注的台阶" in text
+    assert "其余路段是否有台阶尚未核实" in text

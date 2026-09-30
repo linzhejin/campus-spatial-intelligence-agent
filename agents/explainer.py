@@ -146,6 +146,11 @@ def _build_template_explanation(
                 segments.append("已避开陡坡")
             else:
                 segments.append("兼顾避坡偏好")
+        if user_constraints.get("avoid_steps") and mode != "drive":
+            if "steps_avoid" in filter_tokens:
+                segments.append("已避开路网中已标注的台阶")
+            if "steps_unverified" in filter_tokens:
+                segments.append("其余路段是否有台阶尚未核实")
         if scenery == "high":
             segments.append("优先选景观较好的路")
         if distance_pref == "short":

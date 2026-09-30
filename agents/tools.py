@@ -11,10 +11,12 @@
 import json
 import logging
 import math
+import networkx as nx
 import re
 import time
 
 import config
+from agents import route_state as route_state_module
 from spatial.poi import (
     find_poi_ambiguous, search_by_category, search_pois, list_all_pois,
     load_pois, importance_score, _flatten_poi,
@@ -28,7 +30,10 @@ from spatial.routing import (
 from spatial.routing_index import get_routing_index
 from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.amap_poi import navigation_wgs
-from spatial.road_conditions import list_conditions, CONDITION_LABELS
+from spatial.road_conditions import (
+    list_conditions, CONDITION_LABELS, apply_conditions_to_graph,
+    RoadConditionsUnavailableError,
+)
 from spatial import weather as weather_mod
 from agents.routing_policy import select_route_strategy
 from agents.preferences import detect_strategy_hint
@@ -50,6 +55,22 @@ _ALONG_ROUTE_MIN_IMPORTANCE = 8.0
 _TOUR_DEFAULT_MAX_POIS = 6
 _TOUR_MAX_TOTAL_M = 6000.0
 _MAX_VIA_POINTS = 10
+_REACHABILITY_MAX_ACCESS_SNAP_M = 60.0
+_MAX_ENDPOINT_ACCESS_SNAP_M = 80.0
+_COMPARISON_STRATEGIES = (
+    ("shortest", "最短路径"),
+    ("scenery", "风景优先"),
+    ("flat", "平坦优先"),
+)
+
+
+def _data_version_for_graph(graph) -> str:
+    """Expose a real graph version when available; keep metadata failure non-fatal."""
+    try:
+        return current_data_version(graph)
+    except (AttributeError, TypeError, ValueError):
+        logger.warning("无法从当前工具上下文计算路网版本标识")
+        return "unavailable"
 
 
 # ===========================================================================
@@ -70,13 +91,14 @@ _ENDPOINT_SCHEMA = {
 
 _PREFERENCE_SCHEMA = {
     "constraints": {
-        "type": "object",
-        "description": "硬约束。仅在用户明确说'避开/不要'时设置",
-        "properties": {
-            "distance": {"type": "string", "enum": ["short", "medium", "long"]},
-            "slope": {"type": "string", "enum": ["avoid", "normal", "prefer"]},
-            "scenery": {"type": "string", "enum": ["high", "normal"]},
-        },
+            "type": "object",
+            "description": "硬约束。仅在用户明确说'避开/不要'时设置",
+            "properties": {
+                "distance": {"type": "string", "enum": ["short", "medium", "long"]},
+                "slope": {"type": "string", "enum": ["avoid", "normal", "prefer"]},
+                "avoid_steps": {"type": "boolean", "description": "用户明确要求不走台阶时设为 true；仅过滤已标注台阶的路段，未知通行属性不能视为已核实"},
+                "scenery": {"type": "string", "enum": ["high", "normal"]},
+            },
     },
     "weights": {
         "type": "object",
@@ -107,6 +129,18 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "get_place_details",
+            "description": "返回校园主数据中地点的名称、别名、类别、位置、来源与核实状态。开放时间、入口和无障碍信息没有登记时明确返回 unknown；查不到只表示当前主数据未匹配，不代表现实中不存在。",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "地点正式名称或别名"}},
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_poi_candidates",
             "description": "按类别/关键词检索校内地点候选。用户说'想吃饭/想喝咖啡/想跑步'这类只有目的没有具体地点的需求时调用。",
             "parameters": {
@@ -129,6 +163,55 @@ TOOL_SCHEMAS = [
                                       "description": "是否包含小店铺（连锁奶茶/咖啡档口），默认 true"},
                     "limit": {"type": "integer", "description": "返回数量上限，默认 10"},
                 },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_reachable_places",
+            "description": "按已标记可通行路网搜索附近地点候选；地点到路网的最后一段是直线接驳估算、未经通行核实。用户问‘步行十分钟内有什么食堂/附近能去哪’时调用，不能把候选宣称为入口已确认可达。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start": _ENDPOINT_SCHEMA,
+                    "subcategory": {"type": "string", "description": "地点细分类，如 canteen、coffee、gym、library"},
+                    "poi_type": {"type": "string", "enum": ["dining", "study", "sports", "dorm", "gate", "scenery", "service", "area"]},
+                    "keyword": {"type": "string", "description": "地点名称关键词"},
+                    "mode": {"type": "string", "enum": ["walk", "bike", "drive"], "default": "walk"},
+                    "max_distance_m": {"type": "number", "description": "最大路网距离（米）；与 max_time_min 二选一"},
+                    "max_time_min": {"type": "number", "description": "最大估算路网时间（分钟）；与 max_distance_m 二选一，默认 10 分钟"},
+                    "include_minor": {"type": "boolean", "default": True},
+                    "constraints": {"type": "object", "properties": {
+                        "slope": {"type": "string", "enum": ["avoid", "normal"]},
+                        "avoid_steps": {"type": "boolean", "description": "用户明确要求不走台阶时设为 true；只过滤已标记台阶的边"},
+                    }},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 8},
+                },
+                "required": ["start"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_routes",
+            "description": "在相同起终点、出行方式、硬约束和路况快照下，对比最短、风景优先、平坦优先三种路线。仅在用户明确要求比较路线或选择策略时调用；返回可核对的距离、估算时间、坡度与景观指标，不替用户切换当前路线。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start": _ENDPOINT_SCHEMA,
+                    "end": _ENDPOINT_SCHEMA,
+                    "mode": {"type": "string", "enum": ["walk", "bike", "drive"], "default": "walk"},
+                    "constraints": {
+                        "type": "object",
+                        "properties": {
+                            "slope": {"type": "string", "enum": ["avoid", "normal", "prefer"]},
+                            "avoid_steps": {"type": "boolean", "description": "用户明确要求不走台阶时设为 true；只过滤已标记台阶的边"},
+                        },
+                    },
+                },
+                "required": ["start", "end"],
             },
         },
     },
@@ -180,6 +263,34 @@ TOOL_SCHEMAS = [
                     **_PREFERENCE_SCHEMA,
                 },
                 "required": ["start", "end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "plan_itinerary",
+            "description": "按用户给出的地点顺序规划有时间预算的行程。计算路网步行时间估算与每站停留时间；超预算时只返回差额和可行性，不把路线作为已满足要求的结果提交。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start": _ENDPOINT_SCHEMA,
+                    "stops": {"type": "array", "minItems": 1, "maxItems": _MAX_VIA_POINTS,
+                              "items": _ENDPOINT_SCHEMA,
+                              "description": "按用户指定顺序访问的地点"},
+                    "end": {**_ENDPOINT_SCHEMA, "description": "结束地点；不填时默认回到起点"},
+                    "time_budget_min": {"type": "number", "exclusiveMinimum": 0,
+                                        "maximum": 1440, "description": "可用总时间，分钟"},
+                    "stop_duration_min": {"type": "number", "minimum": 0, "maximum": 240,
+                                          "default": 15, "description": "每个地点的停留估算分钟数，默认 15"},
+                    "mode": {"type": "string", "enum": ["walk", "bike", "drive"], "default": "walk"},
+                    "constraints": {"type": "object", "properties": {
+                        "slope": {"type": "string", "enum": ["avoid", "normal", "prefer"]},
+                        "avoid_steps": {"type": "boolean"},
+                    }},
+                    "weights": _PREFERENCE_SCHEMA["weights"],
+                },
+                "required": ["start", "stops", "time_budget_min"],
             },
         },
     },
@@ -425,7 +536,7 @@ def _haversine(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _poi_public(poi: dict, with_coords: bool = True) -> dict:
+def _poi_public(poi: dict, with_coords: bool = True, with_provenance: bool = False) -> dict:
     """给 LLM/前端看的精简 POI 结构（坐标保持 GCJ-02，与前端一致）。"""
     out = {
         "name": poi.get("name", ""),
@@ -437,16 +548,21 @@ def _poi_public(poi: dict, with_coords: bool = True) -> dict:
     if with_coords:
         out["lat"] = poi.get("lat")
         out["lng"] = poi.get("lon") or poi.get("lng")
+    if with_provenance:
+        out.update({
+            "poi_id": poi.get("id"),
+            "source_refs": list(poi.get("source_refs") or [])[:5],
+            "verification_status": poi.get("verification_status") or "legacy_unverified",
+            "coordinate_verification_status": poi.get("coordinate_verification_status") or "unknown",
+            "opening_hours": poi.get("opening_hours") or "unknown",
+        })
     return out
 
 
-def _resolve_endpoint(ref: dict, G_mode):
-    """把 {name} 或 {type:coord,lng,lat} 解析为路网节点。
-
-    Returns: (node_id, display_name, error_dict_or_None)
-    """
+def _endpoint_target_wgs(ref: dict, mode: str):
+    """解析地点/坐标的 WGS-84 目标坐标，不在此处执行路网吸附。"""
     if not isinstance(ref, dict):
-        return None, None, {"error": "invalid_endpoint", "message": "起终点格式不正确"}
+        return None, None, None, {"error": "invalid_endpoint", "message": "起终点格式不正确"}
     name = (ref.get("name") or "").strip()
     if ref.get("type") == "coord":
         coord = ref.get("coordinates") or {}
@@ -461,21 +577,81 @@ def _resolve_endpoint(ref: dict, G_mode):
             try:
                 lng, lat = float(lng), float(lat)
             except (TypeError, ValueError):
-                return None, None, {"error": "invalid_coord", "message": f"坐标无法识别: {ref}"}
-            node = get_nearest_node(G_mode, lng, lat)
-            return node, name or "我的位置", None
+                return None, None, None, {"error": "invalid_coord", "message": "坐标无法识别"}
+            if not (math.isfinite(lng) and math.isfinite(lat)
+                    and -180 <= lng <= 180 and -90 <= lat <= 90):
+                return None, None, None, {"error": "invalid_coord", "message": "坐标超出有效范围"}
+            return lng, lat, name or "我的位置", None
+        return None, None, None, {"error": "invalid_coord", "message": "缺少有效坐标"}
     if not name:
-        return None, None, {"error": "missing_name", "message": "地点名为空"}
+        return None, None, None, {"error": "missing_name", "message": "地点名为空"}
     poi, alts = find_poi_ambiguous(name)
     if poi is None:
-        return None, None, {
+        return None, None, None, {
             "error": "poi_not_found",
             "message": f"校内没找到「{name}」",
             "candidates": [_poi_public(a, with_coords=False) for a in (alts or [])][:5],
         }
-    lng_wgs, lat_wgs = navigation_wgs(poi, G_mode.graph.get('travel_mode', 'walk'))
-    node = get_nearest_node(G_mode, lng_wgs, lat_wgs)
-    return node, poi["name"], None
+    lng_wgs, lat_wgs = navigation_wgs(poi, mode)
+    return lng_wgs, lat_wgs, poi["name"], None
+
+
+def _endpoint_access_evidence(ref: dict, node: int, G_mode, mode: str) -> dict:
+    """Report the unverified straight connector from the requested point to graph node."""
+    lng_wgs, lat_wgs, display_name, error = _endpoint_target_wgs(ref, mode)
+    if error:
+        return {"status": "unavailable", "message": error.get("message", "端点无法核验")}
+    return _snap_evidence_for_wgs(lng_wgs, lat_wgs, display_name, node, G_mode)
+
+
+def _snap_evidence_for_wgs(lng_wgs, lat_wgs, display_name, node, G_mode) -> dict:
+    node_lng, node_lat = get_node_coords(G_mode, node)
+    distance = _haversine(lat_wgs, lng_wgs, node_lat, node_lng)
+    return {
+        "name": display_name,
+        "snap_distance_m": round(distance, 1),
+        "status": "unverified_long_connector" if distance > _REACHABILITY_MAX_ACCESS_SNAP_M
+                 else "unverified_nearby_network_node",
+        "access_link_verified": False,
+        "access_link_basis": "straight_line_to_nearest_routable_network_node",
+        "note": "起终点到路网节点之间按直线距离吸附，未核实末端是否存在实际通行连接。",
+    }
+
+
+def _snap_wgs_to_network(lng_wgs, lat_wgs, G_mode, display_name):
+    """Snap an already-resolved WGS-84 coordinate with the same cap/evidence as endpoints."""
+    try:
+        lng_wgs, lat_wgs = float(lng_wgs), float(lat_wgs)
+        if not (math.isfinite(lng_wgs) and math.isfinite(lat_wgs)
+                and -180 <= lng_wgs <= 180 and -90 <= lat_wgs <= 90):
+            raise ValueError("坐标超出有效范围")
+        node = get_nearest_node(G_mode, lng_wgs, lat_wgs)
+        evidence = _snap_evidence_for_wgs(lng_wgs, lat_wgs, display_name, node, G_mode)
+    except (RuntimeError, KeyError, TypeError, ValueError) as exc:
+        return None, None, {"error": "nearest_node_failed", "message": f"最近路网节点查找失败: {exc}"}
+    if evidence["snap_distance_m"] > _MAX_ENDPOINT_ACCESS_SNAP_M:
+        return None, evidence, {
+            "error": "endpoint_too_far_from_network",
+            "message": f"「{display_name}」距可规划道路约 {round(evidence['snap_distance_m'])} 米，末端接驳无法可靠确认。请在地图上选择附近道路或校门。",
+            "snap_distance_m": evidence["snap_distance_m"],
+            "max_access_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+        }
+    return node, evidence, None
+
+
+def _resolve_endpoint(ref: dict, G_mode):
+    """把 {name} 或坐标解析到路网节点，并限制未核实的末端接驳长度。
+
+    Returns: (node_id, display_name, error_dict_or_None)
+    """
+    mode = G_mode.graph.get("travel_mode", "walk")
+    lng_wgs, lat_wgs, display_name, error = _endpoint_target_wgs(ref, mode)
+    if error:
+        return None, None, error
+    node, _, error = _snap_wgs_to_network(lng_wgs, lat_wgs, G_mode, display_name)
+    if error:
+        return None, None, error
+    return node, display_name, None
 
 
 def _pois_along_route(G, route_nodes):
@@ -561,6 +737,8 @@ def _route_payload(G, route_result, start_name, end_name, mode):
         "duration_min": route_result["duration_min"],
         "shortest_duration_min": route_result["shortest_duration_min"],
         "applied_weights": route_result.get("applied_weights"),
+        "slope_avg_recommended": route_result.get("slope_avg_recommended"),
+        "scenery_avg_recommended": route_result.get("scenery_avg_recommended"),
         "degraded": route_result["degraded"],
         "length_capped": route_result["length_capped"],
         "mode": route_result["mode"],
@@ -619,19 +797,327 @@ def _tool_search_poi_candidates(args, ctx):
                 ), 0)
             results.sort(key=lambda p: p["distance_m"])
 
-    candidates = [_poi_public(p) for p in results]
+    candidates = [_poi_public(p, with_provenance=True) for p in results]
     return {"candidates": candidates, "count": len(candidates)}, {"candidates": candidates}
+
+
+def _tool_find_reachable_places(args, ctx):
+    """按已标注路网搜索候选地点，并披露未经核实的末端接驳。"""
+    has_distance = args.get("max_distance_m") is not None
+    has_time = args.get("max_time_min") is not None
+    if has_distance and has_time:
+        return {"error": "invalid_reachability_budget",
+                "message": "最大距离和最大时间只能选一个"}, None
+
+    mode = args.get("mode") or "walk"
+    if mode not in ("walk", "bike", "drive"):
+        mode = "walk"
+    max_time = 10.0 if not has_distance and not has_time else None
+    try:
+        if has_distance:
+            max_distance = float(args["max_distance_m"])
+            if not math.isfinite(max_distance) or not 1 <= max_distance <= 10000:
+                raise ValueError
+        else:
+            max_time = float(args["max_time_min"] if has_time else max_time)
+            if not math.isfinite(max_time) or not 1 <= max_time <= 180:
+                raise ValueError
+            max_distance = max_time * MODE_SPEEDS_KMH[mode] * 1000.0 / 60.0
+    except (TypeError, ValueError):
+        return {"error": "invalid_reachability_budget",
+                "message": "距离需为 1–10000 米，时间需为 1–180 分钟"}, None
+
+    start_ref = args.get("start")
+    if not isinstance(start_ref, dict):
+        return {"error": "invalid_endpoint", "message": "起点格式不正确"}, None
+    context = dict(ctx) if isinstance(ctx, dict) else {}
+    graph = context.get("_route_graph_snapshot")
+    if graph is None:
+        graph = _ensure_graph()
+    if graph is None:
+        return {"error": "network_unavailable", "message": "校园路网暂时不可用"}, None
+    mode_graph = get_routing_index(graph).for_mode(mode).graph
+    start_node, start_name, error = _resolve_endpoint(start_ref, mode_graph)
+    if error:
+        return error, None
+
+    try:
+        active_conditions = (context["_route_conditions_snapshot"]
+                             if "_route_conditions_snapshot" in context
+                             else list_conditions(strict=True))
+    except Exception:
+        logger.exception("读取路况失败，拒绝按错误的可达范围推荐地点")
+        return {"error": "road_conditions_unavailable", "message": "当前路况暂时无法确认，附近地点候选暂不可核实。"}, None
+    try:
+        mode_graph, _, _, conditions_applied = apply_conditions_to_graph(
+            mode_graph, active_conditions, mode, strict=True,
+        )
+    except RoadConditionsUnavailableError:
+        logger.exception("路况事件无法匹配当前路网，拒绝生成可达地点结果")
+        return {"error": "road_conditions_unavailable",
+                "message": "当前管制信息无法与路网对应，附近地点暂不可核实。"}, None
+    from spatial.routing import _filter_by_constraints
+    constraints = args.get("constraints") or {}
+    if not isinstance(constraints, dict):
+        return {"error": "invalid_constraints", "message": "通行约束格式不正确"}, None
+    if ("avoid_steps" in constraints
+            and not isinstance(constraints["avoid_steps"], bool)):
+        return {"error": "invalid_constraints", "message": "avoid_steps 必须是布尔值"}, None
+    filtered_graph, filter_status, _ = _filter_by_constraints(mode_graph, constraints)
+    tagged_steps_before = {
+        (u, v, k) for u, v, k, data in mode_graph.edges(keys=True, data=True)
+        if "steps" in str(data.get("highway", "")).lower().split(";")
+        or (isinstance(data.get("highway"), (list, tuple)) and "steps" in data.get("highway"))
+    }
+    tagged_steps_after = {
+        (u, v, k) for u, v, k in filtered_graph.edges(keys=True)
+    }
+    known_tagged_steps_filtered = len(tagged_steps_before - tagged_steps_after)
+    avoid_steps_requested = bool(constraints.get("avoid_steps", False))
+    if start_node not in filtered_graph:
+        return {"error": "start_unreachable",
+                "message": f"起点「{start_name}」在当前出行方式或管制条件下无法接入路网"}, None
+
+    try:
+        distances = nx.single_source_dijkstra_path_length(
+            filtered_graph, start_node, cutoff=max_distance, weight="length",
+        )
+    except (nx.NodeNotFound, nx.NetworkXError) as exc:
+        logger.warning("可达地点搜索失败: %s", exc, exc_info=True)
+        return {"error": "reachability_failed", "message": "附近地点暂时查不到，请稍后重试"}, None
+
+    subcategory = args.get("subcategory")
+    poi_type = args.get("poi_type")
+    keyword = (args.get("keyword") or "").strip()
+    include_minor = bool(args.get("include_minor", True))
+    if keyword:
+        places = search_pois(
+            keyword, poi_type=poi_type, subcategory=subcategory,
+            include_minor=include_minor,
+        )
+    else:
+        places = search_by_category(
+            subcategory=subcategory, poi_type=poi_type,
+            include_minor=include_minor, limit=2000,
+        )
+
+    reachable = []
+    excluded_long_access = 0
+    for poi in places:
+        coords = poi.get("coordinates") or {}
+        try:
+            poi_lng_gcj = float(coords.get("lng", poi.get("lon", poi.get("lng"))))
+            poi_lat_gcj = float(coords.get("lat", poi.get("lat")))
+            poi_lng_wgs, poi_lat_wgs = gcj02_to_wgs84(poi_lng_gcj, poi_lat_gcj)
+            node = get_nearest_node(filtered_graph, poi_lng_wgs, poi_lat_wgs)
+            if node not in distances:
+                continue
+            node_lng, node_lat = get_node_coords(filtered_graph, node)
+            access_distance = _haversine(poi_lat_wgs, poi_lng_wgs, node_lat, node_lng)
+            if access_distance > _REACHABILITY_MAX_ACCESS_SNAP_M:
+                excluded_long_access += 1
+                continue
+            network_distance = float(distances[node]) + access_distance
+        except (TypeError, ValueError, KeyError, RuntimeError):
+            continue
+        if network_distance > max_distance:
+            continue
+        public = _poi_public(poi)
+        public["network_path_distance_m"] = round(float(distances[node]))
+        public["network_distance_m"] = round(network_distance)
+        public["access_snap_m"] = round(access_distance, 1)
+        public["access_link_verified"] = False
+        public["access_link_basis"] = "straight_line_to_nearest_network_node"
+        if avoid_steps_requested:
+            public["step_access_status"] = "known_tagged_steps_filtered_unknown_edges_unverified"
+        public["estimated_duration_min"] = estimate_duration_min(network_distance, mode)
+        reachable.append(public)
+
+    reachable.sort(key=lambda place: (place["network_distance_m"], place["name"]))
+    limit = max(1, min(int(args.get("limit", 8) or 8), 20))
+    reachable = reachable[:limit]
+    result = {
+        "start_name": start_name,
+        "mode": mode,
+        "count": len(reachable),
+        "candidates": reachable,
+        "reachability_basis": "network_path_plus_unverified_straight_line_access_estimate",
+        "max_distance_m": round(max_distance),
+        "max_time_min": round(max_time, 1) if max_time is not None else None,
+        "max_access_snap_m": _REACHABILITY_MAX_ACCESS_SNAP_M,
+        "excluded_long_access_count": excluded_long_access,
+        "avoid_steps_requested": avoid_steps_requested,
+        "known_tagged_steps_filtered": known_tagged_steps_filtered if avoid_steps_requested else 0,
+        "step_access_status": (
+            "known_tagged_steps_filtered_unknown_edges_unverified"
+            if avoid_steps_requested else "not_requested"
+        ),
+        "remaining_step_access_verified": False if avoid_steps_requested else None,
+        "road_conditions_applied": conditions_applied,
+        "data_version": _data_version_for_graph(graph),
+        "road_condition_version": current_road_condition_version(active_conditions),
+        "data_source": "校园 POI 主数据与当前交通方式可用的已标记路网",
+        "geometry_crs": "GCJ-02",
+        "access_link_note": "地点到最近路网节点的末端接驳只按直线距离估算，未核实是否存在实际步行通道；距离超过 60 米的地点不列为候选。候选地点应再用路线工具核查。",
+        "estimate_note": "距离由路网路径与未核实的直线末端接驳组成；时间按该出行方式平均速度估算，不等同导航实时 ETA。",
+    }
+    if not reachable:
+        result["message"] = "当前路网估算范围内没有找到候选地点；地点入口与末端通道尚未逐一核实，可扩大范围或换个类别。"
+    return result, {"candidates": reachable}
+
+
+def _tool_compare_routes(args, ctx):
+    """用同一数据、天气与路况快照比较三种策略，不替换当前路线。"""
+    context, snapshot_error = _prepare_route_context(ctx)
+    if snapshot_error:
+        return snapshot_error, None
+
+    alternatives = []
+    unavailable = []
+    start_name = end_name = None
+    for strategy, label in _COMPARISON_STRATEGIES:
+        route_args = dict(args)
+        route_args["strategy"] = strategy
+        route, _artifact = _tool_plan_route(route_args, context)
+        if not isinstance(route, dict) or route.get("error"):
+            reason = (route.get("message", "该策略暂时无法生成路线")
+                      if isinstance(route, dict) else "路线结果格式无效")
+            unavailable.append({"strategy": strategy, "label": label, "reason": reason})
+            continue
+        try:
+            distance = float(route.get("recommended_length_m", route.get("distance_m")))
+            if not math.isfinite(distance) or distance < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            unavailable.append({"strategy": strategy, "label": label, "reason": "路线缺少有效距离"})
+            continue
+        if start_name is None:
+            start_name, end_name = route.get("start_name"), route.get("end_name")
+        duration = route.get("duration_min")
+        try:
+            duration = float(duration) if duration is not None else None
+            if duration is not None and (not math.isfinite(duration) or duration < 0):
+                duration = None
+        except (TypeError, ValueError):
+            duration = None
+        alternatives.append({
+            "strategy": strategy,
+            "label": label,
+            "distance_m": round(distance),
+            "duration_min": round(duration, 1) if duration is not None else None,
+            "slope_level_avg": route.get("slope_avg_recommended"),
+            "scenery_level_avg": route.get("scenery_avg_recommended"),
+            "weights": route.get("applied_weights"),
+        })
+
+    if not alternatives:
+        return {
+            "error": "route_comparison_unavailable",
+            "message": "三种路线都无法生成，请检查起终点、出行方式和硬约束。",
+            "unavailable": unavailable,
+        }, None
+
+    shortest = next((item["distance_m"] for item in alternatives
+                     if item["strategy"] == "shortest"), None)
+    for item in alternatives:
+        delta = item["distance_m"] - shortest if shortest is not None else None
+        item["distance_delta_from_shortest_m"] = delta
+        item["detour_ratio"] = round(item["distance_m"] / shortest, 3) if shortest else None
+
+    return {
+        "status": "complete" if not unavailable else "partial",
+        "start_name": start_name,
+        "end_name": end_name,
+        "mode": args.get("mode") or "walk",
+        "alternatives": alternatives,
+        "unavailable": unavailable,
+        "evidence": {
+            "data_version": _data_version_for_graph(context["_route_graph_snapshot"]),
+            "road_condition_version": route_state_module.current_road_condition_version(
+                context["_route_conditions_snapshot"]
+            ),
+            "geometry_crs": "GCJ-02",
+            "distance_basis": "所选路线边的路网长度",
+            "duration_basis": "速度模型估算，不含实时拥堵 ETA",
+        },
+        "comparison_basis": "相同起终点、出行方式、硬约束、路网/路况与天气快照；距离按所选路网边计算，时间为估算值。",
+        "selection_note": "此结果仅供比较，没有改变当前地图路线；用户选定策略后再单独规划。",
+    }, None
+
+
+def _tool_get_place_details(args, ctx):
+    requested = str(args.get("name") or "").strip()
+    poi, alternatives = find_poi_ambiguous(requested)
+    if not poi:
+        return {
+            "found": False,
+            "requested_name": requested,
+            "source_status": "not_found_in_current_campus_master",
+            "message": "当前校园地点主数据没有匹配到该名称；这不等于现实中该地点不存在。可核对别名或补充地点资料。",
+            "candidates": [_poi_public(item, with_coords=False) for item in (alternatives or [])[:5]],
+            "opening_hours": "unknown",
+            "accessibility": "unknown",
+            "data_version": _data_version_for_graph(None),
+        }, None
+
+    place = _poi_public(poi, with_provenance=True)
+    coordinates = poi.get("coordinates") or {}
+    place.update({
+        "poi_id": poi.get("id"),
+        "aliases": list(poi.get("aliases") or []),
+        "campus": poi.get("campus"),
+        "source_refs": list(poi.get("source_refs") or [])[:10],
+        "verification_status": poi.get("verification_status") or "legacy_unverified",
+        "coordinate_verification_status": poi.get("coordinate_verification_status") or "unknown",
+        "opening_hours": {"status": "known", "value": poi.get("opening_hours")}
+        if poi.get("opening_hours") else {"status": "unknown", "value": None},
+        "accessibility": poi.get("accessibility") or "unknown",
+        "location_crs": poi.get("coordinate_crs") or "GCJ-02",
+        "data_source": "校园 POI 主数据；source_refs 标注其来源",
+        "data_version": _data_version_for_graph(None),
+    })
+    if place.get("lng") is None:
+        place["lng"] = poi.get("lon", coordinates.get("lng"))
+    if place.get("lat") is None:
+        place["lat"] = poi.get("lat", coordinates.get("lat"))
+    return {"found": True, "place": place}, None
 
 
 def _plan_common(args, ctx):
     """公共准备：路网、方式过滤、天气。返回 (G, G_mode, mode, weather_info)。"""
-    G = _ensure_graph()
+    context = ctx if isinstance(ctx, dict) else {}
+    G = context.get("_route_graph_snapshot") or _ensure_graph()
     mode = args.get("mode") or "walk"
     if mode not in ("walk", "bike", "drive"):
         mode = "walk"
     G_mode = get_routing_index(G).for_mode(mode).graph
-    snap = _weather_snapshot()
+    snap = (context.get("_route_weather_snapshot")
+            if "_route_weather_snapshot" in context else _weather_snapshot())
     return G, G_mode, mode, (snap["live"] if snap else None)
+
+
+def _prepare_route_context(ctx):
+    """Freeze graph, active events and weather once for a complete spatial run."""
+    context = dict(ctx) if isinstance(ctx, dict) else {}
+    graph = context.get("_route_graph_snapshot")
+    if graph is None:
+        graph = _ensure_graph()
+    if graph is None:
+        return None, {"error": "network_unavailable", "message": "校园路网暂时不可用。"}
+    context["_route_graph_snapshot"] = graph
+    if "_route_conditions_snapshot" not in context:
+        try:
+            context["_route_conditions_snapshot"] = list_conditions(strict=True)
+        except Exception:
+            logger.exception("读取路况快照失败，拒绝使用可能过期或漏封路的路线数据")
+            return None, {"error": "road_conditions_unavailable", "message": "当前路况暂时无法确认，无法可靠规划路线。"}
+    if "_route_weather_snapshot" not in context:
+        try:
+            context["_route_weather_snapshot"] = _weather_snapshot()
+        except Exception:
+            logger.exception("读取天气快照失败；本次路线不应用天气成本")
+            context["_route_weather_snapshot"] = None
+    return context, None
 
 
 def _strategy_for_args(args, ctx=None, end_poi=None):
@@ -656,6 +1142,10 @@ def _attach_route_state(
     payload, route_kind, args, ctx, graph, decision, start, end,
     *, via=None, tour=None, legs=None, travel_mode="walk",
 ):
+    data_version = _data_version_for_graph(graph)
+    condition_snapshot = ((ctx or {}).get("_route_conditions_snapshot")
+                          if isinstance(ctx, dict) else None)
+    condition_version = route_state_module.current_road_condition_version(condition_snapshot)
     payload["route_state"] = build_route_state(
         route_kind=route_kind,
         original_query=(ctx or {}).get("query", "") if isinstance(ctx, dict) else "",
@@ -667,15 +1157,28 @@ def _attach_route_state(
         travel_mode=travel_mode,
         hard_constraints=args.get("constraints") or {},
         strategy=decision.as_dict(),
-        data_version=current_data_version(graph),
-        road_condition_version=current_road_condition_version(),
+        data_version=data_version,
+        road_condition_version=condition_version,
     )
+    payload["evidence"] = {
+        "network_source": "武汉大学校园主路网（OSM 与校方数据融合）",
+        "poi_source": "项目校园 POI 主数据",
+        "data_version": data_version,
+        "road_condition_version": condition_version,
+        "geometry_crs": "GCJ-02",
+        "distance_basis": "所选路线边的路网长度",
+        "duration_basis": "路网长度与出行方式速度模型估算；不是实时导航 ETA",
+        "attribute_caveat": "坡度、景观和无障碍字段可能缺测或为派生值；degraded 与通行约束状态须一并查看。",
+    }
     return payload
 
 
 def _tool_plan_route(args, ctx):
     graph_started = time.perf_counter()
-    G, G_mode, mode, weather_info = _plan_common(args, ctx)
+    context, snapshot_error = _prepare_route_context(ctx)
+    if snapshot_error:
+        return snapshot_error, None
+    G, G_mode, mode, weather_info = _plan_common(args, context)
     common_graph_ms = (time.perf_counter() - graph_started) * 1000
     poi_started = time.perf_counter()
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_mode)
@@ -697,6 +1200,7 @@ def _tool_plan_route(args, ctx):
             constraints=args.get("constraints") or {},
             weights=decision.weights, mode=mode, weather_info=weather_info,
             strategy_name=decision.name, detour_cap=decision.detour_cap,
+            road_conditions=context["_route_conditions_snapshot"],
         )
     except ValueError as e:
         return {"error": "route_not_found", "message": str(e)}, None
@@ -708,15 +1212,23 @@ def _tool_plan_route(args, ctx):
     payload["timings_ms"]["poi_resolution"] = round(poi_resolution_ms, 3)
     payload["timings_ms"] = normalize_timings(payload["timings_ms"])
     payload["strategy"] = decision.as_dict()
+    payload["endpoint_access"] = {
+        "start": _endpoint_access_evidence(args.get("start"), start_node, G_mode, mode),
+        "end": _endpoint_access_evidence(args.get("end"), end_node, G_mode, mode),
+        "max_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+    }
     _attach_route_state(
-        payload, "direct", args, ctx, G, decision,
+        payload, "direct", args, context, G, decision,
         args["start"], args["end"], travel_mode=mode,
     )
     return payload, {"route": payload}
 
 
 def _tool_plan_via_route(args, ctx):
-    G, G_mode, mode, weather_info = _plan_common(args, ctx)
+    context, snapshot_error = _prepare_route_context(ctx)
+    if snapshot_error:
+        return snapshot_error, None
+    G, G_mode, mode, weather_info = _plan_common(args, context)
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_mode)
     if err:
         return err, None
@@ -774,19 +1286,25 @@ def _tool_plan_via_route(args, ctx):
                 poi, _ = find_poi_ambiguous(display)
                 if poi:
                     via_info = _poi_public(poi)
+            access_evidence = _endpoint_access_evidence(ref, node, G_mode, mode)
             via_entries.append({"node": node, "name": display, "info": via_info,
-                                "ref": normalized_ref})
+                                "ref": normalized_ref, "access": access_evidence})
     elif via_coord:
         # 坐标途经点：直接吸附到最近路网节点
         try:
             via_lng = float(via_coord.get("lng"))
             via_lat = float(via_coord.get("lat"))
-            via_node = get_nearest_node(G_mode, via_lng, via_lat)
             via_display = "地图途经点"
+            via_node, via_access, error = _snap_wgs_to_network(
+                via_lng, via_lat, G_mode, via_display,
+            )
+            if error:
+                return error, None
             via_info = {"name": via_display}
             via_entries = [{"node": via_node, "name": via_display, "info": via_info,
                             "ref": {"name": via_display, "type": "coord",
-                                    "coordinates": {"lng": via_lng, "lat": via_lat}}}]
+                                    "coordinates": {"lng": via_lng, "lat": via_lat}},
+                            "access": via_access}]
             detour_ratio = None
         except (TypeError, ValueError, RuntimeError) as e:
             return {"error": "via_coord_invalid", "message": f"途经点坐标无效: {e}"}, None
@@ -796,8 +1314,11 @@ def _tool_plan_via_route(args, ctx):
             return err, None
         via_poi, _ = find_poi_ambiguous(via_name)
         via_info = _poi_public(via_poi) if via_poi else {"name": via_display}
+        via_access = _endpoint_access_evidence(
+            {"name": via_display, "type": "poi"}, via_node, G_mode, mode,
+        )
         via_entries = [{"node": via_node, "name": via_display, "info": via_info,
-                        "ref": {"name": via_display, "type": "poi"}}]
+                        "ref": {"name": via_display, "type": "poi"}, "access": via_access}]
         detour_ratio = None
     else:
         # 类别途经：检索候选 → 顺路性排序 → 取最顺路的
@@ -809,7 +1330,13 @@ def _tool_plan_via_route(args, ctx):
         for p in cands:
             try:
                 lng_wgs, lat_wgs = gcj02_to_wgs84(p["lon"], p["lat"])
-                poi_nodes.append((p, get_nearest_node(G_mode, lng_wgs, lat_wgs)))
+                node, access, snap_error = _snap_wgs_to_network(
+                    lng_wgs, lat_wgs, G_mode, p.get("name", "途经地点"),
+                )
+                if not snap_error:
+                    enriched = dict(p)
+                    enriched["_endpoint_access"] = access
+                    poi_nodes.append((enriched, node))
             except Exception:
                 continue
         on_the_way, off_the_way = rank_via_candidates(G, start_node, end_node, poi_nodes, mode=mode)
@@ -818,14 +1345,18 @@ def _tool_plan_via_route(args, ctx):
                 "error": "no_on_the_way_via",
                 "message": "顺路范围内没有合适的途经点（绕行比都超过 1.5），"
                            "可以放弃途经直接规划，或让用户在以下相对近的候选中选择",
-                "off_the_way": [{"poi": _poi_public(p), "detour_ratio": r}
+                "off_the_way": [{"poi": _poi_public(p), "detour_ratio": r,
+                                 "endpoint_access": p.get("_endpoint_access")}
                                 for p, _, r in off_the_way[:3]],
             }, None
         via_poi, via_node, detour_ratio = on_the_way[0]
         via_info = _poi_public(via_poi)
         via_display = via_poi["name"]
+        via_access = via_poi.get("_endpoint_access") or _snap_evidence_for_wgs(
+            *gcj02_to_wgs84(via_poi["lon"], via_poi["lat"]), via_display, via_node, G_mode,
+        )
         via_entries = [{"node": via_node, "name": via_display, "info": via_info,
-                        "ref": {"name": via_display, "type": "poi"}}]
+                        "ref": {"name": via_display, "type": "poi"}, "access": via_access}]
 
     ordered_nodes = [start_node] + [entry["node"] for entry in via_entries] + [end_node]
     for idx, (first, second) in enumerate(zip(ordered_nodes, ordered_nodes[1:]), start=1):
@@ -840,6 +1371,7 @@ def _tool_plan_via_route(args, ctx):
             "weights": decision.weights,
             "mode": mode,
             "weather_info": weather_info,
+            "road_conditions": context["_route_conditions_snapshot"],
             "strategy_name": decision.name,
             "detour_cap": decision.detour_cap,
         }
@@ -909,15 +1441,103 @@ def _tool_plan_via_route(args, ctx):
         "degraded": any(bool(leg.get("degraded")) for leg in legs),
         "length_capped": any(bool(leg.get("length_capped")) for leg in legs),
     }
+    payload["endpoint_access"] = {
+        "start": _endpoint_access_evidence(args.get("start"), start_node, G_mode, mode),
+        "via": [
+            entry.get("access") or _endpoint_access_evidence(entry.get("ref"), entry["node"], G_mode, mode)
+            for entry in via_entries
+        ],
+        "end": _endpoint_access_evidence(args.get("end"), end_node, G_mode, mode),
+        "max_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+    }
     via_ref = (via_entries[0]["ref"] if len(via_entries) == 1 else {
         "name": "、".join(point_names), "type": "multi",
         "points": [entry["ref"] for entry in via_entries],
     })
     _attach_route_state(
-        payload, "via", args, ctx, G, decision,
+        payload, "via", args, context, G, decision,
         args["start"], args["end"], via=via_ref, travel_mode=mode,
     )
     return payload, {"route": payload, "route_kind": "via"}
+
+
+def _tool_plan_itinerary(args, ctx):
+    """Plan an ordered stop list and enforce the stated total-time budget."""
+    stops = args.get("stops")
+    if not isinstance(stops, list) or not 1 <= len(stops) <= _MAX_VIA_POINTS:
+        return {"error": "invalid_itinerary", "message": "行程至少需要 1 个、最多 10 个途经地点。"}, None
+    try:
+        budget = float(args.get("time_budget_min"))
+        dwell = float(args.get("stop_duration_min", 15))
+    except (TypeError, ValueError):
+        return {"error": "invalid_itinerary", "message": "请提供有效的总时间和每站停留时间。"}, None
+    if (not math.isfinite(budget) or budget <= 0 or budget > 1440
+            or not math.isfinite(dwell) or dwell < 0 or dwell > 240):
+        return {"error": "invalid_itinerary", "message": "总时间需在 1 到 1440 分钟内，每站停留时间需在 0 到 240 分钟内。"}, None
+    start = args.get("start")
+    if not isinstance(start, dict) or not start.get("name"):
+        return {"error": "invalid_itinerary", "message": "行程起点无效。"}, None
+
+    end = args.get("end") or start
+    route_args = {
+        "start": start,
+        "end": end,
+        "via_points": stops,
+        "mode": args.get("mode", "walk"),
+        "constraints": args.get("constraints") or {},
+        "weights": args.get("weights"),
+        "strategy": args.get("strategy"),
+        "strategy_source": args.get("strategy_source", "explicit_nl"),
+    }
+    route, artifact = _tool_plan_via_route(route_args, ctx)
+    if not isinstance(route, dict) or route.get("error"):
+        return route if isinstance(route, dict) else {
+            "error": "itinerary_route_invalid", "message": "路线计算未返回可用结果。"
+        }, None
+    try:
+        travel = float(route.get("duration_min"))
+        distance = float(route.get("recommended_length_m", route.get("distance_m")))
+        if (not math.isfinite(travel) or travel < 0
+                or not math.isfinite(distance) or distance < 0):
+            raise ValueError
+    except (TypeError, ValueError):
+        return {"error": "itinerary_estimate_missing", "message": "路线缺少有效的路网距离或时间估算，暂时不能判断是否满足预算。"}, None
+
+    dwell_total = dwell * len(stops)
+    total = travel + dwell_total
+    over_by = max(0.0, total - budget)
+    summary = {
+        "status": "feasible" if over_by <= 0.05 else "over_budget",
+        "start_name": route.get("start_name"),
+        "end_name": route.get("end_name"),
+        "stop_names": [str(stop.get("name", "未命名地点")) for stop in stops if isinstance(stop, dict)],
+        "stop_count": len(stops),
+        "travel_duration_min": round(travel, 1),
+        "stop_duration_min": round(dwell_total, 1),
+        "per_stop_duration_min": round(dwell, 1),
+        "total_duration_min": round(total, 1),
+        "distance_m": round(distance),
+        "time_budget_min": round(budget, 1),
+        "over_by_min": round(over_by, 1),
+        "opening_hours": "unknown",
+        "estimate_note": "路上时间按当前路网和出行方式的速度模型估算；未计入排队、实际停留差异和地点开放状态。",
+    }
+    if summary["status"] != "feasible":
+        summary["next_step"] = "说明超出预算的分钟数，并询问用户是否增加时间或删减途经点；不要把这条路线作为满足预算的路线展示。"
+        return summary, None
+
+    route["itinerary"] = summary
+    route["route_kind"] = "itinerary"
+    route["travel_duration_min"] = round(travel, 1)
+    route["stop_duration_min"] = round(dwell_total, 1)
+    route["itinerary_total_duration_min"] = round(total, 1)
+    route["time_budget_min"] = round(budget, 1)
+    if isinstance(route.get("route_state"), dict):
+        route["route_state"]["route_kind"] = "via"
+    route_artifact = dict(artifact) if isinstance(artifact, dict) else {}
+    route_artifact["route"] = route
+    route_artifact["route_kind"] = "itinerary"
+    return summary, route_artifact
 
 
 def _tool_plan_multimodal_route(args, ctx):
@@ -935,14 +1555,13 @@ def _tool_plan_multimodal_route(args, ctx):
         return {"error": "too_many_legs",
                 "message": "换乘段数过多（最多 4 段），可拆成多次规划"}, None
 
-    G = _ensure_graph()
-    weather_info = None
-    try:
-        snap = _weather_snapshot()
-        if snap:
-            weather_info = snap.get("live")
-    except Exception:
-        pass
+    context, snapshot_error = _prepare_route_context(ctx)
+    if snapshot_error:
+        return snapshot_error, None
+    G = context["_route_graph_snapshot"]
+    snap = context.get("_route_weather_snapshot")
+    weather_info = snap.get("live") if snap else None
+    conditions = context["_route_conditions_snapshot"]
 
     # 起点（按第一段 mode 吸附）
     first_mode = legs_in[0].get("mode") or "walk"
@@ -952,6 +1571,7 @@ def _tool_plan_multimodal_route(args, ctx):
     start_node, start_name, err = _resolve_endpoint(args.get("start"), G_first)
     if err:
         return err, None
+    start_access = _endpoint_access_evidence(args.get("start"), start_node, G_first, first_mode)
 
     decision = _strategy_for_args(args, ctx)
     legs_payload = []
@@ -976,31 +1596,48 @@ def _tool_plan_multimodal_route(args, ctx):
         end_node, end_name, err = _resolve_endpoint(end_ref, G_mode)
         if err:
             return err, None
+        end_access = _endpoint_access_evidence(end_ref, end_node, G_mode, mode)
+        leg_start_access = start_access if idx == 0 else None
         # 起点也要重新吸附到本段 G_mode（前一段终点是 walk-only 时可能不在本段图里）
         if prev_node not in G_mode:
-            # 用前一终点坐标重新吸附到本段图最近 in-mode 节点
+            # 用前一终点坐标重新吸附，并限制/披露模式转换接驳距离。
             try:
                 prev_lng, prev_lat = get_node_coords(G, prev_node)
-                prev_node = get_nearest_node(G_mode, prev_lng, prev_lat)
+                prev_node, leg_start_access, transfer_error = _snap_wgs_to_network(
+                    prev_lng, prev_lat, G_mode, f"第 {idx + 1} 段换乘起点",
+                )
+                if transfer_error:
+                    return {**transfer_error,
+                            "message": f"第 {idx + 1} 段换乘点无法可靠接入当前出行方式的道路：{transfer_error['message']}"}, None
             except Exception:
                 return {"error": "leg_start_unreachable",
                         "message": f"第 {idx + 1} 段起点在 {mode} 模式下无可达节点附近，"
                                    f"可调整换乘点位置"}, None
+        elif idx > 0:
+            prev_lng, prev_lat = get_node_coords(G_mode, prev_node)
+            leg_start_access = _snap_evidence_for_wgs(
+                prev_lng, prev_lat, f"第 {idx + 1} 段换乘起点", prev_node, G_mode,
+            )
 
         if prev_node == end_node:
             return {"error": "same_poi",
                     "message": f"第 {idx + 1} 段起终点相同，可省略该段"}, None
 
         via_name = (leg.get("via_name") or "").strip()
+        via_access = None
         try:
             if via_name:
                 via_node, via_display, err = _resolve_endpoint({"name": via_name}, G_mode)
                 if err:
                     return err, None
+                via_access = _endpoint_access_evidence(
+                    {"name": via_display, "type": "poi"}, via_node, G_mode, mode,
+                )
                 result = compute_via_route(
                     G, prev_node, via_node, end_node,
                     constraints=args.get("constraints") or {},
                     weights=decision.weights, mode=mode,
+                    road_conditions=conditions,
                     weather_info=weather_info,
                     strategy_name=decision.name, detour_cap=decision.detour_cap,
                 )
@@ -1010,6 +1647,9 @@ def _tool_plan_multimodal_route(args, ctx):
                     "via": {"name": via_display},
                     "legs": [leg1, leg2],
                     "recommended": leg1["recommended"] + leg2["recommended"],
+                    "recommended_edge_ids": (
+                        leg1["recommended_edge_ids"] + leg2["recommended_edge_ids"]
+                    ),
                     "steps": _merge_leg_steps([leg1, leg2]),
                     "recommended_length_m": result["total_length_m"],
                     "distance_m": result["total_length_m"],
@@ -1022,6 +1662,7 @@ def _tool_plan_multimodal_route(args, ctx):
                     G=G, start_node=prev_node, end_node=end_node,
                     constraints=args.get("constraints") or {},
                     weights=decision.weights, mode=mode,
+                    road_conditions=conditions,
                     weather_info=weather_info,
                     strategy_name=decision.name, detour_cap=decision.detour_cap,
                 )
@@ -1029,6 +1670,13 @@ def _tool_plan_multimodal_route(args, ctx):
         except ValueError as e:
             return {"error": "route_not_found",
                     "message": f"第 {idx + 1} 段（{mode}：{prev_name}→{end_name}）不可达：{e}"}, None
+
+        leg_payload["endpoint_access"] = {
+            "start": leg_start_access,
+            "end": end_access,
+            "via": via_access,
+            "max_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+        }
 
         legs_payload.append(leg_payload)
         cumulative_len += float(leg_payload["recommended_length_m"] or 0)
@@ -1057,6 +1705,11 @@ def _tool_plan_multimodal_route(args, ctx):
         "mode": legs_payload[0]["mode"],
         "strategy": decision.as_dict(),
         "pois": pois_all,
+        "endpoint_access": {
+            "start": start_access,
+            "legs": [leg.get("endpoint_access") for leg in legs_payload],
+            "max_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+        },
     }
     state_legs = [
         {
@@ -1068,7 +1721,7 @@ def _tool_plan_multimodal_route(args, ctx):
         for leg in legs_in
     ]
     _attach_route_state(
-        payload, "multimodal", args, ctx, G, decision,
+        payload, "multimodal", args, context, G, decision,
         args["start"], legs_in[-1]["end"], legs=state_legs,
         travel_mode=legs_payload[0]["mode"],
     )
@@ -1076,7 +1729,10 @@ def _tool_plan_multimodal_route(args, ctx):
 
 
 def _tool_plan_tour(args, ctx):
-    G, G_mode, mode, weather_info = _plan_common(args, ctx)
+    context, snapshot_error = _prepare_route_context(ctx)
+    if snapshot_error:
+        return snapshot_error, None
+    G, G_mode, mode, weather_info = _plan_common(args, context)
 
     theme = (args.get("theme") or "scenery").strip()
     theme_map = {
@@ -1105,21 +1761,28 @@ def _tool_plan_tour(args, ctx):
 
     # 起点：可选；默认以重要度最高的点为锚
     start_node, start_name = None, None
+    start_access = None
     start_ref = args.get("start")
     if start_ref:
         start_node, start_name, err = _resolve_endpoint(start_ref, G_mode)
         if err:
             return err, None
+        start_access = _endpoint_access_evidence(start_ref, start_node, G_mode, mode)
 
     poi_nodes = []
     for p in pois:
         try:
             lng_wgs, lat_wgs = gcj02_to_wgs84(p["lon"], p["lat"])
-            node = get_nearest_node(G_mode, lng_wgs, lat_wgs)
+            node, access, snap_error = _snap_wgs_to_network(
+                lng_wgs, lat_wgs, G_mode, p.get("name", "游览地点"),
+            )
+            if snap_error:
+                continue
         except Exception:
             continue
         p2 = dict(p)
         p2["importance"] = importance_score(p)
+        p2["_endpoint_access"] = access
         poi_nodes.append((p2, node))
 
     loop = bool(args.get("loop", True)) if start_node is None else bool(args.get("loop", True))
@@ -1128,6 +1791,7 @@ def _tool_plan_tour(args, ctx):
         G, poi_nodes, start_node=start_node, loop=loop,
         constraints=args.get("constraints") or {}, weights=decision.weights,
         mode=mode, max_total_m=_TOUR_MAX_TOTAL_M, weather_info=weather_info,
+        road_conditions=context["_route_conditions_snapshot"],
         strategy_name=decision.name, detour_cap=decision.detour_cap,
     )
     if not result["legs"]:
@@ -1142,6 +1806,8 @@ def _tool_plan_tour(args, ctx):
         legs_payload.append(_route_payload(G, leg, a, b, mode))
 
     ordered_public = [_poi_public(p) for p in result["ordered_pois"]]
+    for public_poi, source_poi in zip(ordered_public, result["ordered_pois"]):
+        public_poi["endpoint_access"] = source_poi.get("_endpoint_access")
     payload = {
         "tour": {
             "theme": theme,
@@ -1163,12 +1829,17 @@ def _tool_plan_tour(args, ctx):
         "recommended_length_m": result["total_length_m"],
         "distance_m": result["total_length_m"],
         "strategy": decision.as_dict(),
+        "endpoint_access": {
+            "start": start_access,
+            "places": [p.get("_endpoint_access") for p in result["ordered_pois"]],
+            "max_snap_m": _MAX_ENDPOINT_ACCESS_SNAP_M,
+        },
     }
     state_pois = [{"name": p["name"], "type": "poi"} for p in ordered_public]
     state_start = args.get("start") or state_pois[0]
     state_end = state_start if result["loop"] else state_pois[-1]
     _attach_route_state(
-        payload, "tour", args, ctx, G, decision,
+        payload, "tour", args, context, G, decision,
         state_start, state_end,
         tour={"theme": theme, "pois": state_pois, "loop": result["loop"]},
         travel_mode=mode,
@@ -1224,9 +1895,13 @@ def _tool_suggest_followup(args, ctx):
 
 _EXECUTORS = {
     "resolve_poi": _tool_resolve_poi,
+    "get_place_details": _tool_get_place_details,
     "search_poi_candidates": _tool_search_poi_candidates,
+    "find_reachable_places": _tool_find_reachable_places,
+    "compare_routes": _tool_compare_routes,
     "plan_route": _tool_plan_route,
     "plan_via_route": _tool_plan_via_route,
+    "plan_itinerary": _tool_plan_itinerary,
     "plan_multimodal_route": _tool_plan_multimodal_route,
     "plan_tour": _tool_plan_tour,
     "get_weather": _tool_get_weather,
@@ -1274,6 +1949,12 @@ def execute_tool(name: str, args: dict, ctx: dict = None) -> tuple:
             if isinstance(result, dict):
                 result["timings_ms"] = route["timings_ms"]
         return result, artifact
+    except RoadConditionsUnavailableError:
+        logger.exception("工具 %s 无法将当前路况安全应用到路网", name)
+        return {
+            "error": "road_conditions_unavailable",
+            "message": "当前管制信息无法与路网对应，暂时不能可靠规划路线。",
+        }, None
     except Exception as e:
         logger.exception("工具 %s 执行异常", name)
         return {"error": "tool_exception", "message": f"{type(e).__name__}: {e}"}, None

@@ -73,6 +73,17 @@ function managerHarness() {
       }
       let data = {};
       if (url === '/api/admin/status') data = { is_admin: true, csrf_token: 'csrf' };
+      else if (url.startsWith('/api/road-conditions/snap')) data = {
+        snap: { u: 1, v: 2, key: 0, road_name: '测试路', dist_m: 2,
+          chain_length_m: 100, snap_lng_gcj: 114.36, snap_lat_gcj: 30.53,
+          geometry_gcj: [[114.36, 30.53], [114.361, 30.53]] },
+        impact_preview: {
+          road_name: '测试路', affected_road_segments: 1, affected_length_m: 100,
+          active_event_count: 2, event_scope_note: '基于当前有效路况快照',
+          route_sample_scope: '仅为所选路段两端的示例路线',
+          effects_by_mode: {}, sample_routes: {},
+        },
+      };
       else if (url.startsWith('/api/manager/vision-status')) data = {
         inference_ready: inferenceReady, max_media_bytes: 1024, notice: inferenceReady ? '已就绪' : '尚未就绪',
       };
@@ -153,4 +164,21 @@ test('readiness polling cannot re-enable or duplicate an in-flight media upload'
     harness.releaseVisionUploads();
     await upload;
   }
+});
+
+test('manager impact preview discloses its active-condition snapshot and local scope', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  elements.get('event-type').value = 'closure';
+  elements.get('pick-road').listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+
+  const preview = elements.get('impact-preview');
+  assert.equal(preview.hidden, false);
+  const note = preview.children.find((child) => child.tagName === 'small');
+  const noteText = note ? note.textContent : preview.children.at(-1).textContent;
+  assert.match(noteText, /基于当前有效路况快照/);
+  assert.match(noteText, /2 条当前生效路况/);
+  assert.match(noteText, /所选路段两端/);
 });

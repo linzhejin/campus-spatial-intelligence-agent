@@ -25,10 +25,12 @@ block = 硬移除边（不可通行）；数字 = 该边成本乘以的惩罚系
 
 import json
 import logging
+import math
 import os
 import threading
 import time
 import uuid
+from copy import deepcopy
 from typing import Optional
 
 import networkx as nx
@@ -77,31 +79,135 @@ _cache = None  # list of condition dicts
 _cache_mtime = 0.0
 
 
+class RoadConditionsUnavailableError(RuntimeError):
+    """Raised when route planning cannot safely read the road-condition store."""
+
+
+class RoadConditionBindingError(RoadConditionsUnavailableError):
+    """Raised when an active condition cannot be safely bound to the current graph."""
+
+
+def _finite_number(value) -> bool:
+    if isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _valid_lon_lat(lng, lat) -> bool:
+    return (_finite_number(lng) and _finite_number(lat)
+            and -180 <= float(lng) <= 180 and -90 <= float(lat) <= 90)
+
+
+def _valid_edge_binding(edge_info: dict) -> bool:
+    if not isinstance(edge_info, dict):
+        return False
+    chain = edge_info.get("edges")
+    if isinstance(chain, list) and chain:
+        chain_valid = True
+        for triple in chain:
+            if not isinstance(triple, (list, tuple)) or len(triple) < 3:
+                chain_valid = False
+                break
+            try:
+                int(triple[0]); int(triple[1]); int(triple[2])
+            except (TypeError, ValueError):
+                chain_valid = False
+                break
+        if chain_valid:
+            return True
+    if edge_info.get("u") is not None and edge_info.get("v") is not None:
+        try:
+            int(edge_info["u"]); int(edge_info["v"]); int(edge_info.get("key", 0))
+            return True
+        except (TypeError, ValueError):
+            pass
+    geometry = edge_info.get("geometry_gcj")
+    if isinstance(geometry, list) and len(geometry) >= 2:
+        if all(isinstance(point, (list, tuple)) and len(point) >= 2
+               and _valid_lon_lat(point[0], point[1]) for point in geometry):
+            return True
+    snap = edge_info.get("snap") or {}
+    return isinstance(snap, dict) and _valid_lon_lat(snap.get("lng"), snap.get("lat"))
+
+
+def _validate_condition_record(condition: dict) -> None:
+    """Validate persistent event shape before it can influence routing."""
+    if condition.get("type") not in CONDITION_EFFECTS:
+        raise ValueError("路况事件类型无效")
+    start = condition.get("start_time", 0) or 0
+    end = condition.get("end_time", 0) or 0
+    if not _finite_number(start) or not _finite_number(end):
+        raise ValueError("路况事件时间无效")
+    start, end = float(start), float(end)
+    if start < 0 or end < 0 or (end and start and end <= start):
+        raise ValueError("路况事件时间范围无效")
+
+    edge_ok = _valid_edge_binding(condition.get("edge"))
+    coords = condition.get("coordinates")
+    coords_ok = isinstance(coords, dict) and _valid_lon_lat(coords.get("lng"), coords.get("lat"))
+    if coords_ok:
+        radius = condition.get("radius_m", _LEGACY_DEFAULT_RADIUS_M)
+        coords_ok = _finite_number(radius) and 0 < float(radius) <= 1000
+    if not edge_ok and not coords_ok:
+        raise ValueError("路况事件缺少有效道路绑定")
+
+
 # ===================== 持久化 =====================
 
-def _load_conditions() -> list:
+def _load_conditions(*, strict: bool = False) -> list:
     """从 JSON 文件加载路况事件，带 mtime 缓存。"""
     global _cache, _cache_mtime
     with _lock:
         try:
             mtime = os.path.getmtime(_CONDITIONS_FILE)
-        except OSError:
+        except FileNotFoundError as exc:
+            mtime = 0.0
+            if strict and _cache is not None and _cache_mtime > 0:
+                raise RoadConditionsUnavailableError("路况文件丢失，无法确认当前封路信息") from exc
+            if strict:
+                _cache = []
+                _cache_mtime = 0.0
+                return []
+        except OSError as exc:
+            if strict:
+                raise RoadConditionsUnavailableError("无法读取路况文件状态") from exc
             mtime = 0.0
         if _cache is not None and mtime == _cache_mtime:
-            return list(_cache)
+            if strict:
+                try:
+                    for item in _cache:
+                        if not isinstance(item, dict):
+                            raise ValueError("路况文件必须是对象数组")
+                        _validate_condition_record(item)
+                except (AttributeError, TypeError, ValueError) as exc:
+                    raise RoadConditionsUnavailableError("路况文件无效，无法确认当前封路信息") from exc
+            return deepcopy(_cache)
         try:
             with open(_CONDITIONS_FILE, "r", encoding="utf-8") as f:
-                _cache = json.load(f)
-        except (OSError, json.JSONDecodeError) as e:
+                loaded = json.load(f)
+            if not isinstance(loaded, list) or any(not isinstance(item, dict) for item in loaded):
+                raise ValueError("路况文件必须是对象数组")
+            if strict:
+                for item in loaded:
+                    _validate_condition_record(item)
+            _cache = loaded
+        except (OSError, json.JSONDecodeError, ValueError) as e:
+            if strict:
+                raise RoadConditionsUnavailableError("路况文件无效，无法确认当前封路信息") from e
             logger.warning("路况文件加载失败，使用空列表: %s", e)
             _cache = []
         _cache_mtime = mtime
-        return list(_cache)
+        return deepcopy(_cache)
 
 
 def _save_conditions(conditions: list) -> None:
     """持久化路况事件到 JSON 文件。"""
     global _cache, _cache_mtime
+    for condition in conditions:
+        _validate_condition_record(condition)
     with _lock:
         os.makedirs(os.path.dirname(_CONDITIONS_FILE), exist_ok=True)
         with open(_CONDITIONS_FILE, "w", encoding="utf-8") as f:
@@ -110,13 +216,13 @@ def _save_conditions(conditions: list) -> None:
         _cache_mtime = os.path.getmtime(_CONDITIONS_FILE)
 
 
-def list_conditions(include_inactive: bool = False) -> list:
+def list_conditions(include_inactive: bool = False, *, strict: bool = False) -> list:
     """返回路况事件。
 
     生效判定：start_time <= now < end_time（end_time 为 0 表示长期有效）。
     include_inactive=True 时返回全部事件（含未开始/已过期），供管理端展示。
     """
-    conditions = _load_conditions()
+    conditions = _load_conditions(strict=strict)
     if include_inactive:
         return list(conditions)
     now = time.time()
@@ -192,7 +298,7 @@ def add_condition(
         "created_at": now,
         "updated_at": now,
     }
-    conditions = _load_conditions()
+    conditions = _load_conditions(strict=True)
     conditions.append(condition)
     _save_conditions(conditions)
     logger.info(
@@ -205,7 +311,7 @@ def add_condition(
 
 def remove_condition(cond_id: str) -> bool:
     """删除一个路况事件，返回是否成功。"""
-    conditions = _load_conditions()
+    conditions = _load_conditions(strict=True)
     new_conditions = [c for c in conditions if c["id"] != cond_id]
     if len(new_conditions) == len(conditions):
         return False
@@ -219,7 +325,7 @@ def update_condition(cond_id: str, changes: dict) -> Optional[dict]:
 
     特殊用法：changes={"end_time": 0} 由调用方把"立即结束"翻译成当前时间戳传入。
     """
-    conditions = _load_conditions()
+    conditions = _load_conditions(strict=True)
     target = None
     for c in conditions:
         if c["id"] == cond_id:
@@ -476,7 +582,7 @@ def snap_to_edge(
 
 # ===================== 规划期应用 =====================
 
-def _resolve_edge_keys(G: nx.MultiDiGraph, cond: dict) -> set:
+def _resolve_edge_keys(G: nx.MultiDiGraph, cond: dict, *, strict: bool = False) -> set:
     """
     解析事件影响的有向边 key 集合（道路双向通行，双向同时生效）。
 
@@ -486,36 +592,52 @@ def _resolve_edge_keys(G: nx.MultiDiGraph, cond: dict) -> set:
       3. 旧版 radius_m 圆模型 → 按原半径几何回退
     """
     edge_info = cond.get("edge")
-    if edge_info:
+    if isinstance(edge_info, dict) and edge_info:
         keys = set()
         chain = edge_info.get("edges")
         if isinstance(chain, list) and chain:
+            chain_complete = True
             for triple in chain:
                 try:
                     a, b, kk = int(triple[0]), int(triple[1]), int(triple[2])
                 except (TypeError, ValueError, IndexError):
+                    chain_complete = False
                     continue
+                segment_found = False
+                if G.has_edge(a, b, kk):
+                    keys.add((a, b, kk))
+                    segment_found = True
+                if G.has_edge(b, a, kk):
+                    keys.add((b, a, kk))
+                    segment_found = True
+                if not segment_found:
+                    chain_complete = False
+            if chain_complete and keys:
+                return keys
+            # Never apply only the subset of a stored closure chain that still has matching IDs.
+            keys.clear()
+        elif edge_info.get("u") is not None and edge_info.get("v") is not None:
+            try:
+                a, b = int(edge_info["u"]), int(edge_info["v"])
+                kk = int(edge_info.get("key", 0))
                 if G.has_edge(a, b, kk):
                     keys.add((a, b, kk))
                 if G.has_edge(b, a, kk):
                     keys.add((b, a, kk))
-        elif edge_info.get("u") is not None and edge_info.get("v") is not None:
-            a, b = int(edge_info["u"]), int(edge_info["v"])
-            kk = int(edge_info.get("key", 0))
-            if G.has_edge(a, b, kk):
-                keys.add((a, b, kk))
-            if G.has_edge(b, a, kk):
-                keys.add((b, a, kk))
+            except (TypeError, ValueError):
+                pass
         if keys:
             return keys
-        # id 全失效 → 整段道路几何回退（覆盖整条链），再退回吸附点回退
+        # IDs失效或部分失效 → 必须通过整段几何回退，不应用残缺的边链。
         geom = edge_info.get("geometry_gcj") or []
         if len(geom) >= 2:
             chain_keys = _edges_near_geometry(G, geom, _EDGE_FALLBACK_DIST_M)
-            if chain_keys:
+            if chain_keys and (not strict or _geometry_covered_by_edges(
+                    G, geom, chain_keys, _EDGE_FALLBACK_DIST_M)):
                 return chain_keys
         snap = edge_info.get("snap") or {}
-        if snap.get("lng") is not None:
+        if (not strict and isinstance(snap, dict)
+                and snap.get("lng") is not None and snap.get("lat") is not None):
             return _edges_near_point(
                 G, float(snap["lng"]), float(snap["lat"]),
                 gcj=True, radius_m=_EDGE_FALLBACK_DIST_M,
@@ -572,10 +694,40 @@ def _edges_near_geometry(G, coords_gcj, radius_m=_EDGE_FALLBACK_DIST_M) -> set:
     return keys
 
 
+def _geometry_covered_by_edges(G, coords_gcj, keys, tolerance_m) -> bool:
+    """Require fallback edges to cover the entire stored road geometry within tolerance."""
+    from math import ceil
+    from shapely.geometry import LineString
+    from spatial.coord_transform import gcj02_to_wgs84
+
+    try:
+        wgs = [gcj02_to_wgs84(float(point[0]), float(point[1]))
+               for point in coords_gcj if isinstance(point, (list, tuple)) and len(point) >= 2]
+        event_line = LineString(wgs)
+        candidate_lines = [
+            _edge_line(G, u, v, G.get_edge_data(u, v, k) or {})
+            for u, v, k in keys if G.has_edge(u, v, k)
+        ]
+        if len(wgs) < 2 or not candidate_lines or event_line.length <= 0:
+            return False
+        interval_deg = max(tolerance_m / 111320.0 / 2.0, 1e-7)
+        sample_count = max(2, int(ceil(event_line.length / interval_deg)))
+        max_distance_deg = tolerance_m / 111320.0
+        for index in range(sample_count + 1):
+            point = event_line.interpolate(index / sample_count, normalized=True)
+            if min(line.distance(point) for line in candidate_lines) > max_distance_deg:
+                return False
+        return True
+    except (TypeError, ValueError, IndexError, KeyError):
+        return False
+
+
 def apply_conditions_to_graph(
     G: nx.MultiDiGraph,
     conditions: Optional[list] = None,
     mode: str = "walk",
+    *,
+    strict: bool = False,
 ) -> tuple:
     """
     按出行模式把路况应用到路网。
@@ -588,19 +740,40 @@ def apply_conditions_to_graph(
         - applied_count: 在该模式图上实际命中至少一条边的事件数
     """
     if conditions is None:
-        conditions = list_conditions()
+        conditions = list_conditions(strict=strict)
     if not conditions:
         return G, {}, set(), 0
+
+    if strict and mode not in {"walk", "bike", "drive"}:
+        raise RoadConditionBindingError("未知出行方式，无法校验路况影响")
 
     penalties = {}
     closed = set()
     applied = 0
     for cond in conditions:
-        effect = CONDITION_EFFECTS.get(cond.get("type"), {}).get(mode)
-        if effect is None:
+        try:
+            if strict:
+                if not isinstance(cond, dict):
+                    raise ValueError("路况事件格式无效")
+                _validate_condition_record(cond)
+            effect = CONDITION_EFFECTS.get(cond.get("type"), {}).get(mode)
+        except (AttributeError, TypeError, ValueError) as exc:
+            if strict:
+                raise RoadConditionBindingError("路况事件格式无效，无法安全应用") from exc
             continue
-        keys = _resolve_edge_keys(G, cond)
+        if effect is None:
+            if strict:
+                raise RoadConditionBindingError("路况事件没有当前出行方式的通行规则")
+            continue
+        try:
+            keys = _resolve_edge_keys(G, cond, strict=strict)
+        except (AttributeError, TypeError, ValueError, KeyError, IndexError) as exc:
+            if strict:
+                raise RoadConditionBindingError("路况事件道路绑定无法解析") from exc
+            continue
         if not keys:
+            if strict:
+                raise RoadConditionBindingError("生效中的路况事件无法匹配当前路网，已停止路线规划")
             continue
         applied += 1
         if effect == "block":

@@ -69,6 +69,20 @@ def test_shortest_strategy_runs_one_search_and_returns_identical_paths(mock_grap
     assert result["dijkstra_runs"] == 1
 
 
+def test_route_calculation_fails_closed_on_unmatched_active_road_event(mock_graph):
+    from spatial.road_conditions import RoadConditionBindingError
+
+    stale_closure = {
+        "id": "stale-closure", "type": "closure", "start_time": 0, "end_time": 0,
+        "edge": {"u": 999001, "v": 999002, "key": 0,
+                 "snap": {"lng": 114.37, "lat": 30.54}},
+    }
+
+    with pytest.raises(RoadConditionBindingError):
+        compute_route(mock_graph, 0, 5, strategy_name="shortest",
+                      road_conditions=[stale_closure])
+
+
 def test_weighted_strategy_never_returns_route_beyond_cap(detour_graph, monkeypatch):
     monkeypatch.setattr(routing_module, "_should_degrade_annotations", lambda: None)
     result = compute_route(
@@ -157,6 +171,23 @@ class TestFilterConstraints:
         )
         assert status == "no_filter"
         assert penalty == {}
+
+    def test_avoid_steps_is_a_hard_filter(self):
+        graph = nx.MultiDiGraph()
+        for node in (1, 2, 3):
+            graph.add_node(node, x=114.360, y=30.535)
+        graph.add_edge(1, 3, length=100.0, highway="steps", slope_level=2, scenery_level=3)
+        graph.add_edge(1, 2, length=80.0, highway="footway", slope_level=2, scenery_level=3)
+        graph.add_edge(2, 3, length=80.0, highway="footway", slope_level=2, scenery_level=3)
+
+        result = compute_route(
+            graph, 1, 3, constraints={"avoid_steps": True}, strategy_name="shortest",
+            road_conditions=[],
+        )
+
+        assert result["recommended_edges"] == [(1, 2, 0), (2, 3, 0)]
+        assert "steps_avoid" in result["filter_status"]
+        assert "steps_unverified" in result["filter_status"]
 
 
 class TestDegradeMechanism:

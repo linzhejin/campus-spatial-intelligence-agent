@@ -91,6 +91,86 @@ def _isolate_store(tmp_path, monkeypatch):
     yield
 
 
+def test_routing_snapshot_rejects_corrupt_road_condition_store(tmp_path, monkeypatch):
+    path = tmp_path / "road_conditions.json"
+    path.write_text("{ invalid json", encoding="utf-8")
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(path))
+    monkeypatch.setattr(rc, "_cache", None)
+    monkeypatch.setattr(rc, "_cache_mtime", 0.0)
+
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        rc.list_conditions(strict=True)
+
+
+def test_reading_road_conditions_returns_detached_snapshot(G):
+    _edge_condition(G, "closure")
+
+    snapshot = rc.list_conditions(strict=True)
+    snapshot[0]["type_label"] = "UI-only"
+    snapshot[0]["edge"]["u"] = 999
+
+    fresh = rc.list_conditions(strict=True)
+    assert "type_label" not in fresh[0]
+    assert fresh[0]["edge"]["u"] != 999
+
+
+def test_strict_snapshot_rejects_event_without_a_supported_binding(tmp_path, monkeypatch):
+    path = tmp_path / "road_conditions.json"
+    path.write_text('[{"id":"bad","type":"closure","start_time":0,"end_time":0}]', encoding="utf-8")
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(path))
+    monkeypatch.setattr(rc, "_cache", None)
+    monkeypatch.setattr(rc, "_cache_mtime", 0.0)
+
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        rc.list_conditions(strict=True)
+
+
+def test_strict_snapshot_validates_events_loaded_into_non_strict_cache(tmp_path, monkeypatch):
+    path = tmp_path / "road_conditions.json"
+    path.write_text('[{"id":"bad","type":"closure","start_time":0,"end_time":0}]', encoding="utf-8")
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(path))
+    monkeypatch.setattr(rc, "_cache", None)
+    monkeypatch.setattr(rc, "_cache_mtime", 0.0)
+
+    assert len(rc.list_conditions()) == 1
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        rc.list_conditions(strict=True)
+
+
+def test_add_condition_preserves_corrupt_store_instead_of_overwriting(tmp_path, monkeypatch, G):
+    path = tmp_path / "road_conditions.json"
+    original = "{ invalid json"
+    path.write_text(original, encoding="utf-8")
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(path))
+    monkeypatch.setattr(rc, "_cache", None)
+    monkeypatch.setattr(rc, "_cache_mtime", 0.0)
+    lng, lat = _mid_12_gcj(G)
+    edge = rc.snap_to_edge(G, lng, lat)
+
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        rc.add_condition("closure", "测试封路", edge)
+
+    assert path.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.parametrize("operation", ["remove", "update"])
+def test_road_condition_mutations_reject_corrupt_store(tmp_path, monkeypatch, operation):
+    path = tmp_path / "road_conditions.json"
+    original = "{ invalid json"
+    path.write_text(original, encoding="utf-8")
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(path))
+    monkeypatch.setattr(rc, "_cache", None)
+    monkeypatch.setattr(rc, "_cache_mtime", 0.0)
+
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        if operation == "remove":
+            rc.remove_condition("any")
+        else:
+            rc.update_condition("any", {"name": "改名"})
+
+    assert path.read_text(encoding="utf-8") == original
+
+
 def _edge_condition(G, cond_type, u=1, v=2, **overrides):
     """直接在边 (u,v) 中点吸附，构造一条绑定该边的事件。"""
     x1, y1 = G.nodes[u]["x"], G.nodes[u]["y"]
@@ -238,6 +318,38 @@ class TestResolveAndLifecycle:
         cond["edge"]["edges"] = []  # 链上 id 全部失效，触发几何回退
         keys = rc._resolve_edge_keys(G, cond)
         assert (1, 2, 0) in keys and (2, 1, 0) in keys
+
+    def test_strict_application_rejects_unmatched_active_closure(self, G):
+        cond = {
+            "id": "stale-closure", "type": "closure", "start_time": 0, "end_time": 0,
+            "edge": {"u": 999001, "v": 999002, "key": 0,
+                     "snap": {"lng": 114.37, "lat": 30.54}},
+        }
+
+        with pytest.raises(rc.RoadConditionBindingError):
+            rc.apply_conditions_to_graph(G, [cond], "walk", strict=True)
+
+    def test_strict_application_allows_geometry_fallback_after_node_id_rebuild(self, G):
+        cond = _edge_condition(G, "closure")
+        cond["edge"]["u"] = 999001
+        cond["edge"]["v"] = 999002
+        cond["edge"]["edges"] = []
+
+        _, _, closed, applied = rc.apply_conditions_to_graph(G, [cond], "walk", strict=True)
+
+        assert applied == 1
+        assert (1, 2, 0) in closed and (2, 1, 0) in closed
+
+    def test_strict_application_rejects_partially_matched_edge_chain(self):
+        old_graph, _ = _straight_road_graph(n_seg=4)
+        _, cond = _chain_condition(old_graph, 12, 13)
+        new_graph = old_graph.copy()
+        # Remove one physical segment from the old graph; the other stored IDs still match.
+        new_graph.remove_edge(12, 13, 0)
+        new_graph.remove_edge(13, 12, 0)
+
+        with pytest.raises(rc.RoadConditionBindingError):
+            rc.apply_conditions_to_graph(new_graph, [cond], "walk", strict=True)
 
     def test_legacy_radius_model_still_works(self, G):
         mid_lng = (G.nodes[1]["x"] + G.nodes[2]["x"]) / 2
@@ -445,6 +557,41 @@ def _mid_12_gcj(G):
     return wgs84_to_gcj02(mid_lng, G.nodes[1]["y"])
 
 
+def test_api_route_rejects_endpoint_far_from_routable_network(client, G, monkeypatch):
+    import api.routes as routes
+    monkeypatch.setattr(routes, "_mode_filtered_graph", lambda graph, mode: (graph, "ok", {}))
+
+    response = client.post("/api/route", json={
+        "start": {"type": "coord", "name": "地图起点",
+                  "coordinates": {"lng": 114.37, "lat": 30.54}},
+        "end": {"type": "coord", "name": "终点",
+                "coordinates": {"lng": 114.36167, "lat": 30.53}},
+    })
+
+    assert response.status_code == 422
+    assert response.get_json()["error"] == "endpoint_too_far_from_network"
+
+
+def test_api_route_returns_503_when_active_closure_cannot_bind_to_graph(client, G, monkeypatch):
+    import api.routes as routes
+    monkeypatch.setattr(routes, "_mode_filtered_graph", lambda graph, mode: (graph, "ok", {}))
+    monkeypatch.setattr(routes, "list_conditions", lambda **_kwargs: [{
+        "id": "stale-closure", "type": "closure", "start_time": 0, "end_time": 0,
+        "edge": {"u": 999001, "v": 999002, "key": 0,
+                 "snap": {"lng": 114.37, "lat": 30.54}},
+    }])
+
+    response = client.post("/api/route", json={
+        "start": {"type": "coord", "name": "起点",
+                  "coordinates": {"lng": G.nodes[0]["x"], "lat": G.nodes[0]["y"]}},
+        "end": {"type": "coord", "name": "终点",
+                "coordinates": {"lng": G.nodes[3]["x"], "lat": G.nodes[3]["y"]}},
+    })
+
+    assert response.status_code == 503
+    assert response.get_json()["error"] == "road_conditions_unavailable"
+
+
 class TestRoadConditionAPI:
     def test_snap_requires_auth(self, client):
         r = client.get("/api/road-conditions/snap?lng=114.36&lat=30.53")
@@ -459,6 +606,64 @@ class TestRoadConditionAPI:
         assert r.status_code == 200
         snap = r.get_json()["data"]["snap"]
         assert {snap["u"], snap["v"]} == {1, 2}
+
+    def test_route_refuses_to_plan_when_road_condition_snapshot_is_unavailable(self, client, G, monkeypatch):
+        import api.routes as routes
+        monkeypatch.setattr(
+            routes, "list_conditions",
+            lambda **_kwargs: (_ for _ in ()).throw(rc.RoadConditionsUnavailableError("bad store")),
+        )
+        monkeypatch.setattr(
+            routes, "compute_route",
+            lambda **_kwargs: (_ for _ in ()).throw(AssertionError("must not route without condition state")),
+        )
+        response = client.post("/api/route", json={
+            "start": {"type": "coord", "coordinates": {"lng": G.nodes[0]["x"], "lat": G.nodes[0]["y"]}},
+            "end": {"type": "coord", "coordinates": {"lng": G.nodes[3]["x"], "lat": G.nodes[3]["y"]}},
+        })
+
+        assert response.status_code == 503
+        assert response.get_json()["error"] == "road_conditions_unavailable"
+
+    def test_snap_type_includes_mode_and_sample_route_impact_preview(self, client, G, monkeypatch):
+        import api.routes as routes
+        calls = []
+        active_condition = {"id": "active-1", "type": "accident", "edge": {"u": 4, "v": 5, "key": 0}}
+
+        monkeypatch.setattr(routes, "list_conditions", lambda **_kwargs: [active_condition])
+
+        def fake_compute_route(graph, start, end, **kwargs):
+            calls.append((start, end, kwargs["mode"], kwargs["road_conditions"]))
+            return {"recommended_length_m": 100 if len(kwargs["road_conditions"]) == 1 else 165,
+                    "duration_min": 2 if len(kwargs["road_conditions"]) == 1 else 3}
+
+        monkeypatch.setattr(routes, "compute_route", fake_compute_route)
+        gj = _mid_12_gcj(G)
+        response = client.get(
+            f"/api/road-conditions/snap?lng={gj[0]}&lat={gj[1]}&type=closure",
+            headers={"X-Admin-Token": "test-token-xyz"},
+        )
+
+        assert response.status_code == 200
+        preview = response.get_json()["data"]["impact_preview"]
+        assert preview["affected_road_segments"] == 1
+        assert preview["effects_by_mode"]["walk"]["status"] == "blocked"
+        assert preview["route_sample_scope"] == "所选路段两端之间的示例路线，不代表全校总影响"
+        assert preview["sample_routes"]["walk"]["detour_m"] == 65
+        assert preview["active_event_count"] == 1
+        assert calls[0][3] == [active_condition]
+        assert calls[1][3][0] == active_condition
+        assert calls[1][3][1]["id"] == "preview-only"
+        assert len(calls) == 6
+
+    def test_snap_rejects_unknown_preview_event_type(self, client, G):
+        gj = _mid_12_gcj(G)
+        response = client.get(
+            f"/api/road-conditions/snap?lng={gj[0]}&lat={gj[1]}&type=unknown",
+            headers={"X-Admin-Token": "test-token-xyz"},
+        )
+        assert response.status_code == 400
+        assert response.get_json()["error"] == "invalid_type"
 
     def test_snap_wrong_token(self, client):
         r = client.get(

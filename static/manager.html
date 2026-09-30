@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20260930b">
+  <link rel="stylesheet" href="/css/manager.css?v=20260930c">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20260930c" defer></script>
+  <script src="/js/manager.js?v=20261001a" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -79,6 +79,7 @@
               </div>
               <button id="pick-road" class="outline-button" type="button"><span>⌖</span> 选取路段</button>
               <div id="selected-road" class="selected-road" aria-live="polite">尚未选择道路</div>
+              <div id="impact-preview" class="impact-preview" aria-live="polite" hidden></div>
               <button id="publish-event" class="primary-button" type="submit" disabled>发布事件 <span>→</span></button>
               <p id="form-message" class="form-message" role="status"></p>
             </form>

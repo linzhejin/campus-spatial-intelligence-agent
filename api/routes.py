@@ -58,6 +58,7 @@ from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import (
     list_conditions, add_condition, remove_condition, update_condition,
     snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS, SNAP_MAX_DIST_M,
+    RoadConditionsUnavailableError,
 )
 from spatial import weather as weather_mod
 
@@ -138,8 +139,10 @@ def _current_data_version(G=None):
     return current_data_version(G)
 
 
-def _current_road_condition_version():
-    return current_road_condition_version()
+def _current_road_condition_version(conditions=None):
+    if conditions is None:
+        conditions = list_conditions(strict=True)
+    return current_road_condition_version(conditions)
 
 
 # ====== WGS-84 → GCJ-02 转换（前端高德底图用 GCJ-02）======
@@ -272,6 +275,28 @@ def _haversine(lat1, lon1, lat2, lon2):
     a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+
+_MAX_ROUTE_ENDPOINT_SNAP_M = 80.0
+
+
+def _route_endpoint_access(G_mode, node, lng_wgs, lat_wgs, label):
+    node_lng, node_lat = get_node_coords(G_mode, node)
+    distance = _haversine(lat_wgs, lng_wgs, node_lat, node_lng)
+    if not math.isfinite(distance) or distance > _MAX_ROUTE_ENDPOINT_SNAP_M:
+        return None, _err(
+            "endpoint_too_far_from_network",
+            f"{label}距可规划道路约 {round(distance) if math.isfinite(distance) else '未知'} 米，末端接驳无法可靠确认。请在地图上选择附近道路或校门。",
+            422,
+        )
+    return {
+        "snap_distance_m": round(distance, 1),
+        "status": "unverified_long_connector" if distance > 60.0
+                  else "unverified_nearby_network_node",
+        "access_link_verified": False,
+        "access_link_basis": "straight_line_to_nearest_routable_network_node",
+        "note": "末端直线接驳未核实是否存在实际通行连接。",
+    }, None
 
 
 def _node_to_coord(G, node_id):
@@ -510,7 +535,7 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
                   "distance_m", "shortest_distance_m", "applied_weights", "mode",
                   "duration_min", "shortest_duration_min", "speed_kmh",
                   "legs", "via", "tour", "detour_ratio", "strategy", "route_state",
-                  "timings_ms"):
+                  "endpoint_access", "timings_ms"):
             if k in route:
                 out[k] = route[k]
         out.setdefault("shortest", out.get("recommended", []))
@@ -715,6 +740,17 @@ def route():
     # 坐标展开/沿途 POI 仍用原图 G（副本节点 id 与 geometry 一致）
     G_mode, _mode_status, _mode_penalty = _mode_filtered_graph(G, final_mode)
     api_graph_prepare_ms = (time.perf_counter() - request_started) * 1000
+    endpoint_access = {}
+
+    def _record_endpoint_access(label, display_name, node, lng_wgs, lat_wgs):
+        evidence, error_response = _route_endpoint_access(
+            G_mode, node, lng_wgs, lat_wgs, f"{label}「{display_name}」",
+        )
+        if error_response:
+            return error_response
+        evidence["name"] = display_name
+        endpoint_access[label] = evidence
+        return None
 
     def _resolve_endpoint(ep, label):
         """端点 → (node, display_name, poi_or_None, error_response_or_None)。
@@ -733,10 +769,16 @@ def route():
                 lat = float(coords.get("lat", ep.get("lat")))
             except (TypeError, ValueError):
                 return None, None, None, _err("invalid_coordinates", f"{label}坐标无效", 400)
+            if not (math.isfinite(lng) and math.isfinite(lat)
+                    and -180 <= lng <= 180 and -90 <= lat <= 90):
+                return None, None, None, _err("invalid_coordinates", f"{label}坐标超出有效范围", 400)
             try:
                 node = get_nearest_node(G_mode, lng, lat)
             except RuntimeError as e:
                 return None, None, None, _err("nearest_node_failed", f"{label}最近节点查找失败: {e}", 500)
+            evidence_error = _record_endpoint_access(label, ep.get("name") or label, node, lng, lat)
+            if evidence_error:
+                return None, None, None, evidence_error
             return node, ep.get("name") or label, None, None
 
         name = ep.get("name")
@@ -750,6 +792,9 @@ def route():
             node = get_nearest_node(G_mode, lon_wgs, lat_wgs)
         except RuntimeError as e:
             return None, None, None, _err("nearest_node_failed", f"{label}最近节点查找失败: {e}", 500)
+        evidence_error = _record_endpoint_access(label, poi["name"], node, lon_wgs, lat_wgs)
+        if evidence_error:
+            return None, None, None, evidence_error
         return node, poi["name"], poi, None
 
     poi_started = time.perf_counter()
@@ -780,6 +825,12 @@ def route():
     )
     weights = decision.weights
 
+    try:
+        route_conditions = list_conditions(strict=True)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况快照不可用，拒绝生成无法核验封路状态的路线")
+        return _err("road_conditions_unavailable", "当前路况无法确认，暂时不能可靠规划路线", 503)
+
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
     weather_snap = _weather_snapshot()
     weather_info = weather_snap["live"] if weather_snap else None
@@ -793,12 +844,16 @@ def route():
             weights=weights,
             mode=final_mode,
             weather_info=weather_info,
+            road_conditions=route_conditions,
             strategy_name=decision.name,
             detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
         return _err("route_not_found", str(e), 404)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况事件无法匹配当前路网，拒绝生成路线")
+        return _err("road_conditions_unavailable", "当前管制信息无法与路网对应，暂时不能可靠规划路线", 503)
     except Exception as e:
         logger.exception("路径计算异常")
         return _err("route_computation_failed", f"路径计算失败: {e}", 500)
@@ -857,6 +912,8 @@ def route():
         "road_conditions_applied": route_result.get("road_conditions_applied", 0),
         "weather_applied": route_result.get("weather_applied", False),
         "weather": _weather_public(weather_snap),
+        "road_condition_version": _current_road_condition_version(route_conditions),
+        "endpoint_access": {**endpoint_access, "max_snap_m": _MAX_ROUTE_ENDPOINT_SNAP_M},
         "strategy": decision.as_dict(),
     }
 
@@ -869,7 +926,7 @@ def route():
         hard_constraints=constraints,
         strategy=decision.as_dict(),
         data_version=_current_data_version(G),
-        road_condition_version=_current_road_condition_version(),
+        road_condition_version=_current_road_condition_version(route_conditions),
     )
 
     timings = normalize_timings(route_result.get("timings_ms"))
@@ -957,9 +1014,13 @@ def replan_route():
             custom_weights=prior_strategy.get("weights"),
         )
         requested["strategy"] = decision.as_dict()
-        requested["road_condition_version"] = _current_road_condition_version()
+        route_conditions = list_conditions(strict=True)
+        requested["road_condition_version"] = _current_road_condition_version(route_conditions)
     except RouteStateVersionConflict as exc:
         return _err("route_state_version_conflict", str(exc), 409)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况快照不可用，拒绝重新规划")
+        return _err("road_conditions_unavailable", "当前路况无法确认，暂时不能可靠重新规划路线", 503)
     except ValueError as exc:
         return _err("invalid_route_state", str(exc), 400)
 
@@ -969,10 +1030,14 @@ def replan_route():
     result, artifact = execute_tool(
         tool_name,
         args,
-        {"query": requested["original_query"], "replan": True},
+        {
+            "query": requested["original_query"], "replan": True,
+            "_route_conditions_snapshot": route_conditions,
+        },
     )
     if result.get("error"):
-        return _err(result["error"], result.get("message", "路线重新规划失败"), 404)
+        status = 503 if result["error"] == "road_conditions_unavailable" else 404
+        return _err(result["error"], result.get("message", "路线重新规划失败"), status)
     payload = (artifact or {}).get("route") or result
     payload["route_state"] = validate_route_state(requested)
     payload["timings_ms"] = normalize_timings(payload.get("timings_ms"), agent=0.0)
@@ -1209,6 +1274,11 @@ def chat():
     # 坐标统一到 WGS-84：GPS coord 本身即 WGS-84；POI 为 GCJ-02 需转换
     start_lon_wgs, start_lat_wgs = _endpoint_to_wgs(start, start_poi, final_mode)
     end_lon_wgs, end_lat_wgs = _endpoint_to_wgs(end, end_poi, final_mode)
+    if (not all(math.isfinite(value) for value in (
+            start_lon_wgs, start_lat_wgs, end_lon_wgs, end_lat_wgs))
+            or not (-180 <= start_lon_wgs <= 180 and -90 <= start_lat_wgs <= 90
+                    and -180 <= end_lon_wgs <= 180 and -90 <= end_lat_wgs <= 90)):
+        return _err("invalid_coordinates", "起点或终点坐标无效", 400)
 
     # 起终点重合判定：含坐标时看球面距离（<10m 视为同点）；POI-POI 看规范名
     if start.get("type") == "coord" or end.get("type") == "coord":
@@ -1227,6 +1297,19 @@ def chat():
     except RuntimeError as e:
         return _err("nearest_node_failed", f"终点最近节点查找失败: {e}", 500)
 
+    start_access, start_access_error = _route_endpoint_access(
+        G_mode, start_node, start_lon_wgs, start_lat_wgs, "起点",
+    )
+    if start_access_error:
+        return start_access_error
+    start_access["name"] = start.get("name") or "起点"
+    end_access, end_access_error = _route_endpoint_access(
+        G_mode, end_node, end_lon_wgs, end_lat_wgs, "终点",
+    )
+    if end_access_error:
+        return end_access_error
+    end_access["name"] = end.get("name") or "终点"
+
     constraints = intent_data.get("constraints", {})
     # 旧管道仅作为 Agent 不可用时的保险，也必须使用同一策略中心。
     raw_weights = intent_data.get("weights")
@@ -1242,6 +1325,12 @@ def chat():
     )
     weights = decision.weights
 
+    try:
+        route_conditions = list_conditions(strict=True)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况快照不可用，拒绝生成无法核验封路状态的路线")
+        return _err("road_conditions_unavailable", "当前路况无法确认，暂时不能可靠规划路线", 503)
+
     # 实时天气：雨雪天自动避陡坡、高温倾向树荫（失败不影响规划）
     weather_snap = _weather_snapshot()
     weather_info = weather_snap["live"] if weather_snap else None
@@ -1255,12 +1344,16 @@ def chat():
             weights=weights,
             mode=final_mode,
             weather_info=weather_info,
+            road_conditions=route_conditions,
             strategy_name=decision.name,
             detour_cap=decision.detour_cap,
         )
     except ValueError as e:
         # 如驾车不可达："驾车无法到达…建议切换骑行或步行"，消息原样透传给前端
         return _err("route_not_found", str(e), 404)
+    except RoadConditionsUnavailableError:
+        logger.exception("回退规划无法将路况事件匹配到当前路网")
+        return _err("road_conditions_unavailable", "当前管制信息无法与路网对应，暂时不能可靠规划路线", 503)
     except Exception as e:
         logger.exception("路径计算异常")
         return _err("route_computation_failed", f"路径计算失败: {e}", 500)
@@ -1303,6 +1396,9 @@ def chat():
     weather_pub = _weather_public(weather_snap)
     if weather_pub and weather_pub.get("advice"):
         explanation = (explanation + " " + weather_pub["advice"]).strip()
+    if any(item.get("status") == "unverified_long_connector"
+           for item in (start_access, end_access)):
+        explanation = (explanation + " 起点或终点离可规划道路较远，末端接驳尚未核实；建议在附近道路或校门重新选点。").strip()
 
     # 跟进建议（"可能想问"）：LLM 根据对话上下文动态生成，失败则空列表（前端兜底）
     suggestions = []
@@ -1350,6 +1446,11 @@ def chat():
         "weather": weather_pub,
         "explanation": explanation,
         "suggestions": suggestions,
+        "endpoint_access": {
+            "start": start_access,
+            "end": end_access,
+            "max_snap_m": _MAX_ROUTE_ENDPOINT_SNAP_M,
+        },
         "strategy": decision.as_dict(),
     }
     result["route_state"] = build_route_state(
@@ -1361,7 +1462,7 @@ def chat():
         hard_constraints=constraints,
         strategy=decision.as_dict(),
         data_version=_current_data_version(G),
-        road_condition_version=_current_road_condition_version(),
+        road_condition_version=_current_road_condition_version(route_conditions),
     )
     fallback_timings = normalize_timings(
         route_result.get("timings_ms"), agent=fallback_agent_ms
@@ -1634,7 +1735,14 @@ def get_road_conditions():
     """
     include_all = request.args.get("all") in ("1", "true", "yes")
     is_admin = _is_admin() if include_all else False
-    conditions = list_conditions(include_inactive=include_all and is_admin)
+    try:
+        conditions = list_conditions(
+            include_inactive=include_all and is_admin,
+            strict=True,
+        )
+    except RoadConditionsUnavailableError:
+        logger.exception("路况查询无法读取有效数据")
+        return _err("road_conditions_unavailable", "路况数据暂时不可用", 503)
     now = time.time()
     for c in conditions:
         c["type_label"] = CONDITION_LABELS.get(c["type"], c["type"])
@@ -1659,6 +1767,9 @@ def snap_road_condition():
     auth_error = _require_admin()
     if auth_error:
         return auth_error
+    cond_type = (request.args.get("type") or "").strip()
+    if cond_type and cond_type not in CONDITION_EFFECTS:
+        return _err("invalid_type", f"未知路况类型: {cond_type}", 400)
     try:
         lng = float(request.args.get("lng"))
         lat = float(request.args.get("lat"))
@@ -1675,7 +1786,86 @@ def snap_road_condition():
             f"点击位置离最近道路超过 {int(SNAP_MAX_DIST_M)} 米，请放大地图点在道路上",
             400,
         )
-    return _ok({"snap": snap, "max_dist_m": SNAP_MAX_DIST_M})
+    response = {"snap": snap, "max_dist_m": SNAP_MAX_DIST_M}
+    if cond_type:
+        try:
+            response["impact_preview"] = _build_road_condition_impact_preview(G, snap, cond_type)
+        except RoadConditionsUnavailableError:
+            logger.exception("路况预览无法读取有效事件快照")
+            return _err("road_conditions_unavailable", "当前路况数据不可用，无法生成可靠的发布影响预览", 503)
+    return _ok(response)
+
+
+def _build_road_condition_impact_preview(G, snap: dict, cond_type: str) -> dict:
+    """Preview effects and a local before/after route sample; never publishes an event."""
+    active_conditions = list_conditions(strict=True)
+    effects = {}
+    for mode, effect in CONDITION_EFFECTS[cond_type].items():
+        if effect == "block":
+            effects[mode] = {"status": "blocked", "label": "该方式在所选路段禁行"}
+        else:
+            effects[mode] = {
+                "status": "cost_increased",
+                "cost_multiplier": float(effect),
+                "label": f"该路段规划成本 ×{float(effect):g}",
+            }
+
+    edge_record = {
+        "u": int(snap["u"]),
+        "v": int(snap["v"]),
+        "key": int(snap.get("key", 0)),
+        "edges": snap.get("edges") or [[int(snap["u"]), int(snap["v"]), int(snap.get("key", 0))]],
+        "chain_length_m": snap.get("chain_length_m", 0),
+        "road_name": snap.get("road_name") or "",
+        "snap": {"lng": float(snap["snap_lng_gcj"]), "lat": float(snap["snap_lat_gcj"])},
+        "geometry_gcj": snap.get("geometry_gcj") or [],
+    }
+    condition = {"id": "preview-only", "type": cond_type, "edge": edge_record}
+    sample_routes = {}
+    for mode in TRAVEL_MODES:
+        common = {
+            "mode": mode,
+            "weights": {"distance": 0.90, "slope": 0.05, "scenery": 0.05},
+            "strategy_name": "recommended",
+            "road_conditions": active_conditions,
+        }
+        try:
+            before = compute_route(G, edge_record["u"], edge_record["v"], **common)
+            after = compute_route(
+                G, edge_record["u"], edge_record["v"],
+                **{**common, "road_conditions": [*active_conditions, condition]},
+            )
+            before_m = float(before["recommended_length_m"])
+            after_m = float(after["recommended_length_m"])
+            sample_routes[mode] = {
+                "status": "available",
+                "before_distance_m": round(before_m),
+                "after_distance_m": round(after_m),
+                "detour_m": round(after_m - before_m),
+                "before_duration_min": round(float(before.get("duration_min", 0)), 1),
+                "after_duration_min": round(float(after.get("duration_min", 0)), 1),
+            }
+        except RoadConditionsUnavailableError:
+            raise
+        except (ValueError, KeyError, TypeError, nx.NetworkXException):
+            sample_routes[mode] = {"status": "unreachable", "message": "该方式下所选路段两端无可用的绕行路线"}
+        except Exception:
+            logger.warning("路况影响示例计算失败，mode=%s", mode, exc_info=True)
+            sample_routes[mode] = {"status": "unknown", "message": "示例路线暂时无法计算"}
+
+    return {
+        "type": cond_type,
+        "road_name": edge_record["road_name"],
+        "affected_road_segments": len(edge_record["edges"]),
+        "affected_length_m": round(float(edge_record["chain_length_m"] or 0)),
+        "effects_by_mode": effects,
+        "sample_routes": sample_routes,
+        "active_event_count": len(active_conditions),
+        "active_event_version": current_road_condition_version(active_conditions),
+        "route_sample_scope": "所选路段两端之间的示例路线，不代表全校总影响",
+        "event_scope_note": "示例基于当前有效事件快照；发布前若路况变化需重新查看预览",
+        "published": False,
+    }
 
 
 @api_bp.route("/road-conditions", methods=["POST"])
@@ -1743,6 +1933,9 @@ def create_road_condition():
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
         return _ok({"condition": condition, "snap": snap}, status=201)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况存储无效，拒绝新增以免覆盖既有事件")
+        return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
     except ValueError as e:
         return _err("invalid_field", str(e), 400)
     except Exception as e:
@@ -1781,7 +1974,11 @@ def patch_road_condition(cond_id):
     if not changes:
         return _err("empty_changes", "没有可更新的字段", 400)
 
-    updated = update_condition(cond_id, changes)
+    try:
+        updated = update_condition(cond_id, changes)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况存储无效，拒绝更新")
+        return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
     if updated is None:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
     updated["type_label"] = CONDITION_LABELS.get(updated.get("type"), updated.get("type"))
@@ -1794,7 +1991,11 @@ def delete_road_condition(cond_id):
     auth_error = _require_admin()
     if auth_error:
         return auth_error
-    success = remove_condition(cond_id)
+    try:
+        success = remove_condition(cond_id)
+    except RoadConditionsUnavailableError:
+        logger.exception("路况存储无效，拒绝删除")
+        return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
     return _ok({"message": "已删除", "id": cond_id})

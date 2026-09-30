@@ -56,10 +56,13 @@ def current_data_version(graph=None) -> str:
     return "data-" + hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
-def current_road_condition_version() -> str:
-    from spatial.road_conditions import list_conditions
+def current_road_condition_version(conditions=None) -> str:
+    """Version either the caller's frozen event snapshot or current active events."""
     try:
-        payload = json.dumps(list_conditions(), ensure_ascii=False, sort_keys=True, default=str)
+        if conditions is None:
+            from spatial.road_conditions import list_conditions
+            conditions = list_conditions()
+        payload = json.dumps(conditions, ensure_ascii=False, sort_keys=True, default=str)
     except Exception:
         payload = "unavailable"
     return "roads-" + hashlib.sha256(payload.encode()).hexdigest()[:16]

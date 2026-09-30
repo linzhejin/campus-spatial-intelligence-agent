@@ -792,8 +792,9 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
         - penalty_map: {(u, v, k): penalty_multiplier} 用于成本调整
     """
     slope_constraint = constraints.get("slope", "normal")
+    avoid_steps = bool(constraints.get("avoid_steps", False))
 
-    if slope_constraint not in ("avoid",):
+    if slope_constraint != "avoid" and not avoid_steps:
         return G, "no_filter", {}
 
     edges_to_remove = []
@@ -801,19 +802,29 @@ def _filter_by_constraints(G: nx.MultiDiGraph, constraints: dict) -> tuple:
 
     for u, v, k, data in G.edges(keys=True, data=True):
         slope_level = data.get("slope_level")
+        has_steps = "steps" in _edge_highway_tags(data)
 
-        if slope_level == 5:
+        if avoid_steps and has_steps:
             edges_to_remove.append((u, v, k))
-        elif slope_level == 4:
+        if slope_constraint == "avoid" and slope_level == 5:
+            edges_to_remove.append((u, v, k))
+        elif slope_constraint == "avoid" and slope_level == 4:
             penalty_map[(u, v, k)] = 2.0
 
-    if not edges_to_remove and not penalty_map:
+    if not edges_to_remove and not penalty_map and not avoid_steps:
         return G, "no_filter", {}
 
     G_filtered = G.copy()
-    G_filtered.remove_edges_from(edges_to_remove)
+    G_filtered.remove_edges_from(set(edges_to_remove))
 
-    return G_filtered, "filtered", penalty_map
+    status_parts = []
+    if slope_constraint == "avoid" and (edges_to_remove or penalty_map):
+        status_parts.append("filtered")
+    if avoid_steps:
+        status_parts.append("steps_avoid")
+        status_parts.append("steps_unverified")
+
+    return G_filtered, "+".join(status_parts) or "no_filter", penalty_map
 
 
 def _should_degrade_annotations() -> Optional[str]:
@@ -1145,16 +1156,12 @@ def compute_route(
     road_conditions_applied = 0
     closed_edges = set()
     if road_conditions is None:
-        try:
-            from spatial.road_conditions import list_conditions
-            road_conditions = list_conditions()
-        except Exception as e:
-            logger.warning("路况加载失败，跳过: %s", e)
-            road_conditions = []
+        from spatial.road_conditions import list_conditions
+        road_conditions = list_conditions(strict=True)
     if road_conditions:
         from spatial.road_conditions import apply_conditions_to_graph
         G_mode, road_penalty, closed_edges, road_conditions_applied = (
-            apply_conditions_to_graph(G_mode, road_conditions, mode)
+            apply_conditions_to_graph(G_mode, road_conditions, mode, strict=True)
         )
         if closed_edges:
             mode_status = f"{mode_status}+road_closure"

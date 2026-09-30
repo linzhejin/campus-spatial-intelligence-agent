@@ -56,6 +56,11 @@ def test_direct_tour_and_multimodal_route_executors_accept_their_declared_shapes
     names = {"起点": 1, "A": 2, "B": 3, "终点": 4}
     monkeypatch.setattr(tools, "_resolve_endpoint",
                         lambda ref, _graph: (names[ref["name"]], ref["name"], None))
+    monkeypatch.setattr(tools, "_endpoint_access_evidence", lambda ref, node, graph, mode: {
+        "name": ref.get("name", "端点"), "snap_distance_m": 0,
+        "status": "unverified_nearby_network_node", "access_link_verified": False,
+    })
+    monkeypatch.setattr(tools, "get_node_coords", lambda _graph, node: (114.36 + node / 1000, 30.53))
     monkeypatch.setattr(tools, "_strategy_for_args", lambda args, ctx, **kwargs: decision)
 
     def route_result(*args, **kwargs):
