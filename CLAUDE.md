@@ -1,89 +1,40 @@
-# CLAUDE.md
+# 项目工作指南（2026-10-01）
 
-本文件为 AI 编码助手提供代码库工作指南。**内容以代码为事实源**；详细文档在 `docs/`，架构决策在 `docs/development/06_DECISIONS.md`（v0.1）与 `12_V2决策日志.md`（v2，现行）。
+本文件帮助 AI 编码助手快速进入项目。**代码、数据和当前评测报告优先于历史说明**：[当前进度与基础评测](docs/development/18_项目进度与基础评测_20261001.md)。旧设计和决策保存在 `docs/development/`，不要把其历史数量写成当前事实。
 
-## 项目概述
+## 当前基线
 
-**珞珈智行 (WHU-Walker)** — 武汉大学校园空间智能体（在线 https://whuspati.online）。自然语言 → Agent 工具调用 → 三校区多因素路径规划 → 地图/语音交付。支持步行/骑行/驾车、按住说话语音输入、步行导航、Android APK。
+- 项目：珞珈智行（WHU-Walker），武汉大学校园空间智能体，线上 `https://whuspati.online`。
+- 本机与已部署 `main` 基线：`6b518b7`（2026-10-01 只读核验）。
+- 后端 Flask；Agent 工作流位于 `agents/`，LangGraph 编排，工具注册表 `agents/tools.py` 当前 14 项。持久会话与任务在 `storage/`，后台执行由 Agent worker 承担。
+- 空间算法在 `spatial/`。正式 POI 为 `data/pois.json` 的 440 条；正式融合路网为 `data/whu_road_network.graphml` 的 5,087 节点、14,622 有向边，17 个校门。`data/edge_attribute_master.json` 与当前边 ID 全量绑定。
+- 前端在 `static/`，Android WebView 壳在 `android-app/`；管理端入口 `/manager`。视觉分析/审核管线存在，线上视觉 worker 尚未启用。
 
-核心研究问题：*大模型能否把模糊的自然语言空间偏好转换为可计算的空间参数（权重/约束）？*
+## 关键行为约束
 
-## 常用命令
+- 日常通勤与最短路径策略的距离/坡度/景观权重为 **`1/0/0`**；事实源见 `agents/routing_policy.py`。推荐、风景优先、平坦优先有独立预设。`spatial/routing.py` 的某些旧回退权重不是通勤策略。
+- 出行方式切换只根据已保存的路线任务重算；不得交换起终点、遗失途经点或把“我的位置”当 POI 名检索。
+- POI/高德底图使用 GCJ-02，自有路网使用 WGS-84；坐标系只在边界处转换，不能用转换掩盖缺路、错误线位和不可通行路段。
+- 路线计算、硬约束、距离和前端几何必须引用相同的具体边 ID。校方道路融合不能破坏原有可达性；不把建筑轮廓相交自动判为封路。
+- 服务端会话与任务修订有版本和并发保护；复合任务应有可追踪的部分成功/失败反馈。修改 Agent 状态时同步检查前端迟到响应保护。
+- `static/sw.js` 当前缓存名为 `whu-walker-v67`。本次盘点未发现前端 service worker 注册代码；修改离线/PWA 行为前先核实实际注册状态与缓存策略。
 
-```bash
-python app.py                      # Flask 开发服务器，端口 5000
-python -m pytest tests/ -q         # 全部测试（381 passed，5 skipped，1 xfailed）
-python -m pytest tests/test_routing.py -q
-python scripts/validate/validate_osm_network.py   # 路网覆盖率校验
-python scripts/validate/validate_all_data.py      # POI 数据校验
-curl -s http://localhost:5000/health
+## 数据质量边界
+
+`validate_all_data.py` 通过只表明结构与基本范围合格。当前发布就绪门槛仍因候选 POI、占位属性、风险边、POI 吸附、路线差异与现场证据不足而失败；详见[评测报告](docs/development/18_项目进度与基础评测_20261001.md)。正式空间数据的来源与核实状态应在每次改动后保持可追溯。高德 API 结果用于线上服务和对照，勿作为可自由再发布的自有路网。
+
+## 常用检查
+
+```powershell
+python scripts/validate/validate_all_data.py
+python scripts/validate/audit_campus_master.py
+python scripts/validate/check_deployment_readiness.py
+python scripts/validate/check_agent_research_readiness.py
+python -m pytest tests/ -q
 ```
 
-## 系统架构（全 Agent，勿与旧 parser 管道混淆）
+按改动范围选取测试。不要仅凭旧文档里写的通过数声称新代码通过。`.env` 放服务凭据，不提交。生产部署流程应以现有部署脚本与当前服务配置为准；部署后需核验版本和健康检查。Android APK 更新与网页部署是不同交付物，应分别核验版本。
 
-```
-POST /api/chat（api/routes.py）
-  → agents/planner.py  run_agent()  Plan-Act-Observe 循环（MAX_TURNS=6, 40s 预算）
-      system 上下文：agent_system.txt + knowledge 任务卡 + profile 画像
-                    + 出行方式/GPS/途经点/多轮历史
-  → agents/tools.py  10 个 function-calling 工具（LLM 只决策，不计算）
-      resolve_poi / search_poi_candidates
-      plan_route / plan_via_route / plan_tour / plan_multimodal_route
-      get_weather / list_road_conditions
-      ask_user / suggest_followup
-  → spatial/ 纯算法：routing.py（模式过滤→硬约束→路况/天气成本→加权 Dijkstra）
-  → 路径包（GCJ-02）→ 前端 Leaflet / navigation.js
-```
+## 本机资料
 
-**旧管道**（parser.py → routing.py → explainer.py）只在 LLM API 故障抛 `PlannerError` 时兜底，不是并行通道。`parser.detect_travel_mode` 关键词纠偏仍被两管道共用。
-
-### 模块职责
-
-| 模块 | 职责 |
-|---|---|
-| `agents/planner.py` | Agent 循环、护栏（轮次/时长）、响应组装、DSML 清洗 |
-| `agents/tools.py` | 9 工具 schema 与执行器，LLM 与空间层唯一通道；坐标回注压缩、artifact 直传 |
-| `agents/parser.py` | 旧管道 NL→TaskIntent（DeepSeek temperature=0 + Pydantic + 规则后处理双轨） |
-| `agents/explainer.py` | 旧管道解释/闲聊/跟进建议（模板兜底） |
-| `agents/knowledge.py` | 任务卡关键词召回（≤2 张/轮，当季加权） |
-| `agents/profile.py` | 服务端 EMA 画像（α=0.3，≥3 次采纳才注入，仅 route_accept 学习） |
-| `spatial/routing.py` | **核心算法**。MODE_DEFAULT_WEIGHTS、filter_graph_for_mode、resolve_weights、compute_route/via/tour、build_turn_by_turn |
-| `spatial/network.py` | OSMnx 路网缓存；合并 road_annotations 与 edge_overrides |
-| `spatial/poi.py` | 420 POI、别名/中文数字归一、模糊匹配、类别检索、同分歧义 |
-| `spatial/road_conditions.py` | 路况 CRUD、CONDITION_EFFECTS、边吸附（30m）与边链扩展、时间窗 |
-| `spatial/coord_transform.py` | GCJ-02 ⇄ WGS-84 |
-| `spatial/weather.py` | 高德天气 + 出行影响分级 |
-| `static/` | index.html、js/app.js、navigation.js、voice-input.js、voice-output.js、sw.js、vendor/leaflet |
-| `android-app/` | WebView 壳 MainActivity.java（定位/ASR/TTS/安装桥），当前 v1.4.1 versionCode 6 |
-
-## 关键事实（改代码前必读）
-
-- **默认权重按方式**（routing.py `MODE_DEFAULT_WEIGHTS`，唯一事实源）：通勤 distance 绝对主导——walk {d 0.90, s 0.05, v 0.05}、bike {0.90, 0.05, 0.05}、drive {0.95, 0.00, 0.05}（2026-09-24 起；用户明确"看风景/避坡"时 LLM 才调高非距离权重）。注意 config.py 里 0.5/0.2/0.3 旧常量已无引用，别用它。
-- **约束 ≠ 权重**（DEC-011）：硬约束过滤不可通行边（slope=avoid 删 level=5），软权重进成本函数 `Cost = w_d·D + w_s·S + w_v·(1−V)`；路径上限 min(最短×3, 2000m)。
-- **路况全方式生效**：closure 全 block、construction 步行 1.5×/骑行驾车 block、flooding 驾车 1.5×/其余 block、accident 步行骑行 1.3×/驾车 block、event 步行骑行 1.2×/驾车 block；不可达降级大惩罚。
-- **台阶/电梯/扶梯** bike/drive 一票否决；步行台阶 2.5×；edge_overrides.json 208 边人工覆盖（穿楼封禁、食堂 10× 防穿楼）。
-- **坐标系**：POI/前端/路况点击 = GCJ-02；OSM 路网/DEM/API 入参 GPS = WGS-84。边界必须转换；前端只准 GCJ-02 瓦片（高德 webrd/webst），禁接 OSM/Esri。
-- **POI 纪律**：仅三学部，排除校外/居民区，is_minor 标小商铺；别名须含数字归一且宽泛片区词不扩散。
-- **路线成功即结束 Agent 循环**，不让 LLM 再调 suggest_followup（DSML 泄漏防护）。
-- **切换方式**用上次路线起终点坐标直接重算，禁止把"我的位置"当 POI 名查。
-- **前端请求序号**（requestSeq）防旧响应覆盖新状态；非路径响应要清空地图路线。
-- **SW 纪律**：改 PRECACHE_URLS 内文件必须升 `sw.js` CACHE_NAME（当前 whu-walker-v51）。⚠️ 已知回归：前端目前**未注册** serviceWorker（"全新布局"提交移除，app.js 中无 serviceWorker 注册），恢复缓存能力时要补回注册代码。
-
-## 环境配置
-
-`.env`（参考 .env.example）：`DEEPSEEK_API_KEY`、`AMAP_KEY`、`AMAP_SECURITY_CODE`、`AMAP_WEB_KEY`、`FLASK_ENV`、`SECRET_KEY`、`ROAD_CONDITION_ADMIN_PASSWORD`（网页 session）、`ROAD_CONDITION_ADMIN_TOKEN`（系统对接 X-Admin-Token）。
-图片生成 API 仅 Trae IDE 可用，生产不可用。
-
-## 数据与部署
-
-- 数据文件见 docs/06_数据字典.md；改 POI/路网后跑 validate_all_data.py 与对应 pytest。
-- 生产：腾讯云 CVM（ubuntu@152.136.102.172），路径 /home/ubuntu/campus-spatial-intelligence-agent，systemd `whu-walker`，Caddy HTTPS（whuspati.online）→ gunicorn 127.0.0.1:5000。
-- gunicorn 必须 `--workers 2 --threads 4 --timeout 60 --max-requests 1000`；禁用 --preload/--keepalive/--max-requests-jitter。
-- 发布流程（Gitee 为主源，GitHub 尽力）见 deploy-whu-walker skill：提交 → push gitee → ssh `git reset --hard origin/main` → restart → curl /health。
-- APK 发布：升 versionCode/versionName（build.ps1）→ 更新 static/app/latest.json 的 sha256 → SW 对 APK network-only。
-
-## 工作纪律
-
-- 改 Agent 行为优先改 `agents/prompts/agent_system.txt` 与工具 schema；确定性逻辑放 tools.py/spatial，不要让 LLM 做计算。
-- prompts 模板有进程内缓存，改后需重启服务。
-- 新增工具：tools.py 加 schema + executor，同步 agent_system.txt 与 tests/test_planner.py。
+论文、竞赛材料与旧交接快照的整理位置见 [research/README.md](research/README.md) 和 [HANDOFF.md](HANDOFF.md)。`research/local/`、`output/local_test_runs/`、`scripts/audit_output/` 不入 Git。
