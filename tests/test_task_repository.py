@@ -320,6 +320,7 @@ def test_clarification_answer_resumes_same_task_with_revision_and_route_fields()
         "带我去图书馆", "你想从哪里出发？",
     ]
     assert payload["query"] == "从樱顶出发"
+    assert payload["task_origin_query"] == "带我去图书馆"
     retry = create_task_run(
         DATABASE_URL, owner, conversation_id, "从樱顶出发", "clarification-answer",
         datetime.now(timezone.utc) + timedelta(minutes=2),

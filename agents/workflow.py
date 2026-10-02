@@ -101,17 +101,29 @@ def build_agent_workflow(
         stops = route_spec.get("stops") or []
         waypoints = [point for point in (_coordinate(item) for item in stops) if point]
         history = data.get("history") or []
-        from agents.context_builder import build_agent_context
+        from agents.context_builder import build_agent_context, is_route_followup
+        continuation = data.get("task_revision", 0) > 0
+        origin_query = data.get("task_origin_query")
+        previous_route_state = data.get("previous_route_state")
+        previous_task_id = data.get("previous_route_state_task_id")
+        # A clarification of a fresh task must not import a completed route
+        # from another task, even though the route is still in the conversation.
+        if (continuation and previous_task_id and data.get("task_id")
+                and previous_task_id != data["task_id"]
+                and not is_route_followup(origin_query or data["query"])):
+            previous_route_state = None
         context = build_agent_context(
-            data["query"], history, data.get("previous_route_state"),
-            same_task=(data.get("task_revision", 0) > 0),
+            data["query"], history, previous_route_state,
+            same_task=continuation,
         )
+        if continuation and isinstance(origin_query, str) and origin_query.strip():
+            context["active_task_request"] = origin_query.strip()
         from api.routes import _normalize_chat_context
         context = _normalize_chat_context(context)
         route_state = task.get("route_spec") or {}
         from agents.task_planner import build_task_plan
         plan = build_task_plan(
-            data["query"],
+            context.get("active_task_request") or data["query"],
             has_route_context=bool(start or end or waypoints),
         )
         response = None

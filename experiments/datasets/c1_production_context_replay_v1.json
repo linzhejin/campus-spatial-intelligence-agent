@@ -1,0 +1,200 @@
+{
+  "version": "c1-production-context-v1",
+  "scope": "Versioned C1 fixtures: 10 in-memory LangGraph/composite cases, 2 deterministic parser slot-protection cases, and 3 concurrency/lease/late-result regressions. No PostgreSQL persistence or live LLM coverage.",
+  "prior_route_state": {
+    "schema_version": 1,
+    "route_id": "route-context-replay",
+    "route_kind": "via",
+    "original_query": "从樱顶到图书馆",
+    "start": {"name": "樱顶"},
+    "end": {"name": "图书馆"},
+    "via": {
+      "type": "multi",
+      "points": [{"name": "珞珈门"}]
+    },
+    "itinerary": null,
+    "tour": null,
+    "legs": [],
+    "travel_mode": "walk",
+    "hard_constraints": {"avoid_stairs": true},
+    "strategy": {"name": "shortest", "source": "commute_default"},
+    "data_version": "replay-data-v1",
+    "road_condition_version": "replay-roads-v1"
+  },
+  "history": [
+    {"role": "user", "content": "从樱顶到图书馆"},
+    {"role": "assistant", "content": "路线已规划。"}
+  ],
+  "cases": [
+    {
+      "id": "same_task_route_followup",
+      "query": "换一条更平坦的路线",
+      "task_revision": 1,
+      "inherit_route_state": true
+    },
+    {
+      "id": "new_information_task_does_not_inherit_route",
+      "query": "介绍一下卓尔体育馆",
+      "task_revision": 0,
+      "inherit_route_state": false
+    },
+    {
+      "id": "new_route_endpoints_do_not_inherit_old_route",
+      "query": "从玉兰2门到星湖园食堂",
+      "task_revision": 0,
+      "inherit_route_state": false
+    },
+    {
+      "id": "explicit_cross_task_route_reference_inherits",
+      "query": "刚才的路线改走平坦一些",
+      "task_revision": 0,
+      "inherit_route_state": true
+    },
+    {
+      "id": "strategy_change_keeps_route_semantics_available",
+      "query": "刚才的路线走风景优先",
+      "task_revision": 0,
+      "inherit_route_state": true
+    },
+    {
+      "id": "mode_change_keeps_route_semantics_available",
+      "query": "把刚才的路线改成骑行",
+      "task_revision": 0,
+      "inherit_route_state": true
+    },
+    {
+      "id": "via_point_change_keeps_existing_route_snapshot",
+      "query": "在刚才路线中增加途经点卓尔体育馆",
+      "task_revision": 0,
+      "inherit_route_state": true
+    },
+    {
+      "id": "route_and_weather_are_both_completed",
+      "query": "从玉兰2门到星湖园食堂，顺便查天气",
+      "task_revision": 0,
+      "inherit_route_state": false,
+      "execution_kind": "composite"
+    },
+    {
+      "id": "weather_failure_does_not_discard_route_result",
+      "query": "从珞珈门到樱顶，顺便查天气",
+      "task_revision": 0,
+      "inherit_route_state": false,
+      "execution_kind": "composite",
+      "fail_weather": true,
+      "expected_status": "partial"
+    },
+    {
+      "id": "route_failure_does_not_discard_weather_result",
+      "query": "从玉兰2门到图书馆，顺便查天气",
+      "task_revision": 0,
+      "inherit_route_state": false,
+      "execution_kind": "composite",
+      "fail_route": true,
+      "expected_status": "partial"
+    }
+  ],
+  "parser_cases": [
+    {
+      "id": "rejected_destination_does_not_restore_previous_end",
+      "query": "从樱顶到二号教学楼",
+      "context": {
+        "start": {"name": "樱顶", "type": "poi"},
+        "end": {"name": "图书馆", "type": "poi"},
+        "previous_intent": {
+          "task_type": "path_planning",
+          "start": {"name": "樱顶", "type": "poi"},
+          "end": {"name": "图书馆", "type": "poi"}
+        }
+      },
+      "expected": {
+        "start": "武汉大学老斋舍",
+        "end": null,
+        "clarification_contains": "二号教学楼"
+      }
+    },
+    {
+      "id": "rejected_start_does_not_restore_previous_start",
+      "query": "从西南门到樱顶",
+      "context": {
+        "start": {"name": "牌坊", "type": "poi"},
+        "end": {"name": "图书馆", "type": "poi"},
+        "previous_intent": {
+          "task_type": "path_planning",
+          "start": {"name": "牌坊", "type": "poi"},
+          "end": {"name": "图书馆", "type": "poi"}
+        }
+      },
+      "expected": {
+        "start": null,
+        "end": "武汉大学老斋舍",
+        "clarification_contains": "西南门"
+      }
+    }
+  ],
+  "runtime_cases": [
+    {
+      "id": "parallel_runs_keep_contexts_isolated",
+      "implemented_by": "test_production_workflow_keeps_concurrent_task_contexts_isolated",
+      "runs": [
+        {
+          "run_id": "run-a",
+          "query": "换一条更平坦的路线",
+          "task_revision": 1,
+          "previous_route_state": {
+            "route_id": "route-a",
+            "route_kind": "direct",
+            "original_query": "从樱顶到图书馆",
+            "start": {"name": "樱顶"},
+            "end": {"name": "图书馆"},
+            "via": {"type": "none", "points": []},
+            "hard_constraints": {},
+            "strategy": {"name": "shortest"},
+            "travel_mode": "walk",
+            "data_version": "data-a",
+            "road_condition_version": "roads-a"
+          }
+        },
+        {
+          "run_id": "run-b",
+          "query": "介绍一下樱顶",
+          "task_revision": 0,
+          "previous_route_state": {
+            "route_id": "route-b",
+            "route_kind": "direct",
+            "original_query": "从牌坊到卓尔体育馆",
+            "start": {"name": "牌坊"},
+            "end": {"name": "卓尔体育馆"},
+            "via": {"type": "none", "points": []},
+            "hard_constraints": {},
+            "strategy": {"name": "scenery"},
+            "travel_mode": "walk",
+            "data_version": "data-b",
+            "road_condition_version": "roads-b"
+          }
+        }
+      ],
+      "expected_route_id_by_query": {
+        "换一条更平坦的路线": "route-a",
+        "介绍一下樱顶": null
+      }
+    },
+    {
+      "id": "lease_loss_stops_before_agent",
+      "implemented_by": "test_production_workflow_stops_before_agent_when_run_lease_is_lost",
+      "run_id": "stale-run",
+      "worker_id": "expired-worker",
+      "expected_error": "run lease lost or task cancelled",
+      "expected_agent_calls": 0
+    },
+    {
+      "id": "late_result_after_invalidation_is_not_published",
+      "implemented_by": "test_worker_does_not_publish_result_after_cancellation_or_lease_loss",
+      "run_id": "cancel-during-execution",
+      "worker_id": "worker-a",
+      "late_reply": "迟到的旧路线",
+      "expected_status": "lease_lost",
+      "expected_finish_calls": 0
+    }
+  ]
+}

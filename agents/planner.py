@@ -115,7 +115,13 @@ def _build_messages(query: str, context: dict = None, history: list = None,
         messages.append({"role": "system", "content": knowledge_msg})
 
     # 用户画像注入（动态个体偏好）
-    allow_preferences = route_preference_requested(query, context, history)
+    active_task_request = (context or {}).get("active_task_request")
+    preference_query = active_task_request if isinstance(active_task_request, str) and active_task_request.strip() else query
+    if active_task_request and re.search(r"风景优先|景观优先|平坦优先|少爬坡|少走坡|赏樱|赏花", query):
+        preference_query = query
+    allow_preferences = route_preference_requested(preference_query, context, history)
+    if active_task_request and re.search(r"最短|赶时间|赶课|快一点|快点|尽快|直接到|不绕路|别绕路", query):
+        allow_preferences = False
     profile_msg = profile.build_profile_message(uid) if allow_preferences else None
     if profile_msg:
         messages.append({"role": "system", "content": profile_msg})
@@ -176,6 +182,16 @@ def _build_messages(query: str, context: dict = None, history: list = None,
 
     # 旧 context 的规划槽位（上一轮路线状态），供承接"换一条/从那里出发"
     if context:
+        active_task_request = context.get("active_task_request")
+        if isinstance(active_task_request, str) and active_task_request.strip():
+            messages.append({
+                "role": "system",
+                "content": "当前正在继续同一个未完成任务。下一条用户消息是原始请求的引用，"
+                           "末尾用户消息是对上次追问的回答或修正；保留原请求中的其他目标、"
+                           "途经点、出行方式和硬约束，明确冲突时以本轮用户输入为准。"
+                           "只有完成整项请求或继续追问尚缺的关键信息后才能结束。",
+            })
+            messages.append({"role": "user", "content": active_task_request.strip()[:500]})
         policy = context.get("context_policy")
         if policy:
             messages.append({"role": "system", "content": policy})
@@ -266,10 +282,25 @@ def run_agent(query: str, context: dict = None, history: list = None,
     final_message = ""
     turns = 0
     agent_elapsed_ms = 0.0
-    allow_preferences = route_preference_requested(query, context, history)
+    active_task_request = (context or {}).get("active_task_request")
+    if not isinstance(active_task_request, str):
+        active_task_request = ""
+    # A clarification answer is still part of the original route request.
+    preference_query = active_task_request or query
+    if active_task_request and re.search(r"风景优先|景观优先|平坦优先|少爬坡|少走坡|赏樱|赏花", query):
+        preference_query = query
+    allow_preferences = route_preference_requested(preference_query, context, history)
+    if active_task_request and re.search(r"最短|赶时间|赶课|快一点|快点|尽快|直接到|不绕路|别绕路", query):
+        allow_preferences = False
     previous = (context or {}).get("previous_intent") or {}
     prev_constraints = previous.get("constraints") or (context or {}).get("constraints") or {}
-    avoid_slope = prev_constraints.get("slope") == "avoid" or "避坡" in query or "陡坡" in query
+    constraint_query = (active_task_request or "") + " " + query
+    avoid_slope = prev_constraints.get("slope") == "avoid" or "避坡" in constraint_query or "陡坡" in constraint_query
+    if re.search(r"(?:不(?:用|需要)(?:再)?避(?:开)?(?:陡坡|坡)|可以(?:爬|走)(?:坡|陡坡))", query):
+        avoid_slope = False
+    avoid_steps = bool(re.search(r"(?:不走|避开|不要走|绕开)(?:楼梯|台阶)", constraint_query))
+    if re.search(r"(?:可以|允许)(?:走|经过)?(?:楼梯|台阶)|不(?:用|需要)避开(?:楼梯|台阶)", query):
+        avoid_steps = False
     active_weights = None
     if allow_preferences:
         active_weights = previous.get("weights")
@@ -326,8 +357,12 @@ def run_agent(query: str, context: dict = None, history: list = None,
                     if avoid_slope:
                         args["constraints"] = {**(constraints if isinstance(constraints, dict) else {}),
                                                "slope": "avoid"}
+                    if avoid_steps:
+                        args["constraints"] = {**(args.get("constraints") or {}),
+                                               "avoid_steps": True}
                 result, artifact = agent_tools.execute_tool(
-                    name, args, {"query": query, "uid": uid}
+                    name, args, {"query": constraint_query if name in route_tools else query,
+                                 "uid": uid}
                 )
 
             if artifact:

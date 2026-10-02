@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260930d">
+    <link rel="stylesheet" href="/css/style.css?v=20261002a">
 </head>
 <body>
 
@@ -146,7 +146,7 @@
                 </span>
                 <span class="header-tagline">武大校园 · 出行向导</span>
                 <button id="road-report-btn" class="road-report-btn" aria-label="上报路况" title="上报施工/活动/管制">🚧</button>
-                <button id="reset-btn" class="reset-btn" aria-label="重新开始" title="重新开始">↺</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="新对话，清空当前对话" title="新对话：清空当前对话">重开</button>
                 <button id="help-btn" class="help-btn" aria-label="帮助引导" title="查看引导">?</button>
             </div>
         </header>
@@ -563,6 +563,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20261001a"></script>
+    <script src="/js/app.js?v=20261002a"></script>
 </body>
 </html>

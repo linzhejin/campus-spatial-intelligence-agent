@@ -3099,8 +3099,8 @@
         return promise;
     }
 
-    function waitForNextPoll() {
-        return new Promise(function (resolve) { setTimeout(resolve, 900); });
+    function waitForNextPoll(delayMs) {
+        return new Promise(function (resolve) { setTimeout(resolve, delayMs || 900); });
     }
 
     async function submitQueuedMessage(query, requestBody, replyBubble, epoch) {
@@ -3145,13 +3145,26 @@
         var terminal = ['completed', 'partial', 'failed', 'needs_input', 'cancelled', 'superseded'];
         var terminalReached = false;
         var pollStartedAt = Date.now();
+        var pollFailures = 0;
         try {
             while (epoch === state.conversationEpoch) {
-                var run = await apiRequest(
-                    '/api/runs/' + encodeURIComponent(runId) + '?conversation_id=' + encodeURIComponent(conversationId)
-                        + '&after_seq=' + afterSeq,
-                    null, 'GET', 15000
-                );
+                var run;
+                try {
+                    run = await apiRequest(
+                        '/api/runs/' + encodeURIComponent(runId) + '?conversation_id=' + encodeURIComponent(conversationId)
+                            + '&after_seq=' + afterSeq,
+                        null, 'GET', 15000
+                    );
+                    pollFailures = 0;
+                } catch (err) {
+                    var transient = err && (err.code === 'request_timeout' || err.code === 'internal_error'
+                        || /网络请求失败|服务器响应格式错误/.test(err.message || ''));
+                    if (!transient) throw err;
+                    pollFailures++;
+                    updateChatBubble(replyBubble, '连接暂时中断，正在恢复任务…');
+                    await waitForNextPoll(Math.min(5000, 900 * pollFailures));
+                    continue;
+                }
                 (run.events || []).forEach(function (event) {
                     afterSeq = Math.max(afterSeq, Number(event.seq) || 0);
                     if (event.event_type === 'node_started' && event.payload && event.payload.label) {
@@ -3171,7 +3184,7 @@
                         ? '这项任务已取消。' : '任务没有完成，请稍后重试。'));
                 }
                 if (Date.now() - pollStartedAt >= 90000) {
-                    throw new Error('服务端仍未返回最终结果，任务已保留；刷新页面后会继续恢复。');
+                    updateChatBubble(replyBubble, '任务处理时间较长，正在继续等待…');
                 }
                 await waitForNextPoll();
             }
@@ -3223,6 +3236,10 @@
         if (/(天气|温度|下雨|风力|能见度|活动|有哪些|介绍|是什么|什么|哪里|哪儿|怎么|为什么|谁|何时|几点|多少|帮我|想要|给我|请问|能否|是否|查询|查一下|找一下|搜索|推荐|附近|哪家|有没有|路线|规划|导航)/.test(text)) return false;
         // Clear slot values and explicit route/mode changes are safe answers.
         if (/^(从.+|到\S+|去\S+|起点\S*|出发\S*|终点\S*|步行|骑行|骑车|开车|换成\S+|改成\S+|避开\S+|不要\S+|是的|好的|对的|可以)$/.test(text)) return true;
+        // A free-form reply such as "我在信息学部" is still an answer to a
+        // pending place question, even when it is not an exact POI name.
+        if (/(起点|出发|终点|目的地|从哪里|到哪里|地点|哪儿|哪里)/.test(state.pendingServerQuestion || '')
+                && text.length <= 40 && !/[？?]/.test(text)) return true;
         return false;
     }
 
@@ -3358,11 +3375,16 @@
                         if (conversationEpoch !== state.conversationEpoch) return;
                         if (autoLoc) state.userLocation = autoLoc;
                         // 复用本轮气泡与顺序号，自动补定位最多一次。
+                        var retryContext = Object.assign({}, requestBody);
+                        if (result._task_id && Number.isInteger(result._task_revision)) {
+                            retryContext.continuation_task_id = result._task_id;
+                            retryContext.base_revision = result._task_revision;
+                        }
                         await handleNlSubmit(query, true, {
                             turnId: turnId,
                             thinkingBubble: thinkingBubble,
                             conversationEpoch: conversationEpoch,
-                        }, requestBody);
+                        }, retryContext);
                         return;  // 已重发，不再往下渲染
                     } catch (autoErr) {
                         console.warn('[AUTO_LOC] 自动定位失败，显示 clarify 让用户手动选:', autoErr.message);
