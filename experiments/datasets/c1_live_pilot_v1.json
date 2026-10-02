@@ -1,0 +1,651 @@
+{
+  "version": "c1-live-pilot-v1",
+  "scope": "30 synthetic campus dialogue targets, paired live-conversation versus stateless-current-turn baseline; pilot only, no field truth or participant claims",
+  "cases": [
+    {
+      "id": "c1_01_flat_after_weather",
+      "category": "preference",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为平坦优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat"
+      }
+    },
+    {
+      "id": "c1_02_bike_after_weather",
+      "category": "mode",
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改成骑行"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "bike",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_03_scenery_after_weather",
+      "category": "preference",
+      "setup": [
+        {
+          "query": "从珞珈门到樱顶"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为风景优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "scenery"
+      }
+    },
+    {
+      "id": "c1_04_shortest_after_scenery",
+      "category": "preference",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶，走风景好的路"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为最短路径"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_05_flat_after_poi",
+      "category": "interleaved",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        },
+        {
+          "query": "卓尔体育馆在哪里"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为平坦优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat"
+      }
+    },
+    {
+      "id": "c1_06_reverse_flat",
+      "category": "preference",
+      "setup": [
+        {
+          "query": "从樱顶到玉兰2门"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为平坦优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "武汉大学老斋舍",
+        "end": "玉兰2门",
+        "mode": "walk",
+        "strategy": "flat"
+      }
+    },
+    {
+      "id": "c1_07_via_flat_weather",
+      "category": "via",
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为平坦优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_08_via_shortest_weather",
+      "category": "via",
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶，走风景好的路"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为最短路径"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_09_via_scenery",
+      "category": "via",
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线改为风景优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "scenery",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_10_via_flat",
+      "category": "via",
+      "setup": [
+        {
+          "query": "从珞珈门经卓尔体育馆到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线走平坦优先"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_11_steps_weather",
+      "category": "constraint",
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线不走台阶"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        }
+      }
+    },
+    {
+      "id": "c1_12_steps_yulan",
+      "category": "constraint",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线避开台阶"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        }
+      }
+    },
+    {
+      "id": "c1_13_slope_yulan",
+      "category": "constraint",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线避开陡坡"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "slope": "avoid"
+        }
+      }
+    },
+    {
+      "id": "c1_14_remove_steps",
+      "category": "constraint",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶，不走台阶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线可以走台阶了"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "forbidden_constraints": [
+          "avoid_steps"
+        ]
+      }
+    },
+    {
+      "id": "c1_15_end_change_yulan",
+      "category": "endpoint",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线终点改为星湖园食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_16_end_change_gate",
+      "category": "endpoint",
+      "setup": [
+        {
+          "query": "从珞珈门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线终点改为武汉大学工学部学生一食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_17_start_change_gate",
+      "category": "endpoint",
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线起点改为玉兰2门"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_18_start_change_yulan",
+      "category": "endpoint",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线起点改为珞珈门"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_19_via_end_change",
+      "category": "endpoint",
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线终点改为星湖园食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_20_add_via",
+      "category": "via",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "刚才的路线增加途经点卓尔体育馆"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      }
+    },
+    {
+      "id": "c1_21_clarify_via_weather",
+      "category": "clarification",
+      "setup": [
+        {
+          "query": "经卓尔体育馆去樱顶，不走台阶，顺便查天气"
+        }
+      ],
+      "target": {
+        "query": "从玉兰2门出发"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "hard_constraints": {
+          "avoid_steps": true
+        },
+        "requirements": {
+          "route": "satisfied",
+          "weather": "satisfied"
+        }
+      }
+    },
+    {
+      "id": "c1_22_clarify_via",
+      "category": "clarification",
+      "setup": [
+        {
+          "query": "经星湖园食堂到卓尔体育馆，不走台阶"
+        }
+      ],
+      "target": {
+        "query": "从玉兰2门出发"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "卓尔体育馆",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "星湖园食堂"
+        ],
+        "hard_constraints": {
+          "avoid_steps": true
+        }
+      }
+    },
+    {
+      "id": "c1_23_clarify_via_weather_2",
+      "category": "clarification",
+      "setup": [
+        {
+          "query": "经卓尔体育馆到樱顶，顺便查天气"
+        }
+      ],
+      "target": {
+        "query": "从珞珈门出发"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "requirements": {
+          "route": "satisfied",
+          "weather": "satisfied"
+        }
+      }
+    },
+    {
+      "id": "c1_24_fresh_after_route",
+      "category": "fresh_control",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "从珞珈门到武汉大学工学部学生一食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_25_fresh_after_weather",
+      "category": "fresh_control",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        },
+        {
+          "query": "查一下天气"
+        }
+      ],
+      "target": {
+        "query": "从珞珈门到武汉大学工学部学生一食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_26_fresh_new_end",
+      "category": "fresh_control",
+      "setup": [
+        {
+          "query": "从珞珈门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "从玉兰2门到星湖园食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_27_weather_only",
+      "category": "fresh_control",
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶"
+        }
+      ],
+      "target": {
+        "query": "查一下天气"
+      },
+      "expected": {
+        "kind": "chat",
+        "requirements": {
+          "weather": "satisfied"
+        }
+      }
+    },
+    {
+      "id": "c1_28_simple_route",
+      "category": "fresh_control",
+      "setup": [],
+      "target": {
+        "query": "从珞珈门到武汉大学工学部学生一食堂"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      }
+    },
+    {
+      "id": "c1_29_route_weather",
+      "category": "composite",
+      "setup": [],
+      "target": {
+        "query": "从玉兰2门到樱顶，顺便查天气"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "requirements": {
+          "route": "satisfied",
+          "weather": "satisfied"
+        }
+      }
+    },
+    {
+      "id": "c1_30_via_weather",
+      "category": "composite",
+      "setup": [],
+      "target": {
+        "query": "从玉兰2门经卓尔体育馆到樱顶，顺便查天气"
+      },
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "requirements": {
+          "route": "satisfied",
+          "weather": "satisfied"
+        }
+      }
+    }
+  ]
+}
