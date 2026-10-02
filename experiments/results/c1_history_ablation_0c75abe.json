@@ -1,0 +1,1650 @@
+{
+  "status": "exploratory_history_ablation",
+  "generated_at": "2026-10-02T19:16:47.945140+00:00",
+  "server_commit_declared": "0c75abef3e04785ac82398a0232d3ad97ce33441",
+  "dataset_sha256": "7ad8bce48a0fd88d5c4401ad1d87d8c15b605a37cc3bcf756514977e38ee64e4",
+  "scope": "20 locked development route-followup tasks; same history in both arms",
+  "summary": {
+    "n_cases": 20,
+    "full_success": 20,
+    "stateless_success": 14,
+    "full_success_rate": 1.0,
+    "stateless_success_rate": 0.7,
+    "paired_difference": 0.3,
+    "paired_difference_ci95_bootstrap": [
+      0.1,
+      0.5
+    ],
+    "paired_win": 6,
+    "paired_loss": 0,
+    "full_critical_corruption": 0,
+    "full_latency_p50_s": 0.506,
+    "full_latency_p95_s": 1.139
+  },
+  "cases": [
+    {
+      "id": "c1_01_flat_after_weather",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat"
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 3.217
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 1.913
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.609,
+      "history_only_elapsed_s": 1.521
+    },
+    {
+      "id": "c1_02_bike_after_weather",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "bike",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "武汉大学工学部学生一食堂",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.913
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 2.878
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "bike",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "bike",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.759,
+      "history_only_elapsed_s": 1.929
+    },
+    {
+      "id": "c1_03_scenery_after_weather",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "scenery"
+      },
+      "setup": [
+        {
+          "query": "从珞珈门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.758
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 1.439
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "scenery",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "scenery",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.302,
+      "history_only_elapsed_s": 1.475
+    },
+    {
+      "id": "c1_04_shortest_after_scenery",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶，走风景好的路",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "scenery",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 2.108
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.247,
+      "history_only_elapsed_s": 1.199
+    },
+    {
+      "id": "c1_05_flat_after_poi",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat"
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.943
+        },
+        {
+          "query": "卓尔体育馆在哪里",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 3.038
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.58,
+      "history_only_elapsed_s": 1.628
+    },
+    {
+      "id": "c1_06_reverse_flat",
+      "expected": {
+        "kind": "route",
+        "start": "武汉大学老斋舍",
+        "end": "玉兰2门",
+        "mode": "walk",
+        "strategy": "flat"
+      },
+      "setup": [
+        {
+          "query": "从樱顶到玉兰2门",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "樱顶",
+            "end": "玉兰2门",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.093
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "樱顶",
+        "end": "玉兰2门",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "樱顶",
+        "end": "玉兰2门",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.466,
+      "history_only_elapsed_s": 1.359
+    },
+    {
+      "id": "c1_07_via_flat_weather",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [
+              "卓尔体育馆"
+            ],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.489
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 1.774
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "via"
+        ],
+        "critical": true
+      },
+      "structured_elapsed_s": 1.139,
+      "history_only_elapsed_s": 2.166
+    },
+    {
+      "id": "c1_08_via_shortest_weather",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶，走风景好的路",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [
+              "卓尔体育馆"
+            ],
+            "mode": "walk",
+            "strategy": "scenery",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.2
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 1.626
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "via"
+        ],
+        "critical": true
+      },
+      "structured_elapsed_s": 0.505,
+      "history_only_elapsed_s": 1.234
+    },
+    {
+      "id": "c1_09_via_scenery",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "scenery",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [
+              "卓尔体育馆"
+            ],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.472
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "scenery",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "scenery",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "via"
+        ],
+        "critical": true
+      },
+      "structured_elapsed_s": 0.804,
+      "history_only_elapsed_s": 1.474
+    },
+    {
+      "id": "c1_10_via_flat",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "flat",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从珞珈门经卓尔体育馆到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "樱顶",
+            "via": [
+              "卓尔体育馆"
+            ],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.463
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "via"
+        ],
+        "critical": true
+      },
+      "structured_elapsed_s": 1.07,
+      "history_only_elapsed_s": 1.707
+    },
+    {
+      "id": "c1_11_steps_weather",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        }
+      },
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "武汉大学工学部学生一食堂",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.32
+        },
+        {
+          "query": "查一下天气",
+          "observed": {
+            "status": "completed",
+            "kind": "chat",
+            "start": null,
+            "end": null,
+            "via": [],
+            "mode": null,
+            "strategy": null,
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": null,
+            "road_condition_version": null,
+            "error": null
+          },
+          "elapsed_s": 1.972
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.481,
+      "history_only_elapsed_s": 1.523
+    },
+    {
+      "id": "c1_12_steps_yulan",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        }
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.125
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "avoid_steps": true
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.343,
+      "history_only_elapsed_s": 1.641
+    },
+    {
+      "id": "c1_13_slope_yulan",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "slope": "avoid"
+        }
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.846
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "flat",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "strategy"
+        ],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.549,
+      "history_only_elapsed_s": 1.559
+    },
+    {
+      "id": "c1_14_remove_steps",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "forbidden_constraints": [
+          "avoid_steps"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶，不走台阶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {
+              "avoid_steps": true,
+              "slope": "avoid"
+            },
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.523
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {
+          "slope": "avoid"
+        },
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.582,
+      "history_only_elapsed_s": 1.124
+    },
+    {
+      "id": "c1_15_end_change_yulan",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.392
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.277,
+      "history_only_elapsed_s": 1.444
+    },
+    {
+      "id": "c1_16_end_change_gate",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从珞珈门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.852
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.238,
+      "history_only_elapsed_s": 1.323
+    },
+    {
+      "id": "c1_17_start_change_gate",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学工学部学生一食堂",
+        "mode": "walk",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从珞珈门到武汉大学工学部学生一食堂",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "珞珈门",
+            "end": "武汉大学工学部学生一食堂",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.17
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学工学部学生一食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.284,
+      "history_only_elapsed_s": 1.417
+    },
+    {
+      "id": "c1_18_start_change_yulan",
+      "expected": {
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest"
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.457
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "珞珈门",
+        "end": "樱顶",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 0.217,
+      "history_only_elapsed_s": 0.78
+    },
+    {
+      "id": "c1_19_via_end_change",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门经卓尔体育馆到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [
+              "卓尔体育馆"
+            ],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 0.378
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "星湖园食堂",
+        "via": [],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": false,
+        "mismatches": [
+          "via"
+        ],
+        "critical": true
+      },
+      "structured_elapsed_s": 0.508,
+      "history_only_elapsed_s": 1.167
+    },
+    {
+      "id": "c1_20_add_via",
+      "expected": {
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "武汉大学老斋舍",
+        "mode": "walk",
+        "strategy": "shortest",
+        "via": [
+          "卓尔体育馆"
+        ]
+      },
+      "setup": [
+        {
+          "query": "从玉兰2门到樱顶",
+          "observed": {
+            "status": "completed",
+            "kind": "route",
+            "start": "玉兰2门",
+            "end": "樱顶",
+            "via": [],
+            "mode": "walk",
+            "strategy": "shortest",
+            "hard_constraints": {},
+            "requirements": {},
+            "data_version": "data-5574f0f7f0bbc97e",
+            "road_condition_version": "roads-4f53cda18c2baa0c",
+            "error": null
+          },
+          "elapsed_s": 1.101
+        }
+      ],
+      "structured_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "history_only_observed": {
+        "status": "completed",
+        "kind": "route",
+        "start": "玉兰2门",
+        "end": "樱顶",
+        "via": [
+          "卓尔体育馆"
+        ],
+        "mode": "walk",
+        "strategy": "shortest",
+        "hard_constraints": {},
+        "requirements": {},
+        "data_version": "data-5574f0f7f0bbc97e",
+        "road_condition_version": "roads-4f53cda18c2baa0c",
+        "error": null
+      },
+      "structured": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "history_only": {
+        "passed": true,
+        "mismatches": [],
+        "critical": false
+      },
+      "structured_elapsed_s": 1.987,
+      "history_only_elapsed_s": 1.197
+    }
+  ],
+  "limitations": [
+    "Both arms use /api/chat rather than the durable conversation worker.",
+    "The setup route is produced once and shared; target arms are independently evaluated.",
+    "This is a development-set ablation, not independent paper evidence."
+  ]
+}
