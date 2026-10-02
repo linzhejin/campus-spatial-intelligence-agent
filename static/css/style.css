@@ -190,7 +190,7 @@ body {
 .whu-point-btn {
     --point-color: var(--jade-deep);
     appearance: none;
-    width: 112px;
+    width: 88px;
     min-height: 44px;
     display: flex;
     align-items: center;
@@ -354,6 +354,16 @@ body {
     background: var(--cherry-soft);
     color: var(--cherry-deep);
 }
+.reset-btn {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    touch-action: manipulation;
+}
+.reset-btn:focus-visible { outline: 3px solid #276E8A; outline-offset: 2px; }
 
 /* ===== Mode bar（出行方式分段选择器，固定不随消息滚动） ===== */
 .mode-bar {
@@ -1404,9 +1414,10 @@ body.is-planning-mode .desktop-route-workbench {
 
     .map-legend { bottom: 10px; right: 10px; padding: 8px 10px; font-size: 0.68rem; }
 
-    .whu-locate-group { gap: 5px; padding: 6px; border-radius: 16px; }
-    .whu-point-btn { width: 104px; min-height: 44px; padding: 0 9px; border-radius: 11px; }
-    .whu-point-label { font-size: 0.78rem; }
+    .whu-locate-group { flex-direction: row; gap: 3px; padding: 4px; border-radius: 13px; }
+    .whu-point-btn { width: 52px; min-height: 44px; padding: 0 2px; border-radius: 9px; }
+    .whu-point-icon { display: none; }
+    .whu-point-label { font-size: 0.74rem; }
     .route-strategy-switch { gap: 5px; }
     .route-strategy-btn { font-size: 0.76rem; padding-inline: 5px; }
 

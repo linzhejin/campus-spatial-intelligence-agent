@@ -60,6 +60,7 @@ function harness(storage = new Map()) {
         var realSubmitQueuedMessage = submitQueuedMessage;
         globalThis.app = { state: state, init: init, submit: handleNlSubmit, reset: handleReset,
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
+            setTravelMode: setTravelMode,
             setApi: function (fn) {
                 submitQueuedMessage = function (query, body, bubble, epoch) {
                     var payload = Object.assign({ query: query }, body || {});
@@ -136,6 +137,62 @@ test('late route cannot replace a newer route but gets a terminal response', asy
     assert.equal(h.rendered.length,1); assert.equal(h.state.routeStore.current().route_id,'B');
     assert.ok(!h.bubbles[0].text.includes('正在为你'));
 });
+test('switching travel mode replans from the committed route without dropping via points or constraints', async () => {
+    const h = harness();
+    const committed = {
+        route_id: 'walk-route', route_kind: 'via', original_query: '从牌坊经樱顶到图书馆',
+        start: { name: '牌坊', poi_id: 'gate-main' },
+        via: [{ name: '樱顶', poi_id: 'poi-cherry-top' }],
+        end: { name: '图书馆', poi_id: 'library' }, travel_mode: 'walk',
+        hard_constraints: { slope: 'avoid', scenery: 'high' },
+        strategy: { name: 'scenery', weights: { distance: 0.15, slope: 0.1, scenery: 0.75 } },
+    };
+    h.state.routeStore.replace(committed);
+    h.state.travelMode = 'walk';
+    const response = deferred();
+    let requestBody;
+    h.setQueuedApi(async (url, body) => {
+        assert.equal(url, '/api/route/replan');
+        requestBody = body;
+        return response.promise;
+    });
+
+    h.setTravelMode('bike');
+    assert.deepEqual(h.state.routeStore.current(), committed);
+    assert.equal(h.state.travelMode, 'walk');
+    response.resolve({
+        recommended: [[1, 2], [3, 4]],
+        route_state: { ...committed, route_id: 'bike-route', travel_mode: 'bike' },
+        mode: 'bike', recommended_length_m: 1400,
+    });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    assert.deepEqual(requestBody.route_state, committed);
+    assert.equal(JSON.stringify(requestBody.change), JSON.stringify({ travel_mode: 'bike' }));
+    assert.equal(h.state.routeStore.current().route_id, 'bike-route');
+    assert.deepEqual(h.state.routeStore.current().via, committed.via);
+    assert.deepEqual(h.state.routeStore.current().hard_constraints, committed.hard_constraints);
+    assert.equal(h.state.travelMode, 'bike');
+});
+test('failed travel-mode replan keeps the previous mode and complete route context', async () => {
+    const h = harness();
+    const committed = {
+        route_id: 'walk-route', route_kind: 'via',
+        start: { name: '牌坊' }, via: [{ name: '樱顶' }], end: { name: '图书馆' },
+        travel_mode: 'walk', hard_constraints: { slope: 'avoid' },
+        strategy: { name: 'flat' },
+    };
+    h.state.routeStore.replace(committed);
+    h.state.travelMode = 'walk';
+    h.setQueuedApi(async () => { throw Error('骑行道路暂不可达'); });
+
+    h.setTravelMode('bike');
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    assert.deepEqual(h.state.routeStore.current(), committed);
+    assert.equal(h.state.travelMode, 'walk');
+    assert.equal(h.bubbles.length, 0);
+});
 test('new weather query does not silently discard an independent route result', async () => {
     const h=harness(), a=deferred(), b=deferred(); let count=0; h.setApi(()=>++count===1?a.promise:b.promise);
     const pa=h.submit('路线A'), pb=h.submit('天气');
@@ -147,6 +204,23 @@ test('start clarification retries GPS once in the same request without duplicate
     h.setApi(async()=> { if (++count>3) throw Error('recursion'); return { response_kind:'clarify', clarify:{question:'起点在哪？',options:[]} }; });
     await h.submit('去图书馆'); await new Promise(resolve=>setTimeout(resolve,10));
     assert.equal(count,2); assert.equal(h.locationCount(),1); assert.equal(h.bubbles.length,1); assert.equal(h.userBubbles.length,1);
+});
+test('automatic GPS answer continues the pending server task', async () => {
+    const h = harness(); h.state.productMode = 'navigation';
+    const sent = [];
+    h.setApi(async (_url, body) => {
+        sent.push(body);
+        return sent.length === 1
+            ? { response_kind: 'clarify', _task_id: 'original-task', _task_revision: 1,
+                clarify: { question: '起点在哪？', options: [] } }
+            : routeResult('gps-continued');
+    });
+    await h.submit('帮我规划去樱顶，顺便查天气');
+    assert.equal(sent.length, 2);
+    assert.equal(sent[1].continuation_task_id, 'original-task');
+    assert.equal(sent[1].base_revision, 1);
+    assert.deepEqual({ lng: sent[1].coord_start.lng, lat: sent[1].coord_start.lat },
+        { lng: 114.3, lat: 30.5 });
 });
 test('PC clarification never asks for device location', async () => {
     const h=harness(); h.context.reply={response_kind:'clarify',clarify:{question:'起点在哪？',options:[]}};
@@ -170,6 +244,17 @@ test('clarification answer continues its server task while an unrelated weather 
     await h.submit('查一下天气');
     assert.equal(sent.continuation_task_id, undefined);
     assert.equal(h.state.pendingServerTaskId, 'pending-task-2');
+});
+test('free-form location answer continues the original pending task', async () => {
+    const h = harness();
+    h.state.pendingServerTaskId = 'pending-route';
+    h.state.pendingServerTaskRevision = 3;
+    h.state.pendingServerQuestion = '你想从哪里出发？';
+    let sent;
+    h.setApi(async (_url, body) => { sent = body; return routeResult('continued'); });
+    await h.submit('我在信息学部');
+    assert.equal(sent.continuation_task_id, 'pending-route');
+    assert.equal(sent.base_revision, 3);
 });
 test('independent POI search does not get attached to a pending route clarification', async () => {
     const h = harness();
@@ -343,6 +428,47 @@ test('durable submission stores the accepted query and polls independent progres
     assert.ok(calls[1].body.request_id);
     assert.equal(calls[2].method, 'GET');
     assert.equal(h.state.activeRuns['run-1'], undefined);
+});
+
+test('polling recovers from a temporary network failure without losing the accepted task', async () => {
+    const h = harness();
+    let polls = 0;
+    h.setQueuedApi(async url => {
+        if (url === '/api/conversations') return { conversation_id: 'server-session-retry' };
+        if (url.endsWith('/messages')) return { run_id: 'run-retry' };
+        if (url.includes('/api/runs/run-retry?')) {
+            polls++;
+            if (polls === 1) throw new Error('网络请求失败，请检查网络连接');
+            return { status: 'completed', events: [], result: routeResult('recovered') };
+        }
+        throw new Error('unexpected request ' + url);
+    });
+    const bubble = { text: 'waiting' };
+    const result = await h.queued('经樱顶去图书馆', {}, bubble, 0);
+    assert.equal(result.route_state.route_id, 'recovered');
+    assert.equal(polls, 2);
+    assert.equal(h.state.activeRuns['run-retry'], undefined);
+});
+
+test('a still-running task continues polling after ninety seconds without requiring refresh', async () => {
+    const h = harness();
+    let now = 0;
+    h.context.Date = class extends Date { static now() { return now; } };
+    let polls = 0;
+    h.setQueuedApi(async url => {
+        if (url === '/api/conversations') return { conversation_id: 'server-session-slow' };
+        if (url.endsWith('/messages')) return { run_id: 'run-slow' };
+        if (url.includes('/api/runs/run-slow?')) {
+            polls++;
+            if (polls === 1) { now = 90001; return { status: 'running', events: [] }; }
+            return { status: 'completed', events: [], result: routeResult('slow-result') };
+        }
+        throw new Error('unexpected request ' + url);
+    });
+    const bubble = { text: 'waiting' };
+    const result = await h.queued('从珞珈门去樱顶', {}, bubble, 0);
+    assert.equal(result.route_state.route_id, 'slow-result');
+    assert.equal(polls, 2);
 });
 
 test('simultaneous first messages share one conversation creation', async () => {

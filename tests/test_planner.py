@@ -68,6 +68,53 @@ def _run(client, **kwargs):
 
 
 class TestAgentLoop:
+    def test_clarification_keeps_original_constraints_in_tool_call(self):
+        original = "从玉兰2门到樱顶，经过卓尔体育馆，不走台阶，避开陡坡"
+        client = FakeClient([
+            _fake_response(tool_calls=[_fake_tool_call("plan_via_route", {
+                "start": {"name": "信息学部"}, "end": {"name": "樱顶"},
+                "via_points": [{"name": "卓尔体育馆"}],
+            })]),
+        ])
+        route = {"recommended": [], "distance_m": 900,
+                 "start_name": "信息学部", "end_name": "樱顶", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            planner.run_agent(
+                "从信息学部出发",
+                context={"active_task_request": original,
+                         "history": [{"role": "user", "content": original},
+                                     {"role": "assistant", "content": "你从哪里出发？"}]},
+            )
+        tool_name, args, tool_context = execute.call_args.args
+        assert tool_name == "plan_via_route"
+        assert args["constraints"] == {"slope": "avoid", "avoid_steps": True}
+        assert original in tool_context["query"]
+        assert any(original in str(message["content"]) for message in client.calls[0]["messages"])
+
+    def test_explicit_clarification_correction_replaces_original_route_preferences(self):
+        original = "从玉兰2门到樱顶，风景优先，不走台阶，避开陡坡"
+        client = FakeClient([
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {
+                "start": {"name": "玉兰2门"}, "end": {"name": "樱顶"},
+                "weights": {"distance": 0.2, "slope": 0.1, "scenery": 0.7},
+            })]),
+        ])
+        route = {"recommended": [], "distance_m": 900,
+                 "start_name": "玉兰2门", "end_name": "樱顶", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            planner.run_agent(
+                "改为最短路线，可以走台阶，不用避开陡坡了",
+                context={"active_task_request": original},
+            )
+        _name, args, _context = execute.call_args.args
+        assert "weights" not in args
+        assert args.get("constraints", {}).get("avoid_steps") is not True
+        assert args.get("constraints", {}).get("slope") != "avoid"
+
     def test_direct_answer_no_tool(self):
         client = FakeClient([_fake_response(content="今天适合散步，要去樱顶吗？")])
         resp = _run(client)

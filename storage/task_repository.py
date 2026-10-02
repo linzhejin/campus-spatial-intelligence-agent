@@ -227,6 +227,11 @@ def get_run_input(url: str | None, run_id: str) -> dict | None:
         if not user_message:
             raise RuntimeError("queued task has no accepted user message")
         if row["task_revision"] > 0:
+            origin_message = conn.execute(
+                "SELECT content FROM conversation_message"
+                " WHERE task_id=%s AND role='user' ORDER BY seq ASC LIMIT 1",
+                (row["task_id"],),
+            ).fetchone()
             history = conn.execute(
                 "SELECT role, content FROM (SELECT seq, role, content"
                 " FROM conversation_message WHERE task_id=%s AND seq<%s"
@@ -234,6 +239,7 @@ def get_run_input(url: str | None, run_id: str) -> dict | None:
                 (row["task_id"], user_message["seq"]),
             ).fetchall()
         else:
+            origin_message = None
             history = conn.execute(
                 "SELECT role, content FROM (SELECT m.seq, m.role, m.content"
                 " FROM conversation_message m LEFT JOIN task prior_task ON prior_task.task_id=m.task_id"
@@ -243,21 +249,20 @@ def get_run_input(url: str | None, run_id: str) -> dict | None:
                 (row["conversation_id"], user_message["seq"]),
             ).fetchall()
         previous = conn.execute(
-            "SELECT prior.metadata->'route_state' AS route_state FROM conversation_message prior"
+            "SELECT prior.metadata->'route_state' AS route_state, prior.task_id"
+            " FROM conversation_message prior"
             " WHERE prior.conversation_id=%s AND prior.role='assistant' AND prior.seq<%s"
-            " AND prior.metadata ? 'route_state' AND NOT EXISTS ("
-            "   SELECT 1 FROM conversation_message newer"
-            "   WHERE newer.conversation_id=prior.conversation_id"
-            "     AND newer.seq>prior.seq AND newer.seq<%s"
-            " ) ORDER BY prior.seq DESC LIMIT 1",
-            (row["conversation_id"], user_message["seq"], user_message["seq"]),
+            " AND prior.metadata ? 'route_state' ORDER BY prior.seq DESC LIMIT 1",
+            (row["conversation_id"], user_message["seq"]),
         ).fetchone()
     return {
         "run_id": str(row["run_id"]), "task_id": str(row["task_id"]),
         "task_revision": row["task_revision"], "task_revision_current": row["revision"],
         "conversation_id": str(row["conversation_id"]), "owner_id": str(row["owner_id"]),
         "task": row["state"], "query": user_message["content"], "history": history,
+        "task_origin_query": origin_message["content"] if origin_message else None,
         "previous_route_state": previous["route_state"] if previous else None,
+        "previous_route_state_task_id": str(previous["task_id"]) if previous and previous["task_id"] else None,
         "cancel_requested": row["cancel_requested"],
     }
 

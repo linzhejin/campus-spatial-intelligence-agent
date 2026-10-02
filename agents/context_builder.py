@@ -7,7 +7,7 @@ import re
 _ROUTE_FOLLOWUP = re.compile(
     r"换一条|再规划|重新规划|再短一点|更短一点|改走|从那里|从这里|从那儿|"
     r"到那里|到这里|终点改为|起点改为|这条路线|刚才的路线|沿途|"
-    r"避开.{0,8}(?:坡|台阶|施工|封路)|(?:切换|改成).{0,5}(?:步行|骑行|开车)|增加途经"
+    r"(?:切换|改成).{0,5}(?:步行|骑行|开车)|增加途经"
 )
 _FRESH_ROUTE = re.compile(r"从.{1,35}(?:到|去).{1,35}(?:走|路线|怎么|最短)?")
 
@@ -39,6 +39,9 @@ def build_agent_context(query: str, history: list[dict] | None,
         context["previous_route_state"] = previous_route_state
     if transcript:
         context["context_policy"] = (
+            "本轮是同一未完成任务的澄清续答：保留原任务的目标、途经点、出行方式与约束；"
+            "本轮用户明确修正的内容优先。不要把回答当成新的独立任务。"
+            if same_task else
             "仅在本轮明确引用上一条路线时继承其起终点和约束；新地点、新问题或出行方式切换不得"
             "从旧任务推断端点。用户本轮明确提供的信息优先。"
         )

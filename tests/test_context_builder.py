@@ -24,3 +24,8 @@ def test_same_clarification_task_keeps_its_saved_context():
     previous = {"start": {"name": "珞珈门"}}
     context = build_agent_context("从南门", [], previous, same_task=True)
     assert context["previous_route_state"] == previous
+
+
+def test_avoidance_constraint_alone_does_not_reuse_an_old_route():
+    assert not is_route_followup("去卓尔体育馆，避开台阶")
+    assert is_route_followup("刚才的路线避开台阶")
