@@ -102,6 +102,38 @@ class TestAgentLoop:
         assert args["constraints"] == expected_constraints
         assert result["response_kind"] == "route"
 
+    def test_spoken_edit_preserves_ordered_multi_via_and_hard_constraint(self):
+        previous = {
+            "schema_version": 1, "route_id": "route-before", "route_kind": "via",
+            "original_query": "从玉兰2门经卓尔体育馆、星湖园食堂到樱顶，不走台阶",
+            "start": {"name": "玉兰2门", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "via": {"type": "multi", "points": [
+                {"name": "卓尔体育馆", "type": "poi"},
+                {"name": "星湖园食堂", "type": "poi"},
+            ]},
+            "tour": None, "legs": [], "travel_mode": "walk",
+            "hard_constraints": {"avoid_steps": True},
+            "strategy": {"name": "shortest", "source": "commute_default"},
+            "data_version": "data-test", "road_condition_version": "roads-test",
+        }
+        route = {"recommended": [[1, 2]], "start_name": "玉兰2门",
+                 "end_name": "樱顶", "mode": "walk"}
+        with patch.object(planner, "_make_client") as client, \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route, "route_kind": "via"})) as execute:
+            result = planner.run_agent(
+                "把刚才的路线改为风景优先",
+                context={"previous_route_state": previous},
+            )
+        client.assert_not_called()
+        name, args, _context = execute.call_args.args
+        assert name == "plan_via_route"
+        assert [item["name"] for item in args["via_points"]] == ["卓尔体育馆", "星湖园食堂"]
+        assert args["constraints"] == {"avoid_steps": True}
+        assert args["strategy"] == "scenery"
+        assert result["route_kind"] == "via"
+
     def test_explicit_mode_followup_replans_saved_via_route_without_llm(self):
         previous = {
             "schema_version": 1, "route_id": "route-before", "route_kind": "via",

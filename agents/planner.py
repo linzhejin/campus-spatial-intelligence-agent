@@ -138,7 +138,7 @@ def _explicit_route_edit(query: str, prior_route: dict) -> dict | None:
     from agents.route_state import apply_change, validate_route_state
 
     text = (query or "").strip().rstrip("。")
-    prefix = r"(?:刚才的|这条|原)路线"
+    prefix = r"(?:把|将)?(?:刚才的|这条|原)路线"
     strategy = re.fullmatch(
         prefix + r"(?:改为|改成|走)(平坦优先|风景优先|最短路径)", text
     )
