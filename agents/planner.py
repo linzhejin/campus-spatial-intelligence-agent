@@ -102,6 +102,35 @@ def _build_route_message(route: dict) -> str:
     return head + "。" + (tail + "。" if tail else "")
 
 
+_NAMED_VIA_RE = re.compile(
+    r"^(?:请|带我|帮我)?\s*(?:从(?P<start>.+?))?"
+    r"(?:途经|经过|经由|经)(?P<via>.+?)(?:去|到)"
+    r"(?P<end>[^，,。]+)"
+)
+
+
+def _named_via_request(text: str) -> dict | None:
+    """Recognize an explicit, single named stop before the destination."""
+    match = _NAMED_VIA_RE.match((text or "").strip())
+    if not match:
+        return None
+    via = match.group("via").strip()
+    end = re.split(r"\s*(?:不走|避开|顺便|同时|查天气)", match.group("end"), maxsplit=1)[0].strip()
+    if not via or not end or re.search(r"、|和|及|再经|途经|经过", via):
+        return None
+    return {"start": (match.group("start") or "").strip(), "via": via, "end": end}
+
+
+def _continuation_start(query: str) -> str:
+    text = (query or "").strip().strip("，,。")
+    match = re.fullmatch(r"(?:从|我在|起点(?:是|在)?)(.+?)(?:出发)?", text)
+    if match:
+        return match.group(1).strip()
+    if text and len(text) <= 30 and not re.search(r"[？?]|路线|天气|介绍|查询|去|到", text):
+        return text
+    return ""
+
+
 
 def _build_messages(query: str, context: dict = None, history: list = None,
                     coord_start: dict = None, coord_end: dict = None,
@@ -266,6 +295,59 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 "route": None, "route_kind": None, "candidates": None,
                 "clarify": None, "suggestions": None, "turns": 0,
             }
+
+    # Explicit "via X to Y" requests have a required stop. Resolve that
+    # structure before the LLM can accidentally use X as the start and return
+    # a plausible-looking direct route that silently skips the stop.
+    original_request = (context or {}).get("active_task_request") or query
+    named_via = _named_via_request(original_request)
+    if named_via:
+        revised_start = _continuation_start(query) if original_request != query else ""
+        start_name = revised_start or named_via["start"]
+        if start_name in {"我这", "我这里", "我的位置", "当前位置"}:
+            start_name = ""
+        if not start_name and not coord_start:
+            question = f"从哪里出发？我会经过{named_via['via']}，再到{named_via['end']}。"
+            return {"response_kind": "clarify", "message": question, "route": None,
+                    "route_kind": None, "candidates": None,
+                    "clarify": {"question": question, "options": []},
+                    "suggestions": None, "turns": 0}
+        start_ref = ({"name": coord_start.get("name") or "我的位置", "type": "coord",
+                      "lng": coord_start["lng"], "lat": coord_start["lat"]}
+                     if not start_name and coord_start else {"name": start_name, "type": "poi"})
+        full_request = str(original_request) + " " + str(query)
+        constraints = {}
+        if "避坡" in full_request or "陡坡" in full_request:
+            constraints["slope"] = "avoid"
+        if re.search(r"(?:不走|避开|不要走|绕开)(?:楼梯|台阶)", full_request):
+            constraints["avoid_steps"] = True
+        if re.search(r"不(?:用|需要)(?:再)?避(?:开)?(?:陡坡|坡)|可以(?:爬|走)(?:坡|陡坡)", query):
+            constraints.pop("slope", None)
+        if re.search(r"(?:可以|允许)(?:走|经过)?(?:楼梯|台阶)|不(?:用|需要)避开(?:楼梯|台阶)", query):
+            constraints.pop("avoid_steps", None)
+        mode = travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk"
+        for text in (original_request, query):
+            if re.search(r"开车|驾车", text): mode = "drive"
+            elif re.search(r"骑车|骑行", text): mode = "bike"
+            elif "步行" in text: mode = "walk"
+        args = {"start": start_ref, "end": {"name": named_via["end"], "type": "poi"},
+                "via_points": [{"name": named_via["via"], "type": "poi"}], "mode": mode}
+        if constraints:
+            args["constraints"] = constraints
+        result, artifact = agent_tools.execute_tool(
+            "plan_via_route", args, {"query": full_request, "uid": uid}
+        )
+        route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+        if route:
+            route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+            return {"response_kind": "route", "message": _build_route_message(route),
+                    "route": route, "route_kind": "via", "candidates": None,
+                    "clarify": None, "suggestions": None, "turns": 0}
+        question = (result or {}).get("message") or "途经点或终点暂时无法确认，请换个地点名称。"
+        return {"response_kind": "clarify", "message": question, "route": None,
+                "route_kind": None, "candidates": None,
+                "clarify": {"question": question, "options": []},
+                "suggestions": None, "turns": 0}
 
     if not config.DEEPSEEK_API_KEY:
         raise PlannerError("DEEPSEEK_API_KEY 未配置")

@@ -68,6 +68,36 @@ def _run(client, **kwargs):
 
 
 class TestAgentLoop:
+    def test_via_first_request_without_start_asks_before_planning(self):
+        with patch.object(planner, "_make_client") as client, \
+             patch.object(planner.agent_tools, "execute_tool") as execute:
+            result = planner.run_agent("经卓尔体育馆去樱顶，不走台阶，顺便查天气")
+        assert result["response_kind"] == "clarify"
+        assert "从哪里出发" in result["clarify"]["question"]
+        client.assert_not_called()
+        execute.assert_not_called()
+
+    def test_via_first_clarification_plans_original_stop_and_constraints(self):
+        original = "经卓尔体育馆去樱顶，不走台阶，顺便查天气"
+        route = {"recommended": [[1, 2]], "start_name": "玉兰2门",
+                 "end_name": "樱顶", "mode": "walk"}
+        with patch.object(planner, "_make_client") as client, \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route, "route_kind": "via"})) as execute:
+            result = planner.run_agent(
+                "从玉兰2门出发", context={"active_task_request": original},
+                travel_mode="walk",
+            )
+        client.assert_not_called()
+        name, args, tool_context = execute.call_args.args
+        assert name == "plan_via_route"
+        assert args["start"]["name"] == "玉兰2门"
+        assert args["end"]["name"] == "樱顶"
+        assert [point["name"] for point in args["via_points"]] == ["卓尔体育馆"]
+        assert args["constraints"] == {"avoid_steps": True}
+        assert original in tool_context["query"]
+        assert result["route_kind"] == "via"
+
     def test_clarification_keeps_original_constraints_in_tool_call(self):
         original = "从玉兰2门到樱顶，经过卓尔体育馆，不走台阶，避开陡坡"
         client = FakeClient([
