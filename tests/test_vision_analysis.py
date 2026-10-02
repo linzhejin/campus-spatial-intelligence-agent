@@ -29,9 +29,47 @@ def test_video_without_stabilized_camera_never_claims_congestion_from_pixel_moti
     assert all(item["kind"] != "possible_congestion" for item in result["candidates"])
 
 
+def test_moving_camera_video_can_report_congestion_only_after_motion_compensation():
+    frames = [frame_of_stopped_vehicles(offset=index * 20) for index in range(6)]
+    translate_right = [[1, 0, 20], [0, 1, 0], [0, 0, 1]]
+
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480,
+        frame_transforms=[None] + [translate_right] * 5,
+    )
+
+    assert result["metrics"]["motion_assessment"] == "camera_motion_compensated"
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_congestion")
+    assert candidate["review_required"] is True
+    assert candidate["auto_publish"] is False
+    assert result["safety"]["automatically_changes_routing"] is False
+    assert result["safety"]["accident_recognition_supported"] is False
+
+
+def test_video_with_unreliable_camera_motion_compensation_only_reports_vehicle_counts():
+    frames = [frame_of_stopped_vehicles(offset=index * 20) for index in range(6)]
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480,
+        frame_transforms=[None, None, None, None, None, None],
+    )
+
+    assert result["metrics"]["motion_assessment"] == "camera_motion_uncompensated"
+    assert all(item["kind"] != "possible_congestion" for item in result["candidates"])
+
+
+def test_vehicle_detector_classes_never_become_accident_candidates():
+    frame = frame_of_stopped_vehicles()
+    result = analyze_observations([frame], frame_width=640, frame_height=480)
+    assert all(item["kind"] != "possible_accident" for item in result["candidates"])
+
+
 def test_accident_candidate_requires_explicit_detector_class_and_human_review():
     frame = [{"label": "accident", "confidence": 0.91, "track_id": None, "box": [10, 10, 80, 80]}]
-    result = analyze_observations([frame], frame_width=640, frame_height=480)
+    unsupported = analyze_observations([frame], frame_width=640, frame_height=480)
+    assert all(item["kind"] != "possible_accident" for item in unsupported["candidates"])
+    result = analyze_observations(
+        [frame], frame_width=640, frame_height=480, accident_model_enabled=True,
+    )
     candidate = next(item for item in result["candidates"] if item["kind"] == "possible_accident")
     assert candidate["review_required"] is True
     assert candidate["auto_publish"] is False

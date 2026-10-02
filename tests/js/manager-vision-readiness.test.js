@@ -14,6 +14,7 @@ function managerHarness() {
   const uploadResolvers = [];
   const impactPreviewResolvers = [];
   let visionPostCount = 0;
+  let visionJobs = [];
   let inferenceReady = false;
   let visionStatusFailure = false;
   let deferImpactPreviews = false;
@@ -26,7 +27,8 @@ function managerHarness() {
     let textContent = '';
     const node = {
       id, hidden: false, value: '', innerHTML: '', disabled: false,
-      checked: false, files: [], style: {}, listeners, children: [],
+      checked: false, files: [], style: {}, listeners, children: [], attributes: {},
+      setAttribute(name, value) { this.attributes[name] = String(value); },
       classList: {
         add: (value) => classes.add(value),
         remove: (value) => classes.delete(value),
@@ -75,6 +77,10 @@ function managerHarness() {
       const node = element('created-' + tag + '-' + createdNodeCount++);
       node.tagName = tag;
       return node;
+    }, createElementNS: (_namespace, tag) => {
+      const node = element('created-' + tag + '-' + createdNodeCount++);
+      node.tagName = tag;
+      return node;
     }, createTextNode: (text) => ({ text }) },
     window, L, FormData: class FormData { append() {} }, URLSearchParams, Date, Math, Promise, setTimeout,
     fetch: async (url, options = {}) => {
@@ -107,7 +113,7 @@ function managerHarness() {
       else if (url.startsWith('/api/manager/vision-status')) data = {
         inference_ready: inferenceReady, max_media_bytes: 1024, notice: inferenceReady ? '已就绪' : '尚未就绪',
       };
-      else if (url.startsWith('/api/manager/vision-jobs')) data = { jobs: [] };
+      else if (url.startsWith('/api/manager/vision-jobs')) data = { jobs: visionJobs };
       else if (url.startsWith('/api/road-conditions')) data = { conditions: [] };
       return { ok: true, json: async () => ({ data }) };
     },
@@ -116,6 +122,7 @@ function managerHarness() {
   return {
     elements, intervalCallbacks, mapListeners, requested,
     setInferenceReady: (value) => { inferenceReady = value; },
+    setVisionJobs: (items) => { visionJobs = items; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
     deferImpactPreviews: () => { deferImpactPreviews = true; },
     resolveImpactPreview: (type, roadName) => {
@@ -256,4 +263,36 @@ test('a pending preview safely settles after the selected road is cleared', asyn
 
   await assert.doesNotReject(pending);
   assert.equal(elements.get('impact-preview').hidden, true);
+});
+
+test('completed image jobs show vehicle counts and safely render detector boxes', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'vision-1', status: 'completed', media_kind: 'image', media_url: '/private/media',
+    original_name: 'drone.png', result: {
+      media: { width: 640, height: 480 },
+      model: { id: 'visdrone-rtdetrv4-s', version: 'abc123' },
+      metrics: { peak_vehicle_count: 2, peak_class_counts: { car: 2 }, frames_analyzed: 1 },
+      candidates: [],
+      preview_detections: [
+        { label: 'car', confidence: 0.91, box: [10, 20, 100, 90] },
+        { label: '<script>alert(1)</script>', confidence: 0.4, box: [120, 40, 200, 110] },
+      ],
+    },
+  }]);
+  const { elements, intervalCallbacks } = harness;
+  intervalCallbacks[0]();
+  await flush();
+  const card = elements.get('vision-jobs').children[0];
+  const stage = card.children.find((node) => node.className === 'vision-image-stage');
+  const svg = stage.children.find((node) => node.tagName === 'svg');
+  assert.equal(svg.attributes.viewBox, '0 0 640 480');
+  assert.equal(svg.children.filter((node) => node.tagName === 'rect').length, 1);
+  assert.equal(svg.children.find((node) => node.tagName === 'text').textContent, 'car 91%');
+  assert.doesNotMatch(svg.children.map((node) => node.textContent).join(' '), /script|alert/);
+  const summary = card.children.find((node) => node.className === 'vision-metrics');
+  const summaryText = summary.children.map((node) => node.textContent).join(' ');
+  assert.match(summaryText, /检出车辆 2/);
+  assert.match(summaryText, /本版不支持事故识别/);
 });

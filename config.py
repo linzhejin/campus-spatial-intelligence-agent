@@ -41,6 +41,12 @@ ROAD_CONDITION_ADMIN_TOKEN = os.getenv("ROAD_CONDITION_ADMIN_TOKEN", "")
 # Aerial inspection is optional and isolated in `python -m vision.worker`.
 VISION_UPLOAD_DIR = os.getenv("VISION_UPLOAD_DIR", os.path.join(os.path.dirname(__file__), "data", "vision", "uploads"))
 VISION_MODEL_PATH = os.getenv("VISION_MODEL_PATH", "")
+VISION_MODEL_ID = os.getenv("VISION_MODEL_ID", "visdrone-rtdetrv4-s")
+VISION_MODEL_REVISION = os.getenv(
+    "VISION_MODEL_REVISION", "820fca3d962243f7d611dd35cf2a64d267635499",
+)
+VISION_CONFIDENCE_THRESHOLD = float(os.getenv("VISION_CONFIDENCE_THRESHOLD", "0.369"))
+VISION_CPU_THREADS = int(os.getenv("VISION_CPU_THREADS", "1"))
 VISION_MAX_MEDIA_BYTES = int(os.getenv("VISION_MAX_MEDIA_BYTES", str(24 * 1024 * 1024)))
 VISION_MAX_FRAME_PIXELS = int(os.getenv("VISION_MAX_FRAME_PIXELS", "12500000"))
 VISION_MAX_VIDEO_FRAMES = int(os.getenv("VISION_MAX_VIDEO_FRAMES", "180"))

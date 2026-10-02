@@ -127,7 +127,7 @@ import os
 load_dotenv(".env")
 model = os.getenv("VISION_MODEL_PATH", "")
 ready = bool(model and Path(model).is_file()
-             and find_spec("ultralytics") and find_spec("cv2"))
+             and all(find_spec(name) for name in ("onnxruntime", "numpy", "cv2", "PIL")))
 raise SystemExit(0 if ready else 1)
 PY
 then

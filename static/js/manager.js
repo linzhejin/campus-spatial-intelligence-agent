@@ -272,10 +272,94 @@
 
   function candidateName(kind) {
     return {
-      possible_congestion: '疑似低速车辆聚集',
+      possible_congestion: '可能存在车辆排队/低速聚集',
       possible_accident: '疑似事故类别目标',
       vehicle_cluster_review: '车辆密集观察',
     }[kind] || '影像候选';
+  }
+
+  function appendVisionPreview(card, job, result) {
+    if (job.media_kind === 'video') {
+      var video = document.createElement('video');
+      video.controls = true; video.preload = 'metadata'; video.className = 'vision-preview'; video.src = job.media_url;
+      card.appendChild(video);
+      return;
+    }
+    var imageInfo = result.media || {};
+    var width = Number(imageInfo.width), height = Number(imageInfo.height);
+    var detections = Array.isArray(result.preview_detections) ? result.preview_detections.slice(0, 250) : [];
+    var stage = document.createElement('div'); stage.className = 'vision-image-stage';
+    var image = document.createElement('img');
+    image.alt = '管理员上传的校园巡查影像'; image.className = 'vision-preview'; image.src = job.media_url;
+    stage.appendChild(image);
+    if (width > 0 && height > 0 && width * height <= 12500000 && detections.length) {
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.setAttribute('aria-label', '车辆检测框');
+      var allowedLabels = {
+        car: 'car', van: 'van', truck: 'truck', bus: 'bus', motor: 'motor',
+        tricycle: 'tricycle', 'awning-tricycle': 'awning-tricycle', bicycle: 'bicycle',
+      };
+      detections.forEach(function (item) {
+        if (!item || !Array.isArray(item.box) || item.box.length !== 4) return;
+        var sourceLabel = String(item.label || '').trim().toLowerCase();
+        if (!Object.prototype.hasOwnProperty.call(allowedLabels, sourceLabel)) return;
+        var values = item.box.map(Number);
+        if (!values.every(Number.isFinite)) return;
+        var x1 = Math.max(0, Math.min(width, values[0]));
+        var y1 = Math.max(0, Math.min(height, values[1]));
+        var x2 = Math.max(0, Math.min(width, values[2]));
+        var y2 = Math.max(0, Math.min(height, values[3]));
+        if (x2 <= x1 || y2 <= y1) return;
+        var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x1); rect.setAttribute('y', y1);
+        rect.setAttribute('width', x2 - x1); rect.setAttribute('height', y2 - y1);
+        svg.appendChild(rect);
+        var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', x1); label.setAttribute('y', Math.max(13, y1 - 3));
+        var confidence = Number(item.confidence);
+        confidence = Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0;
+        label.textContent = allowedLabels[sourceLabel] + ' ' + Math.round(confidence * 100) + '%';
+        svg.appendChild(label);
+      });
+      stage.appendChild(svg);
+    }
+    card.appendChild(stage);
+  }
+
+  function appendVisionMetrics(card, result, mediaKind) {
+    var metrics = result.metrics || {};
+    var summary = document.createElement('div'); summary.className = 'vision-metrics';
+    var count = document.createElement('strong');
+    count.textContent = mediaKind === 'video'
+      ? '每帧平均检出车辆 ' + Number(metrics.mean_vehicle_count || 0)
+      : '检出车辆 ' + Number(metrics.peak_vehicle_count || 0);
+    summary.appendChild(count);
+    if (mediaKind === 'video') {
+      var peak = document.createElement('span'); peak.textContent = '抽样帧 ' + Number(metrics.frames_analyzed || 0) + ' · 单帧最多 ' + Number(metrics.peak_vehicle_count || 0);
+      summary.appendChild(peak);
+      var motion = document.createElement('span');
+      motion.textContent = {
+        camera_motion_compensated: '镜头运动校正通过',
+        operator_declared_stabilized: '按管理员声明使用固定/已稳像视角',
+        camera_motion_uncompensated: '镜头运动校正不足，仅供查看车辆数量',
+        insufficient_single_frame: '画面数量不足',
+      }[metrics.motion_assessment] || '镜头运动状态未知';
+      summary.appendChild(motion);
+    }
+    var counts = metrics.peak_class_counts || {};
+    var classes = Object.keys(counts).filter(function (label) { return Number(counts[label]) > 0; }).slice(0, 8);
+    if (classes.length) {
+      var list = document.createElement('span');
+      list.textContent = '类别峰值：' + classes.map(function (label) { return label + ' ' + counts[label]; }).join('、');
+      summary.appendChild(list);
+    }
+    var model = result.model || {};
+    var version = document.createElement('small');
+    version.textContent = '模型 ' + String(model.id || '未记录') + ' · 版本 ' + String(model.version || '未记录') + ' · 识别框不是地面坐标；本版不支持事故识别。';
+    summary.appendChild(version);
+    card.appendChild(summary);
   }
 
   function reviewJob(job, status) {
@@ -294,7 +378,7 @@
     var meta = document.createElement('div'); meta.className = 'vision-job-meta';
     var when = job.created_at ? new Date(job.created_at).toLocaleString('zh-CN', { hour12: false }) : '';
     meta.textContent = when + (job.anchor_gcj ? ' · 观察区域已标注' : '')
-      + (job.media_kind === 'video' ? (job.camera_stabilized ? ' · 管理员声明固定/已稳像' : ' · 镜头运动未校正') : '');
+      + (job.media_kind === 'video' ? (job.camera_stabilized ? ' · 管理员声明固定/已稳像' : ' · 自动检查镜头运动') : '');
     title.appendChild(meta);
     var stateLabel = document.createElement('span'); stateLabel.className = 'vision-job-state ' + job.status;
     stateLabel.textContent = {
@@ -307,12 +391,9 @@
       failure.textContent = job.error.message || '分析失败'; card.appendChild(failure);
     }
     var result = job.result || {};
-    if (job.status === 'needs_review' || job.review_status) {
-      var preview;
-      if (job.media_kind === 'video') {
-        preview = document.createElement('video'); preview.controls = true; preview.preload = 'metadata';
-      } else { preview = document.createElement('img'); preview.alt = '管理员上传的校园巡查影像'; }
-      preview.className = 'vision-preview'; preview.src = job.media_url; card.appendChild(preview);
+    if (job.result && (job.status === 'needs_review' || job.status === 'completed' || job.review_status)) {
+      appendVisionPreview(card, job, result);
+      appendVisionMetrics(card, result, job.media_kind);
       var candidates = document.createElement('div'); candidates.className = 'candidate-list';
       (result.candidates || []).forEach(function (item) {
         var candidate = document.createElement('div'); candidate.className = 'candidate-card';
@@ -330,7 +411,7 @@
         }
         candidates.appendChild(candidate);
       });
-      card.appendChild(candidates);
+      if (candidates.children.length) card.appendChild(candidates);
       if (job.review_status === 'confirmed') {
         var next = document.createElement('p'); next.className = 'vision-job-meta';
         next.textContent = '已确认影像迹象。若需影响导航，请在上方路况表单中手工选定具体道路并发布事件。';

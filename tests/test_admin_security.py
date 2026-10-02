@@ -53,3 +53,18 @@ def test_session_admin_mutations_require_csrf_token(monkeypatch):
     )
     assert allowed.status_code == 200
     assert called == ["event-1"]
+
+
+def test_vision_model_status_jobs_and_media_require_manager_authentication():
+    from app import create_app
+
+    app = create_app()
+    app.config.update(TESTING=True, SECRET_KEY="test-secret")
+    client = app.test_client()
+    for path in (
+        "/api/manager/vision-status",
+        "/api/manager/vision-jobs?limit=1",
+        "/api/manager/vision-jobs/00000000-0000-0000-0000-000000000000/media",
+    ):
+        response = client.get(path)
+        assert response.status_code == 401

@@ -2040,7 +2040,10 @@ def _vision_inference_readiness(database_url=None) -> tuple[bool, bool, bool, bo
     import importlib.util
 
     weights_ready = bool(config.VISION_MODEL_PATH and Path(config.VISION_MODEL_PATH).is_file())
-    dependencies_ready = all(importlib.util.find_spec(name) for name in ("ultralytics", "cv2", "PIL"))
+    dependencies_ready = all(
+        importlib.util.find_spec(name)
+        for name in ("onnxruntime", "numpy", "cv2", "PIL")
+    )
     worker_ready = False
     if weights_ready and dependencies_ready:
         try:
@@ -2067,10 +2070,16 @@ def manager_vision_status():
         "dependencies_ready": dependencies_ready,
         "worker_ready": worker_ready,
         "max_media_bytes": config.VISION_MAX_MEDIA_BYTES,
+        "capabilities": {
+            "aerial_vehicle_detection": True,
+            "congestion_candidate_review": True,
+            "accident_recognition_supported": False,
+            "automatic_routing_updates": False,
+        },
         "notice": (
-            "视觉分析已就绪，结果仍需人工核验。"
+            "航拍车辆识别已就绪；拥堵只作待核实线索，当前不识别事故。"
             if inference_ready else
-            "任务上传与审核界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。"
+            "任务上传与审核界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。当前版本不识别事故。"
         ),
     })
 

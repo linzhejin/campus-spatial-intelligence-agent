@@ -8,9 +8,17 @@ Type=simple
 User=@APP_USER@
 WorkingDirectory=@APP_DIR@
 Environment=PYTHONUNBUFFERED=1
+Environment=VISION_CPU_THREADS=1
+Environment=OMP_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
 ExecStart=@APP_DIR@/venv/bin/python -m vision.worker
 Restart=always
 RestartSec=5
+Nice=5
+CPUQuota=75%
+MemoryMax=768M
+TasksMax=32
+UMask=0077
 KillSignal=SIGTERM
 TimeoutStopSec=300
 NoNewPrivileges=true

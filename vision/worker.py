@@ -14,7 +14,7 @@ import config
 from dotenv import load_dotenv
 from storage import database
 from storage import vision_repository
-from vision.engine import UltralyticsDetector, analyze_media
+from vision.engine import OnnxDetector, analyze_media
 
 logger = logging.getLogger(__name__)
 _STOP = threading.Event()
@@ -73,12 +73,16 @@ def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
     status_detail = ""
     try:
         missing = [
-            name for name in ("ultralytics", "cv2", "PIL")
+            name for name in ("onnxruntime", "numpy", "cv2", "PIL")
             if importlib.util.find_spec(name) is None
         ]
         if missing:
             raise RuntimeError("missing vision dependencies: " + ", ".join(missing))
-        detector = UltralyticsDetector(config.VISION_MODEL_PATH)
+        detector = OnnxDetector(
+            config.VISION_MODEL_PATH,
+            model_id=getattr(config, "VISION_MODEL_ID", "visdrone-rtdetrv4-s"),
+            model_version=getattr(config, "VISION_MODEL_REVISION", "unspecified"),
+        )
         ready = True
     except Exception as error:
         status_detail = f"{type(error).__name__}: {error}"[:500]
