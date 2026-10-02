@@ -58,7 +58,8 @@ def _weather_message(weather: dict) -> str:
         parts.append(f"风力 {weather['windpower']}")
     if weather.get("advice"):
         parts.append(str(weather["advice"]).strip())
-    return "，".join(parts).rstrip("，") + "。"
+    message = "，".join(parts).rstrip("，")
+    return message if message.endswith(("。", "！", "？", "!", "?")) else message + "。"
 
 
 def _run_weather_tool():
