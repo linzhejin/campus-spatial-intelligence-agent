@@ -68,6 +68,40 @@ def _run(client, **kwargs):
 
 
 class TestAgentLoop:
+    @pytest.mark.parametrize("query,expected_strategy,expected_end,expected_constraints", [
+        ("刚才的路线改为平坦优先", "flat", "樱顶", {}),
+        ("刚才的路线改为最短路径", "shortest", "樱顶", {}),
+        ("刚才的路线终点改为星湖园食堂", "shortest", "星湖园食堂", {}),
+        ("刚才的路线避开陡坡", "shortest", "樱顶", {"slope": "avoid"}),
+    ])
+    def test_explicit_route_edit_keeps_via_and_unchanged_slots_without_llm(
+            self, query, expected_strategy, expected_end, expected_constraints):
+        previous = {
+            "schema_version": 1, "route_id": "route-before", "route_kind": "via",
+            "original_query": "从玉兰2门经卓尔体育馆到樱顶",
+            "start": {"name": "玉兰2门", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "via": {"name": "卓尔体育馆", "type": "poi"},
+            "tour": None, "legs": [], "travel_mode": "walk",
+            "hard_constraints": {}, "strategy": {"name": "shortest", "source": "commute_default"},
+            "data_version": "data-test", "road_condition_version": "roads-test",
+        }
+        route = {"recommended": [[1, 2]], "start_name": "玉兰2门",
+                 "end_name": expected_end, "mode": "walk"}
+        with patch.object(planner, "_make_client") as client, \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route, "route_kind": "via"})) as execute:
+            result = planner.run_agent(query, context={"previous_route_state": previous})
+        client.assert_not_called()
+        name, args, _context = execute.call_args.args
+        assert name == "plan_via_route"
+        assert args["start"]["name"] == "玉兰2门"
+        assert args["end"]["name"] == expected_end
+        assert args["via_name"] == "卓尔体育馆"
+        assert args["strategy"] == expected_strategy
+        assert args["constraints"] == expected_constraints
+        assert result["response_kind"] == "route"
+
     def test_explicit_mode_followup_replans_saved_via_route_without_llm(self):
         previous = {
             "schema_version": 1, "route_id": "route-before", "route_kind": "via",

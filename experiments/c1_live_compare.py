@@ -85,6 +85,7 @@ def project_run(run: dict) -> dict:
         "hard_constraints": state.get("hard_constraints") or {},
         "requirements": result.get("requirement_results") or {},
         "data_version": state.get("data_version"),
+        "road_condition_version": state.get("road_condition_version"),
         "error": run.get("error"),
     }
 

@@ -13,7 +13,9 @@ import json
 import logging
 import re
 import time
+from copy import deepcopy
 from pathlib import Path
+from uuid import uuid4
 
 import httpx
 
@@ -129,6 +131,51 @@ def _continuation_start(query: str) -> str:
     if text and len(text) <= 30 and not re.search(r"[？?]|路线|天气|介绍|查询|去|到", text):
         return text
     return ""
+
+
+def _explicit_route_edit(query: str, prior_route: dict) -> dict | None:
+    """Apply a bounded spoken edit to the saved route, retaining untouched slots."""
+    from agents.route_state import apply_change, validate_route_state
+
+    text = (query or "").strip().rstrip("。")
+    prefix = r"(?:刚才的|这条|原)路线"
+    strategy = re.fullmatch(
+        prefix + r"(?:改为|改成|走)(平坦优先|风景优先|最短路径)", text
+    )
+    if strategy:
+        name = {"平坦优先": "flat", "风景优先": "scenery",
+                "最短路径": "shortest"}[strategy.group(1)]
+        changed = apply_change(prior_route, {"strategy": name})
+        changed["strategy"]["source"] = "explicit_nl"
+        return changed
+
+    endpoint = re.fullmatch(prefix + r"(起点|终点)改为([^，,。；;]+)", text)
+    if endpoint:
+        place = endpoint.group(2).strip()
+        if not place or place in {"我这里", "我的位置", "当前位置"}:
+            return None
+        changed = deepcopy(validate_route_state(prior_route))
+        changed["start" if endpoint.group(1) == "起点" else "end"] = {
+            "name": place, "type": "poi"
+        }
+        changed["route_id"] = f"route-{uuid4().hex}"
+        return validate_route_state(changed)
+
+    constraint = re.fullmatch(
+        prefix + r"(不走台阶|避开台阶|避开陡坡|不走楼梯|可以走台阶了)", text
+    )
+    if constraint:
+        changed = deepcopy(validate_route_state(prior_route))
+        command = constraint.group(1)
+        if command == "可以走台阶了":
+            changed["hard_constraints"].pop("avoid_steps", None)
+        elif command == "避开陡坡":
+            changed["hard_constraints"]["slope"] = "avoid"
+        else:
+            changed["hard_constraints"]["avoid_steps"] = True
+        changed["route_id"] = f"route-{uuid4().hex}"
+        return validate_route_state(changed)
+    return None
 
 
 
@@ -326,6 +373,30 @@ def run_agent(query: str, context: dict = None, history: list = None,
                         "candidates": None, "clarify": None, "suggestions": None, "turns": 0}
             return {"response_kind": "chat",
                     "message": (result or {}).get("message") or "这条路线暂时无法按新出行方式规划。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": None, "suggestions": None, "turns": 0}
+
+    # A spoken edit to an existing route must preserve its ordered stops and
+    # untouched constraints. The LLM may otherwise issue a plausible direct
+    # route after seeing only the endpoint and strategy in the short context.
+    if isinstance(prior_route, dict) and is_route_followup(query):
+        requested = _explicit_route_edit(query, prior_route)
+        if requested is not None:
+            from api.routes import _replan_tool_request
+
+            tool_name, args = _replan_tool_request(requested)
+            result, artifact = agent_tools.execute_tool(
+                tool_name, args, {"query": query, "uid": uid, "replan": True},
+            )
+            route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+            if route:
+                route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+                return {"response_kind": "route", "message": _build_route_message(route),
+                        "route": route, "route_kind": requested["route_kind"],
+                        "candidates": None, "clarify": None, "suggestions": None,
+                        "turns": 0}
+            return {"response_kind": "chat",
+                    "message": (result or {}).get("message") or "这条路线暂时无法按新要求规划。",
                     "route": None, "route_kind": None, "candidates": None,
                     "clarify": None, "suggestions": None, "turns": 0}
 

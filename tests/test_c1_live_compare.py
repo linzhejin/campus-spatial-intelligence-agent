@@ -16,6 +16,7 @@ def test_project_run_extracts_route_slots_and_weather_requirement():
                 "hard_constraints": {"avoid_steps": True},
                 "strategy": {"name": "flat"},
                 "data_version": "data-123",
+                "road_condition_version": "roads-123",
             },
             "requirement_results": {"route": "satisfied", "weather": "satisfied"},
         },
@@ -25,7 +26,8 @@ def test_project_run_extracts_route_slots_and_weather_requirement():
         "end": "樱顶", "via": ["卓尔体育馆"], "mode": "walk",
         "strategy": "flat", "hard_constraints": {"avoid_steps": True},
         "requirements": {"route": "satisfied", "weather": "satisfied"},
-        "data_version": "data-123", "error": None,
+        "data_version": "data-123", "road_condition_version": "roads-123",
+        "error": None,
     }
 
 
