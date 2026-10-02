@@ -72,7 +72,7 @@ class RouteWeights(Contract):
 class RouteStrategy(Contract):
     name: Literal["shortest", "recommended", "scenery", "flat", "custom"] = "shortest"
     source: Identifier = "commute_default"
-    task_class: Literal["commute", "leisure", "accessibility", "custom"] = "commute"
+    task_class: Literal["commute", "leisure", "accessibility", "custom", "explicit_preference"] = "commute"
     weights: RouteWeights = Field(default_factory=RouteWeights)
     detour_cap: float = Field(default=1.0, ge=1, le=5)
 
