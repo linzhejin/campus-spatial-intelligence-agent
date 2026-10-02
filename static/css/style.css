@@ -2657,3 +2657,12 @@ body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
 @media (pointer: coarse) {
     .kbd-hint-bar { display: none !important; }
 }
+
+@media (max-width: 359px) {
+    .floating-header { padding-left: 10px; padding-right: 10px; }
+    .header-left, .header-right { flex-shrink: 0; }
+    .header-right { gap: 4px; }
+    .app-title { white-space: nowrap; font-size: 0.88rem; }
+    .weather-badge { padding-inline: 5px; }
+    .weather-badge #weather-text { display: none; }
+}
