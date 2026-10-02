@@ -296,6 +296,39 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 "clarify": None, "suggestions": None, "turns": 0,
             }
 
+    # A mode-only correction is an edit to the saved route, even if a weather
+    # or POI turn appeared in between. Rebuild from the validated route state
+    # so endpoints, ordered stops, hard constraints and strategy survive.
+    from agents.context_builder import is_route_followup
+    from agents.parser import detect_travel_mode
+    mode_change = re.search(
+        r"(?:切换到?|改成|改为|换成|改走).{0,5}(?:步行|走路|骑行|骑车|开车|驾车)",
+        query or "",
+    )
+    prior_route = (context or {}).get("previous_route_state")
+    if mode_change and isinstance(prior_route, dict) and is_route_followup(query):
+        from agents.route_state import apply_change
+        from api.routes import _replan_tool_request
+
+        mode, explicit = detect_travel_mode(query)
+        if explicit:
+            requested = apply_change(prior_route, {"travel_mode": mode})
+            tool_name, args = _replan_tool_request(requested)
+            result, artifact = agent_tools.execute_tool(
+                tool_name, args,
+                {"query": requested["original_query"], "uid": uid, "replan": True},
+            )
+            route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+            if route:
+                route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+                return {"response_kind": "route", "message": _build_route_message(route),
+                        "route": route, "route_kind": requested["route_kind"],
+                        "candidates": None, "clarify": None, "suggestions": None, "turns": 0}
+            return {"response_kind": "chat",
+                    "message": (result or {}).get("message") or "这条路线暂时无法按新出行方式规划。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": None, "suggestions": None, "turns": 0}
+
     # Explicit "via X to Y" requests have a required stop. Resolve that
     # structure before the LLM can accidentally use X as the start and return
     # a plausible-looking direct route that silently skips the stop.

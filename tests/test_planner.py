@@ -68,6 +68,39 @@ def _run(client, **kwargs):
 
 
 class TestAgentLoop:
+    def test_explicit_mode_followup_replans_saved_via_route_without_llm(self):
+        previous = {
+            "schema_version": 1, "route_id": "route-before", "route_kind": "via",
+            "original_query": "从玉兰2门经卓尔体育馆到樱顶，不走台阶",
+            "start": {"name": "玉兰2门", "type": "poi"},
+            "end": {"name": "樱顶", "type": "poi"},
+            "via": {"name": "卓尔体育馆", "type": "poi"},
+            "tour": None, "legs": [], "travel_mode": "walk",
+            "hard_constraints": {"avoid_steps": True},
+            "strategy": {"name": "flat", "source": "explicit_nl"},
+            "data_version": "data-test", "road_condition_version": "roads-test",
+        }
+        route = {"recommended": [[1, 2]], "start_name": "玉兰2门",
+                 "end_name": "樱顶", "mode": "bike"}
+        with patch.object(planner, "_make_client") as client, \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route, "route_kind": "via"})) as execute:
+            result = planner.run_agent(
+                "刚才的路线改成骑行",
+                context={"previous_route_state": previous}, travel_mode="walk",
+            )
+        client.assert_not_called()
+        name, args, ctx = execute.call_args.args
+        assert name == "plan_via_route"
+        assert args["start"]["name"] == "玉兰2门"
+        assert args["end"]["name"] == "樱顶"
+        assert args["via_name"] == "卓尔体育馆"
+        assert args["constraints"] == {"avoid_steps": True}
+        assert args["strategy"] == "flat"
+        assert args["mode"] == "bike"
+        assert ctx["query"] == previous["original_query"]
+        assert result["response_kind"] == "route"
+
     def test_via_first_request_without_start_asks_before_planning(self):
         with patch.object(planner, "_make_client") as client, \
              patch.object(planner.agent_tools, "execute_tool") as execute:

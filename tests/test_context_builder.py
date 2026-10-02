@@ -29,3 +29,8 @@ def test_same_clarification_task_keeps_its_saved_context():
 def test_avoidance_constraint_alone_does_not_reuse_an_old_route():
     assert not is_route_followup("去卓尔体育馆，避开台阶")
     assert is_route_followup("刚才的路线避开台阶")
+
+
+def test_explicit_mode_change_refers_to_previous_route():
+    assert is_route_followup("刚才的路线改成骑行")
+    assert is_route_followup("改为骑行")
