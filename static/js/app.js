@@ -2391,6 +2391,7 @@
         clearMap();
         var section = document.getElementById('results-section');
         if (section) section.hidden = true;
+        document.body.classList.remove('has-route-results');
         syncRouteStrategyUI();
     }
 
@@ -2440,6 +2441,7 @@
         // 5. 隐藏结果区
         var results = document.getElementById('results-section');
         if (results) results.hidden = true;
+        document.body.classList.remove('has-route-results');
         var suggestions = document.getElementById('suggestions-area');
         if (suggestions) suggestions.hidden = true;
         // 6. 清空多轮对话上下文
@@ -2512,34 +2514,18 @@
 
     function renderDesktopRouteWorkbench(data) {
         if (state.productMode !== 'planning') return;
-        var current = state.routeStore ? state.routeStore.current() : null;
-        var strategy = (current && current.strategy) || data.strategy || {};
-        var strategyName = strategy.name || 'recommended';
-        var strategyEl = document.getElementById('desktop-route-strategy');
-        if (strategyEl) strategyEl.textContent = STRATEGY_LABELS[strategyName] || '综合推荐';
-
-        var mode = (current && current.travel_mode) || data.mode || state.travelMode;
-        var modeEl = document.getElementById('desktop-route-mode');
-        if (modeEl) modeEl.textContent = (TRAVEL_MODES[mode] || TRAVEL_MODES.walk).label + '路线已生成';
-        var weightsEl = document.getElementById('desktop-route-weights');
-        if (weightsEl) weightsEl.textContent = strategyWeightsText(strategy);
-
-        var conditionCount = Number(data.road_conditions_applied || 0);
-        var conditionEl = document.getElementById('desktop-route-conditions');
-        if (conditionEl) {
-            conditionEl.textContent = conditionCount > 0
-                ? '已处理 ' + conditionCount + ' 条生效路况'
-                : '未发现需绕行的生效路况';
-        }
-
+        var details = document.getElementById('desktop-route-details');
+        if (details) details.open = false;
         var stepsList = document.getElementById('desktop-route-steps');
         if (!stepsList) return;
         stepsList.innerHTML = '';
         var steps = Array.isArray(data.steps) ? data.steps : [];
+        var stepCount = document.getElementById('desktop-route-step-count');
+        if (stepCount) stepCount.textContent = steps.length ? steps.length + ' 段 · 展开查看' : '暂无分段';
         if (!steps.length) {
             var empty = document.createElement('li');
             empty.className = 'desktop-route-step desktop-route-step--empty';
-            empty.textContent = '当前路线暂无分段指引，可结合地图路线和说明查看。';
+            empty.textContent = '这条路线暂时没有分段指引，可查看地图上的路线。';
             stepsList.appendChild(empty);
             return;
         }
@@ -2741,6 +2727,7 @@
 
         var section = document.getElementById('results-section');
         section.hidden = false;
+        document.body.classList.toggle('has-route-results', state.productMode === 'planning');
         syncRouteStrategyUI();
 
         document.getElementById('recommended-distance').textContent =
@@ -2812,9 +2799,14 @@
         if (routeKind === 'tour' && data.tour && data.tour.ordered_pois) {
             pois = data.tour.ordered_pois;
         }
-        if (pois.length === 0) {
-            poiList.innerHTML = '<li style="background:#FAF8F5;color:#A8A5A2;">暂无途经景点</li>';
-        } else {
+        var poiDisclosure = document.getElementById('poi-disclosure');
+        var poiCount = document.getElementById('poi-count');
+        if (poiDisclosure) {
+            poiDisclosure.hidden = !pois.length;
+            poiDisclosure.open = state.productMode !== 'planning' && pois.length > 0;
+        }
+        if (poiCount) poiCount.textContent = pois.length ? pois.length + ' 处 · 展开查看' : '暂无地点';
+        if (pois.length > 0) {
             pois.forEach(function (poi, i) {
                 var li = document.createElement('li');
                 if (routeKind === 'tour') {
@@ -3435,7 +3427,9 @@
                     renderRoute(result);
                     showResults(result);
                     trackRouteShown();
-                    var reply = result.explanation || buildRouteSummary(result);
+                    var reply = state.productMode === 'planning'
+                        ? buildRouteSummary(result)
+                        : (result.explanation || buildRouteSummary(result));
                     updateChatBubble(thinkingBubble, reply);
                     addConversationTurn(query, result, turnId);
                 } else {
@@ -3508,19 +3502,90 @@
         scrollChatToLatest(chatContent, followLatest);
     }
 
-    // 路线摘要兜底文案（后端 explanation 缺失时用）
-    function buildRouteSummary(data) {
-        var dist = (data.recommended_length_m || data.distance_m || 0).toFixed(0);
-        var dur = estimateDurationText(data);
-        var pois = data.pois || [];
-        var poiNames = pois.slice(0, 3).map(function (p) { return p.name; }).join('、');
-        var reply = '为你规划好了路线，约 ' + dist + ' 米，' + dur + '。';
-        if (poiNames) {
-            reply += ' 沿途经过 ' + poiNames;
-            if (pois.length > 3) reply += ' 等 ' + pois.length + ' 个地点';
-            reply += '。';
+    function routeOverviewEndpoint(endpoint, fallback) {
+        if (typeof endpoint === 'string' && endpoint.trim()) return endpoint.trim();
+        return endpointLabel(endpoint, fallback);
+    }
+
+    function routeOverviewStopCount(routeKind, current, data) {
+        var itinerary = data.itinerary || (current && current.itinerary) || {};
+        if (routeKind === 'itinerary') {
+            return Number(itinerary.stop_count || (itinerary.stop_names || []).length || 0);
         }
-        return reply;
+        var via = (current && current.via) || data.via;
+        if (Array.isArray(via)) return via.length;
+        if (via && Array.isArray(via.points)) return via.points.length;
+        return routeKind === 'via' && via ? 1 : 0;
+    }
+
+    function routeOverviewPoiCount(routeKind, data) {
+        var pois = data.pois || [];
+        if (routeKind === 'tour' && data.tour && Array.isArray(data.tour.ordered_pois)) {
+            pois = data.tour.ordered_pois;
+        }
+        return Array.isArray(pois) ? pois.length : 0;
+    }
+
+    function conciseRouteReason(explanation) {
+        var text = String(explanation || '').trim();
+        if (!text) return '';
+        return text
+            .replace(/^(?:路线已规划|路线规划完成)[，,。；;\s]*/g, '')
+            .replace(/^(?:(?:已为你|已为您|为你|为您)?规划(?:好了|好|完成)?(?:一条)?(?:步行|骑行|驾车)?路线)[，,。；;\s]*/g, '')
+            .replace(/(?:步行|骑行|驾车)?\s*(?:约)?\s*\d+(?:[.,]\d+)?\s*(?:公里|km|米|m|分钟)/gi, '')
+            .replace(/(?:最短路径|风景优先|平坦优先|综合推荐|个性化路线|优先较短路线)(?:策略)?/g, '')
+            .replace(/按(?:默认|快捷|当前|您的|用户)?偏好[，,、]*/g, '')
+            .replace(/^[，,、；;。\s]+|[，,、；;。\s]+$/g, '')
+            .trim();
+    }
+
+    // 电脑端把路线信息合并成一条可读总览，避免统计卡与助手反馈重复报数。
+    function buildRouteSummary(data) {
+        data = data || {};
+        var current = state.routeStore ? state.routeStore.current() : null;
+        var start = routeOverviewEndpoint((current && current.start) || data.start, '地图起点');
+        var end = routeOverviewEndpoint((current && current.end) || data.end, '地图终点');
+        var mode = (current && current.travel_mode) || data.mode || state.travelMode;
+        var modeLabel = (TRAVEL_MODES[mode] || TRAVEL_MODES.walk).label;
+        var routeLength = Number(data.recommended_length_m || data.distance_m || 0);
+        var distanceText = routeLength >= 1000
+            ? (routeLength / 1000).toFixed(1) + ' 公里'
+            : (routeLength > 0 ? Math.round(routeLength) + ' 米' : '距离待估');
+        var duration = estimateDurationText(data).replace(/^约\s*/, '');
+        var strategy = (current && current.strategy) || data.strategy || {};
+        var strategyName = typeof strategy === 'string' ? strategy : strategy.name;
+        var strategyLabel = STRATEGY_LABELS[strategyName] || '综合推荐';
+        var routeKind = (current && current.route_kind) || data.route_kind || 'direct';
+        var overview = '路线总览：' + start + ' → ' + end + '。' + modeLabel + '约 ' + distanceText;
+        if (duration !== '—') overview += '，预计用时约 ' + duration;
+        overview += '；采用' + strategyLabel + '策略。';
+
+        var facts = [];
+        var stopCount = routeOverviewStopCount(routeKind, current, data);
+        var poiCount = routeOverviewPoiCount(routeKind, data);
+        if (routeKind === 'tour') {
+            if (poiCount) facts.push('串联 ' + poiCount + ' 处景点');
+        } else if (routeKind === 'itinerary') {
+            if (stopCount) facts.push('包含 ' + stopCount + ' 个行程地点');
+            var budget = (data.itinerary && data.itinerary.time_budget_min)
+                || (current && current.itinerary && current.itinerary.time_budget_min);
+            if (budget) facts.push('时间预算 ' + Math.round(Number(budget)) + ' 分钟');
+        } else if (stopCount) {
+            facts.push('包含 ' + stopCount + ' 个途经点');
+        }
+        if (poiCount && routeKind !== 'tour' && routeKind !== 'itinerary') {
+            facts.push('沿途可查看 ' + poiCount + ' 处地点');
+        }
+        var conditionCount = Number(data.road_conditions_applied || 0);
+        if (conditionCount > 0) facts.push('已结合 ' + conditionCount + ' 条当前生效路况调整路线');
+        if (facts.length) overview += ' ' + facts.join('；') + '。';
+
+        var reason = conciseRouteReason(data.explanation);
+        if (reason.length >= 4) overview += ' 路线特点：' + reason;
+        if ((Array.isArray(data.steps) && data.steps.length) || poiCount) {
+            overview += ' 分段路线和地点名单可展开查看。';
+        }
+        return overview;
     }
 
     // 候选 POI 卡片（response_kind=candidates）：点击卡片 → 以该点为终点发起规划

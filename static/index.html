@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet 1.9.4（本地化部署）；底图/POI/路线全站统一 GCJ-02，OSM 路网仅在后端 WGS-84 计算 -->
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css?v=20261002b">
+    <link rel="stylesheet" href="/css/style.css?v=20261003a">
 </head>
 <body>
 
@@ -172,9 +172,9 @@
                 <div class="desktop-mode-card__icon" aria-hidden="true">🖥️</div>
                 <div class="desktop-mode-card__body">
                     <strong>电脑规划模式</strong>
-                    <p>电脑定位难以满足校园导航精度，因此这里不会请求定位。请搜索地点，或用地图右上角的“起点 / 途经 / 终点”选点。</p>
+                    <p>电脑端不使用定位。输入地点，或点地图右上角设置起点、途经点和终点。</p>
                 </div>
-                <span class="desktop-mode-card__status">不使用电脑定位</span>
+                <span class="desktop-mode-card__status">手动选点</span>
             </aside>
 
             <!-- 欢迎语 -->
@@ -205,7 +205,7 @@
             <!-- 结果区 -->
             <section class="results-section" id="results-section" hidden>
                 <!-- 路线摘要卡片 -->
-                <div class="route-summary">
+                <div class="route-summary navigation-only">
                     <div class="summary-card">
                         <div class="summary-value" id="recommended-distance">—</div>
                         <div class="summary-label">推荐距离</div>
@@ -235,39 +235,30 @@
                     开始导航
                 </button>
 
-                <!-- 电脑端：路线规划解释与手机接力 -->
+                <!-- 电脑端：按需查看分段路线，或把路线发到手机 -->
                 <section class="desktop-route-workbench desktop-only" id="desktop-route-workbench" aria-labelledby="desktop-route-title">
-                    <div class="desktop-route-workbench__head">
-                        <div>
-                            <span class="desktop-route-workbench__eyebrow">路线生成过程</span>
-                            <h3 id="desktop-route-title">规划完成，可逐段核对</h3>
-                        </div>
-                        <span class="desktop-route-workbench__strategy" id="desktop-route-strategy">—</span>
-                    </div>
-                    <div class="desktop-route-checks" aria-label="路线处理状态">
-                        <div class="desktop-route-check"><span>✓</span><div><strong>需求已解析</strong><small id="desktop-route-mode">—</small></div></div>
-                        <div class="desktop-route-check"><span>✓</span><div><strong>偏好已应用</strong><small id="desktop-route-weights">—</small></div></div>
-                        <div class="desktop-route-check"><span>✓</span><div><strong>路况已检查</strong><small id="desktop-route-conditions">—</small></div></div>
-                    </div>
-                    <div class="desktop-route-steps-wrap">
-                        <div class="desktop-route-steps-title">
-                            <strong>分段路线</strong>
-                            <span>点击步骤可在地图查看</span>
-                        </div>
+                    <details class="desktop-route-details" id="desktop-route-details">
+                        <summary class="desktop-route-details__summary">
+                            <strong id="desktop-route-title">分段路线</strong>
+                            <span id="desktop-route-step-count">展开查看</span>
+                        </summary>
                         <ol class="desktop-route-steps" id="desktop-route-steps"></ol>
-                    </div>
-                    <div class="desktop-route-actions">
-                        <button type="button" class="desktop-route-action desktop-route-action--primary" id="copy-mobile-link-btn">复制手机打开链接</button>
-                        <button type="button" class="desktop-route-action" id="copy-route-summary-btn">复制路线说明</button>
-                    </div>
-                    <p class="desktop-route-workbench__hint" id="desktop-route-handoff-hint">把链接发送到手机后，可继续使用实时定位和导航。</p>
+                        <div class="desktop-route-actions">
+                            <button type="button" class="desktop-route-action" id="copy-route-summary-btn">复制路线说明</button>
+                        </div>
+                        <p class="desktop-route-workbench__hint" id="desktop-route-handoff-hint">点击步骤可在地图定位对应路段。</p>
+                    </details>
+                    <button type="button" class="desktop-route-action desktop-route-action--primary desktop-route-mobile-link" id="copy-mobile-link-btn">复制手机打开链接</button>
                 </section>
 
-                <!-- 途经景点 -->
-                <div class="poi-section">
-                    <h3 class="section-label">途经景点</h3>
+                <!-- 沿途地点默认折叠，避免长名单占据对话区 -->
+                <details class="poi-section" id="poi-disclosure" hidden>
+                    <summary class="poi-section__summary">
+                        <strong>沿途地点</strong>
+                        <span id="poi-count">展开查看</span>
+                    </summary>
                     <ul class="poi-tags" id="poi-items"></ul>
-                </div>
+                </details>
 
                 <!-- 路线说明 -->
                 <div class="explanation-box" id="explanation-box">
@@ -563,6 +554,6 @@
     <script src="/js/navigation.js?v=20260928c"></script>
     <!-- 路线状态事务：切换方式/偏好时原子提交，失败保留原路线 -->
     <script src="/js/route-state.js?v=20260928b"></script>
-    <script src="/js/app.js?v=20261002a"></script>
+    <script src="/js/app.js?v=20261003a"></script>
 </body>
 </html>

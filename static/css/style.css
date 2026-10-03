@@ -254,6 +254,8 @@ body {
     z-index: 2;
     box-shadow: 2px 0 40px rgba(0,0,0,0.06);
     overflow: hidden;
+    container-type: inline-size;
+    container-name: chat-panel;
 }
 
 /* ===== Floating Header ===== */
@@ -659,7 +661,7 @@ body.is-planning-mode .desktop-mode-card {
 }
 
 body.is-planning-mode .desktop-route-workbench {
-    display: block !important;
+    display: flex !important;
 }
 
 .desktop-mode-card {
@@ -710,118 +712,6 @@ body.is-planning-mode .desktop-route-workbench {
     font-size: 0.64rem;
     font-weight: 700;
     white-space: nowrap;
-}
-
-.desktop-route-workbench {
-    padding: 15px;
-    border: 1px solid rgba(139, 58, 58, 0.15);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--shadow-sm);
-}
-
-.desktop-route-workbench__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.desktop-route-workbench__eyebrow {
-    display: block;
-    margin-bottom: 3px;
-    color: var(--ink-light);
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-}
-
-.desktop-route-workbench__head h3 {
-    color: var(--ink);
-    font-size: 0.92rem;
-    line-height: 1.35;
-}
-
-.desktop-route-workbench__strategy {
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: var(--cherry-tint);
-    color: var(--cherry-deep);
-    font-size: 0.68rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.desktop-route-checks {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
-    margin-bottom: 13px;
-}
-
-.desktop-route-check {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 8px 9px;
-    border-radius: 10px;
-    background: #F8F7F3;
-}
-
-.desktop-route-check > span {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-    border-radius: 50%;
-    background: var(--jade-soft);
-    color: var(--jade-deep);
-    font-size: 0.72rem;
-    font-weight: 800;
-}
-
-.desktop-route-check div {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.desktop-route-check strong {
-    color: var(--ink);
-    font-size: 0.72rem;
-}
-
-.desktop-route-check small {
-    overflow: hidden;
-    color: var(--ink-soft);
-    font-size: 0.65rem;
-    line-height: 1.4;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.desktop-route-steps-wrap {
-    border-top: 1px solid var(--divider);
-    padding-top: 12px;
-}
-
-.desktop-route-steps-title {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 7px;
-}
-
-.desktop-route-steps-title strong {
-    font-size: 0.78rem;
-}
-
-.desktop-route-steps-title span {
-    color: var(--ink-light);
-    font-size: 0.62rem;
 }
 
 .desktop-route-steps {
@@ -2665,4 +2555,113 @@ body.nav-running .whu-locate-btn { opacity: 0; pointer-events: none; }
     .app-title { white-space: nowrap; font-size: 0.88rem; }
     .weather-badge { padding-inline: 5px; }
     .weather-badge #weather-text { display: none; }
+}
+
+/* Desktop route results: give the route itself room, keep supporting detail on demand. */
+body.is-planning-mode .explanation-box { display: none !important; }
+body.is-planning-mode.has-route-results .desktop-mode-card { display: none !important; }
+
+.desktop-mode-card {
+    align-items: center;
+    gap: 8px;
+    padding: 9px 11px;
+}
+.desktop-mode-card__icon { width: 30px; height: 30px; flex-basis: 30px; }
+.desktop-mode-card__body p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.69rem;
+    line-height: 1.4;
+}
+.desktop-mode-card__status { padding: 3px 6px; font-size: 0.6rem; }
+
+.desktop-route-workbench {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.desktop-route-details,
+.poi-section {
+    overflow: hidden;
+    border: 1px solid var(--divider);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.9);
+}
+.desktop-route-details__summary,
+.poi-section__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 11px;
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+}
+.desktop-route-details__summary::-webkit-details-marker,
+.poi-section__summary::-webkit-details-marker { display: none; }
+.desktop-route-details__summary::after,
+.poi-section__summary::after {
+    flex: 0 0 auto;
+    content: "⌄";
+    color: var(--cherry-deep);
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: transform 0.16s ease;
+}
+.desktop-route-details[open] > .desktop-route-details__summary::after,
+.poi-section[open] > .poi-section__summary::after { transform: rotate(180deg); }
+.desktop-route-details__summary:focus-visible,
+.poi-section__summary:focus-visible {
+    outline: 3px solid #276E8A;
+    outline-offset: -3px;
+}
+.desktop-route-details__summary strong,
+.poi-section__summary strong { font-size: 0.75rem; }
+.desktop-route-details__summary span,
+.poi-section__summary span {
+    margin-left: auto;
+    color: var(--ink-light);
+    font-size: 0.67rem;
+    white-space: nowrap;
+}
+.desktop-route-details .desktop-route-steps {
+    max-height: 180px;
+    padding: 2px 7px 7px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.desktop-route-actions { display: block; margin: 5px 9px 0; }
+.desktop-route-action { width: 100%; }
+.desktop-route-mobile-link { min-height: 36px; }
+.desktop-route-workbench__hint {
+    margin: 5px 10px 8px;
+    font-size: 0.64rem;
+}
+.poi-section { margin-top: 0; }
+.poi-tags {
+    max-height: 150px;
+    padding: 2px 9px 9px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.poi-tags li { max-width: 100%; overflow-wrap: anywhere; }
+
+@container chat-panel (max-width: 420px) {
+    .desktop-mode-card__icon { display: none; }
+    .desktop-mode-card__body p { -webkit-line-clamp: 2; }
+    .desktop-mode-card__status { font-size: 0.57rem; }
+    .desktop-route-details__summary,
+    .poi-section__summary { padding-inline: 9px; }
+    .desktop-route-details__summary span,
+    .poi-section__summary span { font-size: 0.63rem; }
+    .poi-tags li { padding: 5px 8px; font-size: 0.72rem; }
 }

@@ -21,7 +21,7 @@ function harness(storage = new Map()) {
         console, AbortController, setTimeout, clearTimeout, setInterval, clearInterval,
         localStorage, navigator: { userAgent: 'desktop', platform: 'Win32' },
         window: { localStorage, WHURouteState: routeState },
-        document: { readyState: 'loading', addEventListener: noop, querySelectorAll: () => [], getElementById: id => {
+        document: { readyState: 'loading', body: { classList: { add: noop, remove: noop, toggle: noop } }, addEventListener: noop, querySelectorAll: () => [], getElementById: id => {
             if (!elements.has(id)) elements.set(id, element()); return elements.get(id);
         } },
         boundaries: {
@@ -120,6 +120,47 @@ for (const result of [
 test('failed request keeps route and settles its bubble', async () => {
     const h=harness(); h.state.routeStore.replace(existingRoute()); h.setApi(async () => { throw Error('断网'); });
     await h.submit('查天气'); assert.equal(h.clearCount(),0); assert.equal(h.bubbles[0].text,'断网');
+});
+test('desktop route feedback gives one useful overview with endpoints, strategy, distance, time and stop count', async () => {
+    const h = harness();
+    h.setApi(async () => h.context.reply);
+    h.context.reply = {
+        task_type: 'path_planning', response_kind: 'route', recommended: [[1, 2], [3, 4]],
+        route_kind: 'via', mode: 'walk', recommended_length_m: 5077, duration_min: 68,
+        road_conditions_applied: 2,
+        route_state: {
+            ...existingRoute(), route_id: 'overview-route', route_kind: 'via',
+            via: { type: 'multi', points: [{ name: '途经点一' }, { name: '途经点二' }, { name: '途经点三' }] },
+            strategy: { name: 'shortest', source: 'button' },
+        },
+        pois: [{ name: '沿途地点一' }, { name: '沿途地点二' }, { name: '沿途地点三' }, { name: '沿途地点四' }],
+        explanation: '已为你规划好步行路线，约 5.1 公里、68 分钟。',
+    };
+
+    await h.submit('从星湖园到科技门，经过三个地点');
+
+    const reply = h.bubbles.at(-1).text;
+    assert.match(reply, /星湖园.*科技门/);
+    assert.match(reply, /步行/);
+    assert.match(reply, /5\.1 公里/);
+    assert.match(reply, /68 分钟/);
+    assert.match(reply, /最短路径/);
+    assert.match(reply, /3 个途经点/);
+    assert.match(reply, /2 条.*路况/);
+    assert.match(reply, /4 处地点/);
+    assert.doesNotMatch(reply, /沿途地点一|沿途地点二/);
+    assert.doesNotMatch(reply, /已为你规划好步行路线/);
+});
+test('desktop route details are compact and use collapsed disclosures for long lists', () => {
+    const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');
+    const css = fs.readFileSync(require.resolve('../../static/css/style.css'), 'utf8');
+
+    assert.match(html, /class="route-summary navigation-only"/);
+    assert.match(html, /<details class="desktop-route-details" id="desktop-route-details">/);
+    assert.match(html, /<details class="poi-section" id="poi-disclosure" hidden>/);
+    assert.doesNotMatch(html, /路线生成过程|desktop-route-checks/);
+    assert.ok(css.includes('body.is-planning-mode .explanation-box'));
+    assert.ok(/\.desktop-route-details\s+\.desktop-route-steps\s*\{[^}]*max-height:\s*18\dpx/s.test(css));
 });
 test('both concurrent informational responses finish even out of order', async () => {
     const h=harness(), a=deferred(), b=deferred(); let count=0;
