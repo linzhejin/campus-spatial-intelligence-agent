@@ -143,9 +143,42 @@ fi
 
 # ---------- 6. 启动服务 ----------
 echo "[6/6] 启动服务..."
+
+# On the first upgrade, stop the old web process before copying its live event
+# file. Otherwise an event written between copy and restart would be lost.
+WEB_STOPPED_FOR_MIGRATION=0
+restore_web_service() {
+    if [ "$WEB_STOPPED_FOR_MIGRATION" = "1" ]; then
+        sudo systemctl start "$SERVICE_NAME" || true
+    fi
+}
+if ! grep -qE '^ROAD_CONDITIONS_FILE=.' .env; then
+    if sudo systemctl is-active --quiet "$SERVICE_NAME"; then
+        sudo systemctl stop "$SERVICE_NAME"
+        WEB_STOPPED_FOR_MIGRATION=1
+        trap restore_web_service EXIT
+    fi
+    mkdir -p "$APP_DIR/data/runtime"
+    RUNTIME_CONDITIONS="$APP_DIR/data/runtime/road_conditions.json"
+    if [ ! -f "$RUNTIME_CONDITIONS" ]; then
+        if [ -f "$APP_DIR/data/road_conditions.json" ]; then
+            cp "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"
+        else
+            printf '[]\n' > "$RUNTIME_CONDITIONS"
+        fi
+    fi
+    if grep -qE '^ROAD_CONDITIONS_FILE=' .env; then
+        sed -i "s|^ROAD_CONDITIONS_FILE=.*|ROAD_CONDITIONS_FILE=${RUNTIME_CONDITIONS}|" .env
+    else
+        printf 'ROAD_CONDITIONS_FILE=%s\n' "$RUNTIME_CONDITIONS" >> .env
+    fi
+fi
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now "${SERVICE_NAME}" "${AGENT_SERVICE_NAME}"
 sudo systemctl restart "${SERVICE_NAME}" "${AGENT_SERVICE_NAME}"
+WEB_STOPPED_FOR_MIGRATION=0
+trap - EXIT
 if [ "${VISION_WORKER_ENABLED}" = "1" ]; then
     sudo systemctl enable --now "${VISION_SERVICE_NAME}"
     sudo systemctl restart "${VISION_SERVICE_NAME}"

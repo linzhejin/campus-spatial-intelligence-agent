@@ -64,6 +64,15 @@ from spatial import weather as weather_mod
 
 logger = logging.getLogger(__name__)
 
+_ADMIN_IDLE_SECONDS = 30 * 60
+_ADMIN_MAX_SECONDS = 8 * 60 * 60
+_ADMIN_POLL_PATHS = {"/api/manager/vision-status", "/api/manager/vision-jobs"}
+
+
+def _clear_admin_session():
+    for key in ("is_admin", "admin_csrf_token", "admin_issued_at", "admin_last_active_at"):
+        session.pop(key, None)
+
 # ===== 管理员鉴权 =====
 def _is_admin() -> bool:
     return _admin_identity() is not None
@@ -72,7 +81,18 @@ def _is_admin() -> bool:
 def _admin_identity():
     """返回管理员来源标识：'web'（网页 session）/ 'token'（保卫部系统 Token）/ None。"""
     if session.get("is_admin"):
-        return "web"
+        now = time.time()
+        issued = session.get("admin_issued_at")
+        last_active = session.get("admin_last_active_at")
+        if (not isinstance(issued, (int, float)) or not isinstance(last_active, (int, float))
+                or now < issued or now < last_active
+                or now - issued > _ADMIN_MAX_SECONDS
+                or now - last_active > _ADMIN_IDLE_SECONDS):
+            _clear_admin_session()
+        else:
+            if request.path not in _ADMIN_POLL_PATHS:
+                session["admin_last_active_at"] = now
+            return "web"
     token = request.headers.get("X-Admin-Token", "").strip()
     if not token:
         auth = request.headers.get("Authorization", "")
@@ -612,8 +632,11 @@ def admin_login():
     body = request.get_json(silent=True) or {}
     password = str(body.get("password", "")).strip()
     if hmac.compare_digest(password, config.ROAD_CONDITION_ADMIN_PASSWORD):
+        _clear_admin_session()
         session["is_admin"] = True
         session["admin_csrf_token"] = secrets.token_urlsafe(32)
+        session["admin_issued_at"] = time.time()
+        session["admin_last_active_at"] = session["admin_issued_at"]
         session.permanent = True
         return _ok({"is_admin": True, "csrf_token": session["admin_csrf_token"]})
     return _err("invalid_password", "密码错误", 401)
@@ -622,8 +645,7 @@ def admin_login():
 @api_bp.route("/admin/logout", methods=["POST"])
 def admin_logout():
     """POST /api/admin/logout — 退出管理员登录"""
-    session.pop("is_admin", None)
-    session.pop("admin_csrf_token", None)
+    _clear_admin_session()
     return _ok({"is_admin": False})
 
 
@@ -1775,12 +1797,17 @@ def get_road_conditions():
         if include_all and is_admin:
             start = c.get("start_time", 0) or 0
             end = c.get("end_time", 0) or 0
-            if end and now > end:
+            if c.get("revoked_at"):
+                c["status"] = "revoked"
+            elif end and now > end:
                 c["status"] = "expired"
             elif start and now < start:
                 c["status"] = "scheduled"
             else:
                 c["status"] = "active"
+        else:
+            c.pop("audit", None)
+            c.pop("source", None)
     return _ok({"conditions": conditions, "count": len(conditions)})
 
 
@@ -1928,6 +1955,42 @@ def create_road_condition():
     if cond_type not in CONDITION_EFFECTS:
         return _err("invalid_type", f"未知路况类型: {cond_type}", 400)
 
+    source = None
+    source_job_id = body.get("source_vision_job_id")
+    if source_job_id:
+        try:
+            source_job_id = str(uuid.UUID(str(source_job_id)))
+        except (ValueError, TypeError, AttributeError):
+            return _err("invalid_vision_source", "影像任务标识无效。", 400)
+        field_confirmation = str(body.get("field_confirmation") or "").strip()
+        if len(field_confirmation) < 8 or len(field_confirmation) > 300:
+            return _err("field_confirmation_required", "请填写具体道路的现场核实依据（8 至 300 字）。", 400)
+        try:
+            from storage import database, vision_repository
+            database.initialize(current_app.config.get("DATABASE_URL"))
+            source_job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), source_job_id)
+        except Exception:
+            logger.exception("影像来源验证暂时不可用")
+            return _err("vision_storage_unavailable", "影像任务暂时无法核对，请稍后重试。", 503)
+        candidates = (source_job.get("result") or {}).get("candidates") if source_job else None
+        if (not source_job or source_job.get("status") != "needs_review"
+                or source_job.get("review_status") != "confirmed"
+                or not isinstance(candidates, list) or not candidates):
+            return _err("vision_source_not_confirmed", "该影像任务未确认有效候选，不能作为事件来源。", 409)
+        candidate_index = source_job.get("review_candidate_index")
+        if candidate_index is None and len(candidates) == 1:
+            candidate_index = 0  # 单候选旧版审核可无歧义地回填来源
+        if (isinstance(candidate_index, bool) or not isinstance(candidate_index, int)
+                or not 0 <= candidate_index < len(candidates)):
+            return _err("vision_candidate_ambiguous", "影像审核未指明具体候选，请重新核实。", 409)
+        candidate = candidates[candidate_index]
+        if not isinstance(candidate, dict):
+            return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
+        source = {"kind": "vision_job", "job_id": source_job_id,
+                  "candidate_index": candidate_index,
+                  "candidate_kind": str(candidate.get("kind") or "unknown"),
+                  "field_confirmation": field_confirmation}
+
     try:
         lng_f, lat_f = float(lng), float(lat)
         start_ts = _parse_time_input(body.get("start_time"))
@@ -1956,6 +2019,7 @@ def create_road_condition():
             start_time=start_ts,
             end_time=end_ts,
             created_by=identity if identity == "web" else "token",
+            source=source,
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
         return _ok({"condition": condition, "snap": snap}, status=201)
@@ -2001,7 +2065,8 @@ def patch_road_condition(cond_id):
         return _err("empty_changes", "没有可更新的字段", 400)
 
     try:
-        updated = update_condition(cond_id, changes)
+        updated = update_condition(cond_id, changes, actor=_admin_identity() or "unknown",
+                                   action="ended" if body.get("action") == "end" else "updated")
     except RoadConditionsUnavailableError:
         logger.exception("路况存储无效，拒绝更新")
         return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
@@ -2015,18 +2080,18 @@ def patch_road_condition(cond_id):
 
 @api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
 def delete_road_condition(cond_id):
-    """DELETE /api/road-conditions/<id> — 删除路况事件（需管理员 session 或 Token）"""
+    """DELETE /api/road-conditions/<id> — 撤销并保留事件审计记录。"""
     auth_error = _require_admin()
     if auth_error:
         return auth_error
     try:
-        success = remove_condition(cond_id)
+        success = remove_condition(cond_id, actor=_admin_identity() or "unknown")
     except RoadConditionsUnavailableError:
         logger.exception("路况存储无效，拒绝删除")
         return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
-    return _ok({"message": "已删除", "id": cond_id})
+    return _ok({"message": "已撤销并保留记录", "id": cond_id})
 
 
 def _public_vision_job(job: dict) -> dict:
@@ -2102,7 +2167,8 @@ def manager_vision_jobs():
             items = vision_repository.list_jobs(current_app.config.get("DATABASE_URL"), limit=limit)
             return _ok({"jobs": [_public_vision_job(item) for item in items]})
         except RuntimeError as error:
-            return _err("vision_storage_unavailable", str(error), 503)
+            logger.exception("影像任务列表存储不可用")
+            return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
 
     auth_error = _require_admin()
     if auth_error:
@@ -2192,7 +2258,8 @@ def manager_vision_jobs():
         return _err("invalid_media", str(error), 400)
     except RuntimeError as error:
         target.unlink(missing_ok=True)
-        return _err("vision_storage_unavailable", str(error), 503)
+        logger.exception("影像任务存储不可用")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     except Exception as error:
         target.unlink(missing_ok=True)
         logger.exception("影像任务入队失败")
@@ -2212,7 +2279,8 @@ def manager_vision_job(job_id):
     except (ValueError, RuntimeError) as error:
         if isinstance(error, ValueError):
             return _err("invalid_job_id", "影像任务标识无效。", 400)
-        return _err("vision_storage_unavailable", str(error), 503)
+        logger.exception("影像任务读取失败")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     if not job:
         return _err("job_not_found", "影像任务不存在。", 404)
     return _ok({"job": _public_vision_job(job)})
@@ -2231,7 +2299,8 @@ def manager_vision_media(job_id):
     except (ValueError, RuntimeError) as error:
         if isinstance(error, ValueError):
             return _err("invalid_job_id", "影像任务标识无效。", 400)
-        return _err("vision_storage_unavailable", str(error), 503)
+        logger.exception("影像媒体读取失败")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     if not job:
         return _err("job_not_found", "影像任务不存在。", 404)
     path = Path(config.VISION_UPLOAD_DIR).resolve() / job["media_path"]
@@ -2250,6 +2319,17 @@ def review_manager_vision_job(job_id):
     review_status = body.get("status")
     if review_status not in {"confirmed", "dismissed"}:
         return _err("invalid_review", "审核状态只能为 confirmed 或 dismissed。", 400)
+    review_note = str(body.get("note") or "").strip()
+    if len(review_note) < 8 or len(review_note) > 1000:
+        return _err("review_note_required", "请填写影像复核依据（8 至 1000 字）。", 400)
+    candidate_index = body.get("candidate_index")
+    if review_status == "confirmed" and (
+        isinstance(candidate_index, bool) or not isinstance(candidate_index, int)
+        or candidate_index < 0
+    ):
+        return _err("invalid_candidate", "请选择要确认的具体影像候选。", 400)
+    if review_status == "dismissed":
+        candidate_index = None
     try:
         uuid.UUID(job_id)
         from storage import database, vision_repository
@@ -2257,13 +2337,15 @@ def review_manager_vision_job(job_id):
         result = vision_repository.review_job(
             current_app.config.get("DATABASE_URL"), job_id,
             review_status=review_status,
-            review_note=str(body.get("note") or "")[:1000],
+            review_note=review_note,
             reviewed_by=_admin_identity() or "unknown",
+            candidate_index=candidate_index,
         )
     except (ValueError, RuntimeError) as error:
         if isinstance(error, ValueError):
             return _err("invalid_job_id", "影像任务标识无效。", 400)
-        return _err("vision_storage_unavailable", str(error), 503)
+        logger.exception("影像审核存储不可用")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     if not result:
         return _err("job_not_reviewable", "任务不存在，或当前状态不可审核。", 409)
     return _ok({"job": result})

@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20261003a">
+  <link rel="stylesheet" href="/css/manager.css?v=20261003c">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20261003a" defer></script>
+  <script src="/js/manager.js?v=20261003c" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -51,7 +51,13 @@
         <div class="summary-chip"><span id="active-count">0</span><small>条当前生效</small></div>
       </div>
 
-      <div class="workspace-grid">
+      <nav class="workflow-nav" aria-label="管理流程">
+        <a href="#road-workspace"><span>道路事件</span><small>选路、预览并发布</small></a>
+        <a href="#vision-workspace"><span>影像巡查</span><small>识别、复核并交接</small></a>
+        <a href="#event-history"><span>事件记录</span><small>生效、结束与撤销</small></a>
+      </nav>
+
+      <div id="road-workspace" class="workspace-grid">
         <section class="map-card" aria-label="校园道路地图">
           <div class="map-topline"><span>武汉大学校园</span><span id="pick-state">选择路段后再填写事件</span></div>
           <div id="manager-map"></div>
@@ -62,8 +68,13 @@
           <section class="form-card">
             <div class="section-title"><span class="section-glyph">＋</span><div><h2>发布路况事件</h2><p>必须绑定到一条实际道路</p></div></div>
             <form id="condition-form">
+              <div id="vision-source-banner" class="source-banner" hidden>
+                <div id="vision-source-label"></div>
+                <button id="clear-vision-source" type="button">清除来源</button>
+              </div>
               <label>事件类型
                 <select id="event-type" required>
+                  <option value="" selected disabled>请选择实际影响类型</option>
                   <option value="construction">施工</option>
                   <option value="event">活动或人流密集</option>
                   <option value="closure">道路封闭</option>
@@ -73,6 +84,10 @@
               </label>
               <label>事件名称<input id="event-name" maxlength="30" placeholder="例如：珞珈山路临时施工" required></label>
               <label>现场说明<textarea id="event-description" maxlength="200" rows="2" placeholder="描述影响范围或现场情况"></textarea></label>
+              <label id="field-confirmation-wrap" hidden>具体道路的现场核实依据
+                <textarea id="field-confirmation" maxlength="300" minlength="8" rows="3" placeholder="例如：保卫部门现场确认该路段在该时段拥堵，车辆通行明显受影响。"></textarea>
+                <small>影像只能提供候选线索。请说明谁在现场或通过什么渠道确认了道路与通行影响。</small>
+              </label>
               <div class="time-grid">
                 <label>开始时间<input id="start-time" type="datetime-local"></label>
                 <label>结束时间<input id="end-time" type="datetime-local"></label>
@@ -91,7 +106,7 @@
         </aside>
       </div>
 
-      <section class="vision-section">
+      <section id="vision-workspace" class="vision-section">
         <div class="events-heading"><div><span class="eyebrow">AERIAL OBSERVATION</span><h2>机载影像巡查</h2></div><span class="review-badge">人工复核后才进入路况流程</span></div>
         <div class="vision-grid">
           <div class="vision-upload-card">
@@ -113,7 +128,7 @@
         </div>
       </section>
 
-      <section class="events-section">
+      <section id="event-history" class="events-section">
         <div class="events-heading"><div><span class="eyebrow">EVENT REGISTER</span><h2>事件记录</h2></div><button id="refresh-events" class="quiet-button" type="button">刷新列表 ↻</button></div>
         <div id="event-list" class="event-list"><div class="empty-state">正在读取事件记录…</div></div>
       </section>

@@ -74,7 +74,7 @@ def get_job(url: str | None, job_id: str) -> dict | None:
     with database.connect(url) as conn:
         row = conn.execute(
             "SELECT job_id, created_by, original_name, media_kind, media_path, sha256, anchor_gcj, camera_stabilized,"
-            " status, attempts, result, error, review_status, review_note, reviewed_by, reviewed_at,"
+            " status, attempts, result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
             " created_at, updated_at FROM manager_vision_job WHERE job_id=%s", (job_id,),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
@@ -86,23 +86,35 @@ def list_jobs(url: str | None, limit: int = 50) -> list[dict[str, Any]]:
     with database.connect(url) as conn:
         rows = conn.execute(
             "SELECT job_id, created_by, original_name, media_kind, anchor_gcj, camera_stabilized, status, attempts,"
-            " result, error, review_status, created_at, updated_at"
+            " result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
+            " created_at, updated_at"
             " FROM manager_vision_job ORDER BY created_at DESC LIMIT %s", (limit,),
         ).fetchall()
     return [{**row, "job_id": str(row["job_id"])} for row in rows]
 
 
 def review_job(url: str | None, job_id: str, *, review_status: str,
-               review_note: str, reviewed_by: str) -> dict | None:
+               review_note: str, reviewed_by: str,
+               candidate_index: int | None = None) -> dict | None:
     if review_status not in {"confirmed", "dismissed"}:
         raise ValueError("review_status must be confirmed or dismissed")
+    if review_status == "confirmed" and (isinstance(candidate_index, bool)
+                                          or not isinstance(candidate_index, int)
+                                          or candidate_index < 0):
+        raise ValueError("confirmed review requires a candidate index")
+    if review_status == "dismissed":
+        candidate_index = None
     with database.connect(url) as conn:
         row = conn.execute(
-            "UPDATE manager_vision_job SET review_status=%s, review_note=%s, reviewed_by=%s,"
+            "UPDATE manager_vision_job SET review_status=%s, review_candidate_index=%s,"
+            " review_note=%s, reviewed_by=%s,"
             " reviewed_at=now(), updated_at=now() WHERE job_id=%s AND status='needs_review'"
             " AND review_status IS NULL"
-            " RETURNING job_id, status, review_status, review_note, reviewed_by, reviewed_at",
-            (review_status, review_note[:1000], reviewed_by, job_id),
+            " AND (%s = 'dismissed' OR CASE WHEN jsonb_typeof(result->'candidates') = 'array'"
+            " THEN jsonb_array_length(result->'candidates') > %s ELSE false END)"
+            " RETURNING job_id, status, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at",
+            (review_status, candidate_index, review_note[:1000], reviewed_by, job_id,
+             review_status, candidate_index if candidate_index is not None else -1),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
 

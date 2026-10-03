@@ -225,3 +225,12 @@ def test_inline_deploy_checks_load_dotenv_from_the_project_directory():
     from pathlib import Path
     deploy_script = (Path(__file__).resolve().parents[1] / "deploy.sh").read_text(encoding="utf-8")
     assert deploy_script.count('load_dotenv(".env")') == 2
+
+
+def test_first_road_event_migration_stops_old_web_writer_before_copy():
+    from pathlib import Path
+    deploy_script = (Path(__file__).resolve().parents[1] / "deploy.sh").read_text(encoding="utf-8")
+    stop = deploy_script.index('sudo systemctl stop "$SERVICE_NAME"')
+    copy = deploy_script.index('cp "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"')
+    restart = deploy_script.index('sudo systemctl restart "${SERVICE_NAME}"')
+    assert stop < copy < restart

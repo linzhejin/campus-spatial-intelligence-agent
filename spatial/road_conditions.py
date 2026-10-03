@@ -20,16 +20,19 @@ block = 硬移除边（不可通行）；数字 = 该边成本乘以的惩罚系
 倍数代表"两个路口之间整段道路"（300-600m）对人的真实感知影响，
 ×1.5 ≈ 速度减半（见 road_penalty_map → _estimate_route_duration_min 的速度÷F 映射）。
 
-数据持久化到 data/road_conditions.json，坐标全部 GCJ-02（与 POI/前端一致）。
+数据默认在 data/road_conditions.json；生产由 ROAD_CONDITIONS_FILE 指向运行目录。
+坐标全部 GCJ-02（与 POI/前端一致）。
 """
 
 import json
 import logging
 import math
 import os
+import tempfile
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from copy import deepcopy
 from typing import Optional
 
@@ -37,10 +40,10 @@ import networkx as nx
 
 logger = logging.getLogger(__name__)
 
-_CONDITIONS_FILE = os.path.join(
+_CONDITIONS_FILE = os.path.abspath(os.getenv("ROAD_CONDITIONS_FILE") or os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "data", "road_conditions.json",
-)
+))
 
 # "block" = 硬禁止；浮点数 = 边成本惩罚倍数
 # 设计依据：边链扩展后惩罚范围为"两个路口之间整段道路"(300-600m)，
@@ -75,8 +78,36 @@ _CHAIN_MAX_LENGTH_M = 600.0  # 单条链最长（米），校园一个街区足�
 _CHAIN_MAX_TURN_DEG = 100.0  # degree=2 处近乎折返（>100°）视为不同道路，停止延伸
 
 _lock = threading.Lock()
+_write_lock = threading.Lock()
 _cache = None  # list of condition dicts
 _cache_mtime = 0.0
+
+
+@contextmanager
+def _condition_write_lock():
+    """Serialize read-modify-write across the production web processes."""
+    directory = os.path.dirname(_CONDITIONS_FILE)
+    os.makedirs(directory, exist_ok=True)
+    with _write_lock, open(_CONDITIONS_FILE + ".lock", "a+b") as lock_file:
+        if os.name == "nt":
+            import msvcrt
+            lock_file.seek(0, os.SEEK_END)
+            if lock_file.tell() == 0:
+                lock_file.write(b"0")
+                lock_file.flush()
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 class RoadConditionsUnavailableError(RuntimeError):
@@ -162,9 +193,11 @@ def _load_conditions(*, strict: bool = False) -> list:
     global _cache, _cache_mtime
     with _lock:
         try:
-            mtime = os.path.getmtime(_CONDITIONS_FILE)
+            mtime = os.stat(_CONDITIONS_FILE).st_mtime_ns
         except FileNotFoundError as exc:
             mtime = 0.0
+            if strict and os.getenv("ROAD_CONDITIONS_FILE"):
+                raise RoadConditionsUnavailableError("已配置的路况文件不存在，无法确认当前封路信息") from exc
             if strict and _cache is not None and _cache_mtime > 0:
                 raise RoadConditionsUnavailableError("路况文件丢失，无法确认当前封路信息") from exc
             if strict:
@@ -204,16 +237,29 @@ def _load_conditions(*, strict: bool = False) -> list:
 
 
 def _save_conditions(conditions: list) -> None:
-    """持久化路况事件到 JSON 文件。"""
+    """Replace a complete JSON snapshot; a failed write preserves the old file."""
     global _cache, _cache_mtime
     for condition in conditions:
         _validate_condition_record(condition)
-    with _lock:
-        os.makedirs(os.path.dirname(_CONDITIONS_FILE), exist_ok=True)
-        with open(_CONDITIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(conditions, f, ensure_ascii=False, indent=2)
-        _cache = conditions
-        _cache_mtime = os.path.getmtime(_CONDITIONS_FILE)
+    directory = os.path.dirname(_CONDITIONS_FILE)
+    os.makedirs(directory, exist_ok=True)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=directory,
+                                         prefix=".road-conditions-", suffix=".json",
+                                         delete=False) as stream:
+            temp_path = stream.name
+            json.dump(conditions, stream, ensure_ascii=False, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, _CONDITIONS_FILE)
+        temp_path = None
+        with _lock:
+            _cache = deepcopy(conditions)
+            _cache_mtime = os.stat(_CONDITIONS_FILE).st_mtime_ns
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 
 def list_conditions(include_inactive: bool = False, *, strict: bool = False) -> list:
@@ -228,6 +274,8 @@ def list_conditions(include_inactive: bool = False, *, strict: bool = False) -> 
     now = time.time()
     active = []
     for c in conditions:
+        if c.get("revoked_at"):
+            continue
         start = c.get("start_time", 0) or 0
         end = c.get("end_time", 0) or 0
         if start and now < start:
@@ -247,6 +295,7 @@ def add_condition(
     start_time: Optional[float] = None,
     end_time: Optional[float] = None,
     created_by: str = "web",
+    source: Optional[dict] = None,
 ) -> dict:
     """
     添加一个绑定到具体路段的路况事件。
@@ -297,10 +346,14 @@ def add_condition(
         "created_by": created_by,
         "created_at": now,
         "updated_at": now,
+        "audit": [{"action": "created", "actor": created_by, "at": now}],
     }
-    conditions = _load_conditions(strict=True)
-    conditions.append(condition)
-    _save_conditions(conditions)
+    if source:
+        condition["source"] = deepcopy(source)
+    with _condition_write_lock():
+        conditions = _load_conditions(strict=True)
+        conditions.append(condition)
+        _save_conditions(conditions)
     logger.info(
         "新增路况: %s (%s) edge=(%s,%s,k%s) by=%s",
         name, cond_type, condition["edge"]["u"], condition["edge"]["v"],
@@ -309,35 +362,44 @@ def add_condition(
     return condition
 
 
-def remove_condition(cond_id: str) -> bool:
-    """删除一个路况事件，返回是否成功。"""
-    conditions = _load_conditions(strict=True)
-    new_conditions = [c for c in conditions if c["id"] != cond_id]
-    if len(new_conditions) == len(conditions):
-        return False
-    _save_conditions(new_conditions)
-    logger.info("删除路况事件: %s", cond_id)
+def remove_condition(cond_id: str, *, actor: str = "web") -> bool:
+    """Revoke an event while preserving its source and audit trail."""
+    with _condition_write_lock():
+        conditions = _load_conditions(strict=True)
+        target = next((item for item in conditions if item.get("id") == cond_id), None)
+        if target is None or target.get("revoked_at"):
+            return False
+        now = time.time()
+        target["revoked_at"] = now
+        target["updated_at"] = now
+        target.setdefault("audit", []).append({"action": "revoked", "actor": actor, "at": now})
+        _save_conditions(conditions)
+    logger.info("撤销路况事件: %s", cond_id)
     return True
 
 
-def update_condition(cond_id: str, changes: dict) -> Optional[dict]:
+def update_condition(cond_id: str, changes: dict, *, actor: str = "web",
+                     action: str = "updated") -> Optional[dict]:
     """更新事件字段（name/description/start_time/end_time），返回更新后的事件。
 
     特殊用法：changes={"end_time": 0} 由调用方把"立即结束"翻译成当前时间戳传入。
     """
-    conditions = _load_conditions(strict=True)
-    target = None
-    for c in conditions:
-        if c["id"] == cond_id:
-            target = c
-            break
-    if target is None:
-        return None
-    for field in ("name", "description", "start_time", "end_time"):
-        if field in changes and changes[field] is not None:
-            target[field] = changes[field]
-    target["updated_at"] = time.time()
-    _save_conditions(conditions)
+    with _condition_write_lock():
+        conditions = _load_conditions(strict=True)
+        target = next((item for item in conditions if item.get("id") == cond_id), None)
+        if target is None or target.get("revoked_at"):
+            return None
+        applied = {}
+        for field in ("name", "description", "start_time", "end_time"):
+            if field in changes and changes[field] is not None:
+                target[field] = changes[field]
+                applied[field] = changes[field]
+        now = time.time()
+        target["updated_at"] = now
+        target.setdefault("audit", []).append({
+            "action": action, "actor": actor, "at": now, "changes": applied,
+        })
+        _save_conditions(conditions)
     logger.info("更新路况事件 %s: %s", cond_id, list(changes.keys()))
     return target
 

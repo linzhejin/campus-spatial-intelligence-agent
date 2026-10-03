@@ -102,6 +102,14 @@ def test_routing_snapshot_rejects_corrupt_road_condition_store(tmp_path, monkeyp
         rc.list_conditions(strict=True)
 
 
+def test_configured_runtime_event_store_fails_closed_if_missing(tmp_path, monkeypatch):
+    missing = tmp_path / "runtime" / "road_conditions.json"
+    monkeypatch.setattr(rc, "_CONDITIONS_FILE", str(missing))
+    monkeypatch.setenv("ROAD_CONDITIONS_FILE", str(missing))
+    with pytest.raises(rc.RoadConditionsUnavailableError):
+        rc.list_conditions(strict=True)
+
+
 def test_reading_road_conditions_returns_detached_snapshot(G):
     _edge_condition(G, "closure")
 
@@ -184,8 +192,9 @@ def _edge_condition(G, cond_type, u=1, v=2, **overrides):
         name="测试-" + rc.CONDITION_LABELS[cond_type],
         edge=snap,
         click_point={"lng": click_gcj[0], "lat": click_gcj[1]},
+        start_time=overrides.get("start_time"),
+        end_time=overrides.get("end_time"),
     )
-    cond.update(overrides)
     return cond
 
 
@@ -381,8 +390,50 @@ class TestResolveAndLifecycle:
 
     def test_remove_condition(self, G):
         cond = _edge_condition(G, "closure")
-        assert rc.remove_condition(cond["id"]) is True
+        assert rc.remove_condition(cond["id"], actor="web") is True
+        assert rc.list_conditions() == []
+        history = rc.list_conditions(include_inactive=True)[0]
+        assert history["id"] == cond["id"]
+        assert history["revoked_at"] > 0
+        assert history["audit"][-1]["action"] == "revoked"
+        assert history["audit"][-1]["actor"] == "web"
         assert rc.remove_condition("nope") is False
+
+    def test_update_keeps_audit_history(self, G):
+        cond = _edge_condition(G, "closure")
+        rc.update_condition(cond["id"], {"description": "现场核实"}, actor="token")
+        record = rc.list_conditions(include_inactive=True)[0]
+        assert [entry["action"] for entry in record["audit"]] == ["created", "updated"]
+        assert record["audit"][-1]["actor"] == "token"
+        assert record["audit"][-1]["changes"] == {"description": "现场核实"}
+
+    def test_interrupted_save_does_not_corrupt_existing_events(self, G, monkeypatch):
+        _edge_condition(G, "closure")
+        before = rc.list_conditions(include_inactive=True)
+        original_dump = rc.json.dump
+
+        def interrupted_dump(value, stream, *args, **kwargs):
+            stream.write("[incomplete")
+            raise OSError("disk write interrupted")
+
+        monkeypatch.setattr(rc.json, "dump", interrupted_dump)
+        with pytest.raises(OSError):
+            _edge_condition(G, "construction")
+        monkeypatch.setattr(rc.json, "dump", original_dump)
+        assert rc.list_conditions(include_inactive=True) == before
+
+    def test_concurrent_event_writes_keep_every_record(self, G):
+        from concurrent.futures import ThreadPoolExecutor
+
+        snap = rc.snap_to_edge(G, *_mid_12_gcj(G))
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            created = list(pool.map(
+                lambda index: rc.add_condition("event", f"并发事件 {index}", snap),
+                range(18),
+            ))
+        records = rc.list_conditions(include_inactive=True, strict=True)
+        assert len(records) == 18
+        assert {item["id"] for item in records} == {item["id"] for item in created}
 
     def test_add_rejects_unknown_type(self, G):
         snap = rc.snap_to_edge(G, *wgs84_to_gcj02(G.nodes[1]["x"], G.nodes[1]["y"]))
@@ -692,6 +743,73 @@ class TestRoadConditionAPI:
         assert "radius_m" not in cond
         assert cond["created_by"] == "token"
 
+    def test_confirmed_vision_requires_field_evidence_before_road_publication(self, client, G, monkeypatch):
+        import api.routes as routes
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        job = {"job_id": job_id, "status": "needs_review", "review_status": "confirmed",
+               "review_candidate_index": 0,
+               "result": {"candidates": [{"kind": "vehicle_cluster_review"}]}}
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: job)
+        gj = _mid_12_gcj(G)
+        body = {"type": "event", "name": "现场复核的人流事件", "lng": gj[0], "lat": gj[1],
+                "source_vision_job_id": job_id}
+        headers = {"X-Admin-Token": "test-token-xyz"}
+
+        missing = client.post("/api/road-conditions", json=body, headers=headers)
+        assert missing.status_code == 400
+        assert rc.list_conditions() == []
+
+        body["field_confirmation"] = "现场人员反馈该路段正在拥堵，已核实作用范围。"
+        published = client.post("/api/road-conditions", json=body, headers=headers)
+        assert published.status_code == 201
+        condition = published.get_json()["data"]["condition"]
+        assert condition["source"]["job_id"] == job_id
+        assert condition["source"]["candidate_index"] == 0
+        assert condition["source"]["candidate_kind"] == "vehicle_cluster_review"
+        assert condition["source"]["field_confirmation"] == body["field_confirmation"]
+        public_records = client.get("/api/road-conditions").get_json()["data"]["conditions"]
+        assert len(public_records) == 1
+        assert "source" not in public_records[0] and "audit" not in public_records[0]
+
+    def test_dismissed_vision_cannot_publish_road_event(self, client, G, monkeypatch):
+        from storage import database, vision_repository
+
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "status": "needs_review", "review_status": "dismissed",
+            "result": {"candidates": [{"kind": "vehicle_cluster_review"}]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "伪造来源", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e",
+            "field_confirmation": "已现场核实此路段需要管制",
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+        assert response.status_code == 409
+        assert rc.list_conditions() == []
+
+    def test_legacy_multi_candidate_review_cannot_be_attributed_to_one_candidate(self, client, G, monkeypatch):
+        from storage import database, vision_repository
+
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "status": "needs_review", "review_status": "confirmed",
+            "review_candidate_index": None,
+            "result": {"candidates": [{"kind": "possible_congestion"},
+                                      {"kind": "possible_accident"}]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "含糊来源", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e",
+            "field_confirmation": "经现场人员确认路段的通行情况。",
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+        assert response.status_code == 409
+        assert rc.list_conditions() == []
+
     def test_post_too_far(self, client):
         r = client.post("/api/road-conditions", json={
             "type": "closure", "name": "湖里",
@@ -722,9 +840,12 @@ class TestRoadConditionAPI:
         # 普通视图看不到，管理 all 视图能看到
         assert client.get("/api/road-conditions").get_json()["data"]["count"] == 0
         assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 1
-        # 删除
+        # 撤销后仍保留可审计记录
         assert client.delete(f"/api/road-conditions/{cid}", headers=headers).status_code == 200
-        assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 0
+        records = client.get("/api/road-conditions?all=1").get_json()["data"]["conditions"]
+        assert len(records) == 1
+        assert records[0]["status"] == "revoked"
+        assert records[0]["audit"][-1]["action"] == "revoked"
 
     def test_patch_invalid_time_window_returns_400_and_keeps_record(self, client, G):
         gj = _mid_12_gcj(G)

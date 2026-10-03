@@ -60,11 +60,13 @@ def test_manager_upload_is_private_and_queues_reviewable_media(monkeypatch, tmp_
 
     reviewed = client.post(
         "/api/manager/vision-jobs/" + payload["job_id"] + "/review",
-        json={"status": "confirmed", "note": "现场复核后再手动选择路段"},
+        json={"status": "confirmed", "candidate_index": 0,
+              "note": "现场复核后再手动选择路段"},
         headers={"X-CSRF-Token": csrf},
     )
     assert reviewed.status_code == 200
     assert reviewed.get_json()["data"]["job"]["review_status"] == "confirmed"
+    assert reviewed.get_json()["data"]["job"]["review_candidate_index"] == 0
     assert client.post(
         "/api/manager/vision-jobs/" + payload["job_id"] + "/review",
         json={"status": "dismissed"}, headers={"X-CSRF-Token": csrf},
@@ -122,7 +124,8 @@ def test_vision_review_only_allows_one_audited_decision(monkeypatch):
         DATABASE_URL, item["job_id"], review_status="dismissed", review_note="误报", reviewed_by="web"
     )
     second = vision_repository.review_job(
-        DATABASE_URL, item["job_id"], review_status="confirmed", review_note="改判", reviewed_by="web"
+        DATABASE_URL, item["job_id"], review_status="confirmed", review_note="改判",
+        reviewed_by="web", candidate_index=0,
     )
     assert first["review_status"] == "dismissed"
     assert second is None

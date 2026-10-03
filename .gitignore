@@ -290,6 +290,8 @@ android-app/keystore-password.txt
 data/telemetry.jsonl
 data/user_profiles.json
 data/vision/uploads/
+data/runtime/
+data/road_conditions.json.lock
 models/vision/
 output/vision/
 

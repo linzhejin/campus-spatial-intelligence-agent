@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, picked: null, anchor: null, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -22,6 +22,53 @@
     byId('submit-vision').disabled = !canSubmitVision();
   }
 
+  function updatePublishState() {
+    var hasFieldEvidence = !state.sourceJobId || byId('field-confirmation').value.trim().length >= 8;
+    byId('publish-event').disabled = !state.picked || !byId('event-type').value || !hasFieldEvidence;
+  }
+
+  function clearPickedRoad() {
+    state.picked = null;
+    state.impactPreviewRequestId += 1;
+    if (state.preview) state.map.removeLayer(state.preview);
+    state.preview = null;
+    byId('selected-road').textContent = '尚未选择道路';
+    byId('selected-road').classList.remove('is-set');
+    renderImpactPreview(null);
+    updatePublishState();
+  }
+
+  function clearVisionSource() {
+    state.sourceJobId = null;
+    byId('vision-source-banner').hidden = true;
+    byId('field-confirmation-wrap').hidden = true;
+    byId('field-confirmation').required = false;
+    byId('field-confirmation').value = '';
+    updatePublishState();
+  }
+
+  function prepareVisionEvent(job) {
+    if (job.review_status !== 'confirmed') return;
+    clearPickedRoad();
+    state.sourceJobId = job.job_id;
+    byId('vision-source-banner').hidden = false;
+    byId('vision-source-label').textContent = '已复核影像：' + (job.original_name || job.job_id) + '。请重新选择具体道路、事件类型，并填写现场核实依据。';
+    byId('field-confirmation-wrap').hidden = false;
+    byId('field-confirmation').required = true;
+    byId('event-type').value = '';
+    byId('event-name').value = '';
+    byId('event-description').value = '';
+    byId('start-time').value = '';
+    byId('end-time').value = '';
+    byId('field-confirmation').value = '';
+    if (job.anchor_gcj) state.map.setView([job.anchor_gcj.lat, job.anchor_gcj.lng], 17);
+    setPicking(true, 'road');
+    updatePublishState();
+    if (byId('road-workspace') && byId('road-workspace').scrollIntoView) {
+      byId('road-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   async function request(path, method, body) {
     var headers = {};
     if (state.csrf && method !== 'GET') headers['X-CSRF-Token'] = state.csrf;
@@ -32,7 +79,12 @@
       credentials: 'same-origin',
     });
     var payload = await response.json().catch(function () { return {}; });
-    if (!response.ok) throw new Error(payload.message || '请求失败，请重试');
+    if (!response.ok) {
+      if (response.status === 401 && path !== '/api/admin/login') {
+        setLoggedOut('管理登录已过期，请重新登录。');
+      }
+      throw new Error(payload.message || '请求失败，请重试');
+    }
     return payload.data || payload;
   }
 
@@ -52,6 +104,26 @@
         refreshVisionJobs();
       }
     }, 5000);
+  }
+
+  function setLoggedOut(notice) {
+    if (state.poll) { window.clearInterval(state.poll); state.poll = null; }
+    state.csrf = '';
+    state.anchor = null;
+    state.reviewDrafts = {};
+    clearVisionSource();
+    if (state.map) clearPickedRoad();
+    byId('event-type').value = '';
+    byId('event-name').value = '';
+    byId('event-description').value = '';
+    byId('start-time').value = '';
+    byId('end-time').value = '';
+    byId('media-file').value = '';
+    byId('workspace').hidden = true;
+    byId('logout').hidden = true;
+    byId('login-panel').hidden = false;
+    byId('password').value = '';
+    message('login-message', notice || '已退出管理台。', true);
   }
 
   function initMap() {
@@ -132,6 +204,7 @@
       picked.snap = data.snap;
       picked.impactPreview = data.impact_preview;
       renderImpactPreview(data.impact_preview);
+      updatePublishState();
     } catch (error) {
       if (requestId !== state.impactPreviewRequestId || state.picked !== picked || byId('event-type').value !== type) return;
       renderImpactPreview({
@@ -181,7 +254,7 @@
       var length = snap.chain_length_m ? Math.round(snap.chain_length_m) + ' 米路段' : '已吸附到一条道路';
       byId('selected-road').textContent = road + ' · 偏移 ' + Math.round(snap.dist_m || 0) + ' 米 · ' + length;
       byId('selected-road').classList.add('is-set');
-      byId('publish-event').disabled = false;
+      updatePublishState();
       message('form-message', '路段已核对，可以填写并发布事件。', true);
       setPicking(false);
     } catch (error) {
@@ -199,25 +272,40 @@
     var status = document.createElement('span');
     status.className = 'event-status ' + eventStatus(item);
     var dot = document.createElement('i'); status.appendChild(dot);
-    status.appendChild(document.createTextNode({ active: '生效中', scheduled: '待生效', expired: '已结束' }[eventStatus(item)] || '已结束'));
+    status.appendChild(document.createTextNode({ active: '生效中', scheduled: '待生效', expired: '已结束', revoked: '已撤销' }[eventStatus(item)] || '已结束'));
     var name = document.createElement('div');
     var title = document.createElement('div'); title.className = 'event-name'; title.textContent = item.name || '未命名事件';
     var description = document.createElement('div'); description.className = 'event-sub'; description.textContent = item.description || '无补充说明';
     name.append(title, description);
+    if (item.source && item.source.kind === 'vision_job') {
+      var source = document.createElement('div'); source.className = 'event-sub';
+      source.textContent = '影像来源 ' + String(item.source.job_id || '').slice(0, 8) + ' · ' + (item.source.field_confirmation || '未记录核实依据');
+      name.appendChild(source);
+    }
+    if (item.audit && item.audit.length) {
+      var last = item.audit[item.audit.length - 1];
+      var audit = document.createElement('div'); audit.className = 'event-sub';
+      audit.textContent = '最近操作：' + ({ created: '发布', updated: '修改', ended: '结束', revoked: '撤销' }[last.action] || last.action) +
+        ' · ' + (last.actor || '未知') + ' · ' + (last.at ? new Date(Number(last.at) * 1000).toLocaleString('zh-CN', { hour12: false }) : '时间未知');
+      name.appendChild(audit);
+    }
     var type = document.createElement('div'); type.className = 'event-type'; type.textContent = item.type_label || item.type || '管制';
     var road = document.createElement('div'); road.className = 'event-meta';
     var edge = item.edge || {};
     road.textContent = (edge.road_name || '未命名道路') + (edge.chain_length_m ? ' · ' + Math.round(edge.chain_length_m) + ' 米' : '');
     var times = document.createElement('div'); times.className = 'event-meta';
     var end = item.end_time ? new Date(Number(item.end_time) * 1000).toLocaleString('zh-CN', { hour12: false }) : '持续有效';
-    times.textContent = eventStatus(item) === 'scheduled' ? '计划开始 ' + new Date(Number(item.start_time) * 1000).toLocaleString('zh-CN', { hour12: false }) : '结束 ' + end;
+    times.textContent = eventStatus(item) === 'revoked' ? '撤销 ' + new Date(Number(item.revoked_at || item.updated_at) * 1000).toLocaleString('zh-CN', { hour12: false }) :
+      (eventStatus(item) === 'scheduled' ? '计划开始 ' + new Date(Number(item.start_time) * 1000).toLocaleString('zh-CN', { hour12: false }) : '结束 ' + end);
     var actions = document.createElement('div'); actions.className = 'row-actions';
     if (eventStatus(item) === 'active') {
       var endButton = document.createElement('button'); endButton.type = 'button'; endButton.textContent = '结束事件';
       endButton.addEventListener('click', function () { endEvent(item.id); }); actions.appendChild(endButton);
     }
-    var deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.textContent = '删除';
-    deleteButton.addEventListener('click', function () { deleteEvent(item.id); }); actions.appendChild(deleteButton);
+    if (eventStatus(item) === 'active' || eventStatus(item) === 'scheduled') {
+      var revokeButton = document.createElement('button'); revokeButton.type = 'button'; revokeButton.textContent = '撤销事件';
+      revokeButton.addEventListener('click', function () { revokeEvent(item.id); }); actions.appendChild(revokeButton);
+    }
     row.append(status, name, type, road, times, actions);
     return row;
   }
@@ -232,6 +320,7 @@
       byId('active-count').textContent = items.filter(function (item) { return item.status === 'active'; }).length;
       state.eventLayers.clearLayers();
       items.forEach(function (item) {
+        if (item.status === 'revoked' || item.status === 'expired') return;
         var edge = item.edge || {};
         var geometry = (edge.geometry_gcj || []).map(function (point) { return [point[1], point[0]]; });
         if (geometry.length >= 2) {
@@ -362,13 +451,21 @@
     card.appendChild(summary);
   }
 
-  function reviewJob(job, status) {
-    var note = status === 'confirmed'
-      ? '管理员确认影像中存在候选迹象；请再通过地图选定具体道路并手动登记通行事件。'
-      : '管理员复核后排除该影像候选。';
-    request('/api/manager/vision-jobs/' + encodeURIComponent(job.job_id) + '/review', 'POST', { status: status, note: note })
-      .then(refreshVisionJobs)
-      .catch(function (error) { window.alert(error.message); });
+  function reviewJob(job, status, candidateIndex, noteField, feedback) {
+    var note = noteField.value.trim();
+    if (note.length < 8) {
+      feedback.textContent = '请先填写至少 8 字的影像复核依据。';
+      return;
+    }
+    feedback.textContent = '正在保存审核…';
+    var body = { status: status, note: note };
+    if (status === 'confirmed') body.candidate_index = candidateIndex;
+    request('/api/manager/vision-jobs/' + encodeURIComponent(job.job_id) + '/review', 'POST', body)
+      .then(function () {
+        delete state.reviewDrafts[job.job_id];
+        return refreshVisionJobs(true);
+      })
+      .catch(function (error) { feedback.textContent = error.message || '审核保存失败。'; });
   }
 
   function renderVisionJob(job) {
@@ -390,42 +487,92 @@
       var failure = document.createElement('p'); failure.className = 'vision-job-meta';
       failure.textContent = job.error.message || '分析失败'; card.appendChild(failure);
     }
+    if (job.review_status) {
+      var reviewed = document.createElement('p'); reviewed.className = 'vision-job-meta';
+      reviewed.textContent = (job.review_status === 'confirmed' ? '已确认' : '已排除') +
+        ' · ' + (job.reviewed_by || '管理者') +
+        (job.reviewed_at ? ' · ' + new Date(job.reviewed_at).toLocaleString('zh-CN', { hour12: false }) : '') +
+        (job.review_note ? ' · ' + job.review_note : '');
+      card.appendChild(reviewed);
+    }
     var result = job.result || {};
     if (job.result && (job.status === 'needs_review' || job.status === 'completed' || job.review_status)) {
       appendVisionPreview(card, job, result);
       appendVisionMetrics(card, result, job.media_kind);
+      var reviewNote = null;
+      var reviewFeedback = null;
+      if (job.status === 'needs_review' && !job.review_status && (result.candidates || []).length) {
+        var noteLabel = document.createElement('label'); noteLabel.className = 'vision-review-label';
+        noteLabel.textContent = '影像复核依据';
+        reviewNote = document.createElement('textarea'); reviewNote.maxLength = 1000;
+        reviewNote.className = 'vision-review-note';
+        reviewNote.value = state.reviewDrafts[job.job_id] || '';
+        reviewNote.addEventListener('input', function () {
+          state.reviewDrafts[job.job_id] = reviewNote.value;
+        });
+        reviewNote.placeholder = '说明查看了哪些影像证据，以及确认或排除的理由（至少 8 字）';
+        noteLabel.appendChild(reviewNote); card.appendChild(noteLabel);
+        reviewFeedback = document.createElement('p'); reviewFeedback.className = 'form-message';
+        card.appendChild(reviewFeedback);
+      }
       var candidates = document.createElement('div'); candidates.className = 'candidate-list';
-      (result.candidates || []).forEach(function (item) {
+      (result.candidates || []).forEach(function (item, index) {
         var candidate = document.createElement('div'); candidate.className = 'candidate-card';
         var titleNode = document.createElement('strong');
         titleNode.textContent = candidateName(item.kind) + ' · 置信度 ' + Math.round((item.confidence || 0) * 100) + '%';
+        if (job.review_status === 'confirmed' && job.review_candidate_index === index) {
+          titleNode.textContent += ' · 已确认';
+        }
         var why = document.createElement('p'); why.textContent = item.reason || '请结合原始影像复核。';
         candidate.append(titleNode, why);
         if (job.status === 'needs_review' && !job.review_status) {
           var actions = document.createElement('div'); actions.className = 'candidate-actions';
-          var confirmButton = document.createElement('button'); confirmButton.type = 'button'; confirmButton.textContent = '确认候选';
-          confirmButton.addEventListener('click', function () { reviewJob(job, 'confirmed'); });
-          var dismissButton = document.createElement('button'); dismissButton.type = 'button'; dismissButton.textContent = '排除候选';
-          dismissButton.addEventListener('click', function () { reviewJob(job, 'dismissed'); });
-          actions.append(confirmButton, dismissButton); candidate.appendChild(actions);
+          var confirmButton = document.createElement('button'); confirmButton.type = 'button'; confirmButton.textContent = '确认此候选';
+          confirmButton.addEventListener('click', function () {
+            reviewJob(job, 'confirmed', index, reviewNote, reviewFeedback);
+          });
+          actions.append(confirmButton); candidate.appendChild(actions);
         }
         candidates.appendChild(candidate);
       });
       if (candidates.children.length) card.appendChild(candidates);
+      if (reviewNote) {
+        var dismissButton = document.createElement('button'); dismissButton.type = 'button';
+        dismissButton.className = 'outline-button dismiss-vision';
+        dismissButton.textContent = '排除整条影像任务';
+        dismissButton.addEventListener('click', function () {
+          reviewJob(job, 'dismissed', null, reviewNote, reviewFeedback);
+        });
+        card.appendChild(dismissButton);
+      }
       if (job.review_status === 'confirmed') {
         var next = document.createElement('p'); next.className = 'vision-job-meta';
         next.textContent = '已确认影像迹象。若需影响导航，请在上方路况表单中手工选定具体道路并发布事件。';
         card.appendChild(next);
+        if (Number.isInteger(job.review_candidate_index) || (result.candidates || []).length === 1) {
+          var transfer = document.createElement('button'); transfer.type = 'button';
+          transfer.className = 'outline-button transfer-button'; transfer.textContent = '转入道路事件';
+          transfer.addEventListener('click', function () { prepareVisionEvent(job); });
+          card.appendChild(transfer);
+        } else {
+          var ambiguous = document.createElement('p'); ambiguous.className = 'vision-job-meta';
+          ambiguous.textContent = '旧审核未记录具体候选，无法直接作为道路事件来源。';
+          card.appendChild(ambiguous);
+        }
       }
     }
     return card;
   }
 
-  async function refreshVisionJobs() {
+  async function refreshVisionJobs(force) {
     if (!byId('workspace') || byId('workspace').hidden) return;
+    if (!force && document.activeElement && document.activeElement.classList &&
+        document.activeElement.classList.contains('vision-review-note')) return;
     var root = byId('vision-jobs');
     try {
       var data = await request('/api/manager/vision-jobs?limit=20', 'GET');
+      if (!force && document.activeElement && document.activeElement.classList &&
+          document.activeElement.classList.contains('vision-review-note')) return;
       var jobs = data.jobs || [];
       root.replaceChildren();
       if (!jobs.length) {
@@ -471,8 +618,8 @@
     catch (error) { window.alert(error.message); }
   }
 
-  async function deleteEvent(id) {
-    if (!window.confirm('删除这条事件记录？此操作不能撤销。')) return;
+  async function revokeEvent(id) {
+    if (!window.confirm('撤销这条事件？它会立即停止影响路线，历史记录仍保留。')) return;
     try { await request('/api/road-conditions/' + encodeURIComponent(id), 'DELETE'); refreshEvents(); }
     catch (error) { window.alert(error.message); }
   }
@@ -480,6 +627,11 @@
   async function submitEvent(event) {
     event.preventDefault();
     if (!state.picked) { message('form-message', '请先在地图上选取一条道路。'); return; }
+    if (!byId('event-type').value) { message('form-message', '请选择现场确认的事件类型。'); return; }
+    var fieldConfirmation = byId('field-confirmation').value.trim();
+    if (state.sourceJobId && fieldConfirmation.length < 8) {
+      message('form-message', '请填写具体道路的现场核实依据（至少 8 字）。'); return;
+    }
     var start = byId('start-time').value;
     var end = byId('end-time').value;
     if (start && end && end <= start) { message('form-message', '结束时间必须晚于开始时间。'); return; }
@@ -492,18 +644,19 @@
     };
     if (start) body.start_time = start;
     if (end) body.end_time = end;
+    if (state.sourceJobId) {
+      body.source_vision_job_id = state.sourceJobId;
+      body.field_confirmation = fieldConfirmation;
+    }
     try {
       await request('/api/road-conditions', 'POST', body);
       message('form-message', '事件已发布，路线规划会按该路段状态处理。', true);
       byId('event-name').value = ''; byId('event-description').value = '';
       byId('start-time').value = ''; byId('end-time').value = '';
-      byId('selected-road').textContent = '尚未选择道路'; byId('selected-road').classList.remove('is-set');
-      if (state.preview) state.map.removeLayer(state.preview);
-      state.preview = null; state.picked = null; state.impactPreviewRequestId += 1;
-      renderImpactPreview(null);
+      clearPickedRoad(); clearVisionSource();
       refreshEvents();
     } catch (error) { message('form-message', error.message || '事件发布失败。'); }
-    finally { button.innerHTML = '发布事件 <span>→</span>'; button.disabled = !state.picked; }
+    finally { button.innerHTML = '发布事件 <span>→</span>'; updatePublishState(); }
   }
 
   byId('login-form').addEventListener('submit', async function (event) {
@@ -516,7 +669,9 @@
     } catch (error) { message('login-message', error.message || '无法登录管理台。'); }
   });
   byId('pick-road').addEventListener('click', function () { setPicking(!(state.picking && state.pickPurpose === 'road'), 'road'); });
-  byId('event-type').addEventListener('change', refreshImpactPreview);
+  byId('event-type').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
+  byId('field-confirmation').addEventListener('input', updatePublishState);
+  byId('clear-vision-source').addEventListener('click', clearVisionSource);
   byId('pick-anchor').addEventListener('click', function () { setPicking(true, 'vision'); });
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
@@ -530,8 +685,7 @@
   byId('refresh-events').addEventListener('click', refreshEvents);
   byId('logout').addEventListener('click', async function () {
     try { await request('/api/admin/logout', 'POST', {}); } catch (_) {}
-    if (state.poll) { window.clearInterval(state.poll); state.poll = null; }
-    state.csrf = ''; byId('workspace').hidden = true; byId('logout').hidden = true; byId('login-panel').hidden = false;
+    setLoggedOut('已退出管理台。');
   });
 
   request('/api/admin/status', 'GET').then(function (data) {

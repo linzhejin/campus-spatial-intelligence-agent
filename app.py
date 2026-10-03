@@ -116,7 +116,7 @@ def create_app() -> Flask:
         if (path == "/api/conversations" or path.startswith("/api/conversations/")
                 or path.startswith("/api/runs/") or path.startswith("/api/admin/")
                 or path == "/api/admin" or path.startswith("/api/manager/")
-                or path == "/api/manager"):
+                or path == "/api/manager" or path.startswith("/api/road-conditions")):
             resp.headers["Cache-Control"] = "private, no-store"
             resp.headers["Vary"] = "Cookie"
         if path.startswith("/static/") or path.startswith("/icons/") or path.startswith("/css/") or path.startswith("/js/"):
