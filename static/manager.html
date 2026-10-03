@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20261003c">
+  <link rel="stylesheet" href="/css/manager.css?v=20261003d">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20261003c" defer></script>
+  <script src="/js/manager.js?v=20261003d" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -61,7 +61,7 @@
         <section class="map-card" aria-label="校园道路地图">
           <div class="map-topline"><span>武汉大学校园</span><span id="pick-state">选择路段后再填写事件</span></div>
           <div id="manager-map"></div>
-          <div class="map-caption"><span class="map-key"></span>已绑定的校园路段 <span class="caption-separator">·</span> 点击“选取路段”后在地图上点路</div>
+          <div class="map-caption"><span class="map-key"></span>选中路段 <span class="caption-separator">·</span> 绿点为点击位置，橙点为吸附位置，虚线表示两点间距</div>
         </section>
 
         <aside class="control-column">
@@ -93,7 +93,13 @@
                 <label>结束时间<input id="end-time" type="datetime-local"></label>
               </div>
               <button id="pick-road" class="outline-button" type="button"><span>⌖</span> 选取路段</button>
-              <div id="selected-road" class="selected-road" aria-live="polite">尚未选择道路</div>
+              <div class="selected-road-row">
+                <div id="selected-road" class="selected-road" aria-live="polite">尚未选择道路</div>
+                <div class="selection-actions">
+                  <button id="confirm-picked-road" class="confirm-selection-button" type="button" hidden>确认路段</button>
+                  <button id="clear-picked-road" class="clear-selection-button" type="button" aria-label="清除所选路段" hidden>清除</button>
+                </div>
+              </div>
               <div id="impact-preview" class="impact-preview" aria-live="polite" hidden></div>
               <button id="publish-event" class="primary-button" type="submit" disabled>发布事件 <span>→</span></button>
               <p id="form-message" class="form-message" role="status"></p>

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -24,16 +24,22 @@
 
   function updatePublishState() {
     var hasFieldEvidence = !state.sourceJobId || byId('field-confirmation').value.trim().length >= 8;
-    byId('publish-event').disabled = !state.picked || !byId('event-type').value || !hasFieldEvidence;
+    byId('publish-event').disabled = !state.picked || !state.picked.confirmed || state.picking || !byId('event-type').value || !hasFieldEvidence;
   }
 
   function clearPickedRoad() {
+    state.pickRequestId += 1;
+    setPicking(false);
     state.picked = null;
     state.impactPreviewRequestId += 1;
     if (state.preview) state.map.removeLayer(state.preview);
     state.preview = null;
+    state.pickFeedbackLayers.forEach(function (layer) { state.map.removeLayer(layer); });
+    state.pickFeedbackLayers = [];
     byId('selected-road').textContent = '尚未选择道路';
     byId('selected-road').classList.remove('is-set');
+    byId('confirm-picked-road').hidden = true;
+    byId('clear-picked-road').hidden = true;
     renderImpactPreview(null);
     updatePublishState();
   }
@@ -141,13 +147,16 @@
   }
 
   function setPicking(active, purpose) {
+    var nextPurpose = active ? (purpose || state.pickPurpose || 'road') : null;
+    if (!active || nextPurpose !== state.pickPurpose) state.pickRequestId += 1;
     state.picking = active;
-    state.pickPurpose = active ? (purpose || state.pickPurpose || 'road') : null;
+    state.pickPurpose = nextPurpose;
     byId('manager-map').classList.toggle('manager-map-picking', active);
     byId('pick-road').textContent = active && state.pickPurpose === 'road' ? '取消选路' : '⌖ 选取路段';
     byId('pick-state').textContent = active
       ? (state.pickPurpose === 'vision' ? '点击地图标注影像的大致观察区域' : '请在地图道路上点选，系统会吸附到正式路网')
       : '选择路段后再填写事件';
+    updatePublishState();
   }
 
   function renderImpactPreview(preview) {
@@ -219,6 +228,7 @@
 
   async function handleMapClick(event) {
     if (!state.picking) return;
+    var pickRequestId = ++state.pickRequestId;
     var lng = event.latlng.lng;
     var lat = event.latlng.lat;
     if (state.pickPurpose === 'vision') {
@@ -235,13 +245,19 @@
       return;
     }
     message('form-message', '正在将点位匹配到校园路网…');
+    var requestedEventType = byId('event-type').value;
     try {
-      var snapData = await request('/api/road-conditions/snap?lng=' + encodeURIComponent(lng) + '&lat=' + encodeURIComponent(lat) + '&type=' + encodeURIComponent(byId('event-type').value), 'GET');
+      var snapData = await request('/api/road-conditions/snap?lng=' + encodeURIComponent(lng) + '&lat=' + encodeURIComponent(lat) + '&type=' + encodeURIComponent(requestedEventType), 'GET');
+      if (pickRequestId !== state.pickRequestId || !state.picking || state.pickPurpose !== 'road') return;
       var snap = snapData.snap;
       if (!snap) throw new Error('这个位置没有匹配到校园道路，请放大后重选。');
-      state.picked = { lng: lng, lat: lat, snap: snap, impactPreview: snapData.impact_preview };
-      renderImpactPreview(snapData.impact_preview);
+      var currentEventType = byId('event-type').value;
+      var previewMatchesCurrentType = currentEventType === requestedEventType;
+      state.picked = { lng: lng, lat: lat, snap: snap, impactPreview: previewMatchesCurrentType ? snapData.impact_preview : null, confirmed: false };
+      renderImpactPreview(previewMatchesCurrentType ? snapData.impact_preview : null);
       if (state.preview) state.map.removeLayer(state.preview);
+      state.pickFeedbackLayers.forEach(function (layer) { state.map.removeLayer(layer); });
+      state.pickFeedbackLayers = [];
       var geometry = (snap.geometry_gcj || []).map(function (point) { return [point[1], point[0]]; });
       if (geometry.length >= 2) {
         state.preview = L.polyline(geometry, { color: '#d48943', weight: 8, opacity: .85, lineCap: 'round' }).addTo(state.map);
@@ -250,14 +266,33 @@
           radius: 8, color: '#fff', weight: 2, fillColor: '#d48943', fillOpacity: 1,
         }).addTo(state.map);
       }
+      var snapLng = Number(snap.snap_lng_gcj);
+      var snapLat = Number(snap.snap_lat_gcj);
+      if (Number.isFinite(snapLng) && Number.isFinite(snapLat)) {
+        if ((snap.dist_m || 0) > .5) {
+          state.pickFeedbackLayers.push(L.polyline([[lat, lng], [snapLat, snapLng]], {
+            color: '#365f50', weight: 2, opacity: .9, dashArray: '4 5', interactive: false,
+          }).addTo(state.map));
+        }
+        state.pickFeedbackLayers.push(L.circleMarker([lat, lng], {
+          radius: 5, color: '#fff', weight: 2, fillColor: '#365f50', fillOpacity: 1,
+        }).addTo(state.map));
+        state.pickFeedbackLayers.push(L.circleMarker([snapLat, snapLng], {
+          radius: 6, color: '#fff', weight: 2, fillColor: '#d48943', fillOpacity: 1,
+        }).addTo(state.map));
+      }
       var road = snap.road_name || '未命名道路';
       var length = snap.chain_length_m ? Math.round(snap.chain_length_m) + ' 米路段' : '已吸附到一条道路';
-      byId('selected-road').textContent = road + ' · 偏移 ' + Math.round(snap.dist_m || 0) + ' 米 · ' + length;
+      byId('selected-road').textContent = road + ' · 吸附距离 ' + Number(snap.dist_m || 0).toFixed(1) + ' 米 · ' + length;
       byId('selected-road').classList.add('is-set');
+      byId('confirm-picked-road').hidden = false;
+      byId('clear-picked-road').hidden = false;
       updatePublishState();
-      message('form-message', '路段已核对，可以填写并发布事件。', true);
+      message('form-message', '请核对地图高亮路段和吸附距离，确认后才能发布。');
       setPicking(false);
+      if (!previewMatchesCurrentType && currentEventType) refreshImpactPreview();
     } catch (error) {
+      if (pickRequestId !== state.pickRequestId) return;
       message('form-message', error.message || '路段匹配失败，请重试。');
     }
   }
@@ -627,6 +662,7 @@
   async function submitEvent(event) {
     event.preventDefault();
     if (!state.picked) { message('form-message', '请先在地图上选取一条道路。'); return; }
+    if (!state.picked.confirmed) { message('form-message', '请先核对并确认地图高亮的路段。'); return; }
     if (!byId('event-type').value) { message('form-message', '请选择现场确认的事件类型。'); return; }
     var fieldConfirmation = byId('field-confirmation').value.trim();
     if (state.sourceJobId && fieldConfirmation.length < 8) {
@@ -669,6 +705,17 @@
     } catch (error) { message('login-message', error.message || '无法登录管理台。'); }
   });
   byId('pick-road').addEventListener('click', function () { setPicking(!(state.picking && state.pickPurpose === 'road'), 'road'); });
+  byId('confirm-picked-road').addEventListener('click', function () {
+    if (!state.picked) return;
+    state.picked.confirmed = true;
+    byId('confirm-picked-road').hidden = true;
+    message('form-message', '已确认高亮路段，可以填写并发布事件。', true);
+    updatePublishState();
+  });
+  byId('clear-picked-road').addEventListener('click', function () {
+    clearPickedRoad();
+    message('form-message', '已清除所选路段。');
+  });
   byId('event-type').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
   byId('field-confirmation').addEventListener('input', updatePublishState);
   byId('clear-vision-source').addEventListener('click', clearVisionSource);

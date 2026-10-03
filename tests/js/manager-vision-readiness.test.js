@@ -10,6 +10,8 @@ function managerHarness() {
   const elements = new Map();
   const intervalCallbacks = [];
   const mapListeners = {};
+  const mapLayers = [];
+  const removedMapLayers = [];
   const requested = [];
   const uploadResolvers = [];
   const impactPreviewResolvers = [];
@@ -58,15 +60,21 @@ function managerHarness() {
     setView() { return this; },
     invalidateSize() {},
     on(name, callback) { mapListeners[name] = callback; },
-    removeLayer() {},
+    removeLayer(layer) { removedMapLayers.push(layer); },
   };
-  const layer = { addTo() { return this; }, clearLayers() {} };
+  function makeLayer(kind, coordinates, options) {
+    return {
+      kind, coordinates, options,
+      addTo() { mapLayers.push(this); return this; },
+      clearLayers() {},
+    };
+  }
   const L = {
     map: () => map,
-    tileLayer: () => layer,
-    layerGroup: () => layer,
-    circleMarker: () => layer,
-    polyline: () => layer,
+    tileLayer: () => makeLayer('tile'),
+    layerGroup: () => makeLayer('group'),
+    circleMarker: (coordinates, options) => makeLayer('circleMarker', coordinates, options),
+    polyline: (coordinates, options) => makeLayer('polyline', coordinates, options),
   };
   const window = {
     WHU_WALKER_CONFIG: { mapCenter: [114.363, 30.5365], mapZoom: 15 },
@@ -107,7 +115,7 @@ function managerHarness() {
       if (url === '/api/admin/status') data = { is_admin: true, csrf_token: 'csrf' };
       else if (url.startsWith('/api/road-conditions/snap')) data = {
         snap: { u: 1, v: 2, key: 0, road_name: '测试路', dist_m: 2,
-          chain_length_m: 100, snap_lng_gcj: 114.36, snap_lat_gcj: 30.53,
+          chain_length_m: 100, snap_lng_gcj: 114.36002, snap_lat_gcj: 30.53,
           geometry_gcj: [[114.36, 30.53], [114.361, 30.53]] },
         impact_preview: {
           road_name: '测试路', affected_road_segments: 1, affected_length_m: 100,
@@ -126,13 +134,14 @@ function managerHarness() {
   };
   vm.runInNewContext(source, context);
   return {
-    elements, intervalCallbacks, mapListeners, requested, calls, document,
+    elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document, getElement: element,
     setInferenceReady: (value) => { inferenceReady = value; },
     setVisionJobs: (items) => { visionJobs = items; },
     setRoadEvents: (items) => { roadEvents = items; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
     setSessionExpired: (value) => { sessionExpired = value; },
     deferImpactPreviews: () => { deferImpactPreviews = true; },
+    hasPendingImpactPreview: (type) => impactPreviewResolvers.some((item) => item.type === type),
     resolveImpactPreview: (type, roadName) => {
       const index = impactPreviewResolvers.findIndex((item) => item.type === type);
       if (index < 0) throw new Error('No pending impact preview for ' + type);
@@ -233,12 +242,97 @@ test('manager impact preview discloses its active-condition snapshot and local s
   assert.match(noteText, /所选路段两端/);
 });
 
+test('a selected road can be explicitly cleared before publishing', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  const clearButton = harness.getElement('clear-picked-road');
+  const confirmButton = harness.getElement('confirm-picked-road');
+  clearButton.hidden = true;
+  confirmButton.hidden = true;
+  elements.get('event-type').value = 'closure';
+  elements.get('pick-road').listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+
+  assert.equal(clearButton.hidden, false, 'clear action should appear after selecting a snapped road');
+  assert.equal(confirmButton.hidden, false, 'the snapped road should require explicit confirmation');
+  assert.match(elements.get('selected-road').textContent, /测试路.*吸附距离 2\.0 米/);
+  assert.equal(elements.get('publish-event').disabled, true);
+  const connector = harness.mapLayers.find((layer) => layer.kind === 'polyline' && layer.options && layer.options.dashArray === '4 5');
+  assert.ok(connector, 'the map should show the click-to-snap distance');
+  assert.equal(JSON.stringify(connector.coordinates), JSON.stringify([[30.53, 114.36], [30.53, 114.36002]]));
+  assert.equal(harness.mapLayers.filter((layer) => layer.kind === 'circleMarker').length, 2);
+  await elements.get('condition-form').listeners.submit({ preventDefault() {} });
+  assert.equal(harness.calls.some((call) => call.url === '/api/road-conditions' && call.options.method === 'POST'), false);
+
+  confirmButton.listeners.click();
+  assert.equal(confirmButton.hidden, true);
+  assert.equal(elements.get('publish-event').disabled, false);
+
+  clearButton.listeners.click();
+
+  assert.ok(harness.removedMapLayers.includes(connector));
+  assert.equal(clearButton.hidden, true);
+  assert.equal(elements.get('selected-road').textContent, '尚未选择道路');
+  assert.equal(elements.get('publish-event').disabled, true);
+  assert.equal(elements.get('impact-preview').hidden, true);
+});
+
+test('canceling route picking prevents a late snap response from selecting a road', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  const clearButton = harness.getElement('clear-picked-road');
+  const selectedRoad = harness.getElement('selected-road');
+  const publishButton = harness.getElement('publish-event');
+  clearButton.hidden = true;
+  selectedRoad.textContent = '尚未选择道路';
+  publishButton.disabled = true;
+  elements.get('event-type').value = 'closure';
+  harness.deferImpactPreviews();
+  elements.get('pick-road').listeners.click();
+  const pending = mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  await flush();
+
+  elements.get('pick-road').listeners.click();
+  harness.resolveImpactPreview('closure', '迟到路段');
+  await pending;
+
+  assert.equal(clearButton.hidden, true);
+  assert.equal(selectedRoad.textContent, '尚未选择道路');
+  assert.equal(publishButton.disabled, true);
+});
+
+test('a snap response refreshes its impact preview when the event type changed while waiting', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  harness.deferImpactPreviews();
+  elements.get('event-type').value = 'closure';
+  elements.get('pick-road').listeners.click();
+  const pendingSnap = mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  await flush();
+
+  elements.get('event-type').value = 'accident';
+  await elements.get('event-type').listeners.change();
+  harness.resolveImpactPreview('closure', '旧事件类型预览');
+  await pendingSnap;
+
+  assert.equal(harness.hasPendingImpactPreview('accident'), true);
+  harness.resolveImpactPreview('accident', '当前事件类型预览');
+  await flush();
+  const previewText = elements.get('impact-preview').children.map((child) => child.textContent).join(' ');
+  assert.match(previewText, /当前事件类型预览/);
+  assert.doesNotMatch(previewText, /旧事件类型预览/);
+});
+
 test('a late event-type preview cannot overwrite the newer selection', async () => {
   const harness = managerHarness();
   await flush();
   const { elements, mapListeners } = harness;
   elements.get('pick-road').listeners.click();
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  elements.get('confirm-picked-road').listeners.click();
 
   harness.deferImpactPreviews();
   elements.get('event-type').value = 'accident';
@@ -261,6 +355,7 @@ test('a pending preview safely settles after the selected road is cleared', asyn
   const { elements, mapListeners } = harness;
   elements.get('pick-road').listeners.click();
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  elements.get('confirm-picked-road').listeners.click();
 
   harness.deferImpactPreviews();
   elements.get('event-type').value = 'closure';
@@ -334,6 +429,7 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
   assert.equal(elements.get('publish-event').disabled, true);
 
+  elements.get('confirm-picked-road').listeners.click();
   elements.get('field-confirmation').value = '已联系现场负责人核实，该路段确有人流聚集。';
   elements.get('field-confirmation').listeners.input();
   assert.equal(elements.get('publish-event').disabled, false);
