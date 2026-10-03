@@ -231,6 +231,8 @@ def test_first_road_event_migration_stops_old_web_writer_before_copy():
     from pathlib import Path
     deploy_script = (Path(__file__).resolve().parents[1] / "deploy.sh").read_text(encoding="utf-8")
     stop = deploy_script.index('sudo systemctl stop "$SERVICE_NAME"')
-    copy = deploy_script.index('cp "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"')
+    copy = deploy_script.index('scripts/deploy/migrate_road_conditions.py')
     restart = deploy_script.index('sudo systemctl restart "${SERVICE_NAME}"')
     assert stop < copy < restart
+    assert 'cp "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"' not in deploy_script
+    assert '"$APP_DIR/venv/bin/python" scripts/deploy/migrate_road_conditions.py' in deploy_script

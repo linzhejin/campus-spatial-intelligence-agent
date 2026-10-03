@@ -10,7 +10,12 @@
 """
 
 import math
+import json
+import os
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import networkx as nx
 import pytest
@@ -435,6 +440,46 @@ class TestResolveAndLifecycle:
         assert len(records) == 18
         assert {item["id"] for item in records} == {item["id"] for item in created}
 
+    def test_independent_processes_keep_every_event_record(self, tmp_path):
+        target = tmp_path / "shared-road-conditions.json"
+        target.write_text("[]\n", encoding="utf-8")
+        worker = r'''
+import os
+from spatial.road_conditions import add_condition
+
+edge = {
+    "u": 1, "v": 2, "key": 0, "road_name": "并发测试路",
+    "snap_lng_gcj": 114.36, "snap_lat_gcj": 30.53, "dist_m": 0,
+    "geometry_gcj": [[114.36, 30.53], [114.361, 30.53]],
+    "edges": [[1, 2, 0]],
+}
+worker_id = os.environ["ROAD_EVENT_WORKER_ID"]
+for index in range(4):
+    add_condition("event", f"{worker_id}-{index}", edge)
+'''
+        project_root = Path(__file__).resolve().parents[1]
+        processes = []
+        for worker_id in range(4):
+            environment = os.environ.copy()
+            environment["ROAD_CONDITIONS_FILE"] = str(target)
+            environment["ROAD_EVENT_WORKER_ID"] = str(worker_id)
+            processes.append(subprocess.Popen(
+                [sys.executable, "-c", worker], cwd=project_root, env=environment,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            ))
+        failures = []
+        for process in processes:
+            stdout, stderr = process.communicate(timeout=30)
+            if process.returncode:
+                failures.append((process.returncode, stdout, stderr))
+        assert failures == []
+
+        records = json.loads(target.read_text(encoding="utf-8"))
+        assert len(records) == 16
+        assert {item["name"] for item in records} == {
+            f"{worker_id}-{index}" for worker_id in range(4) for index in range(4)
+        }
+
     def test_add_rejects_unknown_type(self, G):
         snap = rc.snap_to_edge(G, *wgs84_to_gcj02(G.nodes[1]["x"], G.nodes[1]["y"]))
         with pytest.raises(ValueError):
@@ -750,7 +795,11 @@ class TestRoadConditionAPI:
         job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
         job = {"job_id": job_id, "status": "needs_review", "review_status": "confirmed",
                "review_candidate_index": 0,
-               "result": {"candidates": [{"kind": "vehicle_cluster_review"}]}}
+               "result": {"candidates": [{
+                   "kind": "vehicle_cluster_review",
+                   "review_required": True,
+                   "auto_publish": False,
+               }]}}
         monkeypatch.setattr(database, "initialize", lambda *_args: None)
         monkeypatch.setattr(vision_repository, "get_job", lambda *_args: job)
         gj = _mid_12_gcj(G)
@@ -808,6 +857,31 @@ class TestRoadConditionAPI:
             "field_confirmation": "经现场人员确认路段的通行情况。",
         }, headers={"X-Admin-Token": "test-token-xyz"})
         assert response.status_code == 409
+        assert rc.list_conditions() == []
+
+    @pytest.mark.parametrize("candidate", [
+        {},
+        {"kind": "unknown_candidate", "review_required": True, "auto_publish": False},
+        {"kind": "possible_congestion", "review_required": False, "auto_publish": False},
+        {"kind": "possible_congestion", "review_required": True, "auto_publish": True},
+    ])
+    def test_malformed_vision_candidate_cannot_become_road_event(self, client, G, monkeypatch, candidate):
+        from storage import database, vision_repository
+
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "status": "needs_review", "review_status": "confirmed",
+            "review_candidate_index": 0,
+            "result": {"candidates": [candidate]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "无效视觉来源", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e",
+            "field_confirmation": "现场人员已核实该道路当前通行情况。",
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+        assert response.status_code == 409
+        assert response.get_json()["error"] == "vision_candidate_invalid"
         assert rc.list_conditions() == []
 
     def test_post_too_far(self, client):

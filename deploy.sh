@@ -160,13 +160,8 @@ if ! grep -qE '^ROAD_CONDITIONS_FILE=.' .env; then
     fi
     mkdir -p "$APP_DIR/data/runtime"
     RUNTIME_CONDITIONS="$APP_DIR/data/runtime/road_conditions.json"
-    if [ ! -f "$RUNTIME_CONDITIONS" ]; then
-        if [ -f "$APP_DIR/data/road_conditions.json" ]; then
-            cp "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"
-        else
-            printf '[]\n' > "$RUNTIME_CONDITIONS"
-        fi
-    fi
+    "$APP_DIR/venv/bin/python" scripts/deploy/migrate_road_conditions.py \
+        "$APP_DIR/data/road_conditions.json" "$RUNTIME_CONDITIONS"
     if grep -qE '^ROAD_CONDITIONS_FILE=' .env; then
         sed -i "s|^ROAD_CONDITIONS_FILE=.*|ROAD_CONDITIONS_FILE=${RUNTIME_CONDITIONS}|" .env
     else

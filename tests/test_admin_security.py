@@ -104,6 +104,30 @@ def test_manager_session_expires_on_server(monkeypatch, expired_field, seconds):
     assert client.get("/api/manager/vision-status").status_code == 401
 
 
+def test_automatic_vision_media_load_does_not_refresh_manager_idle_session(monkeypatch):
+    import api.routes as routes
+    from app import create_app
+
+    clock = [10_000.0]
+    monkeypatch.setattr(routes.time, "time", lambda: clock[0])
+    monkeypatch.setattr(routes.config, "ROAD_CONDITION_ADMIN_PASSWORD", "manager-secret")
+    app = create_app()
+    app.config.update(TESTING=True, SECRET_KEY="test-secret", DATABASE_URL=None)
+    client = app.test_client()
+    assert client.post("/api/admin/login", json={"password": "manager-secret"}).status_code == 200
+
+    # A preview element is recreated by background job polling shortly before the
+    # idle deadline. Loading that media must not count as deliberate activity.
+    clock[0] += 30 * 60 - 1
+    media = client.get(
+        "/api/manager/vision-jobs/00000000-0000-0000-0000-000000000000/media"
+    )
+    assert media.status_code in {404, 503}
+
+    clock[0] += 2
+    assert client.get("/api/manager/vision-status").status_code == 401
+
+
 def test_vision_review_records_selected_candidate_index(monkeypatch):
     import api.routes as routes
     from storage import database, vision_repository
@@ -111,6 +135,13 @@ def test_vision_review_records_selected_candidate_index(monkeypatch):
 
     monkeypatch.setattr(routes.config, "ROAD_CONDITION_ADMIN_PASSWORD", "manager-secret")
     monkeypatch.setattr(database, "initialize", lambda *_args: None)
+    monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+        "status": "needs_review",
+        "result": {"candidates": [
+            {"kind": "possible_congestion", "review_required": True, "auto_publish": False},
+            {"kind": "vehicle_cluster_review", "review_required": True, "auto_publish": False},
+        ]},
+    })
     calls = []
     monkeypatch.setattr(vision_repository, "review_job", lambda *args, **kwargs: (
         calls.append(kwargs) or {"job_id": args[1], "review_status": kwargs["review_status"]}
@@ -128,3 +159,33 @@ def test_vision_review_records_selected_candidate_index(monkeypatch):
                                       "note": "影像中连续低速车辆"}, headers=headers)
     assert response.status_code == 200
     assert calls[-1]["candidate_index"] == 1
+
+
+def test_vision_review_rejects_candidate_outside_review_only_schema(monkeypatch):
+    import api.routes as routes
+    from storage import database, vision_repository
+    from app import create_app
+
+    monkeypatch.setattr(routes.config, "ROAD_CONDITION_ADMIN_PASSWORD", "manager-secret")
+    monkeypatch.setattr(database, "initialize", lambda *_args: None)
+    monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+        "status": "needs_review",
+        "result": {"candidates": [{
+            "kind": "possible_congestion", "review_required": False, "auto_publish": False,
+        }]},
+    })
+    calls = []
+    monkeypatch.setattr(vision_repository, "review_job", lambda *args, **kwargs: calls.append(kwargs))
+    app = create_app()
+    app.config.update(TESTING=True, SECRET_KEY="test-secret", DATABASE_URL=None)
+    client = app.test_client()
+    csrf = client.post("/api/admin/login", json={"password": "manager-secret"}).get_json()["data"]["csrf_token"]
+
+    response = client.post(
+        "/api/manager/vision-jobs/a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e/review",
+        json={"status": "confirmed", "candidate_index": 0, "note": "影像中车辆持续低速聚集"},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert response.status_code == 409
+    assert response.get_json()["error"] == "vision_candidate_invalid"
+    assert calls == []

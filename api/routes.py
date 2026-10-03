@@ -67,6 +67,19 @@ logger = logging.getLogger(__name__)
 _ADMIN_IDLE_SECONDS = 30 * 60
 _ADMIN_MAX_SECONDS = 8 * 60 * 60
 _ADMIN_POLL_PATHS = {"/api/manager/vision-status", "/api/manager/vision-jobs"}
+_ADMIN_PASSIVE_ENDPOINTS = {"api.manager_vision_media"}
+_VISION_REVIEW_CANDIDATE_KINDS = {
+    "vehicle_cluster_review", "possible_congestion", "possible_accident",
+}
+
+
+def _valid_review_only_candidate(candidate) -> bool:
+    return (
+        isinstance(candidate, dict)
+        and candidate.get("kind") in _VISION_REVIEW_CANDIDATE_KINDS
+        and candidate.get("review_required") is True
+        and candidate.get("auto_publish") is False
+    )
 
 
 def _clear_admin_session():
@@ -90,7 +103,8 @@ def _admin_identity():
                 or now - last_active > _ADMIN_IDLE_SECONDS):
             _clear_admin_session()
         else:
-            if request.path not in _ADMIN_POLL_PATHS:
+            if (request.path not in _ADMIN_POLL_PATHS
+                    and request.endpoint not in _ADMIN_PASSIVE_ENDPOINTS):
                 session["admin_last_active_at"] = now
             return "web"
     token = request.headers.get("X-Admin-Token", "").strip()
@@ -1984,7 +1998,7 @@ def create_road_condition():
                 or not 0 <= candidate_index < len(candidates)):
             return _err("vision_candidate_ambiguous", "影像审核未指明具体候选，请重新核实。", 409)
         candidate = candidates[candidate_index]
-        if not isinstance(candidate, dict):
+        if not _valid_review_only_candidate(candidate):
             return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
         source = {"kind": "vision_job", "job_id": source_job_id,
                   "candidate_index": candidate_index,
@@ -2334,6 +2348,13 @@ def review_manager_vision_job(job_id):
         uuid.UUID(job_id)
         from storage import database, vision_repository
         database.initialize(current_app.config.get("DATABASE_URL"))
+        if review_status == "confirmed":
+            job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
+            candidates = (job.get("result") or {}).get("candidates") if job else None
+            if (not isinstance(candidates, list)
+                    or candidate_index >= len(candidates)
+                    or not _valid_review_only_candidate(candidates[candidate_index])):
+                return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
         result = vision_repository.review_job(
             current_app.config.get("DATABASE_URL"), job_id,
             review_status=review_status,
