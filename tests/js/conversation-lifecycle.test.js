@@ -177,6 +177,25 @@ test('explicit refresh clears old history but later browser reload restores only
     assert.equal(storage.has('whu_walker:explicit_reset_session'), false);
 });
 
+test('explicit refresh removes the already-rendered chat bubbles from the current page', () => {
+    const h = harness();
+    const removed = [];
+    const chatContent = h.context.document.getElementById('chat-content');
+    chatContent.querySelectorAll = selector => {
+        assert.equal(selector, '.chat-bubble-row');
+        return [
+            { remove() { removed.push('user'); } },
+            { remove() { removed.push('assistant'); } },
+        ];
+    };
+
+    h.refreshPage();
+
+    assert.deepEqual(removed, ['user', 'assistant']);
+    assert.equal(h.state.conversationHistory.length, 0);
+    assert.equal(h.state.serverConversationId, null);
+});
+
 test('each selected map point can be removed independently, including a via point', () => {
     const h = harness();
     const removed = [];

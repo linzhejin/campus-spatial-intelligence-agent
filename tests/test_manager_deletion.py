@@ -33,6 +33,57 @@ def test_pending_delete_repository_uses_last_attempt_order(monkeypatch):
     assert [row["job_id"] for row in pending] == ids
 
 
+def test_begin_delete_jobs_locks_duplicate_rows_in_stable_order(monkeypatch):
+    digest = "same-content-sha256"
+    locked_ids = ["job-a", "job-b", "job-c"]
+    calls = []
+
+    class Cursor:
+        def __init__(self, rows=None, row=None):
+            self.rows = rows or []
+            self.row = row
+
+        def fetchone(self):
+            return self.row
+
+        def fetchall(self):
+            return self.rows
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, query, params):
+            normalized = " ".join(query.split())
+            calls.append((normalized, params))
+            if normalized.startswith("SELECT sha256 FROM manager_vision_job"):
+                return Cursor(row={"sha256": digest})
+            if normalized.startswith("SELECT job_id FROM manager_vision_job"):
+                assert "WHERE sha256=%s ORDER BY job_id FOR UPDATE" in normalized
+                assert params == (digest,)
+                return Cursor(rows=[{"job_id": job_id} for job_id in locked_ids])
+            if normalized.startswith("UPDATE manager_vision_job"):
+                assert "WHERE sha256=%s AND deleted_at IS NULL" in normalized
+                assert params == (digest,)
+                return Cursor()
+            assert normalized.startswith("SELECT job_id, media_path, sha256 FROM manager_vision_job")
+            assert params == (digest,)
+            return Cursor(rows=[{"job_id": job_id, "media_path": job_id + ".png", "sha256": digest}
+                                for job_id in locked_ids])
+
+    monkeypatch.setattr(database, "connect", lambda _url: Connection())
+
+    deleted = vision_repository.begin_delete_jobs("postgresql://test", "job-b")
+
+    assert [row["job_id"] for row in deleted] == locked_ids
+    assert len(calls) == 4
+    assert "ORDER BY job_id FOR UPDATE" in calls[1][0]
+    assert calls[1][1] == (digest,)
+
+
 def install_fake_vision_repository(monkeypatch, rows):
     """Install a small durable-state model for manager deletion API tests."""
     retry_clock = {"value": 0}

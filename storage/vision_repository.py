@@ -134,13 +134,19 @@ def begin_delete_jobs(url: str | None, job_id: str) -> list[dict[str, Any]]:
     """
     with database.connect(url) as conn:
         target = conn.execute(
-            "SELECT sha256 FROM manager_vision_job WHERE job_id=%s FOR UPDATE", (job_id,),
+            "SELECT sha256 FROM manager_vision_job WHERE job_id=%s", (job_id,),
         ).fetchone()
         if not target:
             return []
         digest = target.get("sha256")
         identity_clause = "sha256=%s" if digest else "job_id=%s"
         identity = digest if digest else job_id
+        locked_rows = conn.execute(
+            "SELECT job_id FROM manager_vision_job WHERE " + identity_clause
+            + " ORDER BY job_id FOR UPDATE", (identity,),
+        ).fetchall()
+        if not locked_rows:
+            return []
         conn.execute(
             "UPDATE manager_vision_job SET deleted_at=COALESCE(deleted_at, now()),"
             " worker_id=NULL, lease_until=NULL, updated_at=now() WHERE " + identity_clause
