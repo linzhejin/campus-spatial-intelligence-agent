@@ -568,6 +568,13 @@ class TestTourRoute:
         last = result["legs"][-1]["recommended"][-1]
         assert first == last
 
+    def test_two_stop_tour_loop_includes_return_leg(self, mock_graph):
+        result = compute_tour_route(mock_graph, self._pois()[:2], loop=True)
+
+        assert result["loop"] is True
+        assert len(result["legs"]) == 2
+        assert result["legs"][0]["recommended"][0] == result["legs"][-1]["recommended"][-1]
+
     def test_tour_drops_unreachable(self, mock_graph):
         mock_graph.add_node(99)
         mock_graph.nodes[99]["x"] = 114.360

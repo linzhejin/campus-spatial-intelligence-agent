@@ -1563,7 +1563,7 @@ def _order_length(matrix: dict, order: list, loop: bool) -> float:
         if d == float("inf"):
             return float("inf")
         total += d
-    if loop and len(order) > 2:
+    if loop and len(order) > 1:
         d = matrix.get((order[-1], order[0]), float("inf"))
         if d == float("inf"):
             return float("inf")
@@ -1680,7 +1680,7 @@ def compute_tour_route(
     ordered_nodes = [nodes[i] for i in order]
     ordered_pois = [poi_nodes[i - 1][0] if anchor_first else poi_nodes[i][0]
                     for i in order if not (anchor_first and i == 0)]
-    seq = ordered_nodes + ([ordered_nodes[0]] if loop and len(ordered_nodes) > 2 else [])
+    seq = ordered_nodes + ([ordered_nodes[0]] if loop and len(ordered_nodes) > 1 else [])
     legs = []
     total = 0.0
     for a, b in zip(seq, seq[1:]):

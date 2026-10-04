@@ -151,6 +151,30 @@ test('desktop route feedback gives one useful overview with endpoints, strategy,
     assert.doesNotMatch(reply, /沿途地点一|沿途地点二/);
     assert.doesNotMatch(reply, /已为你规划好步行路线/);
 });
+test('desktop tour feedback identifies the loop and omits generic filler', async () => {
+    const h = harness();
+    h.setApi(async () => h.context.reply);
+    h.context.reply = {
+        task_type: 'path_planning', response_kind: 'route', recommended: [[1, 2], [3, 4]],
+        route_kind: 'tour', mode: 'walk', recommended_length_m: 6100, duration_min: 81,
+        tour: { loop: true, ordered_pois: [{ name: '珞珈山' }, { name: '凌波门东湖观景点' }] },
+        route_state: {
+            ...existingRoute(), start: { name: '珞珈山' }, end: { name: '珞珈山' },
+            route_id: 'tour-loop', route_kind: 'tour',
+            tour: { loop: true, pois: [{ name: '珞珈山' }, { name: '凌波门东湖观景点' }] },
+            strategy: { name: 'recommended' },
+        },
+        explanation: '已为你规划好从珞珈山到终点的步行路线。',
+    };
+
+    await h.submit('游览珞珈山和东湖');
+
+    const reply = h.bubbles.at(-1).text;
+    assert.match(reply, /环线/);
+    assert.match(reply, /珞珈山/);
+    assert.match(reply, /返回/);
+    assert.doesNotMatch(reply, /路线特点：已为你规划好/);
+});
 test('desktop route details are compact and use collapsed disclosures for long lists', () => {
     const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');
     const css = fs.readFileSync(require.resolve('../../static/css/style.css'), 'utf8');

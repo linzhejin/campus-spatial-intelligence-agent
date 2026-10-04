@@ -1,4 +1,7 @@
+from types import SimpleNamespace
+
 import networkx as nx
+import pytest
 
 import agents.tools as tools
 import api.routes as routes
@@ -132,6 +135,115 @@ def test_tour_excludes_pois_far_from_the_routable_network(monkeypatch):
     assert seen["poi_nodes"] == []
     assert result["error"] == "tour_failed"
     assert artifact is None
+
+
+def test_tour_does_not_replace_an_unresolved_named_stop_with_generic_scenery(monkeypatch):
+    graph = _graph()
+    known = {"id": "poi_luojia", "name": "武汉大学珞珈山", "type": "scenery",
+             "subcategory": "hill", "lat": 30.53, "lon": 114.36}
+    monkeypatch.setattr(tools, "_plan_common", lambda args, ctx: (graph, graph, "walk", None))
+    monkeypatch.setattr(tools, "find_poi_ambiguous",
+                        lambda name: (known, []) if name == "珞珈山" else (None, []))
+    monkeypatch.setattr(tools, "search_by_category",
+                        lambda **kwargs: pytest.fail("named stops must not fall back to generic POIs"))
+    context = {
+        "_route_graph_snapshot": graph,
+        "_route_conditions_snapshot": [],
+        "_route_weather_snapshot": None,
+    }
+
+    result, artifact = tools._tool_plan_tour(
+        {"theme": "scenery", "poi_names": ["珞珈山", "东湖"]}, context,
+    )
+
+    assert result["error"] == "tour_poi_not_found"
+    assert result["missing_pois"] == ["东湖"]
+    assert artifact is None
+
+
+@pytest.mark.parametrize("query", [
+    "我要游览珞珈山和东湖",
+    "规划一条经过珞珈山和东湖的游览路线",
+    "规划珞珈山和东湖的游览路线",
+    "珞珈山和东湖游览路线",
+    "去珞珈山和东湖逛逛",
+])
+def test_tour_infers_named_destinations_from_query_when_model_omits_poi_names(query):
+    names, missing = tools._infer_explicit_tour_poi_names(query)
+
+    assert names == ["武汉大学珞珈山", "凌波门东湖观景点"]
+    assert missing == []
+
+
+@pytest.mark.parametrize("query", [
+    "我不想逛珞珈山和东湖，推荐一条赏樱路线",
+    "先别逛珞珈山和东湖，推荐其他景点",
+])
+def test_tour_exclusion_query_resolves_places_to_exclude(query):
+    excluded = tools._infer_excluded_tour_poi_names(query)
+
+    assert excluded == {"武汉大学珞珈山", "凌波门东湖观景点"}
+
+
+def test_tour_inference_keeps_positive_stops_after_a_negated_clause():
+    names, missing = tools._infer_explicit_tour_poi_names(
+        "我不想逛珞珈山和东湖，但想游览老斋舍和樱花大道",
+    )
+
+    assert names == ["武汉大学老斋舍", "武汉大学樱花大道"]
+    assert missing == []
+
+
+@pytest.mark.parametrize("query", [
+    "我不想逛珞珈山和东湖，推荐一条赏樱路线",
+    "先别逛珞珈山和东湖，推荐其他景点",
+])
+def test_tour_does_not_route_explicitly_excluded_stops_when_model_passes_them(monkeypatch, query):
+    graph = _graph()
+    luojia = {"id": "poi_luojia", "name": "武汉大学珞珈山", "type": "scenery",
+              "subcategory": "hill", "lat": 30.53, "lon": 114.36}
+    donghu = {"id": "poi_donghu", "name": "凌波门东湖观景点", "type": "scenery",
+              "subcategory": "lake", "lat": 30.53, "lon": 114.36}
+    other = [
+        {"id": "poi_other_1", "name": "老斋舍", "type": "scenery",
+         "subcategory": "landmark", "lat": 30.53, "lon": 114.36},
+        {"id": "poi_other_2", "name": "樱花大道", "type": "scenery",
+         "subcategory": "sakura", "lat": 30.53, "lon": 114.36},
+    ]
+    lookup = {
+        "珞珈山": luojia, "武汉大学珞珈山": luojia,
+        "东湖": donghu, "凌波门东湖观景点": donghu,
+    }
+    monkeypatch.setattr(tools, "_plan_common", lambda args, ctx: (graph, graph, "walk", None))
+    monkeypatch.setattr(tools, "find_poi_ambiguous",
+                        lambda name: (lookup.get(name), []))
+    monkeypatch.setattr(tools, "search_by_category", lambda **kwargs: [luojia, donghu, *other])
+    monkeypatch.setattr(tools, "_snap_wgs_to_network",
+                        lambda lon, lat, graph, name: (1, {"name": name}, None))
+    monkeypatch.setattr(tools, "importance_score", lambda poi: 0.5)
+    monkeypatch.setattr(tools, "_strategy_for_args", lambda args, ctx: SimpleNamespace(
+        name="recommended", weights={}, detour_cap=1.5,
+        as_dict=lambda: {"name": "recommended"},
+    ))
+    seen = {}
+
+    def capture_stops(_graph, poi_nodes, **kwargs):
+        seen["names"] = [poi["name"] for poi, _ in poi_nodes]
+        return {"legs": [], "ordered_pois": [], "total_length_m": 0,
+                "duration_min": 0, "dropped": [], "loop": True}
+
+    monkeypatch.setattr(tools, "compute_tour_route", capture_stops)
+    result, _ = tools._tool_plan_tour({
+        "theme": "scenery", "poi_names": ["珞珈山", "东湖"], "loop": True,
+    }, {
+        "query": query,
+        "_route_graph_snapshot": graph,
+        "_route_conditions_snapshot": [],
+        "_route_weather_snapshot": None,
+    })
+
+    assert seen["names"] == ["老斋舍", "樱花大道"]
+    assert result["error"] == "tour_failed"
 
 
 def test_agent_chat_adapter_preserves_endpoint_access_evidence():

@@ -422,7 +422,12 @@ class TestPreferenceReliability:
     def test_tour_exposes_all_route_preferences(self):
         schemas = {t["function"]["name"]: t["function"]["parameters"]
                    for t in planner.agent_tools.TOOL_SCHEMAS}
-        assert {"mode", "weights", "constraints"} <= schemas["plan_tour"]["properties"].keys()
+        properties = schemas["plan_tour"]["properties"]
+        assert {"mode", "weights", "constraints", "poi_names"} <= properties.keys()
+        assert properties["poi_names"]["type"] == "array"
+        assert properties["poi_names"]["items"]["type"] == "string"
+        assert properties["poi_names"]["minItems"] == 2
+        assert properties["poi_names"]["maxItems"] == 8
 
     @pytest.mark.parametrize("query", ["从教五到图书馆", "从珞珈门到樱顶，赶时间", "回宿舍上课别绕路"])
     def test_commute_ignores_model_invented_scenery_weights(self, query):

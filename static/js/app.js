@@ -3530,6 +3530,7 @@
         var text = String(explanation || '').trim();
         if (!text) return '';
         return text
+            .replace(/^(?:(?:已为你|已为您|为你|为您)?规划(?:好|好了|完成)?从.+?到(?:终点|目的地)的(?:步行|骑行|驾车)?路线)[，,。；;\s]*/g, '')
             .replace(/^(?:路线已规划|路线规划完成)[，,。；;\s]*/g, '')
             .replace(/^(?:(?:已为你|已为您|为你|为您)?规划(?:好了|好|完成)?(?:一条)?(?:步行|骑行|驾车)?路线)[，,。；;\s]*/g, '')
             .replace(/(?:步行|骑行|驾车)?\s*(?:约)?\s*\d+(?:[.,]\d+)?\s*(?:公里|km|米|m|分钟)/gi, '')
@@ -3556,7 +3557,10 @@
         var strategyName = typeof strategy === 'string' ? strategy : strategy.name;
         var strategyLabel = STRATEGY_LABELS[strategyName] || '综合推荐';
         var routeKind = (current && current.route_kind) || data.route_kind || 'direct';
-        var overview = '路线总览：' + start + ' → ' + end + '。' + modeLabel + '约 ' + distanceText;
+        var tour = data.tour || (current && current.tour) || {};
+        var overview = routeKind === 'tour' && tour.loop !== false
+            ? '游览环线：从' + start + '出发，游览后返回' + start + '。' + modeLabel + '约 ' + distanceText
+            : '路线总览：' + start + ' → ' + end + '。' + modeLabel + '约 ' + distanceText;
         if (duration !== '—') overview += '，预计用时约 ' + duration;
         overview += '；采用' + strategyLabel + '策略。';
 

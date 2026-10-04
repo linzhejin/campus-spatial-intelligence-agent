@@ -60,7 +60,7 @@ def test_direct_tour_and_multimodal_route_executors_accept_their_declared_shapes
         "name": ref.get("name", "端点"), "snap_distance_m": 0,
         "status": "unverified_nearby_network_node", "access_link_verified": False,
     })
-    monkeypatch.setattr(tools, "get_node_coords", lambda _graph, node: (114.36 + node / 1000, 30.53))
+    monkeypatch.setattr(tools, "get_node_coords", lambda _graph, node: (114.36, 30.53))
     monkeypatch.setattr(tools, "_strategy_for_args", lambda args, ctx, **kwargs: decision)
 
     def route_result(*args, **kwargs):
@@ -112,13 +112,23 @@ def test_direct_tour_and_multimodal_route_executors_accept_their_declared_shapes
     monkeypatch.setattr(tools, "find_poi_ambiguous", lambda name: (poi_by_name.get(name), []))
     monkeypatch.setattr(tools, "gcj02_to_wgs84", lambda lon, lat: (lon, lat))
     monkeypatch.setattr(tools, "get_nearest_node", lambda _graph, lng, lat: 2 if lng < 114.365 else 3)
-    monkeypatch.setattr(tools, "compute_tour_route", lambda *args, **kwargs: {
-        "legs": [route_result(1, 2), route_result(2, 1)], "ordered_pois": pois,
-        "total_length_m": 200.0, "duration_min": 4.0, "dropped": [], "loop": True,
+    seen_tour_names = {}
+
+    def tour_result(_graph, poi_nodes, **kwargs):
+        seen_tour_names["names"] = [poi["name"] for poi, _ in poi_nodes]
+        return {
+            "legs": [route_result(1, 2), route_result(2, 1)], "ordered_pois": pois,
+            "total_length_m": 200.0, "duration_min": 4.0, "dropped": [], "loop": True,
+        }
+
+    monkeypatch.setattr(tools, "compute_tour_route", tour_result)
+    result, artifact = tools.execute_tool("plan_tour", {"loop": True}, {
+        "query": "游览A和B", "_route_graph_snapshot": graph,
+        "_route_conditions_snapshot": [], "_route_weather_snapshot": None,
     })
-    result, artifact = tools.execute_tool("plan_tour", {"poi_names": ["A", "B"], "loop": True})
     assert artifact["route_kind"] == "tour"
     assert len(result["tour"]["ordered_pois"]) == 2
+    assert seen_tour_names["names"] == ["A", "B"]
 
     result, artifact = tools.execute_tool("plan_multimodal_route", {
         "start": {"name": "起点"},

@@ -148,6 +148,16 @@ class TestGetPoi:
         assert xingyuan is None
         assert search_results[0]["id"] == "poi_307"
 
+    def test_real_master_resolves_donghu_as_the_whu_lakeside_viewpoint(self):
+        with patch.object(poi_module, "_load_from_config", return_value=[]):
+            poi_module._LOADED = False
+            poi_module._POIS_CACHE = []
+            place, alternatives = poi_module.find_poi_ambiguous("东湖")
+
+        assert alternatives == []
+        assert place is not None
+        assert place["name"] == "凌波门东湖观景点"
+
 
 MOCK_POIS_WITH_SUB = [
     {

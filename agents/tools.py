@@ -299,7 +299,7 @@ TOOL_SCHEMAS = [
         "function": {
             "name": "plan_tour",
             "description": "规划多点游览路线：如'游客想逛遍全校''推荐一条赏樱路线'。"
-                         "自动选点排序，生成环线或开放路线。",
+                         "未指定地点时自动选点；用户点名地点时将其作为必经站，生成环线或开放路线。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -311,6 +311,13 @@ TOOL_SCHEMAS = [
                     "start": _ENDPOINT_SCHEMA,
                     "loop": {"type": "boolean", "description": "true=回到起点环线（默认），false=开放路线"},
                     "max_pois": {"type": "integer", "description": "游览点数量上限 2~8，默认 6"},
+                    "poi_names": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 2,
+                        "maxItems": 8,
+                        "description": "用户明确指定的必经游览地点，全部纳入路线；不得用其他景点替代。",
+                    },
                     **_PREFERENCE_SCHEMA,
                 },
             },
@@ -1736,6 +1743,98 @@ def _tool_plan_multimodal_route(args, ctx):
     return payload, {"route": payload, "route_kind": "multimodal"}
 
 
+def _tour_clause_is_negated(text, position):
+    prefix = str(text or "")[:position]
+    clause = re.split(r"[，,。；;！？!\n]|但是|不过|然而|但", prefix)[-1]
+    return bool(re.search(r"(?:不想|不愿(?:意)?|不希望|不要|不去|(?:先)?别|避免|避开|排除)\s*$", clause))
+
+
+def _infer_excluded_tour_poi_names(query):
+    """Resolve places inside explicit negative tour clauses for auto selection."""
+    text = str(query or "").strip()
+    pattern = (
+        r"(?:不想|不愿(?:意)?|不希望|不要|不去|(?:先)?别|避免|避开|排除)\s*"
+        r"(?:(?:再)?(?:去|游览|游玩|游逛|逛|经过|途经|途径)\s*)?"
+        r"(.*?)(?=(?:但是|不过|然而|但)|[，,。；;！？!\n]|$)"
+    )
+    excluded = set()
+    for match in re.finditer(pattern, text):
+        for fragment in re.split(r"(?:以及|和|与|及|、|到|至)", match.group(1)):
+            candidate = re.sub(r"^\s*(?:去|到|逛|游览|游玩|经过|途经|途径)+", "", fragment).strip()
+            if not candidate:
+                continue
+            poi, _ = find_poi_ambiguous(candidate)
+            if poi:
+                excluded.add(poi.get("name", candidate))
+    return excluded
+
+
+def _infer_explicit_tour_poi_names(query):
+    """Recover named tour stops from an explicit multi-place tour request.
+
+    This is a guard against a model call that selects plan_tour but omits the
+    poi_names argument. Generic campus-tour requests remain category-driven.
+    """
+    text = str(query or "").strip()
+    excluded = _infer_excluded_tour_poi_names(text)
+    target_patterns = (
+        # Destination-first wording: “经过 A 和 B 的游览路线”.
+        r"(?:经过|途经|途径)\s*(.+?)(?:的)?(?:游览|游玩|游逛|逛一逛|逛逛|路线|环线)",
+        # Place names before a route request: “规划 A 和 B 的游览路线”.
+        r"(?:规划|安排|推荐|设计|生成)(?:一条|一段|一圈)?\s*(.+?)(?:的)?(?:游览路线|游玩路线|游逛路线|路线|环线)",
+        # Compact title-style request: “A 和 B 游览路线”.
+        r"^\s*(?:(?:我想要|我要|我想|帮我|请|带我|给我)\s*)?"
+        r"(.+?)(?:的)?(?:游览路线|游玩路线|游逛路线|路线|环线)\s*$",
+        # Place names before the tour verb: “去 A 和 B 逛逛”.
+        r"(?:去|到)\s*(.+?)(?:游览|游玩|游逛|逛一逛|逛逛|逛遍|转一转|转转|走走)",
+        # Tour verb before place names: “游览 A 和 B”.
+        r"(?:游览|游玩|游逛|逛一逛|逛逛|逛遍|逛)([^，,。；;！？!\n]*)",
+    )
+    target_text = None
+    for pattern in target_patterns:
+        for match in re.finditer(pattern, text):
+            if _tour_clause_is_negated(text, match.start()):
+                continue
+            target_text = match.group(1)
+            break
+        if target_text is not None:
+            break
+    if target_text is None:
+        return [], []
+
+    target_text = re.split(
+        r"[，,。；;！？!\n]|路线|怎么走|多久|大概|预计",
+        target_text, maxsplit=1,
+    )[0]
+    fragments = re.split(r"(?:以及|和|与|及|、)", target_text)
+    if len(fragments) < 2:
+        return [], []
+
+    names, missing = [], []
+    seen = set()
+    for fragment in fragments:
+        candidate = re.sub(
+            r"^\s*(?:(?:一下|一趟|一圈|一条|一段|我要|我想要|我想|帮我|请|带我|给我|"
+            r"规划|安排|推荐|设计|生成|经过|途经|途径|去|到)\s*)+",
+            "", fragment,
+        ).strip()
+        candidate = re.sub(r"(?:附近|周边|一带|沿线|景区|景点|看看|游览|游玩|等)+\s*$", "", candidate).strip()
+        candidate = re.sub(r"^(?:武汉大学|武大)(?:的)?", "", candidate).strip()
+        if not candidate:
+            continue
+        poi, _ = find_poi_ambiguous(candidate)
+        if not poi:
+            missing.append(candidate)
+            continue
+        if poi.get("name") in excluded:
+            continue
+        identity = poi.get("id") or poi.get("name")
+        if identity not in seen:
+            names.append(poi.get("name", candidate))
+            seen.add(identity)
+    return names, missing
+
+
 def _tool_plan_tour(args, ctx):
     context, snapshot_error = _prepare_route_context(ctx)
     if snapshot_error:
@@ -1751,20 +1850,72 @@ def _tool_plan_tour(args, ctx):
     }
     sel = theme_map.get(theme, {"poi_type": "scenery"})
     max_pois = max(2, min(int(args.get("max_pois", _TOUR_DEFAULT_MAX_POIS) or _TOUR_DEFAULT_MAX_POIS), 8))
+    query = context.get("query")
+    excluded_names = _infer_excluded_tour_poi_names(query)
+    inferred_names, inferred_missing = _infer_explicit_tour_poi_names(query)
     requested_names = [str(name).strip() for name in (args.get("poi_names") or []) if str(name).strip()]
+    if inferred_names or inferred_missing:
+        requested_names = inferred_names
+        if inferred_missing:
+            return {
+                "error": "tour_poi_not_found",
+                "message": "找不到这些指定游览地点：" + "、".join(inferred_missing)
+                           + "。我不会改成普通校园景点环线。",
+                "missing_pois": inferred_missing,
+            }, None
+    requested_names = [
+        name for name in requested_names
+        if (find_poi_ambiguous(name)[0] or {}).get("name", name) not in excluded_names
+    ]
+    if len(requested_names) > 8:
+        return {
+            "error": "too_many_tour_stops",
+            "message": "一次游览最多安排 8 个指定地点，请删减后再规划。",
+        }, None
     if requested_names:
         pois = []
+        missing_names = []
+        alternatives = {}
+        seen_pois = set()
         for name in requested_names[:8]:
-            poi, _ = find_poi_ambiguous(name)
+            poi, matches = find_poi_ambiguous(name)
             if poi:
-                pois.append(poi)
+                identity = poi.get("id") or poi.get("name")
+                if identity not in seen_pois:
+                    pois.append(poi)
+                    seen_pois.add(identity)
+            else:
+                missing_names.append(name)
+                if matches:
+                    alternatives[name] = [match.get("name", "") for match in matches[:5]]
+        if missing_names:
+            return {
+                "error": "tour_poi_not_found",
+                "message": "找不到这些指定地点：" + "、".join(missing_names)
+                           + "。我不会用其他景点替代，请确认地点名称。",
+                "missing_pois": missing_names,
+                "alternatives": alternatives,
+            }, None
     else:
-        pois = search_by_category(season=args.get("season"), include_minor=False, limit=max_pois, **sel)
-    if theme != "scenery" and len(pois) < 2:
+        pois = search_by_category(
+            season=args.get("season"), include_minor=False,
+            limit=min(max_pois + len(excluded_names), 24), **sel,
+        )
+        pois = [poi for poi in pois if poi.get("name") not in excluded_names][:max_pois]
+    if not requested_names and theme != "scenery" and len(pois) < 2:
         # 主题点太少时并入全校风景点
-        pois = (pois + search_by_category(poi_type="scenery", season=args.get("season"),
-                                          include_minor=False, limit=max_pois))[:max_pois]
+        additional = search_by_category(
+            poi_type="scenery", season=args.get("season"), include_minor=False,
+            limit=min(max_pois + len(excluded_names), 24),
+        )
+        pois = [poi for poi in pois + additional if poi.get("name") not in excluded_names][:max_pois]
     if len(pois) < 2:
+        if requested_names:
+            return {
+                "error": "not_enough_tour_stops",
+                "message": "指定地点少于两个不同地点，暂时无法生成游览路线。",
+                "requested_pois": requested_names,
+            }, None
         return {"error": "no_tour_pois", "message": "可游览的校内景点不足，换个主题试试"}, None
 
     # 起点：可选；默认以重要度最高的点为锚
@@ -1802,6 +1953,17 @@ def _tool_plan_tour(args, ctx):
         road_conditions=context["_route_conditions_snapshot"],
         strategy_name=decision.name, detour_cap=decision.detour_cap,
     )
+    if requested_names:
+        required_names = {poi.get("name") for poi in pois}
+        routed_names = {poi.get("name") for poi in result.get("ordered_pois", [])}
+        omitted_names = sorted(name for name in required_names if name not in routed_names)
+        if omitted_names:
+            return {
+                "error": "tour_stops_unroutable",
+                "message": "指定地点无法全部纳入同一条可行路线：" + "、".join(omitted_names)
+                           + "。我不会静默删掉这些地点。",
+                "missing_pois": omitted_names,
+            }, None
     if not result["legs"]:
         return {"error": "tour_failed", "message": "这些景点之间暂时无法连通，换一批试试"}, None
 
