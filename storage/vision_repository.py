@@ -136,6 +136,23 @@ def begin_delete_job(url: str | None, job_id: str) -> dict | None:
     return {**row, "job_id": str(row["job_id"])} if row else None
 
 
+def restore_failed_delete_job(url: str | None, job_id: str) -> bool:
+    """Make a failed deletion visible and leave interrupted work reclaimable."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET deleted_at=NULL,"
+            " status=CASE WHEN status='running' AND attempts>=3 THEN 'failed'"
+            " WHEN status='running' THEN 'queued' ELSE status END,"
+            " error=CASE WHEN status='running' AND attempts>=3 THEN %s"
+            " WHEN status='running' THEN NULL ELSE error END,"
+            " worker_id=NULL, lease_until=NULL, updated_at=now()"
+            " WHERE job_id=%s AND deleted_at IS NOT NULL RETURNING job_id",
+            (Jsonb({"code": "vision_delete_interrupted",
+                    "message": "影像文件删除未完成，分析任务已停止；请重新提交影像。"}), job_id),
+        ).fetchone()
+    return row is not None
+
+
 def finalize_delete_job(url: str | None, job_id: str) -> bool:
     """Physically remove a tombstoned job after its private media file is gone."""
     with database.connect(url) as conn:

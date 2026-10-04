@@ -2315,22 +2315,41 @@ def manager_vision_job(job_id):
             job = vision_repository.begin_delete_job(current_app.config.get("DATABASE_URL"), job_id)
             if not job:
                 return _ok({"deleted": True, "already_deleted": True})
+
+            def restore_job_for_retry() -> bool:
+                try:
+                    return vision_repository.restore_failed_delete_job(
+                        current_app.config.get("DATABASE_URL"), job_id,
+                    )
+                except Exception:
+                    logger.exception("恢复待重试的影像记录失败: job_id=%s", job_id)
+                    return False
+
             upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
             stored_path = str(job.get("media_path") or "")
             media_name = Path(stored_path)
             if (not stored_path or media_name.is_absolute() or media_name.name != stored_path
                     or stored_path in {".", ".."}):
                 logger.error("拒绝删除不安全的影像存储路径: job_id=%s", job_id)
-                return _err("invalid_media_path", "影像记录的存储路径无效，已隐藏记录，请联系维护人员。", 500)
+                restored = restore_job_for_retry()
+                message = ("影像路径无效，记录已恢复到管理列表；请联系维护人员检查存储路径。"
+                           if restored else "影像路径无效，记录暂时隐藏；请联系维护人员检查存储路径。")
+                return _err("invalid_media_path", message, 500)
             media_path = (upload_dir / media_name).resolve()
             if media_path.parent != upload_dir:
                 logger.error("拒绝删除越界的影像存储路径: job_id=%s", job_id)
-                return _err("invalid_media_path", "影像记录的存储路径无效，已隐藏记录，请联系维护人员。", 500)
+                restored = restore_job_for_retry()
+                message = ("影像路径无效，记录已恢复到管理列表；请联系维护人员检查存储路径。"
+                           if restored else "影像路径无效，记录暂时隐藏；请联系维护人员检查存储路径。")
+                return _err("invalid_media_path", message, 500)
             try:
                 media_path.unlink(missing_ok=True)
             except OSError:
                 logger.exception("删除影像文件失败: job_id=%s", job_id)
-                return _err("vision_delete_incomplete", "影像记录已隐藏，但文件暂未删除；请重试删除。", 503)
+                restored = restore_job_for_retry()
+                message = ("影像文件暂未删除，记录已恢复到管理列表；请解除文件占用后重试。"
+                           if restored else "影像文件暂未删除，记录暂时隐藏；请联系维护人员处理。")
+                return _err("vision_delete_incomplete", message, 503)
             vision_repository.finalize_delete_job(current_app.config.get("DATABASE_URL"), job_id)
             return _ok({"deleted": True, "job_id": job_id})
         job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)

@@ -61,17 +61,14 @@
     if (state.visionDeleteBusy.has(jobId)) return;
     if (!window.confirm('永久删除这条影像记录及上传文件？删除后无法恢复。')) return;
     state.visionDeleteBusy.add(jobId);
-    state.deletedVisionJobs.add(jobId);
-    refreshVisionJobs(true);
     try {
       await request('/api/manager/vision-jobs/' + encodeURIComponent(jobId), 'DELETE');
+      state.deletedVisionJobs.add(jobId);
       state.legacyDismissedVisionJobs.delete(jobId);
       persistLegacyDismissedVisionJobs();
       refreshVisionJobs(true);
     } catch (error) {
-      state.deletedVisionJobs.delete(jobId);
       window.alert(error.message || '影像记录删除失败，请重试。');
-      refreshVisionJobs(true);
     } finally {
       state.visionDeleteBusy.delete(jobId);
     }
