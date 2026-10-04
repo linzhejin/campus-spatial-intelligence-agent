@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -65,7 +65,7 @@
       preview.onerror = function () {
         preview.hidden = true;
         if (!state.mediaInvalidReason) {
-          message('vision-message', '图片已选择，但无法生成本地预览；仍可标注区域并尝试识别。');
+          message('vision-message', '图片已选择，但无法生成本地预览；仍可尝试识别。');
         }
       };
     }
@@ -79,15 +79,13 @@
       message('vision-message', '先选择一张图片或一段短视频。');
     } else if (state.mediaInvalidReason) {
       message('vision-message', state.mediaInvalidReason);
-    } else if (!state.anchor) {
-      message('vision-message', '影像已选择。下一步：点击“标注影像所在校园区域”，再点击地图。', true);
     } else {
-      message('vision-message', '影像和观察区域已准备好，可以开始识别。', true);
+      message('vision-message', '影像已准备好，可以开始识别；如有有效候选，将在复核后选择具体道路。', true);
     }
   }
 
   function canSubmitVision() {
-    return !!(state.inferenceReady && !state.visionUploadBusy && !state.mediaInvalidReason && state.anchor && byId('media-file').files.length);
+    return !!(state.inferenceReady && !state.visionUploadBusy && !state.mediaInvalidReason && byId('media-file').files.length);
   }
 
   function updateVisionSubmitState() {
@@ -187,7 +185,6 @@
   function setLoggedOut(notice) {
     if (state.poll) { window.clearInterval(state.poll); state.poll = null; }
     state.csrf = '';
-    state.anchor = null;
     state.reviewDrafts = {};
     clearVisionSource();
     if (state.map) clearPickedRoad();
@@ -214,7 +211,6 @@
       attribution: '© <a href="https://ditu.amap.com/" target="_blank" rel="noopener">高德地图</a>',
     }).addTo(state.map);
     state.eventLayers = L.layerGroup().addTo(state.map);
-    state.visionLayers = L.layerGroup().addTo(state.map);
     state.map.on('click', handleMapClick);
   }
 
@@ -226,7 +222,7 @@
     byId('manager-map').classList.toggle('manager-map-picking', active);
     byId('pick-road').textContent = active && state.pickPurpose === 'road' ? '取消选路' : '⌖ 选取路段';
     byId('pick-state').textContent = active
-      ? (state.pickPurpose === 'vision' ? '点击地图标注影像的大致观察区域' : '请在地图道路上点选，系统会吸附到正式路网')
+      ? '请在地图道路上点选，系统会吸附到正式路网'
       : '选择路段后再填写事件';
     updatePublishState();
   }
@@ -303,19 +299,6 @@
     var pickRequestId = ++state.pickRequestId;
     var lng = event.latlng.lng;
     var lat = event.latlng.lat;
-    if (state.pickPurpose === 'vision') {
-      state.anchor = { lng: lng, lat: lat };
-      if (state.anchorMarker) state.map.removeLayer(state.anchorMarker);
-      state.anchorMarker = L.circleMarker([lat, lng], {
-        radius: 8, color: '#fff', weight: 2, fillColor: '#52786e', fillOpacity: 1,
-      }).addTo(state.visionLayers);
-      byId('selected-anchor').textContent = '观察区域参考点 · ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
-      byId('selected-anchor').classList.add('is-set');
-      updateVisionSubmitState();
-      updateVisionGuidance();
-      setPicking(false);
-      return;
-    }
     message('form-message', '正在将点位匹配到校园路网…');
     var requestedEventType = byId('event-type').value;
     try {
@@ -699,11 +682,10 @@
     if (!state.inferenceReady) { message('vision-message', '视觉分析当前尚未就绪，请稍后重试。'); return; }
     var file = byId('media-file').files[0];
     if (!file) { message('vision-message', '请先选择一张图片或一段视频。'); return; }
-    if (!state.anchor) { message('vision-message', '请先在地图上标注影像所在校园区域。'); return; }
     if (file.size > state.maxBytes) {
       message('vision-message', '文件过大，当前上限为 ' + Math.round(state.maxBytes / (1024 * 1024)) + ' MB。'); return;
     }
-    var form = new FormData(); form.append('media', file); form.append('lng', state.anchor.lng); form.append('lat', state.anchor.lat);
+    var form = new FormData(); form.append('media', file);
     form.append('camera_stabilized', String(isVideoFile(file) && byId('camera-stabilized').checked));
     var button = byId('submit-vision');
     state.visionUploadBusy = true;
@@ -793,7 +775,6 @@
   byId('event-type').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
   byId('field-confirmation').addEventListener('input', updatePublishState);
   byId('clear-vision-source').addEventListener('click', clearVisionSource);
-  byId('pick-anchor').addEventListener('click', function () { setPicking(true, 'vision'); });
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
     renderSelectedMedia(file);

@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20261004a">
+  <link rel="stylesheet" href="/css/manager.css?v=20261004b">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20261004a" defer></script>
+  <script src="/js/manager.js?v=20261004b" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -128,14 +128,12 @@
                   <span>如需更换，重新点击上方选择区域。</span>
                 </div>
               </div>
-              <button id="pick-anchor" class="outline-button" type="button">⌖ 标注影像所在校园区域</button>
-              <div id="selected-anchor" class="selected-road">尚未标注影像区域</div>
               <label class="stabilization-option"><input id="camera-stabilized" type="checkbox"> 视频来自固定机位或已完成稳像（可选）</label>
               <small class="stabilization-note">未勾选时会尝试校正镜头运动；画面特征不足时只显示车辆统计，不生成拥堵候选。本版本不识别事故。</small>
               <button id="submit-vision" class="primary-button" type="submit" disabled>开始识别 <span>→</span></button>
               <p id="vision-message" class="form-message" role="status"></p>
             </form>
-            <p class="vision-disclaimer">单张图片只识别画面中的车辆，不能判断拥堵。地图标注是区域参考，识别框不是地面坐标；如需影响路线，须人工选定道路并单独发布路况。</p>
+            <p class="vision-disclaimer">单张图片只识别画面中的车辆，不能判断拥堵。识别框不是地面坐标；只有复核出有效候选并转入路况流程后，才需要在地图上选择具体道路。</p>
             <p class="vision-attribution">模型基于 <a href="https://github.com/VisDrone/VisDrone-Dataset" target="_blank" rel="noopener">VisDrone2019-DET（AISKYEYE 团队、天津大学）</a>训练，按 CC BY-NC-SA 3.0 仅用于非商业研究。模型卡报告的公开集指标不代表武大场景精度。</p>
           </div>
           <div id="vision-jobs" class="vision-jobs"><div class="empty-state">尚无巡查任务。</div></div>

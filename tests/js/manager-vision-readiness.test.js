@@ -19,6 +19,7 @@ function managerHarness() {
   const impactPreviewResolvers = [];
   const createdObjectUrls = [];
   const revokedObjectUrls = [];
+  const formEntries = [];
   let visionPostCount = 0;
   let visionJobs = [];
   let roadEvents = [];
@@ -107,7 +108,7 @@ function managerHarness() {
   };
   const context = {
     document, URL: URLApi,
-    window, L, FormData: class FormData { append() {} }, URLSearchParams, Date, Math, Promise, setTimeout,
+    window, L, FormData: class FormData { append(name, value) { formEntries.push([name, value]); } }, URLSearchParams, Date, Math, Promise, setTimeout,
     fetch: async (url, options = {}) => {
       requested.push(url);
       calls.push({ url, options });
@@ -148,7 +149,7 @@ function managerHarness() {
   vm.runInNewContext(source, context);
   return {
     elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document,
-    createdObjectUrls, revokedObjectUrls, getElement: element,
+    createdObjectUrls, revokedObjectUrls, formEntries, getElement: element,
     setInferenceReady: (value) => { inferenceReady = value; },
     setVisionJobs: (items) => { visionJobs = items; },
     setRoadEvents: (items) => { roadEvents = items; },
@@ -181,15 +182,16 @@ async function flush() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-test('manager media summary has responsive preview styling and fresh asset versions', () => {
+test('manager media summary has responsive preview styling and no rough-location control', () => {
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261004a/);
-  assert.match(managerHtml, /manager\.js\?v=20261004a/);
+  assert.match(managerHtml, /manager\.css\?v=20261004b/);
+  assert.match(managerHtml, /manager\.js\?v=20261004b/);
+  assert.doesNotMatch(managerHtml, /id="pick-anchor"|id="selected-anchor"/);
 });
 
-test('selecting an image immediately shows its summary and the next step', async () => {
+test('selecting an image immediately enables recognition without a map point', async () => {
   const harness = managerHarness();
   await flush();
   harness.setInferenceReady(true);
@@ -205,8 +207,8 @@ test('selecting an image immediately shows its summary and the next step', async
   assert.equal(harness.elements.get('selected-media-name').textContent, '珞珈道路.png');
   assert.match(harness.elements.get('selected-media-meta').textContent, /768 B.*图片/);
   assert.equal(harness.elements.get('selected-media-preview').src, 'blob:preview-0');
-  assert.match(harness.elements.get('vision-message').textContent, /下一步.*标注影像所在校园区域/);
-  assert.equal(harness.elements.get('submit-vision').disabled, true);
+  assert.match(harness.elements.get('vision-message').textContent, /可以开始识别.*复核后选择具体道路/);
+  assert.equal(harness.elements.get('submit-vision').disabled, false);
 });
 
 test('an oversized file is acknowledged but cannot be submitted', async () => {
@@ -245,13 +247,11 @@ test('reselecting and logging out release local image previews', async () => {
 test('manager refreshes vision readiness and updates submission availability while open', async () => {
   const harness = managerHarness();
   await flush();
-  const { elements, intervalCallbacks, mapListeners } = harness;
+  const { elements, intervalCallbacks } = harness;
   assert.equal(intervalCallbacks.length, 1);
 
   elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   elements.get('media-file').listeners.change();
-  elements.get('pick-anchor').listeners.click();
-  mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
   assert.equal(elements.get('submit-vision').disabled, true);
 
   harness.setInferenceReady(true);
@@ -275,15 +275,13 @@ test('manager refreshes vision readiness and updates submission availability whi
 test('readiness polling cannot re-enable or duplicate an in-flight media upload', async () => {
   const harness = managerHarness();
   await flush();
-  const { elements, intervalCallbacks, mapListeners } = harness;
+  const { elements, intervalCallbacks } = harness;
   harness.setInferenceReady(true);
   intervalCallbacks[0]();
   await flush();
 
   elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   elements.get('media-file').listeners.change();
-  elements.get('pick-anchor').listeners.click();
-  mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
   assert.equal(elements.get('submit-vision').disabled, false);
 
   const upload = elements.get('vision-form').listeners.submit({ preventDefault() {} });
@@ -310,11 +308,9 @@ test('successful media upload clears the preview and preserves the queued confir
   harness.getElement('selected-media').hidden = true;
   input.files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   input.listeners.change();
-  harness.elements.get('pick-anchor').listeners.click();
-  harness.mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
-
   const upload = harness.elements.get('vision-form').listeners.submit({ preventDefault() {} });
   await flush();
+  assert.deepEqual(harness.formEntries.map(([name]) => name), ['media', 'camera_stabilized']);
   harness.releaseVisionUploads();
   await upload;
 
