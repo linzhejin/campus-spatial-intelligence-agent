@@ -48,7 +48,7 @@ Update the analysis/worker type and call path so `analyze_media(..., anchor_gcj=
 
 - [ ] **Step 4: Run focused backend tests and verify GREEN**
 
-Run: `pytest -q tests/test_vision_jobs.py tests/test_vision_engine.py tests/test_vision_worker.py`
+Run: `pytest -q tests/test_vision_jobs.py tests/test_vision_media_pipeline.py tests/test_vision_engine_limits.py`
 
 Expected: all selected tests pass.
 
@@ -155,7 +155,7 @@ Run: `git add static/manager.html static/js/manager.js static/css/manager.css te
 
 Run: `node --test tests/js/*.test.js`
 
-Run: `pytest -q tests/test_vision_jobs.py tests/test_vision_analysis.py tests/test_vision_engine.py tests/test_vision_worker.py tests/test_manager_session.py tests/test_road_conditions.py`
+Run: `pytest -q tests/test_vision_jobs.py tests/test_vision_analysis.py tests/test_vision_media_pipeline.py tests/test_vision_engine_limits.py tests/test_vision_camera_motion.py tests/test_road_conditions.py`
 
 Expected: all selected JavaScript and Python tests pass.
 
