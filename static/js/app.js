@@ -938,11 +938,6 @@
 
         state.mapPointRevision += 1;
         if (marker && state.map) state.map.removeLayer(marker);
-        state.pointMarkers.via.forEach(function (viaMarker, viaIndex) {
-            if (!viaMarker || typeof viaMarker.bindTooltip !== 'function') return;
-            if (typeof viaMarker.unbindTooltip === 'function') viaMarker.unbindTooltip();
-            viaMarker.bindTooltip('途经点' + (viaIndex + 1), { permanent: false, direction: 'top' });
-        });
         if (state.map && typeof state.map.closePopup === 'function') state.map.closePopup();
         showTopBanner('已删除' + label, 'info');
 
@@ -987,7 +982,6 @@
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
             }).addTo(state.map);
-            m.bindTooltip(labels.via + viaIdx, { permanent: false, direction: 'top' });
             bindMapPointRemoval(m, 'via', labels.via);
             state.pointMarkers.via.push(m);
             showTopBanner('✅ 已设置途经点' + viaIdx + '（点标记可删除）', 'success');
@@ -1002,7 +996,6 @@
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
             }).addTo(state.map);
-            mk.bindTooltip(labels[key], { permanent: true, direction: 'top', offset: [0, -12] });
             bindMapPointRemoval(mk, key, labels[key]);
             state.pointMarkers[key] = mk;
             showTopBanner('✅ 已设置' + labels[key] + '（点标记可删除）', 'success');

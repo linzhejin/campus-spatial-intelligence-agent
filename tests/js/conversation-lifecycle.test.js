@@ -63,6 +63,7 @@ function harness(storage = new Map()) {
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
             removeMapPoint: removeMapPoint,
             bindMapPointRemoval: bindMapPointRemoval,
+            setMapPoint: setMapPoint,
             setTravelMode: setTravelMode,
             setApi: function (fn) {
                 submitQueuedMessage = function (query, body, bubble, epoch) {
@@ -156,6 +157,36 @@ test('map marker popup wires its delete button to that exact selected point', ()
 
     assert.equal(h.state.mapPoints.start, null);
     assert.deepEqual(removed, [marker]);
+});
+
+test('manual map markers do not render tooltip label boxes', () => {
+    const h = harness();
+    const markers = [];
+    h.state.map = { removeLayer() {}, closePopup() {} };
+    h.context.L = {
+        divIcon: options => options,
+        marker: (position, options) => {
+            const marker = {
+                position,
+                options,
+                tooltipCalls: [],
+                addTo() { return this; },
+                bindTooltip(...args) { this.tooltipCalls.push(args); return this; },
+                bindPopup(content) { this.popupContent = content; return this; },
+                on() { return this; },
+            };
+            markers.push(marker);
+            return marker;
+        },
+    };
+
+    h.setMapPoint('start', 114.3, 30.5, 114.3, 30.5);
+    h.setMapPoint('via', 114.31, 30.51, 114.31, 30.51);
+    h.setMapPoint('end', 114.32, 30.52, 114.32, 30.52);
+
+    assert.equal(markers.length, 3);
+    assert.deepEqual(markers.map(marker => marker.tooltipCalls.length), [0, 0, 0]);
+    assert.ok(markers.every(marker => /删除此/.test(marker.popupContent)));
 });
 
 test('deleting a via point replans with the remaining selected points', async () => {
