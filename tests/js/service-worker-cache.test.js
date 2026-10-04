@@ -5,6 +5,20 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../static/sw.js'), 'utf8');
+const indexSource = fs.readFileSync(path.join(__dirname, '../../static/index.html'), 'utf8');
+
+test('deployed app bundle uses a fresh and consistent service-worker cache key', () => {
+  const htmlAsset = indexSource.match(/<script\s+src="([^\"]*\/js\/app\.js\?v=([^\"]+))"/);
+  const workerAsset = source.match(/'([^']*\/js\/app\.js\?v=([^']+))'/);
+  const cacheVersion = source.match(/var CACHE_NAME = 'whu-walker-v(\d+)'/);
+
+  assert.ok(htmlAsset, 'index.html must version app.js');
+  assert.ok(workerAsset, 'the service worker must precache versioned app.js');
+  assert.ok(cacheVersion, 'the service worker must declare its cache version');
+  assert.equal(htmlAsset[1], workerAsset[1]);
+  assert.notEqual(htmlAsset[2], '20261003a');
+  assert.ok(Number(cacheVersion[1]) > 70);
+});
 
 function loadWorker(overrides = {}) {
   const listeners = {};
