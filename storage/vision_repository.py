@@ -125,42 +125,57 @@ def review_job(url: str | None, job_id: str, *, review_status: str,
     return {**row, "job_id": str(row["job_id"])} if row else None
 
 
-def begin_delete_job(url: str | None, job_id: str) -> dict | None:
-    """Hide a job and revoke any worker lease before deleting its media file."""
+def begin_delete_jobs(url: str | None, job_id: str) -> list[dict[str, Any]]:
+    """Tombstone the requested image and every visible exact-content duplicate.
+
+    Tombstones are monotonic: a failed file removal must never make a deleted
+    image visible again. The returned rows include prior tombstones for this
+    content so a repeated delete can retry their physical cleanup.
+    """
     with database.connect(url) as conn:
-        row = conn.execute(
+        target = conn.execute(
+            "SELECT sha256 FROM manager_vision_job WHERE job_id=%s FOR UPDATE", (job_id,),
+        ).fetchone()
+        if not target:
+            return []
+        digest = target.get("sha256")
+        identity_clause = "sha256=%s" if digest else "job_id=%s"
+        identity = digest if digest else job_id
+        conn.execute(
             "UPDATE manager_vision_job SET deleted_at=COALESCE(deleted_at, now()),"
-            " worker_id=NULL, lease_until=NULL, updated_at=now()"
-            " WHERE job_id=%s RETURNING job_id, media_path", (job_id,),
-        ).fetchone()
-    return {**row, "job_id": str(row["job_id"])} if row else None
+            " worker_id=NULL, lease_until=NULL, updated_at=now() WHERE " + identity_clause
+            + " AND deleted_at IS NULL", (identity,),
+        )
+        rows = conn.execute(
+            "SELECT job_id, media_path, sha256 FROM manager_vision_job WHERE " + identity_clause
+            + " AND deleted_at IS NOT NULL ORDER BY created_at, job_id", (identity,),
+        ).fetchall()
+    return [{**row, "job_id": str(row["job_id"])} for row in rows]
 
 
-def restore_failed_delete_job(url: str | None, job_id: str) -> bool:
-    """Make a failed deletion visible and leave interrupted work reclaimable."""
+def list_pending_deletions(url: str | None, limit: int = 200) -> list[dict[str, Any]]:
+    """Return hidden records whose media or database row still needs cleanup."""
+    if not 1 <= limit <= 500:
+        raise ValueError("limit must be between 1 and 500")
     with database.connect(url) as conn:
-        row = conn.execute(
-            "UPDATE manager_vision_job SET deleted_at=NULL,"
-            " status=CASE WHEN status='running' AND attempts>=3 THEN 'failed'"
-            " WHEN status='running' THEN 'queued' ELSE status END,"
-            " error=CASE WHEN status='running' AND attempts>=3 THEN %s"
-            " WHEN status='running' THEN NULL ELSE error END,"
-            " worker_id=NULL, lease_until=NULL, updated_at=now()"
-            " WHERE job_id=%s AND deleted_at IS NOT NULL RETURNING job_id",
-            (Jsonb({"code": "vision_delete_interrupted",
-                    "message": "影像文件删除未完成，分析任务已停止；请重新提交影像。"}), job_id),
-        ).fetchone()
-    return row is not None
+        rows = conn.execute(
+            "SELECT job_id, media_path, sha256 FROM manager_vision_job"
+            " WHERE deleted_at IS NOT NULL ORDER BY deleted_at, job_id LIMIT %s", (limit,),
+        ).fetchall()
+    return [{**row, "job_id": str(row["job_id"])} for row in rows]
 
 
-def finalize_delete_job(url: str | None, job_id: str) -> bool:
-    """Physically remove a tombstoned job after its private media file is gone."""
+def finalize_delete_jobs(url: str | None, job_ids: list[str]) -> int:
+    """Remove tombstoned rows only after their media files are absent."""
+    if not job_ids:
+        return 0
+    identifiers = [uuid.UUID(job_id) for job_id in job_ids]
     with database.connect(url) as conn:
-        row = conn.execute(
-            "DELETE FROM manager_vision_job WHERE job_id=%s AND deleted_at IS NOT NULL"
-            " RETURNING job_id", (job_id,),
-        ).fetchone()
-    return row is not None
+        rows = conn.execute(
+            "DELETE FROM manager_vision_job WHERE job_id=ANY(%s) AND deleted_at IS NOT NULL"
+            " RETURNING job_id", (identifiers,),
+        ).fetchall()
+    return len(rows)
 
 
 def heartbeat_worker(url: str | None, worker_id: str, *, ready: bool,

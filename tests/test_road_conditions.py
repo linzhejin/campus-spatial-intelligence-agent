@@ -798,6 +798,114 @@ def test_randomly_selected_real_campus_road_cannot_be_reopened_by_parallel_geome
     pytest.fail("could not select a snap-valid random edge from the real campus network")
 
 
+def test_live_selfqiang_closure_blocks_the_parallel_path_that_bypassed_it():
+    """Regression for a production route that escaped a closure on a nearby footway."""
+    from spatial.routing import compute_route
+
+    graph_path = Path(__file__).resolve().parents[1] / "data" / "whu_road_network.graphml"
+    graph = nx.read_graphml(graph_path, node_type=int)
+    u, v, key = 3110802248, 3110802296, 0
+    assert graph.has_edge(u, v, key)
+
+    line = rc._edge_line(graph, u, v, graph.get_edge_data(u, v, key))
+    midpoint = line.interpolate(0.5, normalized=True)
+    click_lng, click_lat = wgs84_to_gcj02(midpoint.x, midpoint.y)
+    snap = rc.snap_to_edge(graph, click_lng, click_lat)
+    assert snap is not None
+    assert {snap["u"], snap["v"]} == {u, v}
+    condition = {
+        "id": "real-campus-selfqiang-regression",
+        "type": "closure",
+        "blocked_modes": ["walk", "bike", "drive"],
+        "start_time": 0,
+        "end_time": 0,
+        "edge": {
+            "u": snap["u"], "v": snap["v"], "key": snap["key"],
+            "edges": snap["edges"], "chain_length_m": snap["chain_length_m"],
+            "road_name": snap["road_name"],
+            "snap": {"lng": snap["snap_lng_gcj"], "lat": snap["snap_lat_gcj"]},
+            "geometry_gcj": snap["geometry_gcj"],
+        },
+    }
+
+    resolved = rc._resolve_edge_keys(graph, condition, strict=True)
+    closed_corridor = rc._expand_coincident_corridor_edges(graph, resolved, condition["edge"])
+    # This is a real OSM footway edge in the production bypass. It follows the
+    # managed corridor, but its middle segment sits 11.7 m from the centerline.
+    bypass = (13239306781, 13239758406, 0)
+    assert bypass in closed_corridor
+
+    route = compute_route(
+        graph, u, v, mode="walk", strategy_name="shortest",
+        road_conditions=[condition],
+    )
+    assert bypass not in {tuple(edge) for edge in route["recommended_edges"]}
+
+
+def test_random_real_campus_closures_remove_their_aligned_corridor_from_routes():
+    """Exercise random, untouched production road edges instead of edited examples."""
+    import random
+    from spatial.routing import compute_route
+    from spatial.routing_index import get_routing_index
+
+    graph_path = Path(__file__).resolve().parents[1] / "data" / "whu_road_network.graphml"
+    graph = nx.read_graphml(graph_path, node_type=int)
+    candidates = [
+        (u, v, key, data)
+        for u, v, key, data in graph.edges(keys=True, data=True)
+        if u < v and graph.has_edge(v, u, key)
+        and 20 <= float(data.get("length", 0) or 0) <= 250
+    ]
+    rng = random.Random(20261005)
+    samples = rng.sample(candidates, 12)
+    prepared = get_routing_index(graph).for_mode("walk")
+    corridors_with_real_parallel_edges = 0
+
+    for sample_index, (u, v, key, data) in enumerate(samples):
+        line = rc._edge_line(graph, u, v, data)
+        midpoint = line.interpolate(rng.uniform(0.25, 0.75), normalized=True)
+        click_lng, click_lat = wgs84_to_gcj02(midpoint.x, midpoint.y)
+        geometry_gcj = [
+            list(wgs84_to_gcj02(lng, lat))
+            for lng, lat in rc._line_coords(line)
+        ]
+        condition = {
+            "id": f"random-real-edge-{sample_index}",
+            "type": "closure",
+            "blocked_modes": ["walk", "bike", "drive"],
+            "start_time": 0,
+            "end_time": 0,
+            "edge": {
+                "u": u, "v": v, "key": key, "edges": [[u, v, key]],
+                "chain_length_m": float(data.get("length", 0) or 0),
+                "road_name": rc._road_name_of(data),
+                "snap": {"lng": click_lng, "lat": click_lat},
+                "geometry_gcj": geometry_gcj,
+            },
+        }
+        exact_edges = rc._resolve_edge_keys(graph, condition, strict=True)
+        restricted, _penalties, closed, applied = rc.apply_conditions_to_graph(
+            graph, [condition], "walk", strict=True,
+        )
+        assert applied == 1
+        assert exact_edges.issubset(closed)
+        if closed - exact_edges:
+            corridors_with_real_parallel_edges += 1
+        assert all(not restricted.has_edge(*edge) for edge in closed)
+
+        try:
+            route = compute_route(
+                graph, u, v, mode="walk", strategy_name="shortest",
+                road_conditions=[condition], prepared=prepared,
+            )
+        except ValueError:
+            # No legal detour is safe: the planner must report unreachable.
+            continue
+        assert all(tuple(edge) not in closed for edge in route["recommended_edges"])
+
+    assert corridors_with_real_parallel_edges >= 3
+
+
 class TestRoadConditionAPI:
     def test_snap_requires_auth(self, client):
         r = client.get("/api/road-conditions/snap?lng=114.36&lat=30.53")

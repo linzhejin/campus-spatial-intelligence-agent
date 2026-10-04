@@ -2130,6 +2130,42 @@ def _public_vision_job(job: dict) -> dict:
     return visible
 
 
+def _purge_tombstoned_vision_jobs(database_url, jobs: list[dict]) -> int:
+    """Retry physical cleanup without ever making an explicitly deleted job visible."""
+    from storage import vision_repository
+
+    upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
+    removed_media_ids = []
+    pending_count = 0
+    for job in jobs:
+        job_id = str(job.get("job_id") or "")
+        stored_path = str(job.get("media_path") or "")
+        media_name = Path(stored_path)
+        if (not job_id or not stored_path or media_name.is_absolute()
+                or media_name.name != stored_path or stored_path in {".", ".."}):
+            logger.error("拒绝清理不安全的影像存储路径: job_id=%s", job_id or "unknown")
+            pending_count += 1
+            continue
+
+        media_path = upload_dir / media_name
+        if media_path.parent != upload_dir or media_path.is_symlink():
+            logger.error("拒绝清理越界的影像存储路径: job_id=%s", job_id)
+            pending_count += 1
+            continue
+        try:
+            media_path.unlink(missing_ok=True)
+        except OSError:
+            logger.exception("删除影像文件失败，记录保持隐藏并等待重试: job_id=%s", job_id)
+            pending_count += 1
+            continue
+        removed_media_ids.append(job_id)
+
+    if removed_media_ids:
+        finalized = vision_repository.finalize_delete_jobs(database_url, removed_media_ids)
+        pending_count += max(0, len(removed_media_ids) - finalized)
+    return pending_count
+
+
 def _vision_inference_readiness(database_url=None) -> tuple[bool, bool, bool, bool]:
     import importlib.util
 
@@ -2187,6 +2223,10 @@ def manager_vision_jobs():
         try:
             from storage import database, vision_repository
             database.initialize(current_app.config.get("DATABASE_URL"))
+            database_url = current_app.config.get("DATABASE_URL")
+            pending_deletions = vision_repository.list_pending_deletions(database_url, limit=200)
+            if pending_deletions:
+                _purge_tombstoned_vision_jobs(database_url, pending_deletions)
             try:
                 limit = int(request.args.get("limit", "50"))
             except (TypeError, ValueError):
@@ -2312,46 +2352,18 @@ def manager_vision_job(job_id):
         from storage import database, vision_repository
         database.initialize(current_app.config.get("DATABASE_URL"))
         if request.method == "DELETE":
-            job = vision_repository.begin_delete_job(current_app.config.get("DATABASE_URL"), job_id)
-            if not job:
+            database_url = current_app.config.get("DATABASE_URL")
+            jobs = vision_repository.begin_delete_jobs(database_url, job_id)
+            if not jobs:
                 return _ok({"deleted": True, "already_deleted": True})
-
-            def restore_job_for_retry() -> bool:
-                try:
-                    return vision_repository.restore_failed_delete_job(
-                        current_app.config.get("DATABASE_URL"), job_id,
-                    )
-                except Exception:
-                    logger.exception("恢复待重试的影像记录失败: job_id=%s", job_id)
-                    return False
-
-            upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
-            stored_path = str(job.get("media_path") or "")
-            media_name = Path(stored_path)
-            if (not stored_path or media_name.is_absolute() or media_name.name != stored_path
-                    or stored_path in {".", ".."}):
-                logger.error("拒绝删除不安全的影像存储路径: job_id=%s", job_id)
-                restored = restore_job_for_retry()
-                message = ("影像路径无效，记录已恢复到管理列表；请联系维护人员检查存储路径。"
-                           if restored else "影像路径无效，记录暂时隐藏；请联系维护人员检查存储路径。")
-                return _err("invalid_media_path", message, 500)
-            media_path = (upload_dir / media_name).resolve()
-            if media_path.parent != upload_dir:
-                logger.error("拒绝删除越界的影像存储路径: job_id=%s", job_id)
-                restored = restore_job_for_retry()
-                message = ("影像路径无效，记录已恢复到管理列表；请联系维护人员检查存储路径。"
-                           if restored else "影像路径无效，记录暂时隐藏；请联系维护人员检查存储路径。")
-                return _err("invalid_media_path", message, 500)
-            try:
-                media_path.unlink(missing_ok=True)
-            except OSError:
-                logger.exception("删除影像文件失败: job_id=%s", job_id)
-                restored = restore_job_for_retry()
-                message = ("影像文件暂未删除，记录已恢复到管理列表；请解除文件占用后重试。"
-                           if restored else "影像文件暂未删除，记录暂时隐藏；请联系维护人员处理。")
-                return _err("vision_delete_incomplete", message, 503)
-            vision_repository.finalize_delete_job(current_app.config.get("DATABASE_URL"), job_id)
-            return _ok({"deleted": True, "job_id": job_id})
+            pending_count = _purge_tombstoned_vision_jobs(database_url, jobs)
+            if pending_count:
+                return _err(
+                    "vision_delete_incomplete",
+                    "影像记录已隐藏，文件清理将在管理页面下次打开时自动重试。",
+                    503,
+                )
+            return _ok({"deleted": True, "job_id": job_id, "deleted_count": len(jobs)})
         job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
     except (ValueError, RuntimeError) as error:
         if isinstance(error, ValueError):

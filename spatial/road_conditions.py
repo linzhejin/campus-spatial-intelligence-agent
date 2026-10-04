@@ -67,7 +67,10 @@ SNAP_MAX_DIST_M = 30.0
 _EDGE_FALLBACK_DIST_M = 12.0
 # When multiple source ways represent the same physical corridor, closing only
 # the selected MultiDiGraph key can leave a duplicate route through that road.
-_PARALLEL_CORRIDOR_DIST_M = 5.0
+# A production closure was bypassed by a parallel footway 11.7 m from its
+# centerline, so the managed corridor includes aligned ways within 15 m. The
+# longitudinal-overlap checks below continue to exclude perpendicular crossings.
+_PARALLEL_CORRIDOR_DIST_M = 15.0
 # 旧圆模型数据缺省半径
 _LEGACY_DEFAULT_RADIUS_M = 30.0
 
