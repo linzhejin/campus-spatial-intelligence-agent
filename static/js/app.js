@@ -979,6 +979,7 @@
             var m = L.marker([gcjLat, gcjLng], {
                 icon: L.divIcon({
                     html: '<div style="font-size:20px;">' + icons.via + '</div>',
+                    className: 'whu-div-icon',
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
             }).addTo(state.map);
@@ -993,6 +994,7 @@
             var mk = L.marker([gcjLat, gcjLng], {
                 icon: L.divIcon({
                     html: '<div style="font-size:20px;">' + icons[key] + '</div>',
+                    className: 'whu-div-icon',
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
             }).addTo(state.map);
@@ -3961,8 +3963,9 @@
     }
 
     function refreshPage() {
-        stopPointPick();
-        clearMapPoints();
+        // “刷新”是用户主动开启新一轮规划：先清掉本地与服务端会话指针，
+        // 再重新加载页面，避免旧聊天在 loadContext/restoreServerConversation 中复活。
+        handleReset();
         if (window.location && typeof window.location.reload === 'function') {
             window.location.reload();
         }

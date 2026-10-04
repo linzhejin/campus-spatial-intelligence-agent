@@ -64,6 +64,7 @@ function harness(storage = new Map()) {
             removeMapPoint: removeMapPoint,
             bindMapPointRemoval: bindMapPointRemoval,
             setMapPoint: setMapPoint,
+            refreshPage: refreshPage,
             setTravelMode: setTravelMode,
             setApi: function (fn) {
                 submitQueuedMessage = function (query, body, bubble, epoch) {
@@ -86,13 +87,13 @@ const existingRoute = () => ({ route_id: 'existing', start: { name: '星湖园' 
 const routeResult = id => ({ task_type: 'path_planning', response_kind: 'route', recommended: [[1,2],[2,3]], route_state: { ...existingRoute(), route_id: id }, explanation: id });
 function deferred() { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b; }); return { promise, resolve, reject }; }
 
-test('R refreshes the page without resetting the current conversation', () => {
+test('R refreshes the page and starts a clean conversation', () => {
     const h = harness();
     h.state.conversationHistory = [{ role: 'user', content: '去东湖' }];
     h.state.serverConversationId = 'server-c1';
     const removed = [];
     const startMarker = { id: 'start' }, viaMarker = { id: 'via' }, endMarker = { id: 'end' };
-    h.state.map = { removeLayer: marker => removed.push(marker), getContainer: () => ({ style: {} }) };
+    h.state.map = { removeLayer: marker => removed.push(marker), getContainer: () => ({ style: {} }), setView() {} };
     h.state.mapPoints = { start: { lng: 114.3, lat: 30.5 }, via: [{ lng: 114.31, lat: 30.51 }], end: { lng: 114.32, lat: 30.52 } };
     h.state.pointMarkers = { start: startMarker, via: [viaMarker], end: endMarker };
     let prevented = false;
@@ -100,9 +101,12 @@ test('R refreshes the page without resetting the current conversation', () => {
     h.globalKeydown({ key: 'r', target: { tagName: 'BODY' }, preventDefault() { prevented = true; } });
 
     assert.equal(h.reloadCount(), 1);
-    assert.equal(h.clearCount(), 0);
-    assert.equal(h.state.serverConversationId, 'server-c1');
-    assert.equal(h.state.conversationHistory[0].content, '去东湖');
+    assert.equal(h.clearCount(), 1);
+    assert.equal(h.state.serverConversationId, null);
+    assert.equal(h.state.conversationHistory.length, 0);
+    assert.equal(h.storage.has('whu_walker:server_conversation'), false);
+    const savedContext = JSON.parse(h.storage.get('whu_walker:context:default'));
+    assert.deepEqual(savedContext.history, []);
     assert.equal(prevented, true);
     assert.equal(h.state.mapPoints.start, null);
     assert.equal(h.state.mapPoints.via.length, 0);
@@ -186,6 +190,7 @@ test('manual map markers do not render tooltip label boxes', () => {
 
     assert.equal(markers.length, 3);
     assert.deepEqual(markers.map(marker => marker.tooltipCalls.length), [0, 0, 0]);
+    assert.deepEqual(markers.map(marker => marker.options.icon.className), ['whu-div-icon', 'whu-div-icon', 'whu-div-icon']);
     assert.ok(markers.every(marker => /删除此/.test(marker.popupContent)));
 });
 
@@ -253,7 +258,7 @@ test('R shortcut and header button both refresh the page', () => {
     assert.doesNotMatch(html, /data-kbd="reset"/);
 });
 
-test('refresh restores the same local session and route context', () => {
+test('browser reload can restore the same local session and route context', () => {
     const a = harness(); a.init(); a.state.conversationHistory = [{role:'user',content:'去科技门'}];
     a.state.routeStore.replace(existingRoute());
     a.state.mapPoints.start = { lng: 114.31, lat: 30.51 };
