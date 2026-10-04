@@ -48,3 +48,39 @@ def test_optional_location_has_a_database_migration():
 
     assert migration.is_file()
     assert "ALTER COLUMN anchor_gcj DROP NOT NULL" in migration.read_text(encoding="utf-8")
+
+
+def test_repository_stores_a_missing_anchor_as_database_null(monkeypatch):
+    from storage import database, vision_repository
+
+    captured = {}
+
+    class Cursor:
+        def fetchone(self):
+            return {"job_id": "00000000-0000-0000-0000-000000000002", "status": "queued"}
+
+    class Connection:
+        def execute(self, _query, params):
+            captured["params"] = params
+            return Cursor()
+
+    class ConnectionContext:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(database, "connect", lambda _url: ConnectionContext())
+
+    vision_repository.create_job(
+        None,
+        created_by="web",
+        original_name="campus.png",
+        media_kind="image",
+        media_path="stored.png",
+        sha256="a" * 64,
+        anchor_gcj=None,
+    )
+
+    assert captured["params"][6] is None

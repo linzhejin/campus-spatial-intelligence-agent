@@ -20,7 +20,7 @@ def create_job(url: str | None, *, created_by: str, original_name: str,
             " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'queued')"
             " RETURNING job_id, status, created_at",
             (job_id, created_by, original_name, media_kind, media_path, sha256,
-             Jsonb(anchor_gcj), bool(camera_stabilized)),
+             Jsonb(anchor_gcj) if anchor_gcj is not None else None, bool(camera_stabilized)),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])}
 
