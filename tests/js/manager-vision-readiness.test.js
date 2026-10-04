@@ -5,6 +5,8 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../static/js/manager.js'), 'utf8');
+const managerHtml = fs.readFileSync(path.join(__dirname, '../../static/manager.html'), 'utf8');
+const managerCss = fs.readFileSync(path.join(__dirname, '../../static/css/manager.css'), 'utf8');
 
 function managerHarness() {
   const elements = new Map();
@@ -15,6 +17,8 @@ function managerHarness() {
   const requested = [];
   const uploadResolvers = [];
   const impactPreviewResolvers = [];
+  const createdObjectUrls = [];
+  const revokedObjectUrls = [];
   let visionPostCount = 0;
   let visionJobs = [];
   let roadEvents = [];
@@ -34,6 +38,7 @@ function managerHarness() {
       id, hidden: false, value: '', innerHTML: '', disabled: false,
       checked: false, files: [], style: {}, listeners, children: [], attributes: {},
       setAttribute(name, value) { this.attributes[name] = String(value); },
+      removeAttribute(name) { delete this.attributes[name]; },
       classList: {
         add: (value) => classes.add(value),
         remove: (value) => classes.delete(value),
@@ -92,8 +97,16 @@ function managerHarness() {
       node.tagName = tag;
       return node;
     }, createTextNode: (text) => ({ text }) };
+  const URLApi = {
+    createObjectURL(file) {
+      const value = 'blob:preview-' + createdObjectUrls.length;
+      createdObjectUrls.push({ file, value });
+      return value;
+    },
+    revokeObjectURL(value) { revokedObjectUrls.push(value); },
+  };
   const context = {
-    document,
+    document, URL: URLApi,
     window, L, FormData: class FormData { append() {} }, URLSearchParams, Date, Math, Promise, setTimeout,
     fetch: async (url, options = {}) => {
       requested.push(url);
@@ -134,7 +147,8 @@ function managerHarness() {
   };
   vm.runInNewContext(source, context);
   return {
-    elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document, getElement: element,
+    elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document,
+    createdObjectUrls, revokedObjectUrls, getElement: element,
     setInferenceReady: (value) => { inferenceReady = value; },
     setVisionJobs: (items) => { visionJobs = items; },
     setRoadEvents: (items) => { roadEvents = items; },
@@ -166,6 +180,67 @@ function managerHarness() {
 async function flush() {
   await new Promise((resolve) => setImmediate(resolve));
 }
+
+test('manager media summary has responsive preview styling and fresh asset versions', () => {
+  assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
+  assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
+  assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
+  assert.match(managerHtml, /manager\.css\?v=20261004a/);
+  assert.match(managerHtml, /manager\.js\?v=20261004a/);
+});
+
+test('selecting an image immediately shows its summary and the next step', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+  const selected = harness.getElement('selected-media');
+  selected.hidden = true;
+  const file = { type: 'image/png', name: '珞珈道路.png', size: 768 };
+  harness.elements.get('media-file').files = [file];
+  harness.elements.get('media-file').listeners.change();
+
+  assert.equal(selected.hidden, false);
+  assert.equal(harness.elements.get('selected-media-name').textContent, '珞珈道路.png');
+  assert.match(harness.elements.get('selected-media-meta').textContent, /768 B.*图片/);
+  assert.equal(harness.elements.get('selected-media-preview').src, 'blob:preview-0');
+  assert.match(harness.elements.get('vision-message').textContent, /下一步.*标注影像所在校园区域/);
+  assert.equal(harness.elements.get('submit-vision').disabled, true);
+});
+
+test('an oversized file is acknowledged but cannot be submitted', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+  harness.getElement('selected-media').hidden = true;
+  harness.elements.get('media-file').files = [
+    { type: 'image/jpeg', name: 'too-large.jpg', size: 2048 },
+  ];
+  harness.elements.get('media-file').listeners.change();
+
+  assert.equal(harness.elements.get('selected-media').hidden, false);
+  assert.match(harness.elements.get('vision-message').textContent, /超过.*1\.0 KB/);
+  assert.equal(harness.elements.get('submit-vision').disabled, true);
+});
+
+test('reselecting and logging out release local image previews', async () => {
+  const harness = managerHarness();
+  await flush();
+  const input = harness.elements.get('media-file');
+  harness.getElement('selected-media').hidden = true;
+  input.files = [{ type: 'image/png', name: 'first.png', size: 10 }];
+  input.listeners.change();
+  input.files = [{ type: 'image/jpeg', name: 'second.jpg', size: 10 }];
+  input.listeners.change();
+  assert.deepEqual(harness.revokedObjectUrls, ['blob:preview-0']);
+
+  await harness.elements.get('logout').listeners.click();
+  assert.deepEqual(harness.revokedObjectUrls, ['blob:preview-0', 'blob:preview-1']);
+  assert.equal(harness.elements.get('selected-media').hidden, true);
+});
 
 test('manager refreshes vision readiness and updates submission availability while open', async () => {
   const harness = managerHarness();
@@ -223,6 +298,29 @@ test('readiness polling cannot re-enable or duplicate an in-flight media upload'
     harness.releaseVisionUploads();
     await upload;
   }
+});
+
+test('successful media upload clears the preview and preserves the queued confirmation', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+  const input = harness.elements.get('media-file');
+  harness.getElement('selected-media').hidden = true;
+  input.files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
+  input.listeners.change();
+  harness.elements.get('pick-anchor').listeners.click();
+  harness.mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+
+  const upload = harness.elements.get('vision-form').listeners.submit({ preventDefault() {} });
+  await flush();
+  harness.releaseVisionUploads();
+  await upload;
+
+  assert.equal(harness.getElement('selected-media').hidden, true);
+  assert.deepEqual(harness.revokedObjectUrls, ['blob:preview-0']);
+  assert.match(harness.elements.get('vision-message').textContent, /影像任务已入队/);
 });
 
 test('manager impact preview discloses its active-condition snapshot and local scope', async () => {

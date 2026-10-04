@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -14,8 +14,80 @@
     return !!file && (/^video\//i.test(file.type || '') || /\.(mp4|mov|avi|webm)$/i.test(file.name || ''));
   }
 
+  function isImageFile(file) {
+    return !!file && (/^image\/(jpeg|png|webp)$/i.test(file.type || '') || /\.(jpe?g|png|webp)$/i.test(file.name || ''));
+  }
+
+  function formatBytes(value) {
+    if (value < 1024) return value + ' B';
+    if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' KB';
+    return (value / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function clearMediaPreview() {
+    if (state.mediaPreviewUrl) URL.revokeObjectURL(state.mediaPreviewUrl);
+    state.mediaPreviewUrl = '';
+    var preview = byId('selected-media-preview');
+    preview.removeAttribute('src');
+    preview.hidden = true;
+  }
+
+  function clearSelectedMedia() {
+    clearMediaPreview();
+    state.mediaInvalidReason = '';
+    byId('media-file').value = '';
+    byId('selected-media').hidden = true;
+    byId('selected-media-name').textContent = '';
+    byId('selected-media-meta').textContent = '';
+  }
+
+  function renderSelectedMedia(file) {
+    clearMediaPreview();
+    state.mediaInvalidReason = '';
+    if (!file) {
+      byId('selected-media').hidden = true;
+      return;
+    }
+    var mediaKind = isImageFile(file) ? '图片' : isVideoFile(file) ? '视频' : '不支持的文件';
+    if (mediaKind === '不支持的文件') {
+      state.mediaInvalidReason = '文件格式不受支持，请选择 JPG、PNG、WebP 图片或 MP4、MOV、AVI、WebM 视频。';
+    } else if (file.size > state.maxBytes) {
+      state.mediaInvalidReason = '文件大小为 ' + formatBytes(file.size) + '，超过当前 ' + formatBytes(state.maxBytes) + ' 上限。';
+    }
+    byId('selected-media-name').textContent = file.name || '未命名影像';
+    byId('selected-media-meta').textContent = formatBytes(file.size || 0) + ' · ' + mediaKind;
+    byId('selected-media').hidden = false;
+    if (isImageFile(file)) {
+      var preview = byId('selected-media-preview');
+      state.mediaPreviewUrl = URL.createObjectURL(file);
+      preview.src = state.mediaPreviewUrl;
+      preview.hidden = false;
+      preview.onerror = function () {
+        preview.hidden = true;
+        if (!state.mediaInvalidReason) {
+          message('vision-message', '图片已选择，但无法生成本地预览；仍可标注区域并尝试识别。');
+        }
+      };
+    }
+  }
+
+  function updateVisionGuidance() {
+    var file = byId('media-file').files[0];
+    if (!state.inferenceReady) {
+      message('vision-message', file ? '视觉服务暂未就绪，已保留所选文件，请等待服务恢复。' : '视觉服务暂未就绪，请等待服务恢复。');
+    } else if (!file) {
+      message('vision-message', '先选择一张图片或一段短视频。');
+    } else if (state.mediaInvalidReason) {
+      message('vision-message', state.mediaInvalidReason);
+    } else if (!state.anchor) {
+      message('vision-message', '影像已选择。下一步：点击“标注影像所在校园区域”，再点击地图。', true);
+    } else {
+      message('vision-message', '影像和观察区域已准备好，可以开始识别。', true);
+    }
+  }
+
   function canSubmitVision() {
-    return !!(state.inferenceReady && !state.visionUploadBusy && state.anchor && byId('media-file').files.length);
+    return !!(state.inferenceReady && !state.visionUploadBusy && !state.mediaInvalidReason && state.anchor && byId('media-file').files.length);
   }
 
   function updateVisionSubmitState() {
@@ -124,7 +196,7 @@
     byId('event-description').value = '';
     byId('start-time').value = '';
     byId('end-time').value = '';
-    byId('media-file').value = '';
+    clearSelectedMedia();
     byId('workspace').hidden = true;
     byId('logout').hidden = true;
     byId('login-panel').hidden = false;
@@ -240,7 +312,7 @@
       byId('selected-anchor').textContent = '观察区域参考点 · ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
       byId('selected-anchor').classList.add('is-set');
       updateVisionSubmitState();
-      message('vision-message', '观察区域已标注。检测框不会自动转换为地面道路坐标。', true);
+      updateVisionGuidance();
       setPicking(false);
       return;
     }
@@ -385,10 +457,12 @@
       state.maxBytes = data.max_media_bytes || state.maxBytes;
       state.inferenceReady = !!data.inference_ready;
       updateVisionSubmitState();
+      updateVisionGuidance();
       byId('vision-status').classList.toggle('is-ready', !!data.inference_ready);
     } catch (error) {
       state.inferenceReady = false;
       updateVisionSubmitState();
+      updateVisionGuidance();
       byId('vision-status').classList.toggle('is-ready', false);
       byId('vision-status').textContent = error.message || '视觉任务状态暂不可用。';
     } finally { state.visionStatusBusy = false; }
@@ -638,11 +712,11 @@
     try {
       var data = await request('/api/manager/vision-jobs', 'POST', form);
       message('vision-message', '影像任务已入队。分析服务独立运行，不会阻塞路线规划。', true);
-      byId('media-file').value = ''; refreshVisionJobs();
+      clearSelectedMedia(); refreshVisionJobs();
     } catch (error) { message('vision-message', error.message || '任务提交失败。'); }
     finally {
       state.visionUploadBusy = false;
-      button.innerHTML = '提交分析任务 <span>→</span>';
+      button.innerHTML = '开始识别 <span>→</span>';
       updateVisionSubmitState();
     }
   }
@@ -722,10 +796,11 @@
   byId('pick-anchor').addEventListener('click', function () { setPicking(true, 'vision'); });
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
+    renderSelectedMedia(file);
     updateVisionSubmitState();
     byId('camera-stabilized').disabled = !isVideoFile(file);
     if (!isVideoFile(file)) byId('camera-stabilized').checked = false;
-    if (file && file.size > state.maxBytes) message('vision-message', '文件超过当前大小上限。');
+    updateVisionGuidance();
   });
   byId('vision-form').addEventListener('submit', submitVision);
   byId('condition-form').addEventListener('submit', submitEvent);
