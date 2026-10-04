@@ -746,8 +746,8 @@ def _expand_coincident_corridor_edges(G: nx.MultiDiGraph, keys: set, edge_info: 
 
     Node ids alone are insufficient in a MultiDiGraph: two OSM ways can encode the
     same physical road with different keys, or a rebuilt source can split it at
-    different nodes. Only edges within a 5 m corridor and aligned along it are
-    included. A perpendicular crossing that only touches the corridor is excluded.
+    different nodes. Only edges within the configured 15 m corridor and aligned
+    along it are included. A perpendicular crossing that only touches the corridor is excluded.
     """
     from shapely.geometry import LineString, Point
     from spatial.coord_transform import gcj02_to_wgs84

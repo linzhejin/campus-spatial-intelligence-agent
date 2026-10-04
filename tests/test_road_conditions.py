@@ -830,16 +830,28 @@ def test_live_selfqiang_closure_blocks_the_parallel_path_that_bypassed_it():
 
     resolved = rc._resolve_edge_keys(graph, condition, strict=True)
     closed_corridor = rc._expand_coincident_corridor_edges(graph, resolved, condition["edge"])
+    restricted_graph, _penalties, applied_corridor, applied = rc.apply_conditions_to_graph(
+        graph, [condition], "walk", strict=True,
+    )
+    assert applied == 1
+    assert applied_corridor == closed_corridor
     # This is a real OSM footway edge in the production bypass. It follows the
     # managed corridor, but its middle segment sits 11.7 m from the centerline.
     bypass = (13239306781, 13239758406, 0)
     assert bypass in closed_corridor
+    # The 90-degree connectors at either end only touch the selected road; they
+    # must remain available while the parallel continuation is closed.
+    crossings = [(u, 13239306781, 0), (13239306755, v, 0)]
+    assert all(edge not in closed_corridor for edge in crossings)
+    assert all(restricted_graph.has_edge(*edge) for edge in crossings)
 
     route = compute_route(
         graph, u, v, mode="walk", strategy_name="shortest",
         road_conditions=[condition],
     )
-    assert bypass not in {tuple(edge) for edge in route["recommended_edges"]}
+    route_edges = {tuple(edge) for edge in route["recommended_edges"]}
+    assert bypass not in route_edges
+    assert float(route["recommended_length_m"]) > float(condition["edge"]["chain_length_m"])
 
 
 def test_random_real_campus_closures_remove_their_aligned_corridor_from_routes():
@@ -860,6 +872,7 @@ def test_random_real_campus_closures_remove_their_aligned_corridor_from_routes()
     samples = rng.sample(candidates, 12)
     prepared = get_routing_index(graph).for_mode("walk")
     corridors_with_real_parallel_edges = 0
+    successful_routes = 0
 
     for sample_index, (u, v, key, data) in enumerate(samples):
         line = rc._edge_line(graph, u, v, data)
@@ -901,9 +914,11 @@ def test_random_real_campus_closures_remove_their_aligned_corridor_from_routes()
         except ValueError:
             # No legal detour is safe: the planner must report unreachable.
             continue
+        successful_routes += 1
         assert all(tuple(edge) not in closed for edge in route["recommended_edges"])
 
     assert corridors_with_real_parallel_edges >= 3
+    assert successful_routes >= 1
 
 
 class TestRoadConditionAPI:

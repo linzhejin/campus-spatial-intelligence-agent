@@ -2136,6 +2136,7 @@ def _purge_tombstoned_vision_jobs(database_url, jobs: list[dict]) -> int:
 
     upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
     removed_media_ids = []
+    retry_ids = []
     pending_count = 0
     for job in jobs:
         job_id = str(job.get("job_id") or "")
@@ -2145,24 +2146,32 @@ def _purge_tombstoned_vision_jobs(database_url, jobs: list[dict]) -> int:
                 or media_name.name != stored_path or stored_path in {".", ".."}):
             logger.error("拒绝清理不安全的影像存储路径: job_id=%s", job_id or "unknown")
             pending_count += 1
+            if job_id:
+                retry_ids.append(job_id)
             continue
 
         media_path = upload_dir / media_name
         if media_path.parent != upload_dir or media_path.is_symlink():
             logger.error("拒绝清理越界的影像存储路径: job_id=%s", job_id)
             pending_count += 1
+            retry_ids.append(job_id)
             continue
         try:
             media_path.unlink(missing_ok=True)
         except OSError:
             logger.exception("删除影像文件失败，记录保持隐藏并等待重试: job_id=%s", job_id)
             pending_count += 1
+            retry_ids.append(job_id)
             continue
         removed_media_ids.append(job_id)
 
     if removed_media_ids:
         finalized = vision_repository.finalize_delete_jobs(database_url, removed_media_ids)
         pending_count += max(0, len(removed_media_ids) - finalized)
+        if finalized < len(removed_media_ids):
+            retry_ids.extend(removed_media_ids)
+    if retry_ids:
+        vision_repository.mark_delete_retry_attempts(database_url, retry_ids)
     return pending_count
 
 
@@ -2358,10 +2367,10 @@ def manager_vision_job(job_id):
                 return _ok({"deleted": True, "already_deleted": True})
             pending_count = _purge_tombstoned_vision_jobs(database_url, jobs)
             if pending_count:
-                return _err(
-                    "vision_delete_incomplete",
-                    "影像记录已隐藏，文件清理将在管理页面下次打开时自动重试。",
-                    503,
+                return _ok(
+                    {"deleted": True, "job_id": job_id, "deleted_count": len(jobs),
+                     "cleanup_pending": True, "cleanup_pending_count": pending_count},
+                    status=202,
                 )
             return _ok({"deleted": True, "job_id": job_id, "deleted_count": len(jobs)})
         job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)

@@ -5,8 +5,42 @@ from app import create_app
 from storage import database, vision_repository
 
 
+def test_pending_delete_repository_uses_last_attempt_order(monkeypatch):
+    ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+
+    class Cursor:
+        def fetchall(self):
+            return [{"job_id": job_id, "media_path": job_id + ".png", "sha256": "digest"}
+                    for job_id in ids]
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, query, params):
+            normalized = " ".join(query.split())
+            assert "WHERE deleted_at IS NOT NULL ORDER BY updated_at, job_id LIMIT %s" in normalized
+            assert params == (200,)
+            return Cursor()
+
+    monkeypatch.setattr(database, "connect", lambda _url: Connection())
+
+    pending = vision_repository.list_pending_deletions("postgresql://test", limit=200)
+
+    assert [row["job_id"] for row in pending] == ids
+
+
 def install_fake_vision_repository(monkeypatch, rows):
     """Install a small durable-state model for manager deletion API tests."""
+    retry_clock = {"value": 0}
+    for row in rows.values():
+        if "updated_at" not in row:
+            row["updated_at"] = retry_clock["value"]
+        retry_clock["value"] = max(retry_clock["value"], row["updated_at"] + 1)
+
     def begin_delete_jobs(_url, requested_id):
         target = rows.get(requested_id)
         if target is None:
@@ -17,11 +51,25 @@ def install_fake_vision_repository(monkeypatch, rows):
                 row["deleted_at"] = row.get("deleted_at") or True
                 row["worker_id"] = None
                 row["lease_until"] = None
-        return [dict(row) for row in rows.values()
-                if row.get("deleted_at") and (row.get("sha256") or row["job_id"]) == digest]
+                row["updated_at"] = retry_clock["value"]
+                retry_clock["value"] += 1
+        return sorted(
+            (dict(row) for row in rows.values()
+             if row.get("deleted_at") and (row.get("sha256") or row["job_id"]) == digest),
+            key=lambda row: (row["updated_at"], row["job_id"]),
+        )
 
     def list_pending_deletions(_url, limit=200):
-        return [dict(row) for row in rows.values() if row.get("deleted_at")][:limit]
+        pending = sorted((dict(row) for row in rows.values() if row.get("deleted_at")),
+                         key=lambda row: (row["updated_at"], row["job_id"]))
+        return pending[:limit]
+
+    def mark_delete_retry_attempts(_url, job_ids):
+        for job_id in job_ids:
+            if job_id in rows and rows[job_id].get("deleted_at"):
+                rows[job_id]["updated_at"] = retry_clock["value"]
+                retry_clock["value"] += 1
+        return len(job_ids)
 
     def finalize_delete_jobs(_url, job_ids):
         removed = 0
@@ -40,6 +88,7 @@ def install_fake_vision_repository(monkeypatch, rows):
 
     monkeypatch.setattr(vision_repository, "begin_delete_jobs", begin_delete_jobs, raising=False)
     monkeypatch.setattr(vision_repository, "list_pending_deletions", list_pending_deletions, raising=False)
+    monkeypatch.setattr(vision_repository, "mark_delete_retry_attempts", mark_delete_retry_attempts, raising=False)
     monkeypatch.setattr(vision_repository, "finalize_delete_jobs", finalize_delete_jobs, raising=False)
     monkeypatch.setattr(vision_repository, "get_job", get_job)
     monkeypatch.setattr(vision_repository, "list_jobs", list_jobs)
@@ -111,7 +160,8 @@ def test_manager_delete_rejects_path_escape_without_resurrecting_record(monkeypa
 
     response = client.delete("/api/manager/vision-jobs/" + job_id, headers=headers)
 
-    assert response.status_code == 503
+    assert response.status_code == 202
+    assert response.get_json()["data"]["cleanup_pending"] is True
     assert outside.read_bytes() == b"keep"
     assert rows[job_id]["deleted_at"]
     assert client.get("/api/manager/vision-jobs?limit=20", headers=headers).get_json()["data"]["jobs"] == []
@@ -139,7 +189,8 @@ def test_failed_media_unlink_stays_hidden_and_is_retried_after_reopen(monkeypatc
     monkeypatch.setattr(Path, "unlink", failing_unlink)
     response = client.delete("/api/manager/vision-jobs/" + job_id, headers=headers)
 
-    assert response.status_code == 503
+    assert response.status_code == 202
+    assert response.get_json()["data"]["cleanup_pending"] is True
     assert rows[job_id]["deleted_at"]
     assert rows[job_id]["worker_id"] is None and rows[job_id]["lease_until"] is None
     assert media_file.exists()
@@ -150,3 +201,29 @@ def test_failed_media_unlink_stays_hidden_and_is_retried_after_reopen(monkeypatc
     assert reopened_listing == []
     assert not media_file.exists()
     assert job_id not in rows
+
+
+def test_repeatedly_blocked_tombstones_do_not_starve_later_cleanup(monkeypatch, tmp_path):
+    valid_id = str(uuid.uuid4())
+    media_name = valid_id + ".png"
+    media_file = tmp_path / media_name
+    media_file.write_bytes(b"later cleanup")
+    rows = {}
+    for index in range(200):
+        job_id = str(uuid.uuid4())
+        rows[job_id] = {"job_id": job_id, "media_path": "../blocked-%03d.png" % index,
+                        "sha256": "blocked-%03d" % index, "deleted_at": True,
+                        "updated_at": index}
+    rows[valid_id] = {"job_id": valid_id, "media_path": media_name,
+                      "sha256": "later-valid", "deleted_at": True, "updated_at": 200}
+    install_fake_vision_repository(monkeypatch, rows)
+    client, headers = manager_client(monkeypatch, tmp_path)
+
+    first_reopen = client.get("/api/manager/vision-jobs?limit=20", headers=headers)
+    assert first_reopen.status_code == 200
+    assert media_file.exists()
+
+    second_reopen = client.get("/api/manager/vision-jobs?limit=20", headers=headers)
+    assert second_reopen.status_code == 200
+    assert not media_file.exists()
+    assert valid_id not in rows

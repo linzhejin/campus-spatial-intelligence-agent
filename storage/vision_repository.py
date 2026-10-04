@@ -148,7 +148,7 @@ def begin_delete_jobs(url: str | None, job_id: str) -> list[dict[str, Any]]:
         )
         rows = conn.execute(
             "SELECT job_id, media_path, sha256 FROM manager_vision_job WHERE " + identity_clause
-            + " AND deleted_at IS NOT NULL ORDER BY created_at, job_id", (identity,),
+            + " AND deleted_at IS NOT NULL ORDER BY updated_at, job_id", (identity,),
         ).fetchall()
     return [{**row, "job_id": str(row["job_id"])} for row in rows]
 
@@ -160,9 +160,23 @@ def list_pending_deletions(url: str | None, limit: int = 200) -> list[dict[str, 
     with database.connect(url) as conn:
         rows = conn.execute(
             "SELECT job_id, media_path, sha256 FROM manager_vision_job"
-            " WHERE deleted_at IS NOT NULL ORDER BY deleted_at, job_id LIMIT %s", (limit,),
+            " WHERE deleted_at IS NOT NULL ORDER BY updated_at, job_id LIMIT %s", (limit,),
         ).fetchall()
     return [{**row, "job_id": str(row["job_id"])} for row in rows]
+
+
+def mark_delete_retry_attempts(url: str | None, job_ids: list[str]) -> int:
+    """Move unsuccessful cleanup attempts behind older untried tombstones."""
+    if not job_ids:
+        return 0
+    identifiers = [uuid.UUID(job_id) for job_id in job_ids]
+    with database.connect(url) as conn:
+        rows = conn.execute(
+            "UPDATE manager_vision_job SET updated_at=now()"
+            " WHERE job_id=ANY(%s) AND deleted_at IS NOT NULL RETURNING job_id",
+            (identifiers,),
+        ).fetchall()
+    return len(rows)
 
 
 def finalize_delete_jobs(url: str | None, job_ids: list[str]) -> int:
