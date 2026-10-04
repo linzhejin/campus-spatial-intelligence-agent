@@ -2203,15 +2203,22 @@ def manager_vision_jobs():
     video_extensions = {".mp4", ".mov", ".avi", ".webm"}
     if extension not in image_extensions | video_extensions:
         return _err("unsupported_media", "只支持 JPG、PNG、WebP 图片和 MP4、MOV、AVI、WebM 视频。", 415)
-    try:
-        lng = float(request.form.get("lng", ""))
-        lat = float(request.form.get("lat", ""))
-    except (TypeError, ValueError):
-        return _err("invalid_anchor", "请先在地图上标注这段影像对应的校园区域。", 400)
-    bbox = config.WHU_BBOX
-    if not (bbox["west"] - .01 <= lng <= bbox["east"] + .01
-            and bbox["south"] - .01 <= lat <= bbox["north"] + .01):
-        return _err("outside_campus", "观察点需要落在武汉大学校园范围附近。", 400)
+    raw_lng = request.form.get("lng", "").strip()
+    raw_lat = request.form.get("lat", "").strip()
+    anchor_gcj = None
+    if raw_lng or raw_lat:
+        if not raw_lng or not raw_lat:
+            return _err("invalid_anchor", "经纬度必须同时提供。", 400)
+        try:
+            lng = float(raw_lng)
+            lat = float(raw_lat)
+        except (TypeError, ValueError):
+            return _err("invalid_anchor", "影像区域坐标无效。", 400)
+        bbox = config.WHU_BBOX
+        if not (bbox["west"] - .01 <= lng <= bbox["east"] + .01
+                and bbox["south"] - .01 <= lat <= bbox["north"] + .01):
+            return _err("outside_campus", "观察点需要落在武汉大学校园范围附近。", 400)
+        anchor_gcj = {"lng": lng, "lat": lat, "crs": "GCJ02"}
     upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
     upload_dir.mkdir(parents=True, exist_ok=True)
     job_id = secrets.token_hex(16)
@@ -2257,7 +2264,7 @@ def manager_vision_jobs():
             media_kind="image" if extension in image_extensions else "video",
             media_path=stored_name,
             sha256=digest.hexdigest(),
-            anchor_gcj={"lng": lng, "lat": lat, "crs": "GCJ02"},
+            anchor_gcj=anchor_gcj,
             camera_stabilized=(
                 extension in video_extensions
                 and request.form.get("camera_stabilized", "false").strip().lower() == "true"

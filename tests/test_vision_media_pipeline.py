@@ -37,3 +37,15 @@ def test_single_image_pipeline_returns_vehicle_boxes_without_claiming_accident_o
     assert result["safety"]["accident_recognition_supported"] is False
     assert result["safety"]["automatically_changes_routing"] is False
     assert result["location_precision"] == "operator_selected_area_only"
+
+
+def test_single_image_pipeline_explains_when_no_location_was_supplied(tmp_path):
+    source = tmp_path / "image.png"
+    assert cv2.imwrite(str(source), np.zeros((80, 100, 3), dtype=np.uint8))
+
+    result = analyze_media(source, "image", None, detector=FakeDetector())
+
+    assert result["anchor_gcj"] is None
+    assert result["location_precision"] == "not_provided"
+    assert "具体道路" in result["review_guidance"]
+    assert "管理员标注" not in result["review_guidance"]

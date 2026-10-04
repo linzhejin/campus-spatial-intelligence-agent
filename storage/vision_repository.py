@@ -11,7 +11,7 @@ from storage import database
 
 def create_job(url: str | None, *, created_by: str, original_name: str,
                media_kind: str, media_path: str, sha256: str,
-               anchor_gcj: dict[str, float], camera_stabilized: bool = False) -> dict:
+               anchor_gcj: dict[str, float] | None, camera_stabilized: bool = False) -> dict:
     job_id = str(uuid.uuid4())
     with database.connect(url) as conn:
         row = conn.execute(

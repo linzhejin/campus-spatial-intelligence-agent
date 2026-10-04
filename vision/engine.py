@@ -198,7 +198,7 @@ def _estimate_camera_transform(previous_gray, current_gray, cv2, scale: float):
     return full_resolution_matrix.tolist()
 
 
-def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict,
+def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | None,
                   camera_stabilized: bool = False,
                   *, detector=None) -> dict:
     """Analyze a manager-uploaded item and return bounded, review-only evidence."""
@@ -309,12 +309,17 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict,
             item for item in frames[0]
             if item.get("label", "").strip().lower() in VEHICLE_LABELS | {"bicycle"}
         ][:MAX_PREVIEW_DETECTIONS]
+    has_anchor = anchor_gcj is not None
     return {
         **analysis,
         "media": {"kind": media_kind, "width": width, "height": height},
         "model": model_info,
         "preview_detections": preview_detections,
         "anchor_gcj": anchor_gcj,
-        "location_precision": "operator_selected_area_only",
-        "review_guidance": "图像位置仅代表管理员标注的观察区域，不是检测框的地面坐标；确认管制前须人工选取具体道路段。",
+        "location_precision": "operator_selected_area_only" if has_anchor else "not_provided",
+        "review_guidance": (
+            "图像位置仅代表管理员标注的观察区域，不是检测框的地面坐标；确认管制前须人工选取具体道路段。"
+            if has_anchor else
+            "影像未提供地面坐标；确认候选并转入路况流程后，须由管理员人工选取具体道路段。"
+        ),
     }

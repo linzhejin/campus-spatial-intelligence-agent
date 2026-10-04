@@ -1,0 +1,50 @@
+import io
+from pathlib import Path
+
+
+def _manager_client(monkeypatch, tmp_path, captured):
+    import api.routes as routes
+    from app import create_app
+    from storage import database, vision_repository
+
+    monkeypatch.setattr(routes.config, "ROAD_CONDITION_ADMIN_PASSWORD", "manager-secret")
+    monkeypatch.setattr(routes.config, "VISION_UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(routes, "_vision_inference_readiness", lambda *_args: (True, True, True, True))
+    monkeypatch.setattr(database, "initialize", lambda *_args: None)
+
+    def create_job(_url, **values):
+        captured.update(values)
+        return {
+            "job_id": "00000000-0000-0000-0000-000000000001",
+            "status": "queued",
+            "anchor_gcj": values["anchor_gcj"],
+        }
+
+    monkeypatch.setattr(vision_repository, "create_job", create_job)
+    app = create_app()
+    app.config.update(TESTING=True, SECRET_KEY="test-secret", DATABASE_URL=None)
+    client = app.test_client()
+    login = client.post("/api/admin/login", json={"password": "manager-secret"})
+    return client, login.get_json()["data"]["csrf_token"]
+
+
+def test_manager_vision_upload_accepts_media_without_location(monkeypatch, tmp_path):
+    captured = {}
+    client, csrf = _manager_client(monkeypatch, tmp_path, captured)
+
+    response = client.post(
+        "/api/manager/vision-jobs",
+        data={"media": (io.BytesIO(b"\x89PNG\r\n\x1a\nvalid"), "campus.png", "image/png")},
+        headers={"X-CSRF-Token": csrf},
+    )
+
+    assert response.status_code == 202
+    assert response.get_json()["data"]["job"]["anchor_gcj"] is None
+    assert captured["anchor_gcj"] is None
+
+
+def test_optional_location_has_a_database_migration():
+    migration = Path("storage/migrations/008_optional_vision_anchor.sql")
+
+    assert migration.is_file()
+    assert "ALTER COLUMN anchor_gcj DROP NOT NULL" in migration.read_text(encoding="utf-8")
