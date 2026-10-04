@@ -270,12 +270,12 @@ class TestEffectMatrix:
         path = nx.dijkstra_path(G2, 0, 3, weight="length")
         assert 2 not in path
 
-    def test_construction_walk_soft_1_5x_still_main_road(self, G):
-        """施工对步行 1.5× 软惩罚：成本增加但主路仍比绕行短，路径不变（虚线=可通行）。"""
+    def test_construction_defaults_to_hard_block_for_walk(self, G):
         _edge_condition(G, "construction")
         G2, penalties, closed, applied = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], "walk")
-        assert not closed and abs(penalties[(1, 2, 0)] - 1.5) < 1e-6 and applied == 1
-        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
+        assert (1, 2, 0) in closed and applied == 1 and penalties == {}
+        assert not G2.has_edge(1, 2, 0)
+        assert 5 in nx.dijkstra_path(G2, 0, 3, weight="length")
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
     def test_flooding_blocks_pedestrian(self, G, mode):
@@ -283,20 +283,18 @@ class TestEffectMatrix:
         G2, _, closed, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
         assert (1, 2, 0) in closed
 
-    def test_flooding_drive_soft_1_5x_still_main_road(self, G):
-        """机动车可慢速通过积水：1.5× 软惩罚但路径不变（主路仍短于绕行）。"""
+    def test_flooding_defaults_to_hard_block_for_drive(self, G):
         _edge_condition(G, "flooding")
         G2, penalties, closed, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], "drive")
-        assert not closed and abs(penalties[(1, 2, 0)] - 1.5) < 1e-6
-        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
+        assert (1, 2, 0) in closed and penalties == {}
+        assert 5 in nx.dijkstra_path(G2, 0, 3, weight="length")
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
-    def test_accident_soft_1_3x_still_main_road(self, G, mode):
-        """事故对步行/骑行 1.3× 软惩罚：成本微增，路径不变（虚线=可通行）。"""
+    def test_accident_defaults_to_hard_block_for_walk_and_bike(self, G, mode):
         _edge_condition(G, "accident")
-        G2, penalties, _, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
-        assert abs(penalties[(1, 2, 0)] - 1.3) < 1e-6
-        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
+        G2, penalties, closed, _ = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
+        assert (1, 2, 0) in closed and penalties == {}
+        assert 5 in nx.dijkstra_path(G2, 0, 3, weight="length")
 
     def test_accident_blocks_drive(self, G):
         _edge_condition(G, "accident")
@@ -304,12 +302,11 @@ class TestEffectMatrix:
         assert (1, 2, 0) in closed
 
     @pytest.mark.parametrize("mode", ["walk", "bike"])
-    def test_event_soft_1_2x_still_main_road(self, G, mode):
-        """活动人流 1.2× 软惩罚：成本几乎不变，路径不变。"""
+    def test_event_defaults_to_hard_block_for_walk_and_bike(self, G, mode):
         _edge_condition(G, "event")
         G2, penalties, closed, applied = rc.apply_conditions_to_graph(G, [rc.list_conditions()[0]], mode)
-        assert applied == 1 and not closed and abs(penalties[(1, 2, 0)] - 1.2) < 1e-6
-        assert _path_with_penalty(G2, penalties) == [0, 1, 2, 3]
+        assert applied == 1 and penalties == {} and (1, 2, 0) in closed
+        assert 5 in nx.dijkstra_path(G2, 0, 3, weight="length")
 
     def test_event_blocks_drive(self, G):
         _edge_condition(G, "event")
@@ -397,11 +394,7 @@ class TestResolveAndLifecycle:
         cond = _edge_condition(G, "closure")
         assert rc.remove_condition(cond["id"], actor="web") is True
         assert rc.list_conditions() == []
-        history = rc.list_conditions(include_inactive=True)[0]
-        assert history["id"] == cond["id"]
-        assert history["revoked_at"] > 0
-        assert history["audit"][-1]["action"] == "revoked"
-        assert history["audit"][-1]["actor"] == "web"
+        assert rc.list_conditions(include_inactive=True) == []
         assert rc.remove_condition("nope") is False
 
     def test_update_keeps_audit_history(self, G):
@@ -688,6 +681,123 @@ def test_api_route_returns_503_when_active_closure_cannot_bind_to_graph(client, 
     assert response.get_json()["error"] == "road_conditions_unavailable"
 
 
+def test_new_manager_restrictions_default_to_hard_block_for_every_travel_mode(G):
+    """A newly published restriction must never silently remain traversable by a mode."""
+    for cond_type in rc.CONDITION_EFFECTS:
+        condition = _edge_condition(G, cond_type)
+        for mode in ("walk", "bike", "drive"):
+            modified, _penalties, closed, applied = rc.apply_conditions_to_graph(
+                G, [condition], mode, strict=True,
+            )
+            assert applied == 1
+            assert (1, 2, 0) in closed
+            assert not modified.has_edge(1, 2, 0)
+            assert not modified.has_edge(2, 1, 0)
+
+
+def test_explicit_passability_override_is_authoritative_for_each_mode(G):
+    condition = _edge_condition(G, "accident")
+    condition["blocked_modes"] = ["walk"]
+
+    for mode in ("walk", "bike", "drive"):
+        modified, penalties, closed, applied = rc.apply_conditions_to_graph(
+            G, [condition], mode, strict=True,
+        )
+        if mode == "walk":
+            assert applied == 1
+            assert (1, 2, 0) in closed
+            assert not modified.has_edge(1, 2, 0)
+        else:
+            assert applied == 0
+            assert not closed
+            assert not penalties
+            assert modified is G
+
+
+def test_restriction_blocks_overlapping_parallel_edge_keys(G):
+    attrs = dict(G.get_edge_data(1, 2, 0))
+    reverse_attrs = dict(G.get_edge_data(2, 1, 0))
+    G.add_edge(1, 2, 7, **attrs)
+    G.add_edge(2, 1, 7, **reverse_attrs)
+    condition = _edge_condition(G, "closure")
+
+    modified, _penalties, closed, _applied = rc.apply_conditions_to_graph(
+        G, [condition], "walk", strict=True,
+    )
+
+    assert (1, 2, 7) in closed and (2, 1, 7) in closed
+    assert not modified.has_edge(1, 2, 7)
+    assert not modified.has_edge(2, 1, 7)
+
+
+def test_deleted_road_condition_is_physically_removed_from_persistent_snapshot(G):
+    condition = _edge_condition(G, "closure")
+
+    assert rc.remove_condition(condition["id"], actor="web") is True
+
+    assert all(item["id"] != condition["id"] for item in rc.list_conditions(include_inactive=True))
+    assert all(item["id"] != condition["id"] for item in json.loads(Path(rc._CONDITIONS_FILE).read_text(encoding="utf-8")))
+
+
+def test_randomly_selected_real_campus_road_cannot_be_reopened_by_parallel_geometry():
+    """Select a real graph edge at random, duplicate its physical geometry, and verify closure."""
+    import random
+
+    graph_path = Path(__file__).resolve().parents[1] / "data" / "whu_road_network.graphml"
+    graph = nx.read_graphml(graph_path, node_type=int)
+    candidates = [
+        (u, v, key) for u, v, key, data in graph.edges(keys=True, data=True)
+        if graph.has_edge(v, u) and float(data.get("length", 0) or 0) > 4
+    ]
+    rng = random.Random(20261005)
+    rng.shuffle(candidates)
+
+    for u, v, key in candidates[:300]:
+        data = graph.get_edge_data(u, v, key) or {}
+        line = rc._edge_line(graph, u, v, data)
+        midpoint = line.interpolate(0.5, normalized=True)
+        click = wgs84_to_gcj02(midpoint.x, midpoint.y)
+        snap = rc.snap_to_edge(graph, click[0], click[1])
+        if snap is None:
+            continue
+        chain_segment = rng.choice(snap["edges"])
+        a, b, selected_key = map(int, chain_segment)
+        selected = graph.get_edge_data(a, b, selected_key)
+        reverse = graph.get_edge_data(b, a, selected_key)
+        if not selected or not reverse:
+            continue
+        duplicate_key = max(graph.get_edge_data(a, b).keys()) + 1000000
+        graph.add_edge(a, b, duplicate_key, **dict(selected))
+        graph.add_edge(b, a, duplicate_key, **dict(reverse))
+        condition = rc.add_condition(
+            "closure", "随机实路验收", snap,
+            blocked_modes=["walk", "bike", "drive"],
+        )
+
+        modified, _penalties, closed, applied = rc.apply_conditions_to_graph(
+            graph, [condition], "walk", strict=True,
+        )
+
+        assert applied == 1
+        assert (a, b, duplicate_key) in closed
+        assert (b, a, duplicate_key) in closed
+        assert not modified.has_edge(a, b, duplicate_key)
+        assert not modified.has_edge(b, a, duplicate_key)
+        from spatial.routing import compute_route
+        try:
+            route = compute_route(
+                graph, a, b, mode="walk", strategy_name="shortest",
+                road_conditions=[condition],
+            )
+        except ValueError as error:
+            assert "封闭" in str(error) or "暂时无法通行" in str(error)
+        else:
+            assert not any(tuple(edge) in closed for edge in route["recommended_edges"])
+        return
+
+    pytest.fail("could not select a snap-valid random edge from the real campus network")
+
+
 class TestRoadConditionAPI:
     def test_snap_requires_auth(self, client):
         r = client.get("/api/road-conditions/snap?lng=114.36&lat=30.53")
@@ -787,6 +897,17 @@ class TestRoadConditionAPI:
         assert cond["edge"]["road_name"] == "自强大道"
         assert "radius_m" not in cond
         assert cond["created_by"] == "token"
+        assert set(cond["blocked_modes"]) == {"walk", "bike", "drive"}
+
+    def test_post_persists_explicit_modes_that_manager_confirms_are_blocked(self, client, G):
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "construction", "name": "仅步行封闭",
+            "lng": gj[0], "lat": gj[1], "blocked_modes": ["walk"],
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+
+        assert response.status_code == 201
+        assert response.get_json()["data"]["condition"]["blocked_modes"] == ["walk"]
 
     def test_confirmed_vision_requires_field_evidence_before_road_publication(self, client, G, monkeypatch):
         import api.routes as routes
@@ -914,12 +1035,10 @@ class TestRoadConditionAPI:
         # 普通视图看不到，管理 all 视图能看到
         assert client.get("/api/road-conditions").get_json()["data"]["count"] == 0
         assert client.get("/api/road-conditions?all=1").get_json()["data"]["count"] == 1
-        # 撤销后仍保留可审计记录
+        # 管理员删除后，列表和持久化状态都不再返回该限制
         assert client.delete(f"/api/road-conditions/{cid}", headers=headers).status_code == 200
         records = client.get("/api/road-conditions?all=1").get_json()["data"]["conditions"]
-        assert len(records) == 1
-        assert records[0]["status"] == "revoked"
-        assert records[0]["audit"][-1]["action"] == "revoked"
+        assert len(records) == 0
 
     def test_patch_invalid_time_window_returns_400_and_keeps_record(self, client, G):
         gj = _mid_12_gcj(G)

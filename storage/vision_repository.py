@@ -29,12 +29,14 @@ def claim_next_job(url: str | None, worker_id: str, lease_seconds: int = 90) -> 
     with database.connect(url) as conn:
         conn.execute(
             "UPDATE manager_vision_job SET status='failed', lease_until=NULL,"
-            " error=%s, updated_at=now() WHERE status='running' AND lease_until<now() AND attempts>=3",
+            " error=%s, updated_at=now() WHERE deleted_at IS NULL AND status='running'"
+            " AND lease_until<now() AND attempts>=3",
             (Jsonb({"code": "worker_lease_exhausted", "message": "影像任务多次失去工作租约，请重新提交。"}),),
         )
         row = conn.execute(
             "WITH candidate AS (SELECT job_id FROM manager_vision_job"
-            " WHERE attempts<3 AND (status='queued' OR (status='running' AND lease_until < now()))"
+            " WHERE deleted_at IS NULL AND attempts<3"
+            " AND (status='queued' OR (status='running' AND lease_until < now()))"
             " ORDER BY created_at, job_id FOR UPDATE SKIP LOCKED LIMIT 1)"
             " UPDATE manager_vision_job j SET status='running', worker_id=%s,"
             " lease_until=now()+(%s * interval '1 second'), attempts=attempts+1, updated_at=now()"
@@ -49,7 +51,8 @@ def heartbeat_job(url: str | None, job_id: str, worker_id: str, lease_seconds: i
     with database.connect(url) as conn:
         row = conn.execute(
             "UPDATE manager_vision_job SET lease_until=now()+(%s * interval '1 second'), updated_at=now()"
-            " WHERE job_id=%s AND worker_id=%s AND status='running' AND lease_until>now()"
+            " WHERE job_id=%s AND worker_id=%s AND status='running' AND deleted_at IS NULL"
+            " AND lease_until>now()"
             " RETURNING job_id", (lease_seconds, job_id, worker_id),
         ).fetchone()
     return row is not None
@@ -63,7 +66,7 @@ def finish_job(url: str | None, job_id: str, worker_id: str, *, status: str,
         row = conn.execute(
             "UPDATE manager_vision_job SET status=%s, result=%s, error=%s, lease_until=NULL,"
             " updated_at=now() WHERE job_id=%s AND worker_id=%s AND status='running'"
-            " AND lease_until>now() RETURNING job_id",
+            " AND deleted_at IS NULL AND lease_until>now() RETURNING job_id",
             (status, Jsonb(result) if result is not None else None,
              Jsonb(error) if error is not None else None, job_id, worker_id),
         ).fetchone()
@@ -75,7 +78,8 @@ def get_job(url: str | None, job_id: str) -> dict | None:
         row = conn.execute(
             "SELECT job_id, created_by, original_name, media_kind, media_path, sha256, anchor_gcj, camera_stabilized,"
             " status, attempts, result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
-            " created_at, updated_at FROM manager_vision_job WHERE job_id=%s", (job_id,),
+            " created_at, updated_at FROM manager_vision_job"
+            " WHERE job_id=%s AND deleted_at IS NULL", (job_id,),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
 
@@ -88,7 +92,8 @@ def list_jobs(url: str | None, limit: int = 50) -> list[dict[str, Any]]:
             "SELECT job_id, created_by, original_name, media_kind, anchor_gcj, camera_stabilized, status, attempts,"
             " result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
             " created_at, updated_at"
-            " FROM manager_vision_job ORDER BY created_at DESC LIMIT %s", (limit,),
+            " FROM manager_vision_job WHERE deleted_at IS NULL"
+            " ORDER BY created_at DESC LIMIT %s", (limit,),
         ).fetchall()
     return [{**row, "job_id": str(row["job_id"])} for row in rows]
 
@@ -108,7 +113,8 @@ def review_job(url: str | None, job_id: str, *, review_status: str,
         row = conn.execute(
             "UPDATE manager_vision_job SET review_status=%s, review_candidate_index=%s,"
             " review_note=%s, reviewed_by=%s,"
-            " reviewed_at=now(), updated_at=now() WHERE job_id=%s AND status='needs_review'"
+            " reviewed_at=now(), updated_at=now() WHERE job_id=%s AND deleted_at IS NULL"
+            " AND status='needs_review'"
             " AND review_status IS NULL"
             " AND (%s = 'dismissed' OR CASE WHEN jsonb_typeof(result->'candidates') = 'array'"
             " THEN jsonb_array_length(result->'candidates') > %s ELSE false END)"
@@ -117,6 +123,27 @@ def review_job(url: str | None, job_id: str, *, review_status: str,
              review_status, candidate_index if candidate_index is not None else -1),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
+
+
+def begin_delete_job(url: str | None, job_id: str) -> dict | None:
+    """Hide a job and revoke any worker lease before deleting its media file."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET deleted_at=COALESCE(deleted_at, now()),"
+            " worker_id=NULL, lease_until=NULL, updated_at=now()"
+            " WHERE job_id=%s RETURNING job_id, media_path", (job_id,),
+        ).fetchone()
+    return {**row, "job_id": str(row["job_id"])} if row else None
+
+
+def finalize_delete_job(url: str | None, job_id: str) -> bool:
+    """Physically remove a tombstoned job after its private media file is gone."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "DELETE FROM manager_vision_job WHERE job_id=%s AND deleted_at IS NOT NULL"
+            " RETURNING job_id", (job_id,),
+        ).fetchone()
+    return row is not None
 
 
 def heartbeat_worker(url: str | None, worker_id: str, *, ready: bool,

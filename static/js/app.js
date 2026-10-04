@@ -24,6 +24,7 @@
     var CONTEXT_KEY_PREFIX = 'whu_walker:context:';
     var SESSION_ID_KEY = 'whu_walker:active_session';
     var SERVER_CONVERSATION_KEY = 'whu_walker:server_conversation';
+    var EXPLICIT_RESET_KEY = 'whu_walker:explicit_reset_session';
     var PREFS_KEY = 'whu_walker:preferences';
     var TRAVEL_MODE_KEY = 'whu_walker:travel_mode';  // 出行方式持久化偏好
 
@@ -426,6 +427,35 @@
 
     function getContextKey() {
         return CONTEXT_KEY_PREFIX + (state.sessionId || 'default');
+    }
+
+    function beginExplicitRefreshSession() {
+        var previousSessionId = state.sessionId;
+        try {
+            previousSessionId = previousSessionId || localStorage.getItem(SESSION_ID_KEY);
+        } catch (e) {}
+        var freshSessionId = generateSessionId();
+        state.sessionId = freshSessionId;
+        // The marker is consumed before context hydration after reload. It also
+        // defeats any stale local/session pointer written during page teardown.
+        try { localStorage.setItem(EXPLICIT_RESET_KEY, freshSessionId); } catch (e) {}
+        try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
+        if (previousSessionId) {
+            try { localStorage.removeItem(CONTEXT_KEY_PREFIX + previousSessionId); } catch (e) {}
+        }
+        try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
+    }
+
+    function consumeExplicitRefreshSession() {
+        var freshSessionId = null;
+        try { freshSessionId = localStorage.getItem(EXPLICIT_RESET_KEY); } catch (e) {}
+        if (!freshSessionId) return;
+        if (!/^sess_[a-zA-Z0-9_-]+$/.test(freshSessionId)) freshSessionId = generateSessionId();
+        state.sessionId = freshSessionId;
+        try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
+        try { localStorage.removeItem(CONTEXT_KEY_PREFIX + freshSessionId); } catch (e) {}
+        try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
+        try { localStorage.removeItem(EXPLICIT_RESET_KEY); } catch (e) {}
     }
 
     function loadContext() {
@@ -3965,6 +3995,7 @@
     function refreshPage() {
         // “刷新”是用户主动开启新一轮规划：先清掉本地与服务端会话指针，
         // 再重新加载页面，避免旧聊天在 loadContext/restoreServerConversation 中复活。
+        beginExplicitRefreshSession();
         handleReset();
         if (window.location && typeof window.location.reload === 'function') {
             window.location.reload();
@@ -4460,6 +4491,7 @@
 
     async function init() {
         applyProductMode();
+        consumeExplicitRefreshSession();
         state.sessionId = getOrCreateSessionId();
         try { state.serverConversationId = localStorage.getItem(SERVER_CONVERSATION_KEY); } catch (e) {}
         loadContext();

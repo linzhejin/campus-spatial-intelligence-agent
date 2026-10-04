@@ -8,17 +8,8 @@
   - 路网重新下载导致节点 id 失效时，用吸附点几何回退（12m 容差）
   - 更早的 radius_m 圆模型数据仍可读取，按旧半径几何回退
 
-事件类型 × 出行方式影响矩阵（CONDITION_EFFECTS）：
-                     walk        bike        drive
-  closure 道路封闭   block       block       block   物理断行，人车均不可通行
-  construction 施工  1.5 软惩罚  block       block   围挡断车道，行人可谨慎穿行
-  flooding 积水      block       block       1.5     深积水人/骑行不可蹚，车可慢速通过
-  accident 事故      1.3         1.3         block   人可侧穿绕行，车辆堵死
-  event 活动         1.2         1.2         block   人流密集步行可穿，机动车管制
-
-block = 硬移除边（不可通行）；数字 = 该边成本乘以的惩罚系数。
-倍数代表"两个路口之间整段道路"（300-600m）对人的真实感知影响，
-×1.5 ≈ 速度减半（见 road_penalty_map → _estimate_route_duration_min 的速度÷F 映射）。
+所有路况类型默认对步行、骑行、驾车硬封路。管理者可为现场明确确认仍可通行的方式
+取消禁行；路线规划只消费 blocked_modes，不根据事件类型猜测现场通行情况。
 
 数据默认在 data/road_conditions.json；生产由 ROAD_CONDITIONS_FILE 指向运行目录。
 坐标全部 GCJ-02（与 POI/前端一致）。
@@ -49,12 +40,18 @@ _CONDITIONS_FILE = os.path.abspath(os.getenv("ROAD_CONDITIONS_FILE") or os.path.
 # 设计依据：边链扩展后惩罚范围为"两个路口之间整段道路"(300-600m)，
 # 倍数代表对人的真实感知影响——×1.5 ≈ 速度减半（不是×4那种"绕行"级惩罚）。
 CONDITION_EFFECTS = {
+    # A new manager restriction is fail-closed for all travel modes by default.
+    # Managers may explicitly leave a confirmed-passable mode out of blocked_modes.
+    # Legacy rows without blocked_modes also fail closed instead of relying on a
+    # type label that cannot describe what the manager actually observed.
     "closure":      {"walk": "block", "bike": "block", "drive": "block"},
-    "construction": {"walk": 1.5,     "bike": "block", "drive": "block"},
-    "flooding":     {"walk": "block", "bike": "block", "drive": 1.5},
-    "accident":     {"walk": 1.3,     "bike": 1.3,     "drive": "block"},
-    "event":        {"walk": 1.2,     "bike": 1.2,     "drive": "block"},
+    "construction": {"walk": "block", "bike": "block", "drive": "block"},
+    "flooding":     {"walk": "block", "bike": "block", "drive": "block"},
+    "accident":     {"walk": "block", "bike": "block", "drive": "block"},
+    "event":        {"walk": "block", "bike": "block", "drive": "block"},
 }
+
+TRAVEL_MODE_KEYS = ("walk", "bike", "drive")
 
 CONDITION_LABELS = {
     "closure": "道路封闭",
@@ -68,6 +65,9 @@ CONDITION_LABELS = {
 SNAP_MAX_DIST_M = 30.0
 # 边绑定数据在节点 id 失效时的几何回退容差
 _EDGE_FALLBACK_DIST_M = 12.0
+# When multiple source ways represent the same physical corridor, closing only
+# the selected MultiDiGraph key can leave a duplicate route through that road.
+_PARALLEL_CORRIDOR_DIST_M = 5.0
 # 旧圆模型数据缺省半径
 _LEGACY_DEFAULT_RADIUS_M = 30.0
 
@@ -164,10 +164,20 @@ def _valid_edge_binding(edge_info: dict) -> bool:
     return isinstance(snap, dict) and _valid_lon_lat(snap.get("lng"), snap.get("lat"))
 
 
+def _valid_blocked_modes(value) -> bool:
+    return (isinstance(value, list) and bool(value)
+            and all(isinstance(mode, str) and mode in TRAVEL_MODE_KEYS for mode in value)
+            and len(value) == len(set(value)))
+
+
 def _validate_condition_record(condition: dict) -> None:
     """Validate persistent event shape before it can influence routing."""
     if condition.get("type") not in CONDITION_EFFECTS:
         raise ValueError("路况事件类型无效")
+    if "blocked_modes" in condition:
+        blocked_modes = condition.get("blocked_modes")
+        if not _valid_blocked_modes(blocked_modes):
+            raise ValueError("路况事件必须明确至少一种禁行方式")
     start = condition.get("start_time", 0) or 0
     end = condition.get("end_time", 0) or 0
     if not _finite_number(start) or not _finite_number(end):
@@ -286,6 +296,17 @@ def list_conditions(include_inactive: bool = False, *, strict: bool = False) -> 
     return active
 
 
+def purge_revoked_conditions() -> int:
+    """Permanently remove old soft-deleted records left by earlier releases."""
+    with _condition_write_lock():
+        conditions = _load_conditions(strict=True)
+        retained = [condition for condition in conditions if not condition.get("revoked_at")]
+        removed_count = len(conditions) - len(retained)
+        if removed_count:
+            _save_conditions(retained)
+    return removed_count
+
+
 def add_condition(
     cond_type: str,
     name: str,
@@ -296,6 +317,7 @@ def add_condition(
     end_time: Optional[float] = None,
     created_by: str = "web",
     source: Optional[dict] = None,
+    blocked_modes: Optional[list] = None,
 ) -> dict:
     """
     添加一个绑定到具体路段的路况事件。
@@ -314,6 +336,10 @@ def add_condition(
     """
     if cond_type not in CONDITION_EFFECTS:
         raise ValueError(f"未知路况类型: {cond_type}")
+    if blocked_modes is None:
+        blocked_modes = list(TRAVEL_MODE_KEYS)
+    if not _valid_blocked_modes(blocked_modes):
+        raise ValueError("路况事件必须明确至少一种禁行方式")
     if not edge or edge.get("u") is None or edge.get("v") is None:
         raise ValueError("缺少绑定路段信息 edge（u/v）")
 
@@ -321,6 +347,7 @@ def add_condition(
     condition = {
         "id": str(uuid.uuid4())[:8],
         "type": cond_type,
+        "blocked_modes": list(blocked_modes),
         "name": name,
         "description": description or "",
         "edge": {
@@ -363,18 +390,14 @@ def add_condition(
 
 
 def remove_condition(cond_id: str, *, actor: str = "web") -> bool:
-    """Revoke an event while preserving its source and audit trail."""
+    """Permanently remove an event from the active condition store."""
     with _condition_write_lock():
         conditions = _load_conditions(strict=True)
-        target = next((item for item in conditions if item.get("id") == cond_id), None)
-        if target is None or target.get("revoked_at"):
+        retained = [item for item in conditions if item.get("id") != cond_id]
+        if len(retained) == len(conditions):
             return False
-        now = time.time()
-        target["revoked_at"] = now
-        target["updated_at"] = now
-        target.setdefault("audit", []).append({"action": "revoked", "actor": actor, "at": now})
-        _save_conditions(conditions)
-    logger.info("撤销路况事件: %s", cond_id)
+        _save_conditions(retained)
+    logger.info("永久删除路况事件: %s by=%s", cond_id, actor)
     return True
 
 
@@ -715,6 +738,92 @@ def _resolve_edge_keys(G: nx.MultiDiGraph, cond: dict, *, strict: bool = False) 
     return set()
 
 
+def _expand_coincident_corridor_edges(G: nx.MultiDiGraph, keys: set, edge_info: dict) -> set:
+    """Close duplicate/parallel graph edges that follow the selected road corridor.
+
+    Node ids alone are insufficient in a MultiDiGraph: two OSM ways can encode the
+    same physical road with different keys, or a rebuilt source can split it at
+    different nodes. Only edges within a 5 m corridor and aligned along it are
+    included. A perpendicular crossing that only touches the corridor is excluded.
+    """
+    from shapely.geometry import LineString, Point
+    from spatial.coord_transform import gcj02_to_wgs84
+
+    corridor_lines = []
+    geometry_gcj = edge_info.get("geometry_gcj") if isinstance(edge_info, dict) else None
+    if isinstance(geometry_gcj, list) and len(geometry_gcj) >= 2:
+        try:
+            wgs_coords = [gcj02_to_wgs84(float(point[0]), float(point[1]))
+                          for point in geometry_gcj if isinstance(point, (list, tuple)) and len(point) >= 2]
+            if len(wgs_coords) >= 2:
+                corridor_lines = [wgs_coords]
+        except (TypeError, ValueError, IndexError):
+            corridor_lines = []
+
+    if not corridor_lines:
+        seen = set()
+        for u, v, key in keys:
+            identity = (frozenset((u, v)), key)
+            if identity in seen or not G.has_edge(u, v, key):
+                continue
+            seen.add(identity)
+            coords = _line_coords(_edge_line(G, u, v, G.get_edge_data(u, v, key) or {}))
+            if len(coords) >= 2:
+                corridor_lines.append(coords)
+
+    if not corridor_lines:
+        return set(keys)
+
+    all_points = [point for line in corridor_lines for point in line]
+    origin_lon = sum(point[0] for point in all_points) / len(all_points)
+    origin_lat = sum(point[1] for point in all_points) / len(all_points)
+    lon_scale = 111320.0 * math.cos(math.radians(origin_lat))
+
+    def metric_line(coords):
+        return LineString([
+            ((float(lon) - origin_lon) * lon_scale,
+             (float(lat) - origin_lat) * 111320.0)
+            for lon, lat in coords
+        ])
+
+    try:
+        metric_corridors = [metric_line(coords) for coords in corridor_lines]
+        metric_corridors = [line for line in metric_corridors if not line.is_empty and line.length > 0]
+    except (TypeError, ValueError):
+        return set(keys)
+    if not metric_corridors:
+        return set(keys)
+
+    corridor_buffers = [line.buffer(_PARALLEL_CORRIDOR_DIST_M) for line in metric_corridors]
+    matched = set(keys)
+    for u, v, key, data in G.edges(keys=True, data=True):
+        candidate_coords = _line_coords(_edge_line(G, u, v, data))
+        if len(candidate_coords) < 2:
+            continue
+        try:
+            candidate = metric_line(candidate_coords)
+        except (TypeError, ValueError):
+            continue
+        if candidate.is_empty or candidate.length <= 0:
+            continue
+        start = Point(candidate.coords[0])
+        end = Point(candidate.coords[-1])
+        for corridor, buffered in zip(metric_corridors, corridor_buffers):
+            if candidate.distance(corridor) > _PARALLEL_CORRIDOR_DIST_M:
+                continue
+            overlap = candidate.intersection(buffered).length
+            # The edge must run along the managed road for a meaningful length;
+            # mere contact at a junction is not enough to bind the crossing road.
+            if overlap < min(8.0, candidate.length * 0.7):
+                continue
+            along_span = abs(corridor.project(start) - corridor.project(end))
+            if along_span < min(6.0, candidate.length * 0.7):
+                continue
+            matched.add((u, v, key))
+            break
+    return matched
+
+
 def _edges_near_point(G, lng, lat, gcj, radius_m) -> set:
     """几何回退：找到点(GCJ-02)半径内的边，双向返回。"""
     from spatial.coord_transform import gcj02_to_wgs84
@@ -818,17 +927,26 @@ def apply_conditions_to_graph(
                 if not isinstance(cond, dict):
                     raise ValueError("路况事件格式无效")
                 _validate_condition_record(cond)
-            effect = CONDITION_EFFECTS.get(cond.get("type"), {}).get(mode)
+            blocked_modes = cond.get("blocked_modes")
+            if blocked_modes is None or not _valid_blocked_modes(blocked_modes):
+                if strict and blocked_modes is not None:
+                    raise ValueError("路况事件禁行方式无效")
+                blocked_modes = TRAVEL_MODE_KEYS
+            if mode not in blocked_modes:
+                continue
+            effect = "block"
         except (AttributeError, TypeError, ValueError) as exc:
             if strict:
                 raise RoadConditionBindingError("路况事件格式无效，无法安全应用") from exc
             continue
-        if effect is None:
-            if strict:
-                raise RoadConditionBindingError("路况事件没有当前出行方式的通行规则")
-            continue
         try:
             keys = _resolve_edge_keys(G, cond, strict=strict)
+            edge_info = cond.get("edge") if isinstance(cond, dict) else {}
+            # Corridor expansion is only valid after the stored binding (or its
+            # complete-geometry fallback) has resolved. Expanding from geometry
+            # alone here could silently revive a partially missing road chain.
+            if keys:
+                keys = _expand_coincident_corridor_edges(G, keys, edge_info or {})
         except (AttributeError, TypeError, ValueError, KeyError, IndexError) as exc:
             if strict:
                 raise RoadConditionBindingError("路况事件道路绑定无法解析") from exc
@@ -838,13 +956,7 @@ def apply_conditions_to_graph(
                 raise RoadConditionBindingError("生效中的路况事件无法匹配当前路网，已停止路线规划")
             continue
         applied += 1
-        if effect == "block":
-            closed.update(keys)
-        else:
-            factor = float(effect)
-            for key in keys:
-                if factor > penalties.get(key, 1.0):
-                    penalties[key] = factor
+        closed.update(keys)
 
     G_modified = G
     if closed:

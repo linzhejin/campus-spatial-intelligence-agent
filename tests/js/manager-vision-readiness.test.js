@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../../static/js/manager.js'
 const managerHtml = fs.readFileSync(path.join(__dirname, '../../static/manager.html'), 'utf8');
 const managerCss = fs.readFileSync(path.join(__dirname, '../../static/css/manager.css'), 'utf8');
 
-function managerHarness() {
+function managerHarness(sessionSeed = []) {
   const elements = new Map();
   const intervalCallbacks = [];
   const mapListeners = {};
@@ -20,7 +20,7 @@ function managerHarness() {
   const createdObjectUrls = [];
   const revokedObjectUrls = [];
   const formEntries = [];
-  const sessionValues = new Map();
+  const sessionValues = new Map(sessionSeed);
   let storageFailure = false;
   let visionPostCount = 0;
   let visionJobs = [];
@@ -131,6 +131,16 @@ function managerHarness() {
         visionPostCount += 1;
         return new Promise((resolve) => uploadResolvers.push(resolve));
       }
+      if (url.startsWith('/api/manager/vision-jobs/') && options.method === 'DELETE') {
+        const jobId = decodeURIComponent(url.split('/')[4] || '');
+        visionJobs = visionJobs.filter((job) => job.job_id !== jobId);
+        return { ok: true, json: async () => ({ data: { message: 'deleted' } }) };
+      }
+      if (url.startsWith('/api/road-conditions/') && options.method === 'DELETE') {
+        const conditionId = decodeURIComponent(url.split('/').pop() || '');
+        roadEvents = roadEvents.filter((event) => event.id !== conditionId);
+        return { ok: true, json: async () => ({ data: { message: 'deleted' } }) };
+      }
       if (url.startsWith('/api/manager/vision-status') && (visionStatusFailure || sessionExpired)) {
         return { ok: false, status: sessionExpired ? 401 : 503,
           json: async () => ({ message: sessionExpired ? '需要管理员权限' : '状态读取失败' }) };
@@ -159,7 +169,7 @@ function managerHarness() {
   vm.runInNewContext(source, context);
   return {
     elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document,
-    createdObjectUrls, revokedObjectUrls, formEntries, getElement: element,
+    createdObjectUrls, revokedObjectUrls, formEntries, sessionValues, getElement: element,
     setInferenceReady: (value) => { inferenceReady = value; },
     setVisionJobs: (items) => { visionJobs = items; },
     setRoadEvents: (items) => { roadEvents = items; },
@@ -197,10 +207,10 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261004b/);
-  assert.match(managerHtml, /manager\.js\?v=20261004b/);
+  assert.match(managerHtml, /manager\.css\?v=20261005a/);
+  assert.match(managerHtml, /manager\.js\?v=20261005a/);
   assert.doesNotMatch(managerHtml, /id="pick-anchor"|id="selected-anchor"/);
-  assert.match(managerHtml, /id="restore-vision-results"[^>]*hidden/);
+  assert.doesNotMatch(managerHtml, /id="restore-vision-results"/);
 });
 
 test('selecting an image immediately enables recognition without a map point', async () => {
@@ -384,6 +394,35 @@ test('a selected road can be explicitly cleared before publishing', async () => 
   assert.equal(elements.get('impact-preview').hidden, true);
 });
 
+test('road event preview and publication use the manager selected blocked travel modes', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners, calls } = harness;
+  assert.deepEqual(['block-walk', 'block-bike', 'block-drive'].map((id) => elements.get(id).checked), [true, true, true]);
+  elements.get('event-type').value = 'construction';
+  elements.get('event-type').listeners.change();
+  elements.get('pick-road').listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  elements.get('confirm-picked-road').listeners.click();
+
+  elements.get('block-walk').checked = false;
+  elements.get('block-bike').checked = false;
+  elements.get('block-drive').checked = false;
+  elements.get('block-drive').listeners.change();
+  assert.equal(elements.get('publish-event').disabled, true, 'at least one travel mode must be restricted');
+
+  elements.get('block-walk').checked = true;
+  await elements.get('block-walk').listeners.change();
+  assert.equal(elements.get('publish-event').disabled, false);
+  const preview = calls.filter((call) => call.url.startsWith('/api/road-conditions/snap')).at(-1);
+  assert.match(preview.url, /blocked_modes=walk/);
+  assert.doesNotMatch(preview.url, /blocked_modes=bike|blocked_modes=drive/);
+
+  await elements.get('condition-form').listeners.submit({ preventDefault() {} });
+  const posted = calls.find((call) => call.url === '/api/road-conditions' && call.options.method === 'POST');
+  assert.deepEqual(JSON.parse(posted.options.body).blocked_modes, ['walk']);
+});
+
 test('canceling route picking prevents a late snap response from selecting a road', async () => {
   const harness = managerHarness();
   await flush();
@@ -510,7 +549,7 @@ function descendants(node) {
   return [node, ...(node.children || []).flatMap(descendants)];
 }
 
-test('completed jobs without candidates explain the terminal state and can be retried or cleared', async () => {
+test('completed jobs without candidates explain the terminal state and can be retried or permanently deleted', async () => {
   const harness = managerHarness();
   await flush();
   harness.setVisionJobs([{
@@ -525,7 +564,7 @@ test('completed jobs without candidates explain the terminal state and can be re
   const nodes = descendants(card);
   const terminalText = nodes.map((node) => node.textContent || '').join(' ');
   const retry = nodes.find((node) => node.tagName === 'button' && node.textContent === '重新选择影像');
-  const clear = nodes.find((node) => node.tagName === 'button' && node.textContent === '清除此结果');
+  const clear = nodes.find((node) => node.tagName === 'button' && node.textContent === '删除影像记录');
   assert.match(terminalText, /分析已结束/);
   assert.match(terminalText, /未生成可复核的路况候选/);
   assert.ok(retry);
@@ -537,18 +576,14 @@ test('completed jobs without candidates explain the terminal state and can be re
 
   clear.listeners.click();
   await flush();
+  assert.ok(harness.calls.some((call) => call.url === '/api/manager/vision-jobs/finished-empty' && call.options.method === 'DELETE'));
   assert.doesNotMatch(root.children.map((node) => node.textContent).join(' '), /航拍\.png/);
-  assert.equal(harness.elements.get('restore-vision-results').hidden, false);
   harness.intervalCallbacks[0]();
   await flush();
   assert.doesNotMatch(root.children.map((node) => node.textContent).join(' '), /航拍\.png/);
-
-  harness.elements.get('restore-vision-results').listeners.click();
-  await flush();
-  assert.match(descendants(root).map((node) => node.textContent || '').join(' '), /航拍\.png/);
 });
 
-test('clearing a finished job still works when session storage is unavailable', async () => {
+test('permanent deletion does not depend on browser session storage', async () => {
   const harness = managerHarness();
   await flush();
   harness.setStorageFailure(true);
@@ -559,7 +594,7 @@ test('clearing a finished job still works when session storage is unavailable', 
   harness.intervalCallbacks[0]();
   await flush();
   const root = harness.elements.get('vision-jobs');
-  const clear = descendants(root).find((node) => node.tagName === 'button' && node.textContent === '清除此结果');
+  const clear = descendants(root).find((node) => node.tagName === 'button' && node.textContent === '删除影像记录');
 
   clear.listeners.click();
   await flush();
@@ -567,6 +602,7 @@ test('clearing a finished job still works when session storage is unavailable', 
   await flush();
 
   assert.doesNotMatch(descendants(root).map((node) => node.textContent || '').join(' '), /临时结果\.png/);
+  assert.ok(harness.calls.some((call) => call.url === '/api/manager/vision-jobs/memory-only' && call.options.method === 'DELETE'));
 });
 
 test('confirmed visual evidence transfers to an explicitly verified road event', async () => {
@@ -607,7 +643,7 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   assert.equal(elements.get('vision-source-banner').hidden, true);
 });
 
-test('revoked road events stay in manager history without map impact or destructive delete', async () => {
+test('road event deletion removes its record from the manager list after refresh', async () => {
   const harness = managerHarness();
   await flush();
   harness.setRoadEvents([{
@@ -622,7 +658,20 @@ test('revoked road events stay in manager history without map impact or destruct
   const text = descendants(row).map((node) => node.textContent || '').join(' ');
   assert.match(text, /已撤销/);
   assert.match(text, /影像来源/);
-  assert.doesNotMatch(text, /删除/);
+  const remove = descendants(row).find((node) => node.tagName === 'button' && node.textContent === '永久删除');
+  assert.ok(remove);
+  remove.listeners.click();
+  await flush();
+  assert.ok(harness.calls.some((call) => call.url === '/api/road-conditions/event-1' && call.options.method === 'DELETE'));
+  assert.equal(harness.elements.get('event-list').children.length, 1);
+  assert.match(harness.elements.get('event-list').children[0].textContent, /目前没有路况记录/);
+});
+
+test('old session-only cleared images are permanently deleted after manager login', async () => {
+  const harness = managerHarness([['managerDismissedVisionJobs', '["old-hidden-job"]']]);
+  await flush();
+  assert.ok(harness.calls.some((call) => call.url === '/api/manager/vision-jobs/old-hidden-job' && call.options.method === 'DELETE'));
+  assert.equal(harness.sessionValues.has('managerDismissedVisionJobs'), false);
 });
 
 test('expired manager session returns to login while polling', async () => {

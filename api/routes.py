@@ -57,7 +57,8 @@ from spatial.coord_transform import gcj02_to_wgs84, wgs84_to_gcj02
 from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import (
     list_conditions, add_condition, remove_condition, update_condition,
-    snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS, SNAP_MAX_DIST_M,
+    purge_revoked_conditions, snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS,
+    SNAP_MAX_DIST_M, TRAVEL_MODE_KEYS,
     RoadConditionsUnavailableError,
 )
 from spatial import weather as weather_mod
@@ -1798,6 +1799,8 @@ def get_road_conditions():
     include_all = request.args.get("all") in ("1", "true", "yes")
     is_admin = _is_admin() if include_all else False
     try:
+        if include_all and is_admin:
+            purge_revoked_conditions()
         conditions = list_conditions(
             include_inactive=include_all and is_admin,
             strict=True,
@@ -1855,27 +1858,34 @@ def snap_road_condition():
         )
     response = {"snap": snap, "max_dist_m": SNAP_MAX_DIST_M}
     if cond_type:
+        requested_modes = request.args.getlist("blocked_modes")
+        blocked_modes = requested_modes if requested_modes else list(TRAVEL_MODE_KEYS)
         try:
-            response["impact_preview"] = _build_road_condition_impact_preview(G, snap, cond_type)
+            response["impact_preview"] = _build_road_condition_impact_preview(
+                G, snap, cond_type, blocked_modes,
+            )
         except RoadConditionsUnavailableError:
             logger.exception("路况预览无法读取有效事件快照")
             return _err("road_conditions_unavailable", "当前路况数据不可用，无法生成可靠的发布影响预览", 503)
     return _ok(response)
 
 
-def _build_road_condition_impact_preview(G, snap: dict, cond_type: str) -> dict:
+def _build_road_condition_impact_preview(
+    G, snap: dict, cond_type: str, blocked_modes: list | None = None,
+) -> dict:
     """Preview effects and a local before/after route sample; never publishes an event."""
     active_conditions = list_conditions(strict=True)
+    blocked_modes = list(TRAVEL_MODE_KEYS) if blocked_modes is None else blocked_modes
+    if (not isinstance(blocked_modes, list) or not blocked_modes
+            or len(blocked_modes) != len(set(blocked_modes))
+            or any(mode not in TRAVEL_MODE_KEYS for mode in blocked_modes)):
+        raise ValueError("至少选择一种禁行方式")
     effects = {}
-    for mode, effect in CONDITION_EFFECTS[cond_type].items():
-        if effect == "block":
+    for mode in TRAVEL_MODE_KEYS:
+        if mode in blocked_modes:
             effects[mode] = {"status": "blocked", "label": "该方式在所选路段禁行"}
         else:
-            effects[mode] = {
-                "status": "cost_increased",
-                "cost_multiplier": float(effect),
-                "label": f"该路段规划成本 ×{float(effect):g}",
-            }
+            effects[mode] = {"status": "open", "label": "该方式现场确认可通行"}
 
     edge_record = {
         "u": int(snap["u"]),
@@ -1887,7 +1897,10 @@ def _build_road_condition_impact_preview(G, snap: dict, cond_type: str) -> dict:
         "snap": {"lng": float(snap["snap_lng_gcj"]), "lat": float(snap["snap_lat_gcj"])},
         "geometry_gcj": snap.get("geometry_gcj") or [],
     }
-    condition = {"id": "preview-only", "type": cond_type, "edge": edge_record}
+    condition = {
+        "id": "preview-only", "type": cond_type,
+        "blocked_modes": list(blocked_modes), "edge": edge_record,
+    }
     sample_routes = {}
     for mode in TRAVEL_MODES:
         common = {
@@ -1963,6 +1976,7 @@ def create_road_condition():
     name = (body.get("name") or "").strip()
     lng = body.get("lng")
     lat = body.get("lat")
+    blocked_modes = body.get("blocked_modes", list(TRAVEL_MODE_KEYS))
 
     if not cond_type or not name or lng is None or lat is None:
         return _err("missing_fields", "type, name, lng, lat 必填", 400)
@@ -2034,6 +2048,7 @@ def create_road_condition():
             end_time=end_ts,
             created_by=identity if identity == "web" else "token",
             source=source,
+            blocked_modes=blocked_modes,
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
         return _ok({"condition": condition, "snap": snap}, status=201)
@@ -2094,7 +2109,7 @@ def patch_road_condition(cond_id):
 
 @api_bp.route("/road-conditions/<cond_id>", methods=["DELETE"])
 def delete_road_condition(cond_id):
-    """DELETE /api/road-conditions/<id> — 撤销并保留事件审计记录。"""
+    """DELETE /api/road-conditions/<id> — permanently remove the road restriction."""
     auth_error = _require_admin()
     if auth_error:
         return auth_error
@@ -2105,7 +2120,7 @@ def delete_road_condition(cond_id):
         return _err("road_conditions_unavailable", "现有路况数据无效，已拒绝修改；请先修复数据文件", 503)
     if not success:
         return _err("not_found", f"路况事件 {cond_id} 不存在", 404)
-    return _ok({"message": "已撤销并保留记录", "id": cond_id})
+    return _ok({"message": "已永久删除路段管制", "id": cond_id})
 
 
 def _public_vision_job(job: dict) -> dict:
@@ -2287,7 +2302,7 @@ def manager_vision_jobs():
         return _err("vision_enqueue_failed", "影像任务暂时无法入队，请稍后重试。", 503)
 
 
-@api_bp.route("/manager/vision-jobs/<job_id>", methods=["GET"])
+@api_bp.route("/manager/vision-jobs/<job_id>", methods=["GET", "DELETE"])
 def manager_vision_job(job_id):
     auth_error = _require_admin()
     if auth_error:
@@ -2296,6 +2311,28 @@ def manager_vision_job(job_id):
         uuid.UUID(job_id)
         from storage import database, vision_repository
         database.initialize(current_app.config.get("DATABASE_URL"))
+        if request.method == "DELETE":
+            job = vision_repository.begin_delete_job(current_app.config.get("DATABASE_URL"), job_id)
+            if not job:
+                return _ok({"deleted": True, "already_deleted": True})
+            upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
+            stored_path = str(job.get("media_path") or "")
+            media_name = Path(stored_path)
+            if (not stored_path or media_name.is_absolute() or media_name.name != stored_path
+                    or stored_path in {".", ".."}):
+                logger.error("拒绝删除不安全的影像存储路径: job_id=%s", job_id)
+                return _err("invalid_media_path", "影像记录的存储路径无效，已隐藏记录，请联系维护人员。", 500)
+            media_path = (upload_dir / media_name).resolve()
+            if media_path.parent != upload_dir:
+                logger.error("拒绝删除越界的影像存储路径: job_id=%s", job_id)
+                return _err("invalid_media_path", "影像记录的存储路径无效，已隐藏记录，请联系维护人员。", 500)
+            try:
+                media_path.unlink(missing_ok=True)
+            except OSError:
+                logger.exception("删除影像文件失败: job_id=%s", job_id)
+                return _err("vision_delete_incomplete", "影像记录已隐藏，但文件暂未删除；请重试删除。", 503)
+            vision_repository.finalize_delete_job(current_app.config.get("DATABASE_URL"), job_id)
+            return _ok({"deleted": True, "job_id": job_id})
         job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
     except (ValueError, RuntimeError) as error:
         if isinstance(error, ValueError):

@@ -105,7 +105,9 @@ test('R refreshes the page and starts a clean conversation', () => {
     assert.equal(h.state.serverConversationId, null);
     assert.equal(h.state.conversationHistory.length, 0);
     assert.equal(h.storage.has('whu_walker:server_conversation'), false);
-    const savedContext = JSON.parse(h.storage.get('whu_walker:context:default'));
+    const activeSessionId = h.storage.get('whu_walker:active_session');
+    assert.ok(activeSessionId);
+    const savedContext = JSON.parse(h.storage.get('whu_walker:context:' + activeSessionId));
     assert.deepEqual(savedContext.history, []);
     assert.equal(prevented, true);
     assert.equal(h.state.mapPoints.start, null);
@@ -115,6 +117,52 @@ test('R refreshes the page and starts a clean conversation', () => {
     assert.equal(h.state.pointMarkers.via.length, 0);
     assert.equal(h.state.pointMarkers.end, null);
     assert.deepEqual(removed, [startMarker, viaMarker, endMarker]);
+});
+
+test('explicit refresh rotates the session and suppresses stale history restoration after reload', async () => {
+    const storage = new Map([
+        ['whu_walker:active_session', 'sess_previous'],
+        ['whu_walker:context:sess_previous', JSON.stringify({
+            history: [{ role: 'user', content: '旧聊天' }], routeState: existingRoute(),
+        })],
+        ['whu_walker:server_conversation', 'server-previous'],
+    ]);
+    const first = harness(storage);
+    first.setQueuedApi(async url => {
+        if (url === '/api/conversations/server-previous') return {
+            conversation_id: 'server-previous',
+            messages: [{ task_id: 'old-task', role: 'user', content: '旧聊天', seq: 1 }],
+            tasks: [], active_runs: [],
+        };
+        throw new Error('unexpected request ' + url);
+    });
+    await first.init();
+    assert.equal(first.state.conversationHistory[0].content, '旧聊天');
+
+    first.refreshPage();
+    const freshSessionId = storage.get('whu_walker:active_session');
+    assert.ok(freshSessionId && freshSessionId !== 'sess_previous');
+    assert.ok(storage.has('whu_walker:explicit_reset_session'));
+
+    // A late old-page write must not make the refreshed page hydrate old data.
+    storage.set('whu_walker:context:' + freshSessionId, JSON.stringify({
+        history: [{ role: 'user', content: '旧聊天' }], routeState: existingRoute(),
+    }));
+    storage.set('whu_walker:server_conversation', 'server-previous');
+
+    const afterReload = harness(storage);
+    const restoreCalls = [];
+    afterReload.setQueuedApi(async url => {
+        restoreCalls.push(url);
+        throw new Error('explicit refresh must not restore a prior conversation');
+    });
+    await afterReload.init();
+
+    assert.equal(afterReload.state.conversationHistory.length, 0);
+    assert.equal(afterReload.state.serverConversationId, null);
+    assert.equal(restoreCalls.some(url => url.startsWith('/api/conversations/')), false);
+    assert.equal(storage.has('whu_walker:server_conversation'), false);
+    assert.equal(storage.has('whu_walker:explicit_reset_session'), false);
 });
 
 test('each selected map point can be removed independently, including a via point', () => {
