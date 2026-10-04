@@ -4082,7 +4082,7 @@
         }
 
         if (resetBtn) {
-            resetBtn.addEventListener('click', handleReset);
+            resetBtn.addEventListener('click', refreshPage);
         }
 
         // ===== 实时导航按钮 =====

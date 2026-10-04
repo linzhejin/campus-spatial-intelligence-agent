@@ -98,12 +98,14 @@ test('R refreshes the page without resetting the current conversation', () => {
     assert.equal(prevented, true);
 });
 
-test('R shortcut is labeled as refresh while the header still offers a new conversation', () => {
+test('R shortcut and header button both refresh the page', () => {
     const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');
+    const app = fs.readFileSync(require.resolve('../../static/js/app.js'), 'utf8');
 
     assert.match(html, /data-kbd="refresh">R<\/kbd><span class="kbd-label">刷新<\/span>/);
     assert.match(html, /↻ 刷新页面<\/span><kbd>R<\/kbd>/);
-    assert.match(html, /id="reset-btn"[^>]*>重开<\/button>/);
+    assert.match(html, /id="reset-btn"[^>]*aria-label="刷新页面"[^>]*>刷新<\/button>/);
+    assert.match(app, /resetBtn\.addEventListener\('click', refreshPage\)/);
     assert.doesNotMatch(html, /data-kbd="reset"/);
 });
 
