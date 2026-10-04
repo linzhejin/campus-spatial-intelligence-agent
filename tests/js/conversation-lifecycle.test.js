@@ -8,7 +8,7 @@ const routeState = require('../../static/js/route-state.js');
 // exposing lexical functions here avoids shipping test hooks in the application.
 function harness(storage = new Map()) {
     const bubbles = [], rendered = [], requests = [], userBubbles = [];
-    let clears = 0, stopped = 0, locationCalls = 0;
+    let clears = 0, stopped = 0, locationCalls = 0, reloads = 0;
     const localStorage = {
         getItem: k => storage.get(k) ?? null,
         setItem: (k,v) => storage.set(k,v),
@@ -20,7 +20,7 @@ function harness(storage = new Map()) {
     const context = vm.createContext({
         console, AbortController, setTimeout, clearTimeout, setInterval, clearInterval,
         localStorage, navigator: { userAgent: 'desktop', platform: 'Win32' },
-        window: { localStorage, WHURouteState: routeState },
+        window: { localStorage, WHURouteState: routeState, location: { reload: () => { reloads++; } } },
         document: { readyState: 'loading', body: { classList: { add: noop, remove: noop, toggle: noop } }, addEventListener: noop, querySelectorAll: () => [], getElementById: id => {
             if (!elements.has(id)) elements.set(id, element()); return elements.get(id);
         } },
@@ -59,6 +59,7 @@ function harness(storage = new Map()) {
         apiRequest = boundaries.apiRequest;
         var realSubmitQueuedMessage = submitQueuedMessage;
         globalThis.app = { state: state, init: init, submit: handleNlSubmit, reset: handleReset,
+            globalKeydown: handleGlobalKeydown,
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
             setTravelMode: setTravelMode,
             setApi: function (fn) {
@@ -75,11 +76,36 @@ function harness(storage = new Map()) {
     })();`, context);
     context.app.state.productMode = 'planning';
     return { ...context.app, context, bubbles, rendered, requests, userBubbles, storage,
-        clearCount: () => clears, stopCount: () => stopped, locationCount: () => locationCalls };
+        clearCount: () => clears, stopCount: () => stopped, locationCount: () => locationCalls,
+        reloadCount: () => reloads };
 }
 const existingRoute = () => ({ route_id: 'existing', start: { name: '星湖园' }, end: { name: '科技门' }, travel_mode: 'walk' });
 const routeResult = id => ({ task_type: 'path_planning', response_kind: 'route', recommended: [[1,2],[2,3]], route_state: { ...existingRoute(), route_id: id }, explanation: id });
 function deferred() { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b; }); return { promise, resolve, reject }; }
+
+test('R refreshes the page without resetting the current conversation', () => {
+    const h = harness();
+    h.state.conversationHistory = [{ role: 'user', content: '去东湖' }];
+    h.state.serverConversationId = 'server-c1';
+    let prevented = false;
+
+    h.globalKeydown({ key: 'r', target: { tagName: 'BODY' }, preventDefault() { prevented = true; } });
+
+    assert.equal(h.reloadCount(), 1);
+    assert.equal(h.clearCount(), 0);
+    assert.equal(h.state.serverConversationId, 'server-c1');
+    assert.equal(h.state.conversationHistory[0].content, '去东湖');
+    assert.equal(prevented, true);
+});
+
+test('R shortcut is labeled as refresh while the header still offers a new conversation', () => {
+    const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');
+
+    assert.match(html, /data-kbd="refresh">R<\/kbd><span class="kbd-label">刷新<\/span>/);
+    assert.match(html, /↻ 刷新页面<\/span><kbd>R<\/kbd>/);
+    assert.match(html, /id="reset-btn"[^>]*>重开<\/button>/);
+    assert.doesNotMatch(html, /data-kbd="reset"/);
+});
 
 test('refresh restores the same local session and route context', () => {
     const a = harness(); a.init(); a.state.conversationHistory = [{role:'user',content:'去科技门'}];

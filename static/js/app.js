@@ -3830,6 +3830,12 @@
         if (sec) sec.hidden = true;
     }
 
+    function refreshPage() {
+        if (window.location && typeof window.location.reload === 'function') {
+            window.location.reload();
+        }
+    }
+
     // 全局键盘快捷键
     function handleGlobalKeydown(e) {
         // 输入框/textarea 聚焦时：只放行 Esc，其余字母不拦截（用户在打字）
@@ -3856,7 +3862,7 @@
         if (key === 'F') { triggerChip('scenery_first'); e.preventDefault(); return; }
         if (key === 'S') { triggerChip('slope_avoid'); e.preventDefault(); return; }
         if (key === 'D') { triggerChip('distance_first'); e.preventDefault(); return; }
-        if (key === 'R') { var rb = document.getElementById('reset-btn'); flashButton(rb); handleReset(); e.preventDefault(); return; }
+        if (key === 'R') { e.preventDefault(); refreshPage(); return; }
         if (e.key === '?' || (e.shiftKey && e.key === '/')) { var hb = document.getElementById('help-btn'); flashButton(hb); showKbdHelp(); e.preventDefault(); return; }
 
         // / 聚焦输入框
@@ -4207,9 +4213,9 @@
                     triggerTravelMode(action.slice(5));
                 } else if (action.indexOf('chip:') === 0) {
                     triggerChip(action.slice(5), k);
-                } else if (action === 'reset') {
+                } else if (action === 'refresh') {
                     flashButton(k);
-                    handleReset();
+                    refreshPage();
                 } else if (action === 'focus') {
                     var inp = document.getElementById('nl-input');
                     if (inp) inp.focus();
