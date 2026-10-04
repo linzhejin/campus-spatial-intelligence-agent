@@ -20,6 +20,8 @@ function managerHarness() {
   const createdObjectUrls = [];
   const revokedObjectUrls = [];
   const formEntries = [];
+  const sessionValues = new Map();
+  let storageFailure = false;
   let visionPostCount = 0;
   let visionJobs = [];
   let roadEvents = [];
@@ -38,6 +40,7 @@ function managerHarness() {
     const node = {
       id, hidden: false, value: '', innerHTML: '', disabled: false,
       checked: false, files: [], style: {}, listeners, children: [], attributes: {},
+      clickCount: 0, scrollCount: 0,
       setAttribute(name, value) { this.attributes[name] = String(value); },
       removeAttribute(name) { delete this.attributes[name]; },
       classList: {
@@ -50,6 +53,8 @@ function managerHarness() {
       appendChild(child) { this.children.push(child); return child; },
       append(...children) { this.children.push(...children); },
       replaceChildren(...children) { this.children = children; },
+      click() { this.clickCount += 1; },
+      scrollIntoView() { this.scrollCount += 1; },
     };
     Object.defineProperty(node, 'textContent', {
       get: () => textContent,
@@ -88,6 +93,11 @@ function managerHarness() {
     setInterval: (fn) => { intervalCallbacks.push(fn); return intervalCallbacks.length; },
     clearInterval() {},
     alert() {}, confirm: () => true,
+    sessionStorage: {
+      getItem(key) { if (storageFailure) throw new Error('storage unavailable'); return sessionValues.get(key) || null; },
+      setItem(key, value) { if (storageFailure) throw new Error('storage unavailable'); sessionValues.set(key, String(value)); },
+      removeItem(key) { if (storageFailure) throw new Error('storage unavailable'); sessionValues.delete(key); },
+    },
   };
   const document = { hidden: false, activeElement: null, getElementById: element, createElement: (tag) => {
       const node = element('created-' + tag + '-' + createdNodeCount++);
@@ -155,6 +165,7 @@ function managerHarness() {
     setRoadEvents: (items) => { roadEvents = items; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
     setSessionExpired: (value) => { sessionExpired = value; },
+    setStorageFailure: (value) => { storageFailure = value; },
     deferImpactPreviews: () => { deferImpactPreviews = true; },
     hasPendingImpactPreview: (type) => impactPreviewResolvers.some((item) => item.type === type),
     resolveImpactPreview: (type, roadName) => {
@@ -189,6 +200,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /manager\.css\?v=20261004b/);
   assert.match(managerHtml, /manager\.js\?v=20261004b/);
   assert.doesNotMatch(managerHtml, /id="pick-anchor"|id="selected-anchor"/);
+  assert.match(managerHtml, /id="restore-vision-results"[^>]*hidden/);
 });
 
 test('selecting an image immediately enables recognition without a map point', async () => {
@@ -497,6 +509,65 @@ test('completed image jobs show vehicle counts and safely render detector boxes'
 function descendants(node) {
   return [node, ...(node.children || []).flatMap(descendants)];
 }
+
+test('completed jobs without candidates explain the terminal state and can be retried or cleared', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'finished-empty', status: 'completed', media_kind: 'image', original_name: '航拍.png',
+    result: { metrics: { peak_vehicle_count: 3, peak_class_counts: { car: 3 } }, candidates: [] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const root = harness.elements.get('vision-jobs');
+  const card = root.children[0];
+  const nodes = descendants(card);
+  const terminalText = nodes.map((node) => node.textContent || '').join(' ');
+  const retry = nodes.find((node) => node.tagName === 'button' && node.textContent === '重新选择影像');
+  const clear = nodes.find((node) => node.tagName === 'button' && node.textContent === '清除此结果');
+  assert.match(terminalText, /分析已结束/);
+  assert.match(terminalText, /未生成可复核的路况候选/);
+  assert.ok(retry);
+  assert.ok(clear);
+
+  retry.listeners.click();
+  assert.equal(harness.elements.get('vision-upload-card').scrollCount, 1);
+  assert.equal(harness.elements.get('media-file').clickCount, 1);
+
+  clear.listeners.click();
+  await flush();
+  assert.doesNotMatch(root.children.map((node) => node.textContent).join(' '), /航拍\.png/);
+  assert.equal(harness.elements.get('restore-vision-results').hidden, false);
+  harness.intervalCallbacks[0]();
+  await flush();
+  assert.doesNotMatch(root.children.map((node) => node.textContent).join(' '), /航拍\.png/);
+
+  harness.elements.get('restore-vision-results').listeners.click();
+  await flush();
+  assert.match(descendants(root).map((node) => node.textContent || '').join(' '), /航拍\.png/);
+});
+
+test('clearing a finished job still works when session storage is unavailable', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setStorageFailure(true);
+  harness.setVisionJobs([{
+    job_id: 'memory-only', status: 'completed', media_kind: 'image', original_name: '临时结果.png',
+    result: { metrics: {}, candidates: [] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+  const root = harness.elements.get('vision-jobs');
+  const clear = descendants(root).find((node) => node.tagName === 'button' && node.textContent === '清除此结果');
+
+  clear.listeners.click();
+  await flush();
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  assert.doesNotMatch(descendants(root).map((node) => node.textContent || '').join(' '), /临时结果\.png/);
+});
 
 test('confirmed visual evidence transfers to an explicitly verified road event', async () => {
   const harness = managerHarness();

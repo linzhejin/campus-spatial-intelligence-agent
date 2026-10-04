@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
+  var dismissedVisionStorageKey = 'managerDismissedVisionJobs';
+  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, dismissedVisionJobs: loadDismissedVisionJobs(), picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -9,6 +10,45 @@
     node.textContent = text || '';
     node.style.color = good ? '#397653' : '';
   };
+
+  function loadDismissedVisionJobs() {
+    try {
+      var stored = JSON.parse(window.sessionStorage.getItem(dismissedVisionStorageKey) || '[]');
+      return new Set(Array.isArray(stored) ? stored.filter(function (id) { return typeof id === 'string'; }) : []);
+    } catch (_) {
+      return new Set();
+    }
+  }
+
+  function persistDismissedVisionJobs() {
+    try {
+      window.sessionStorage.setItem(dismissedVisionStorageKey, JSON.stringify(Array.from(state.dismissedVisionJobs)));
+    } catch (_) {}
+  }
+
+  function updateRestoreVisionResults() {
+    byId('restore-vision-results').hidden = state.dismissedVisionJobs.size === 0;
+  }
+
+  function retryVisionSelection() {
+    var uploadCard = byId('vision-upload-card');
+    if (uploadCard && uploadCard.scrollIntoView) uploadCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    byId('media-file').click();
+  }
+
+  function dismissVisionJob(jobId) {
+    state.dismissedVisionJobs.add(jobId);
+    persistDismissedVisionJobs();
+    updateRestoreVisionResults();
+    refreshVisionJobs(true);
+  }
+
+  function restoreDismissedVisionJobs() {
+    state.dismissedVisionJobs.clear();
+    try { window.sessionStorage.removeItem(dismissedVisionStorageKey); } catch (_) {}
+    updateRestoreVisionResults();
+    refreshVisionJobs(true);
+  }
 
   function isVideoFile(file) {
     return !!file && (/^video\//i.test(file.type || '') || /\.(mp4|mov|avi|webm)$/i.test(file.name || ''));
@@ -652,8 +692,26 @@
           card.appendChild(ambiguous);
         }
       }
+      if (job.status === 'completed' && !(result.candidates || []).length) {
+        var terminal = document.createElement('div'); terminal.className = 'vision-terminal';
+        var terminalTitle = document.createElement('strong'); terminalTitle.textContent = '分析已结束';
+        var terminalCopy = document.createElement('p');
+        terminalCopy.textContent = '未生成可复核的路况候选。车辆数量只代表画面检测结果，不能单独判断拥堵。';
+        terminal.append(terminalTitle, terminalCopy); card.appendChild(terminal);
+        appendVisionRecoveryActions(card, job);
+      }
     }
+    if (job.status === 'failed') appendVisionRecoveryActions(card, job);
     return card;
+  }
+
+  function appendVisionRecoveryActions(card, job) {
+    var actions = document.createElement('div'); actions.className = 'vision-recovery-actions';
+    var retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '重新选择影像';
+    retry.addEventListener('click', retryVisionSelection);
+    var clear = document.createElement('button'); clear.type = 'button'; clear.textContent = '清除此结果';
+    clear.addEventListener('click', function () { dismissVisionJob(job.job_id); });
+    actions.append(retry, clear); card.appendChild(actions);
   }
 
   async function refreshVisionJobs(force) {
@@ -665,11 +723,14 @@
       var data = await request('/api/manager/vision-jobs?limit=20', 'GET');
       if (!force && document.activeElement && document.activeElement.classList &&
           document.activeElement.classList.contains('vision-review-note')) return;
-      var jobs = data.jobs || [];
+      var jobs = (data.jobs || []).filter(function (job) { return !state.dismissedVisionJobs.has(job.job_id); });
       root.replaceChildren();
       if (!jobs.length) {
-        var empty = document.createElement('div'); empty.className = 'empty-state'; empty.textContent = '尚无巡查任务。提交影像后，分析进度和候选都会显示在这里。'; root.appendChild(empty);
+        var empty = document.createElement('div'); empty.className = 'empty-state';
+        empty.textContent = state.dismissedVisionJobs.size ? '当前结果已清除。可重新选择影像，或显示已清除结果。' : '尚无巡查任务。提交影像后，分析进度和候选都会显示在这里。';
+        root.appendChild(empty);
       } else { jobs.forEach(function (job) { root.appendChild(renderVisionJob(job)); }); }
+      updateRestoreVisionResults();
     } catch (error) {
       root.replaceChildren(); var failed = document.createElement('div'); failed.className = 'empty-state';
       failed.textContent = error.message || '视觉任务记录暂时无法读取。'; root.appendChild(failed);
@@ -775,6 +836,7 @@
   byId('event-type').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
   byId('field-confirmation').addEventListener('input', updatePublishState);
   byId('clear-vision-source').addEventListener('click', clearVisionSource);
+  byId('restore-vision-results').addEventListener('click', restoreDismissedVisionJobs);
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
     renderSelectedMedia(file);
