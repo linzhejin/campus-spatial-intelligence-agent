@@ -436,9 +436,10 @@
         } catch (e) {}
         var freshSessionId = generateSessionId();
         state.sessionId = freshSessionId;
-        // The marker is consumed before context hydration after reload. It also
-        // defeats any stale local/session pointer written during page teardown.
-        try { localStorage.setItem(EXPLICIT_RESET_KEY, freshSessionId); } catch (e) {}
+        // The in-app refresh is an in-place reset. Remove a marker left by an
+        // older build so a later ordinary browser reload can restore this new
+        // session instead of unexpectedly clearing it again.
+        try { localStorage.removeItem(EXPLICIT_RESET_KEY); } catch (e) {}
         try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
         if (previousSessionId) {
             try { localStorage.removeItem(CONTEXT_KEY_PREFIX + previousSessionId); } catch (e) {}
@@ -3993,13 +3994,11 @@
     }
 
     function refreshPage() {
-        // “刷新”是用户主动开启新一轮规划：先清掉本地与服务端会话指针，
-        // 再重新加载页面，避免旧聊天在 loadContext/restoreServerConversation 中复活。
+        // “刷新”是用户主动开启新一轮规划。原地重置可以避免整页重载时
+        // 按正常记忆策略恢复旧聊天；浏览器自己的 F5 仍保留当前会话。
         beginExplicitRefreshSession();
         handleReset();
-        if (window.location && typeof window.location.reload === 'function') {
-            window.location.reload();
-        }
+        state.restoredActiveRuns = [];
     }
 
     // 全局键盘快捷键

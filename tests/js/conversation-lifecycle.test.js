@@ -87,7 +87,7 @@ const existingRoute = () => ({ route_id: 'existing', start: { name: '星湖园' 
 const routeResult = id => ({ task_type: 'path_planning', response_kind: 'route', recommended: [[1,2],[2,3]], route_state: { ...existingRoute(), route_id: id }, explanation: id });
 function deferred() { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b; }); return { promise, resolve, reject }; }
 
-test('R refreshes the page and starts a clean conversation', () => {
+test('R starts a clean conversation without reloading the page', () => {
     const h = harness();
     h.state.conversationHistory = [{ role: 'user', content: '去东湖' }];
     h.state.serverConversationId = 'server-c1';
@@ -100,11 +100,12 @@ test('R refreshes the page and starts a clean conversation', () => {
 
     h.globalKeydown({ key: 'r', target: { tagName: 'BODY' }, preventDefault() { prevented = true; } });
 
-    assert.equal(h.reloadCount(), 1);
+    assert.equal(h.reloadCount(), 0);
     assert.equal(h.clearCount(), 1);
     assert.equal(h.state.serverConversationId, null);
     assert.equal(h.state.conversationHistory.length, 0);
     assert.equal(h.storage.has('whu_walker:server_conversation'), false);
+    assert.equal(h.storage.has('whu_walker:explicit_reset_session'), false);
     const activeSessionId = h.storage.get('whu_walker:active_session');
     assert.ok(activeSessionId);
     const savedContext = JSON.parse(h.storage.get('whu_walker:context:' + activeSessionId));
@@ -119,7 +120,7 @@ test('R refreshes the page and starts a clean conversation', () => {
     assert.deepEqual(removed, [startMarker, viaMarker, endMarker]);
 });
 
-test('explicit refresh rotates the session and suppresses stale history restoration after reload', async () => {
+test('explicit refresh clears old history but later browser reload restores only the new conversation', async () => {
     const storage = new Map([
         ['whu_walker:active_session', 'sess_previous'],
         ['whu_walker:context:sess_previous', JSON.stringify({
@@ -142,26 +143,37 @@ test('explicit refresh rotates the session and suppresses stale history restorat
     first.refreshPage();
     const freshSessionId = storage.get('whu_walker:active_session');
     assert.ok(freshSessionId && freshSessionId !== 'sess_previous');
-    assert.ok(storage.has('whu_walker:explicit_reset_session'));
+    assert.equal(storage.has('whu_walker:explicit_reset_session'), false);
+    assert.equal(first.state.conversationHistory.length, 0);
+    assert.equal(storage.has('whu_walker:server_conversation'), false);
 
-    // A late old-page write must not make the refreshed page hydrate old data.
-    storage.set('whu_walker:context:' + freshSessionId, JSON.stringify({
-        history: [{ role: 'user', content: '旧聊天' }], routeState: existingRoute(),
-    }));
-    storage.set('whu_walker:server_conversation', 'server-previous');
+    first.state.serverConversationId = 'server-new';
+    storage.set('whu_walker:server_conversation', 'server-new');
+    first.state.conversationHistory = [
+        { role: 'user', content: '新聊天' },
+        { role: 'assistant', content: '新回复' },
+    ];
+    first.save();
 
     const afterReload = harness(storage);
     const restoreCalls = [];
     afterReload.setQueuedApi(async url => {
         restoreCalls.push(url);
-        throw new Error('explicit refresh must not restore a prior conversation');
+        if (url === '/api/conversations/server-new') return {
+            conversation_id: 'server-new',
+            messages: [
+                { task_id: 'new-task', role: 'user', content: '新聊天', seq: 1 },
+                { task_id: 'new-task', role: 'assistant', content: '新回复', seq: 2 },
+            ],
+            tasks: [], active_runs: [],
+        };
+        throw new Error('unexpected request ' + url);
     });
     await afterReload.init();
 
-    assert.equal(afterReload.state.conversationHistory.length, 0);
-    assert.equal(afterReload.state.serverConversationId, null);
-    assert.equal(restoreCalls.some(url => url.startsWith('/api/conversations/')), false);
-    assert.equal(storage.has('whu_walker:server_conversation'), false);
+    assert.deepEqual(Array.from(afterReload.state.conversationHistory, message => message.content), ['新聊天', '新回复']);
+    assert.equal(afterReload.state.serverConversationId, 'server-new');
+    assert.deepEqual(restoreCalls, ['/api/conversations/server-new']);
     assert.equal(storage.has('whu_walker:explicit_reset_session'), false);
 });
 
@@ -240,6 +252,8 @@ test('manual map markers do not render tooltip label boxes', () => {
     assert.deepEqual(markers.map(marker => marker.tooltipCalls.length), [0, 0, 0]);
     assert.deepEqual(markers.map(marker => marker.options.icon.className), ['whu-div-icon', 'whu-div-icon', 'whu-div-icon']);
     assert.ok(markers.every(marker => /删除此/.test(marker.popupContent)));
+    const css = fs.readFileSync(require.resolve('../../static/css/style.css'), 'utf8');
+    assert.match(css, /\.leaflet-marker-icon\.whu-div-icon\s*\{[^}]*background:\s*transparent\s*!important;[^}]*border:\s*0\s*!important;/s);
 });
 
 test('deleting a via point replans with the remaining selected points', async () => {
@@ -294,14 +308,16 @@ test('a natural-language route request receives manually selected start and via 
     assert.deepEqual(Array.from(sent.coord_waypoints, point => [point.lng, point.lat]), [[114.32, 30.52]]);
 });
 
-test('R shortcut and header button both refresh the page', () => {
+test('R shortcut and header button both start a new conversation', () => {
     const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');
     const app = fs.readFileSync(require.resolve('../../static/js/app.js'), 'utf8');
 
     assert.match(html, /data-kbd="refresh">R<\/kbd><span class="kbd-label">刷新<\/span>/);
-    assert.match(html, /↻ 刷新页面<\/span><kbd>R<\/kbd>/);
-    assert.match(html, /id="reset-btn"[^>]*aria-label="刷新页面"[^>]*>刷新<\/button>/);
+    assert.match(html, /↻ 清空路线与对话<\/span><kbd>R<\/kbd>/);
+    assert.match(html, /id="reset-btn"[^>]*aria-label="刷新路线与对话"[^>]*title="清空当前路线和聊天，开始新一轮规划"[^>]*>刷新<\/button>/);
     assert.match(app, /resetBtn\.addEventListener\('click', refreshPage\)/);
+    assert.match(app, /function refreshPage\(\)\s*\{[\s\S]*?beginExplicitRefreshSession\(\);\s*handleReset\(\);\s*state\.restoredActiveRuns = \[\];\s*\}/);
+    assert.doesNotMatch(app.match(/function refreshPage\(\)\s*\{[\s\S]*?\n    \}/)[0], /location\.reload/);
     assert.match(app, /删除此起点|删除此途经点|删除此终点/);
     assert.doesNotMatch(html, /data-kbd="reset"/);
 });
