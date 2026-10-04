@@ -63,6 +63,8 @@
         latestRouteSequence: 0,
         travelMode: 'walk',  // 出行方式：walk / bike / drive（持久化偏好，默认步行）
         routeStore: window.WHURouteState ? window.WHURouteState.createStore(null) : null,
+        mapPointRouteActive: false,
+        mapPointRevision: 0,
         userLocation: null,  // GPS 定位结果（WGS-84）：{lng, lat, accuracy}
         userMarker: null,    // 藍点标记
         userAccuracyCircle: null,  // 定位精度圈
@@ -895,7 +897,73 @@
                 b.setAttribute('aria-pressed', 'false');
             }
         });
-        state.map.getContainer().style.cursor = '';
+        if (state.map) state.map.getContainer().style.cursor = '';
+    }
+
+    function bindMapPointRemoval(marker, key, label) {
+        var buttonLabel = key === 'via' ? '删除此途经点' : key === 'start' ? '删除此起点' : '删除此终点';
+        marker.bindPopup('<div class="whu-point-popup"><strong>' + label + '</strong>'
+            + '<button type="button" class="whu-point-delete">' + buttonLabel + '</button></div>');
+        marker.on('popupopen', function (event) {
+            var popupElement = event.popup && event.popup.getElement ? event.popup.getElement() : null;
+            var deleteButton = popupElement && popupElement.querySelector('.whu-point-delete');
+            if (!deleteButton) return;
+            deleteButton.addEventListener('click', function (clickEvent) {
+                clickEvent.preventDefault();
+                clickEvent.stopPropagation();
+                var index = key === 'via' ? state.pointMarkers.via.indexOf(marker) : undefined;
+                removeMapPoint(key, index);
+            }, { once: true });
+        });
+    }
+
+    function removeMapPoint(key, index) {
+        var label;
+        var marker;
+        if (key === 'via') {
+            if (!Number.isInteger(index) || index < 0 || index >= state.mapPoints.via.length) return false;
+            label = '途经点' + (index + 1);
+            marker = state.pointMarkers.via[index];
+            state.mapPoints.via.splice(index, 1);
+            state.pointMarkers.via.splice(index, 1);
+        } else if (key === 'start' || key === 'end') {
+            if (!state.mapPoints[key] && !state.pointMarkers[key]) return false;
+            label = key === 'start' ? '起点' : '终点';
+            marker = state.pointMarkers[key];
+            state.mapPoints[key] = null;
+            state.pointMarkers[key] = null;
+        } else {
+            return false;
+        }
+
+        state.mapPointRevision += 1;
+        if (marker && state.map) state.map.removeLayer(marker);
+        state.pointMarkers.via.forEach(function (viaMarker, viaIndex) {
+            if (!viaMarker || typeof viaMarker.bindTooltip !== 'function') return;
+            if (typeof viaMarker.unbindTooltip === 'function') viaMarker.unbindTooltip();
+            viaMarker.bindTooltip('途经点' + (viaIndex + 1), { permanent: false, direction: 'top' });
+        });
+        if (state.map && typeof state.map.closePopup === 'function') state.map.closePopup();
+        showTopBanner('已删除' + label, 'info');
+
+        // 已按手选点生成的路线不能继续展示旧的起终点/途经关系。
+        if (state.mapPointRouteActive) {
+            if (state.mapPoints.start && state.mapPoints.end) {
+                autoPlanFromMapPoints();
+            } else {
+                clearMapPointRoute();
+            }
+        }
+        return true;
+    }
+
+    function clearMapPointRoute() {
+        state.mapPointRouteActive = false;
+        clearRouteResult();
+        state.latestRoute = null;
+        if (state.routeStore) state.routeStore.replace(null);
+        syncRouteStrategyUI();
+        saveContext();
     }
 
     function setMapPoint(key, lng, lat, gcjLng, gcjLat) {
@@ -911,6 +979,7 @@
             }
             // 途经点可多个
             state.mapPoints.via.push(pt);
+            state.mapPointRevision += 1;
             var viaIdx = state.mapPoints.via.length;
             var m = L.marker([gcjLat, gcjLng], {
                 icon: L.divIcon({
@@ -919,11 +988,13 @@
                 }),
             }).addTo(state.map);
             m.bindTooltip(labels.via + viaIdx, { permanent: false, direction: 'top' });
+            bindMapPointRemoval(m, 'via', labels.via);
             state.pointMarkers.via.push(m);
-            showTopBanner('✅ 已设置途经点' + viaIdx, 'success');
+            showTopBanner('✅ 已设置途经点' + viaIdx + '（点标记可删除）', 'success');
         } else {
             // 起点或终点：替换已有标记
             state.mapPoints[key] = pt;
+            state.mapPointRevision += 1;
             if (state.pointMarkers[key]) state.map.removeLayer(state.pointMarkers[key]);
             var mk = L.marker([gcjLat, gcjLng], {
                 icon: L.divIcon({
@@ -932,32 +1003,65 @@
                 }),
             }).addTo(state.map);
             mk.bindTooltip(labels[key], { permanent: true, direction: 'top', offset: [0, -12] });
+            bindMapPointRemoval(mk, key, labels[key]);
             state.pointMarkers[key] = mk;
-            showTopBanner('✅ 已设置' + labels[key], 'success');
+            showTopBanner('✅ 已设置' + labels[key] + '（点标记可删除）', 'success');
         }
     }
 
     function clearMapPoints() {
         state.mapPoints = { start: null, via: [], end: null };
-        if (state.pointMarkers.start) { state.map.removeLayer(state.pointMarkers.start); state.pointMarkers.start = null; }
-        state.pointMarkers.via.forEach(function (m) { state.map.removeLayer(m); });
+        state.mapPointRevision += 1;
+        if (state.map && state.pointMarkers.start) state.map.removeLayer(state.pointMarkers.start);
+        state.pointMarkers.start = null;
+        state.pointMarkers.via.forEach(function (m) { if (state.map) state.map.removeLayer(m); });
         state.pointMarkers.via = [];
-        if (state.pointMarkers.end) { state.map.removeLayer(state.pointMarkers.end); state.pointMarkers.end = null; }
+        if (state.map && state.pointMarkers.end) state.map.removeLayer(state.pointMarkers.end);
+        state.pointMarkers.end = null;
+        state.mapPointRouteActive = false;
+        if (state.map && typeof state.map.closePopup === 'function') state.map.closePopup();
+    }
+
+    function snapshotMapPoints() {
+        var points = state.mapPoints || { start: null, via: [], end: null };
+        function copyPoint(point) {
+            return point ? { lng: point.lng, lat: point.lat } : null;
+        }
+        return {
+            revision: state.mapPointRevision,
+            start: copyPoint(points.start),
+            via: points.via.map(copyPoint),
+            end: copyPoint(points.end),
+        };
+    }
+
+    function requestUsesMapPoints(requestBody, selectedPoints) {
+        var selected = [selectedPoints.start, selectedPoints.end].filter(Boolean)
+            .concat(selectedPoints.via || []);
+        var requested = [requestBody.coord_start, requestBody.coord_end].filter(Boolean)
+            .concat(requestBody.coord_waypoints || []);
+        return selected.some(function (point) {
+            return requested.some(function (coord) {
+                return coord && coord.lng === point.lng && coord.lat === point.lat;
+            });
+        });
     }
 
     // 设置起终点后自动触发路径规划
     function autoPlanFromMapPoints() {
         var s = state.mapPoints.start, e = state.mapPoints.end;
         if (!s || !e) return;
+        if (state.mapPointRouteActive || state.routeStore && state.routeStore.current()) clearMapPointRoute();
         var vias = state.mapPoints.via;
         var query = vias.length
             ? '从地图标记的起点途经地图标记点到终点'
             : '从地图起点到地图终点';
+        state.mapPointRouteActive = true;
         handleNlSubmit(query, false, null, {
             coord_start: { lng: s.lng, lat: s.lat, name: '地图起点' },
             coord_end: { lng: e.lng, lat: e.lat, name: '地图终点' },
             coord_waypoints: vias.map(function (v) { return { lng: v.lng, lat: v.lat }; }),
-        });
+        }, snapshotMapPoints());
     }
 
     // ===== 持续跟踪定位（核心逻辑：共享 state.locateWatchId，防重复 watch） =====
@@ -2417,7 +2521,9 @@
         state.latestRouteTurnId = state.nextConversationTurnId + 1;
         state.latestRouteSequence = 0;
         stopNavigation();     // 退出实时导航
-        // 1. 清空地图路线和标记
+        // 1. 清空路线、路线途经标记和手动选点
+        stopPointPick();
+        clearMapPoints();
         clearMap();
         // 2. 复位地图视角（GCJ 中心点转 WGS-84）
         if (state.map) {
@@ -3285,9 +3391,10 @@
         });
     }
 
-    async function handleNlSubmit(query, isAutoLocationRetry, continuation, extraContext) {
+    async function handleNlSubmit(query, isAutoLocationRetry, continuation, extraContext, mapPointContext) {
         hideError();
         if (!isAutoLocationRetry) state._autoLocated = false;  // 同一请求自动补定位最多一次
+        var selectedPointContext = mapPointContext || snapshotMapPoints();
         hideWelcomeElements();
         var turnId = continuation ? continuation.turnId : ++state.nextConversationTurnId;
         var conversationEpoch = continuation ? continuation.conversationEpoch : state.conversationEpoch;
@@ -3312,12 +3419,36 @@
                 if (locRefs.asStart) requestBody.coord_start = coordRef;
                 if (locRefs.asEnd) requestBody.coord_end = coordRef;
             }
+            // 用户手动选过起点/途经点时，将其作为后续自然语言路线请求的坐标上下文。
+            // 明确说“从我这里出发”时，上面的实时定位仍优先于地图手选点。
+            if (!requestBody.coord_start && selectedPointContext.start) {
+                var selectedStart = selectedPointContext.start;
+                requestBody.coord_start = {
+                    lng: selectedStart.lng, lat: selectedStart.lat, name: '地图起点',
+                };
+            }
+            if (!requestBody.coord_end && selectedPointContext.end) {
+                var selectedEnd = selectedPointContext.end;
+                requestBody.coord_end = {
+                    lng: selectedEnd.lng, lat: selectedEnd.lat, name: '地图终点',
+                };
+            }
+            if (!requestBody.coord_waypoints && selectedPointContext.via.length) {
+                requestBody.coord_waypoints = selectedPointContext.via.map(function (point) {
+                    return { lng: point.lng, lat: point.lat };
+                });
+            }
             // 兜底：用户之前已定位过（点过◎或之前轮次），且没显式说起点 → 自动附起点
             // 这样用户说"去珞珈山"时，如果之前已定位过，后端直接拿到坐标，不再追问
             if (!requestBody.coord_start && state.userLocation && !query._auto_located) {
                 requestBody.coord_start = {
                     lng: state.userLocation.lng, lat: state.userLocation.lat, name: '我的位置',
                 };
+            }
+            var requestUsesSelectedMapPoints = requestUsesMapPoints(requestBody, selectedPointContext);
+            if (requestUsesSelectedMapPoints && selectedPointContext.revision !== state.mapPointRevision) {
+                updateChatBubble(thinkingBubble, '地图选点刚有变化，请按当前选点重新发送路线需求。');
+                return;
             }
             var clarificationAnswer = isLikelyClarificationAnswer(query);
             if (!clarificationAnswer && state.pendingServerTaskId) {
@@ -3331,6 +3462,10 @@
 
             var result = await submitQueuedMessage(query, requestBody, thinkingBubble, conversationEpoch);
             if (!result) return;
+            if (requestUsesSelectedMapPoints && selectedPointContext.revision !== state.mapPointRevision) {
+                updateChatBubble(thinkingBubble, '地图选点已更新，这条旧路线已取消显示。请按当前选点继续规划。');
+                return;
+            }
 
             if (result.response_kind === 'clarify') {
                 if (setPendingServerClarification(
@@ -3345,6 +3480,8 @@
             if (conversationEpoch !== state.conversationEpoch) return;
 
             var taskType = result.task_type;
+
+            if (taskType === 'path_planning' && requestUsesSelectedMapPoints) state.mapPointRouteActive = true;
 
             if (taskType === 'chat') {
                 hideWelcomeElements();
@@ -3376,7 +3513,7 @@
                             turnId: turnId,
                             thinkingBubble: thinkingBubble,
                             conversationEpoch: conversationEpoch,
-                        }, retryContext);
+                        }, retryContext, selectedPointContext);
                         return;  // 已重发，不再往下渲染
                     } catch (autoErr) {
                         console.warn('[AUTO_LOC] 自动定位失败，显示 clarify 让用户手动选:', autoErr.message);
@@ -3831,6 +3968,8 @@
     }
 
     function refreshPage() {
+        stopPointPick();
+        clearMapPoints();
         if (window.location && typeof window.location.reload === 'function') {
             window.location.reload();
         }

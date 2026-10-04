@@ -44,7 +44,7 @@ function harness(storage = new Map()) {
     vm.runInContext(source.slice(0,end) + `
         var realApiRequest = apiRequest;
         [${['hideError','startLoadingMessages','hideWelcomeElements','stopLoadingMessages','hideLoading',
-            'renderClarifyOptions','renderCandidateCards','syncModeFromServer','showResults','trackRouteShown',
+            'renderClarifyOptions','renderCandidateCards','syncModeFromServer','showResults','trackRouteShown','showTopBanner',
             'applyProductMode','loadTravelMode','bindEvents','syncTravelModeUI','syncRouteStrategyUI',
             'showWelcomeHint','initMap','consumeMobileHandoff'].map(n => JSON.stringify(n)).join(',')}]
             .forEach(function (name) { eval(name + ' = boundaries.noop'); });
@@ -61,6 +61,8 @@ function harness(storage = new Map()) {
         globalThis.app = { state: state, init: init, submit: handleNlSubmit, reset: handleReset,
             globalKeydown: handleGlobalKeydown,
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
+            removeMapPoint: removeMapPoint,
+            bindMapPointRemoval: bindMapPointRemoval,
             setTravelMode: setTravelMode,
             setApi: function (fn) {
                 submitQueuedMessage = function (query, body, bubble, epoch) {
@@ -87,6 +89,11 @@ test('R refreshes the page without resetting the current conversation', () => {
     const h = harness();
     h.state.conversationHistory = [{ role: 'user', content: '去东湖' }];
     h.state.serverConversationId = 'server-c1';
+    const removed = [];
+    const startMarker = { id: 'start' }, viaMarker = { id: 'via' }, endMarker = { id: 'end' };
+    h.state.map = { removeLayer: marker => removed.push(marker), getContainer: () => ({ style: {} }) };
+    h.state.mapPoints = { start: { lng: 114.3, lat: 30.5 }, via: [{ lng: 114.31, lat: 30.51 }], end: { lng: 114.32, lat: 30.52 } };
+    h.state.pointMarkers = { start: startMarker, via: [viaMarker], end: endMarker };
     let prevented = false;
 
     h.globalKeydown({ key: 'r', target: { tagName: 'BODY' }, preventDefault() { prevented = true; } });
@@ -96,6 +103,111 @@ test('R refreshes the page without resetting the current conversation', () => {
     assert.equal(h.state.serverConversationId, 'server-c1');
     assert.equal(h.state.conversationHistory[0].content, '去东湖');
     assert.equal(prevented, true);
+    assert.equal(h.state.mapPoints.start, null);
+    assert.equal(h.state.mapPoints.via.length, 0);
+    assert.equal(h.state.mapPoints.end, null);
+    assert.equal(h.state.pointMarkers.start, null);
+    assert.equal(h.state.pointMarkers.via.length, 0);
+    assert.equal(h.state.pointMarkers.end, null);
+    assert.deepEqual(removed, [startMarker, viaMarker, endMarker]);
+});
+
+test('each selected map point can be removed independently, including a via point', () => {
+    const h = harness();
+    const removed = [];
+    const markers = [{ id: 'via-1' }, { id: 'via-2' }, { id: 'via-3' }];
+    const startMarker = { id: 'start' }, endMarker = { id: 'end' };
+    h.state.map = { removeLayer: marker => removed.push(marker), closePopup() {} };
+    h.state.mapPoints = {
+        start: { lng: 114.3, lat: 30.5 },
+        via: [{ lng: 1, lat: 1 }, { lng: 2, lat: 2 }, { lng: 3, lat: 3 }],
+        end: { lng: 114.4, lat: 30.6 },
+    };
+    h.state.pointMarkers = { start: startMarker, via: markers.slice(), end: endMarker };
+
+    assert.equal(h.removeMapPoint('via', 1), true);
+    assert.deepEqual(Array.from(h.state.mapPoints.via, point => point.lng), [1, 3]);
+    assert.deepEqual(Array.from(h.state.pointMarkers.via, marker => marker.id), ['via-1', 'via-3']);
+    assert.deepEqual(removed, [markers[1]]);
+    assert.equal(h.removeMapPoint('start'), true);
+    assert.equal(h.removeMapPoint('end'), true);
+    assert.equal(h.state.mapPoints.start, null);
+    assert.equal(h.state.mapPoints.end, null);
+    assert.deepEqual(removed, [markers[1], startMarker, endMarker]);
+});
+
+test('map marker popup wires its delete button to that exact selected point', () => {
+    const h = harness();
+    const removed = [];
+    const marker = {
+        bindPopup(html) { this.popupHtml = html; },
+        on(eventName, handler) { this.popupOpen = handler; },
+    };
+    h.state.map = { removeLayer: item => removed.push(item), closePopup() {} };
+    h.state.mapPoints.start = { lng: 114.3, lat: 30.5 };
+    h.state.pointMarkers.start = marker;
+    h.bindMapPointRemoval(marker, 'start', '起点');
+    let onDelete;
+    const button = { addEventListener: (_name, handler) => { onDelete = handler; } };
+
+    assert.match(marker.popupHtml, /删除此起点/);
+    marker.popupOpen({ popup: { getElement: () => ({ querySelector: () => button }) } });
+    onDelete({ preventDefault() {}, stopPropagation() {} });
+
+    assert.equal(h.state.mapPoints.start, null);
+    assert.deepEqual(removed, [marker]);
+});
+
+test('deleting a via point replans with the remaining selected points', async () => {
+    const h = harness();
+    h.state.map = { removeLayer() {}, closePopup() {} };
+    h.state.mapPoints = {
+        start: { lng: 114.3, lat: 30.5 },
+        via: [{ lng: 114.31, lat: 30.51 }, { lng: 114.32, lat: 30.52 }],
+        end: { lng: 114.33, lat: 30.53 },
+    };
+    h.state.pointMarkers = { start: {}, via: [{}, {}], end: {} };
+    h.state.mapPointRouteActive = true;
+    let sent;
+    h.setApi(async (_url, body) => { sent = body; return { task_type: 'chat', reply: '收到' }; });
+
+    h.removeMapPoint('via', 0);
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    assert.deepEqual(Array.from(sent.coord_waypoints, point => [point.lng, point.lat]), [[114.32, 30.52]]);
+});
+
+test('removing a point while its route request is pending prevents the stale route from rendering', async () => {
+    const h = harness();
+    const pending = deferred();
+    h.state.mapPoints.start = { lng: 114.31, lat: 30.51 };
+    h.state.pointMarkers.start = {};
+    h.state.map = { removeLayer() {}, closePopup() {} };
+    h.setApi(() => pending.promise);
+
+    const request = h.submit('去最近的食堂');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    h.removeMapPoint('start');
+    pending.resolve(routeResult('stale-manual-start'));
+    await request;
+
+    assert.equal(h.rendered.length, 0);
+    assert.match(h.bubbles[0].text, /地图选点已更新/);
+});
+
+test('a natural-language route request receives manually selected start and via coordinates', async () => {
+    const h = harness();
+    h.state.userLocation = { lng: 114.39, lat: 30.59 };
+    h.state.mapPoints.start = { lng: 114.31, lat: 30.51 };
+    h.state.mapPoints.via = [{ lng: 114.32, lat: 30.52 }];
+    let sent;
+    h.setApi(async (_url, body) => { sent = body; return { task_type: 'chat', reply: '好的' }; });
+
+    await h.submit('去最近的食堂');
+
+    assert.deepEqual({ lng: sent.coord_start.lng, lat: sent.coord_start.lat, name: sent.coord_start.name },
+        { lng: 114.31, lat: 30.51, name: '地图起点' });
+    assert.deepEqual(Array.from(sent.coord_waypoints, point => [point.lng, point.lat]), [[114.32, 30.52]]);
 });
 
 test('R shortcut and header button both refresh the page', () => {
@@ -106,16 +218,22 @@ test('R shortcut and header button both refresh the page', () => {
     assert.match(html, /↻ 刷新页面<\/span><kbd>R<\/kbd>/);
     assert.match(html, /id="reset-btn"[^>]*aria-label="刷新页面"[^>]*>刷新<\/button>/);
     assert.match(app, /resetBtn\.addEventListener\('click', refreshPage\)/);
+    assert.match(app, /删除此起点|删除此途经点|删除此终点/);
     assert.doesNotMatch(html, /data-kbd="reset"/);
 });
 
 test('refresh restores the same local session and route context', () => {
     const a = harness(); a.init(); a.state.conversationHistory = [{role:'user',content:'去科技门'}];
-    a.state.routeStore.replace(existingRoute()); a.save();
+    a.state.routeStore.replace(existingRoute());
+    a.state.mapPoints.start = { lng: 114.31, lat: 30.51 };
+    a.state.mapPoints.via = [{ lng: 114.32, lat: 30.52 }];
+    a.save();
     const b = harness(a.storage); b.init();
     assert.equal(b.state.sessionId, a.state.sessionId);
     assert.equal(b.state.routeStore.current().route_id, 'existing');
     assert.equal(b.state.conversationHistory[0].content, '去科技门');
+    assert.equal(b.state.mapPoints.start, null);
+    assert.equal(b.state.mapPoints.via.length, 0);
 });
 test('server transcript restores the trusted conversation after local messages are absent', async () => {
     const storage = new Map([['whu_walker:server_conversation', 'server-c1']]);

@@ -239,6 +239,29 @@ body {
 .whu-point-btn--end .whu-point-icon { border-radius: 4px; }
 .whu-point-label { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; }
 
+.whu-point-popup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 150px;
+    color: var(--ink, #302B27);
+}
+.whu-point-delete {
+    min-height: 42px;
+    padding: 7px 11px;
+    border: 1px solid rgba(107, 40, 40, 0.2);
+    border-radius: 9px;
+    background: #FFF8F5;
+    color: var(--cherry-deep, #6B2828);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.whu-point-delete:hover { background: #F7E8E2; }
+.whu-point-delete:focus-visible { outline: 3px solid #276E8A; outline-offset: 2px; }
+
 /* ==============================
    CHAT PANEL — frosted glass
    ============================== */

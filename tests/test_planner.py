@@ -270,6 +270,96 @@ class TestAgentLoop:
         assert resp["message"] == "已为你规划好从牌坊到樱顶的步行路线，约 800 米。"
         assert len(client.calls) == 1
 
+    def test_manual_map_start_is_used_when_natural_language_omits_the_origin(self):
+        selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "end": {"name": "星湖园食堂"},
+        })])])
+        route = {"recommended": [[114.31, 30.51]], "start_name": "地图起点",
+                 "end_name": "星湖园食堂", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            result = planner.run_agent("带我去最近的食堂", coord_start=selected_start)
+
+        args = execute.call_args.args[1]
+        assert args["start"] == {
+            "name": "地图起点", "type": "coord", "lng": 114.31, "lat": 30.51,
+        }
+        assert result["response_kind"] == "route"
+        assert any("用户在地图上手动选定的起点" in str(message["content"])
+                   for message in client.calls[0]["messages"])
+
+    def test_agent_cannot_ask_for_start_again_after_map_selection(self):
+        selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
+        client = FakeClient([
+            _fake_response(tool_calls=[_fake_tool_call("ask_user", {
+                "question": "你现在在哪里？请告诉我起点。",
+            })]),
+            _fake_response(tool_calls=[_fake_tool_call("plan_route", {
+                "end": {"name": "星湖园食堂"},
+            })]),
+        ])
+        route = {"recommended": [[114.31, 30.51]], "start_name": "地图起点",
+                 "end_name": "星湖园食堂", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            result = planner.run_agent("带我去最近的食堂", coord_start=selected_start)
+
+        assert result["response_kind"] == "route"
+        assert execute.call_count == 1  # origin-only ask_user is answered internally
+        assert execute.call_args.args[1]["start"]["type"] == "coord"
+        assert "地图起点" in client.calls[1]["messages"][-1]["content"]
+
+    def test_explicit_named_start_in_text_overrides_the_map_selection(self):
+        selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "start": {"name": "教五", "type": "poi"},
+            "end": {"name": "图书馆", "type": "poi"},
+        })])])
+        route = {"recommended": [[114.31, 30.51]], "start_name": "教五",
+                 "end_name": "图书馆", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            planner.run_agent("从教五到图书馆", coord_start=selected_start)
+
+        assert execute.call_args.args[1]["start"] == {"name": "教五", "type": "poi"}
+
+    def test_conversational_named_start_overrides_the_map_selection(self):
+        selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "start": {"name": "教五", "type": "poi"},
+            "end": {"name": "图书馆", "type": "poi"},
+        })])])
+        route = {"recommended": [[114.31, 30.51]], "start_name": "教五",
+                 "end_name": "图书馆", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            planner.run_agent("我在教五这边，帮我导航到图书馆",
+                              coord_start=selected_start)
+
+        assert execute.call_args.args[1]["start"] == {"name": "教五", "type": "poi"}
+
+    def test_original_named_start_survives_a_follow_up_turn(self):
+        selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
+        original = "从教五到图书馆"
+        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
+            "start": {"name": "教五", "type": "poi"},
+            "end": {"name": "图书馆", "type": "poi"},
+        })])])
+        route = {"recommended": [[114.31, 30.51]], "start_name": "教五",
+                 "end_name": "图书馆", "mode": "walk"}
+        with patch.object(planner, "_make_client", return_value=client), \
+             patch.object(planner.agent_tools, "execute_tool",
+                          return_value=(route, {"route": route})) as execute:
+            planner.run_agent("不走楼梯", context={"active_task_request": original},
+                              coord_start=selected_start)
+
+        assert execute.call_args.args[1]["start"] == {"name": "教五", "type": "poi"}
+
     def test_candidates_artifact(self):
         cands = [{"name": "桂园食堂"}, {"name": "梅园食堂"}]
         client = FakeClient([

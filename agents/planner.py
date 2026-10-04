@@ -123,6 +123,71 @@ def _named_via_request(text: str) -> dict | None:
     return {"start": (match.group("start") or "").strip(), "via": via, "end": end}
 
 
+def _explicit_start_name(query: str) -> str | None:
+    """Return a clearly named origin so a map-selected start does not override it."""
+    text = (query or "").strip()
+    field = re.search(r"(?:起点|出发地)(?:设为|是|为|在|[:：])\s*([^，,。；;]+)", text)
+    if field:
+        name = field.group(1).strip()
+        return name or None
+
+    # Common conversational form: “我在教五这边，帮我导航到图书馆”.
+    located = re.search(r"(?:^|[，,。；;\s])我(?:现在)?在\s*([^，,。；;]{1,40})", text)
+    if located:
+        name = re.split(r"(?:出发|前往|去|到|帮我|请你|规划|导航|带我)",
+                        located.group(1), maxsplit=1)[0].strip()
+        name = re.sub(r"(?:这边|附近|旁边|周围|一带)$", "", name).strip()
+        if name and name not in {"我这", "我这里", "我这边", "这里", "当前位置", "当前"}:
+            return name
+
+    from_match = re.search(
+        r"(?:从|由)\s*([^，,。；;]{1,30}?)\s*(?:出发|到|去|前往)", text
+    )
+    if from_match:
+        name = from_match.group(1).strip()
+        if name and name not in {"我这", "我这里", "我的位置", "当前位置", "地图起点"}:
+            return name
+        if name == "地图起点":
+            return name
+        return None
+
+    direct_match = re.match(r"^([^，,。；;]{2,20}?)\s*(?:到|至|去|前往)", text)
+    if not direct_match:
+        return None
+    name = direct_match.group(1).strip()
+    # Bare imperative/request lead-ins are not place names. Without this guard,
+    # phrases such as “带我去最近的食堂” look like an origin named “带我”.
+    if re.match(
+        r"^(?:我想|想要|我要|我希望|帮我|帮忙|请帮我|请你|请问|请|麻烦|带我|带我们|带您|送我|给我|推荐我|现在)",
+        name,
+    ):
+        return None
+    return name or None
+
+
+def _manual_map_start_ref(coord_start: dict) -> dict | None:
+    if not isinstance(coord_start, dict) or coord_start.get("name") != "地图起点":
+        return None
+    try:
+        lng, lat = float(coord_start.get("lng")), float(coord_start.get("lat"))
+    except (TypeError, ValueError):
+        return None
+    if not (-180 <= lng <= 180 and -90 <= lat <= 90):
+        return None
+    return {"name": "地图起点", "type": "coord", "lng": lng, "lat": lat}
+
+
+def _asks_for_origin(question: str) -> bool:
+    """Identify a clarification that asks only for a route origin."""
+    text = (question or "").strip()
+    if not text or re.search(r"终点|目的地|要去哪里|去哪(?:里)?|想去的地点", text):
+        return False
+    return bool(re.search(
+        r"起点|出发地|从哪(?:里)?(?:出发|开始)|你(?:现在)?在哪(?:里)?|当前位置|从哪里出发",
+        text,
+    ))
+
+
 def _continuation_start(query: str) -> str:
     text = (query or "").strip().strip("，,。")
     match = re.fullmatch(r"(?:从|我在|起点(?:是|在)?)(.+?)(?:出发)?", text)
@@ -216,16 +281,26 @@ def _build_messages(query: str, context: dict = None, history: list = None,
                         f"除非用户在消息中明确说「骑车/开车/步行」覆盖，否则用此值。",
         })
 
-    # GPS 定位注入：让 LLM 能把"我这/这里"解析为 coord 类型端点
+    # GPS 定位或地图手选点注入：地图手选点是明确的路由端点，不只是当前位置提示。
     gps_lines = []
     for label, coord in (("起点（用户当前位置）", coord_start), ("终点", coord_end)):
         if isinstance(coord, dict) and coord.get("lng") is not None and coord.get("lat") is not None:
+            if label.startswith("起点") and coord.get("name") == "地图起点":
+                label = "起点（用户在地图上手动选定的起点）"
+            elif label == "终点" and coord.get("name") == "地图终点":
+                label = "终点（用户在地图上手动选定的终点）"
             gps_lines.append(
                 f"- {label}: WGS-84 坐标 lng={coord['lng']}, lat={coord['lat']}"
-                f"（用户说「我这/这里/我的位置」时用 type=coord 传入）"
+                f"（必须将此点作为对应坐标端点传入）"
             )
     if gps_lines:
-        messages.append({"role": "system", "content": "用户本次请求携带了 GPS 定位：\n" + "\n".join(gps_lines)})
+        messages.append({"role": "system", "content": "用户本次请求携带了可用于路线规划的精确坐标：\n"
+            + "\n".join(gps_lines)})
+    if _manual_map_start_ref(coord_start):
+        messages.append({"role": "system", "content":
+            "用户已在地图上手动选定路线起点。若本轮文本没有明确写出另一个具体起点，"
+            "无论需求写成‘去食堂’、‘去最近的食堂’等简略说法，都必须使用地图起点坐标规划，"
+            "不能再询问用户当前在哪里。用户若在本轮明确指定了另一个起点，则以本轮文字为准。"})
 
     # 地图途经点注入：用户在地图上选的途经点坐标
     if isinstance(coord_waypoints, list) and coord_waypoints:
@@ -524,32 +599,54 @@ def run_agent(query: str, context: dict = None, history: list = None,
 
         for tc in tool_calls:
             name = tc.function.name
+            manual_start = _manual_map_start_ref(coord_start)
+            # A new explicit origin in this turn supersedes the original task;
+            # otherwise keep the original named origin through clarifications.
+            explicit_start = (_explicit_start_name(query)
+                              or _explicit_start_name(active_task_request))
+            manual_start_applies = bool(
+                manual_start and (not explicit_start or explicit_start == manual_start["name"])
+            )
             try:
                 args = json.loads(tc.function.arguments or "{}")
             except json.JSONDecodeError:
                 result = {"error": "invalid_args", "message": "参数不是合法 JSON，请修正后重试"}
                 artifact = None
             else:
-                if name in route_tools and isinstance(args, dict):
-                    if not allow_preferences:
-                        args.pop("weights", None)
-                    elif active_weights and "weights" not in args:
-                        args["weights"] = active_weights
-                    elif args.get("weights"):
-                        active_weights = args["weights"]
-                    constraints = args.get("constraints")
-                    if isinstance(constraints, dict):
-                        avoid_slope = avoid_slope or constraints.get("slope") == "avoid"
-                    if avoid_slope:
-                        args["constraints"] = {**(constraints if isinstance(constraints, dict) else {}),
-                                               "slope": "avoid"}
-                    if avoid_steps:
-                        args["constraints"] = {**(args.get("constraints") or {}),
-                                               "avoid_steps": True}
-                result, artifact = agent_tools.execute_tool(
-                    name, args, {"query": constraint_query if name in route_tools else query,
-                                 "uid": uid}
-                )
+                if (name == "ask_user" and manual_start_applies and isinstance(args, dict)
+                        and _asks_for_origin(args.get("question", ""))):
+                    # The selected map origin already answers this clarification. Return it
+                    # to the model as tool context and let the bounded agent loop continue.
+                    result = {
+                        "message": "用户已经在地图上手动选定起点，精确坐标已随请求提供。"
+                                   "请直接以该坐标作为起点继续处理，不要再次询问起点。"
+                    }
+                    artifact = None
+                else:
+                    if name in route_tools and isinstance(args, dict):
+                        if manual_start_applies:
+                            # Do not let the model omit the selected origin or replace it with
+                            # a guessed POI; an explicitly named different origin remains intact.
+                            args["start"] = manual_start
+                        if not allow_preferences:
+                            args.pop("weights", None)
+                        elif active_weights and "weights" not in args:
+                            args["weights"] = active_weights
+                        elif args.get("weights"):
+                            active_weights = args["weights"]
+                        constraints = args.get("constraints")
+                        if isinstance(constraints, dict):
+                            avoid_slope = avoid_slope or constraints.get("slope") == "avoid"
+                        if avoid_slope:
+                            args["constraints"] = {**(constraints if isinstance(constraints, dict) else {}),
+                                                   "slope": "avoid"}
+                        if avoid_steps:
+                            args["constraints"] = {**(args.get("constraints") or {}),
+                                                   "avoid_steps": True}
+                    result, artifact = agent_tools.execute_tool(
+                        name, args, {"query": constraint_query if name in route_tools else query,
+                                     "uid": uid}
+                    )
 
             if artifact:
                 if "route" in artifact:
