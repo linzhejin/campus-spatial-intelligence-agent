@@ -148,7 +148,7 @@ test('explicit refresh clears old history but later browser reload restores only
     assert.equal(storage.has('whu_walker:server_conversation'), false);
 
     first.state.serverConversationId = 'server-new';
-    storage.set('whu_walker:server_conversation', 'server-new');
+    storage.set('whu_walker:server_conversation:' + freshSessionId, 'server-new');
     first.state.conversationHistory = [
         { role: 'user', content: '新聊天' },
         { role: 'assistant', content: '新回复' },

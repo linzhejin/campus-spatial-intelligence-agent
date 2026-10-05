@@ -459,9 +459,9 @@
         } catch (e) {}
         var freshSessionId = generateSessionId();
         state.sessionId = freshSessionId;
-        // 保留一次性标记到页面重新初始化；即使旧异步回调或存储快照发生竞态，
-        // init 也会消费标记并丢弃新会话中的残留上下文。
-        try { localStorage.setItem(EXPLICIT_RESET_KEY, freshSessionId); } catch (e) {}
+        // 应用内刷新原地开启新会话，不触发页面初始化与历史恢复。
+        // 清除旧构建遗留的一次性标记，避免之后普通 F5 误清空新会话。
+        try { localStorage.removeItem(EXPLICIT_RESET_KEY); } catch (e) {}
         try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
         if (previousSessionId) {
             try { localStorage.removeItem(CONTEXT_KEY_PREFIX + previousSessionId); } catch (e) {}
@@ -4021,12 +4021,11 @@
     }
 
     function refreshPage() {
-        // 应用内“刷新”开启新一轮规划：先清除本地与服务端会话引用，再重载页面，
-        // 让所有界面从空会话重新初始化。浏览器 F5 仍按普通重载恢复当前聊天。
+        // 应用内“刷新”开启新一轮规划：原地清除会话和路线，避免页面重载恢复旧聊天。
+        // 浏览器 F5 仍是普通重载，会按记忆策略恢复当前会话。
         beginExplicitRefreshSession();
         handleReset();
         state.restoredActiveRuns = [];
-        window.location.reload();
     }
 
     // 全局键盘快捷键
