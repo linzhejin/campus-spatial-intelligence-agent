@@ -1039,6 +1039,8 @@
                     className: 'whu-div-icon',
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
+                // 手动点位只通过地图鼠标/触屏操作，避免 Leaflet 键盘焦点框留在图标上。
+                keyboard: false,
             }).addTo(state.map);
             bindMapPointRemoval(m, 'via', labels.via);
             state.pointMarkers.via.push(m);
@@ -1054,6 +1056,7 @@
                     className: 'whu-div-icon',
                     iconSize: [24, 24], iconAnchor: [12, 12],
                 }),
+                keyboard: false,
             }).addTo(state.map);
             bindMapPointRemoval(mk, key, labels[key]);
             state.pointMarkers[key] = mk;
