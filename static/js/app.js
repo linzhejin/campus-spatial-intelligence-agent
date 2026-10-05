@@ -23,7 +23,9 @@
     var MAP_ZOOM = CFG.MAP_ZOOM;
     var CONTEXT_KEY_PREFIX = 'whu_walker:context:';
     var SESSION_ID_KEY = 'whu_walker:active_session';
-    var SERVER_CONVERSATION_KEY = 'whu_walker:server_conversation';
+    var SERVER_CONVERSATION_KEY = 'whu_walker:server_conversation'; // 旧版共享键，仅用于一次性迁移
+    var SERVER_CONVERSATION_PREFIX = 'whu_walker:server_conversation:';
+    var SERVER_CONVERSATION_MIGRATION_KEY = 'whu_walker:server_conversation_migration_v1';
     var EXPLICIT_RESET_KEY = 'whu_walker:explicit_reset_session';
     var PREFS_KEY = 'whu_walker:preferences';
     var TRAVEL_MODE_KEY = 'whu_walker:travel_mode';  // 出行方式持久化偏好
@@ -429,6 +431,27 @@
         return CONTEXT_KEY_PREFIX + (state.sessionId || 'default');
     }
 
+    function getServerConversationKey(sessionId) {
+        return SERVER_CONVERSATION_PREFIX + (sessionId || state.sessionId || 'default');
+    }
+
+    function readServerConversationId() {
+        try {
+            var key = getServerConversationKey();
+            var conversationId = localStorage.getItem(key);
+            if (conversationId) return conversationId;
+            if (localStorage.getItem(SERVER_CONVERSATION_MIGRATION_KEY) === '1') return null;
+            // 旧版本使用跨标签共享键；只迁移一次，之后旧标签页写回也不会污染新会话。
+            conversationId = localStorage.getItem(SERVER_CONVERSATION_KEY);
+            if (conversationId) localStorage.setItem(key, conversationId);
+            localStorage.removeItem(SERVER_CONVERSATION_KEY);
+            localStorage.setItem(SERVER_CONVERSATION_MIGRATION_KEY, '1');
+            return conversationId;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function beginExplicitRefreshSession() {
         var previousSessionId = state.sessionId;
         try {
@@ -436,14 +459,15 @@
         } catch (e) {}
         var freshSessionId = generateSessionId();
         state.sessionId = freshSessionId;
-        // The in-app refresh is an in-place reset. Remove a marker left by an
-        // older build so a later ordinary browser reload can restore this new
-        // session instead of unexpectedly clearing it again.
-        try { localStorage.removeItem(EXPLICIT_RESET_KEY); } catch (e) {}
+        // 保留一次性标记到页面重新初始化；即使旧异步回调或存储快照发生竞态，
+        // init 也会消费标记并丢弃新会话中的残留上下文。
+        try { localStorage.setItem(EXPLICIT_RESET_KEY, freshSessionId); } catch (e) {}
         try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
         if (previousSessionId) {
             try { localStorage.removeItem(CONTEXT_KEY_PREFIX + previousSessionId); } catch (e) {}
+            try { localStorage.removeItem(getServerConversationKey(previousSessionId)); } catch (e) {}
         }
+        try { localStorage.setItem(SERVER_CONVERSATION_MIGRATION_KEY, '1'); } catch (e) {}
         try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
     }
 
@@ -455,6 +479,8 @@
         state.sessionId = freshSessionId;
         try { localStorage.setItem(SESSION_ID_KEY, freshSessionId); } catch (e) {}
         try { localStorage.removeItem(CONTEXT_KEY_PREFIX + freshSessionId); } catch (e) {}
+        try { localStorage.removeItem(getServerConversationKey(freshSessionId)); } catch (e) {}
+        try { localStorage.setItem(SERVER_CONVERSATION_MIGRATION_KEY, '1'); } catch (e) {}
         try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
         try { localStorage.removeItem(EXPLICIT_RESET_KEY); } catch (e) {}
     }
@@ -574,7 +600,7 @@
                     || restoreConversationId !== state.serverConversationId) return false;
             if (error && error.code === 'conversation_not_found') {
                 state.serverConversationId = null;
-                try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
+                try { localStorage.removeItem(getServerConversationKey()); } catch (e) {}
             } else {
                 console.warn('[SESSION] 服务端会话恢复暂不可用:', error && error.message);
             }
@@ -2585,6 +2611,7 @@
         state.pendingServerTaskTurnId = 0;
         state.latestRoute = null;
         state.serverConversationId = null;
+        try { localStorage.removeItem(getServerConversationKey()); } catch (e) {}
         try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
         if (state.routeStore) state.routeStore.replace(null);
         saveContext();
@@ -3196,7 +3223,7 @@
     async function ensureServerConversation(epoch) {
         if (!Number.isInteger(epoch)) epoch = state.conversationEpoch;
         if (!state.serverConversationId) {
-            try { state.serverConversationId = localStorage.getItem(SERVER_CONVERSATION_KEY); }
+            try { state.serverConversationId = localStorage.getItem(getServerConversationKey()); }
             catch (e) { state.serverConversationId = null; }
         }
         if (state.serverConversationId) return state.serverConversationId;
@@ -3212,7 +3239,7 @@
             if (!created || !created.conversation_id) throw new Error('会话没有成功建立，请稍后重试。');
             if (epoch !== state.conversationEpoch) return null;
             state.serverConversationId = created.conversation_id;
-            try { localStorage.setItem(SERVER_CONVERSATION_KEY, state.serverConversationId); } catch (e) {}
+            try { localStorage.setItem(getServerConversationKey(), state.serverConversationId); } catch (e) {}
             return state.serverConversationId;
         });
         var record = { epoch: epoch, promise: promise };
@@ -3242,7 +3269,7 @@
             if (state.serverConversationId === conversationId) {
                 state.serverConversationId = null;
                 state.serverConversationCreateRecord = null;
-                try { localStorage.removeItem(SERVER_CONVERSATION_KEY); } catch (e) {}
+                try { localStorage.removeItem(getServerConversationKey()); } catch (e) {}
             }
             conversationId = await ensureServerConversation(epoch);
             if (epoch !== state.conversationEpoch) return null;
@@ -3994,11 +4021,12 @@
     }
 
     function refreshPage() {
-        // “刷新”是用户主动开启新一轮规划。原地重置可以避免整页重载时
-        // 按正常记忆策略恢复旧聊天；浏览器自己的 F5 仍保留当前会话。
+        // 应用内“刷新”开启新一轮规划：先清除本地与服务端会话引用，再重载页面，
+        // 让所有界面从空会话重新初始化。浏览器 F5 仍按普通重载恢复当前聊天。
         beginExplicitRefreshSession();
         handleReset();
         state.restoredActiveRuns = [];
+        window.location.reload();
     }
 
     // 全局键盘快捷键
@@ -4492,7 +4520,7 @@
         applyProductMode();
         consumeExplicitRefreshSession();
         state.sessionId = getOrCreateSessionId();
-        try { state.serverConversationId = localStorage.getItem(SERVER_CONVERSATION_KEY); } catch (e) {}
+        state.serverConversationId = readServerConversationId();
         loadContext();
         loadTravelMode();  // 读取持久化的出行方式偏好（非法值回退 walk）
         bindEvents();
