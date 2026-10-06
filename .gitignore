@@ -232,6 +232,8 @@ scripts/audit_output/
 /data_validation_report.json
 prototype/
 .pytest_tmp/
+/.pytest_tmp_*/
+/_tmp_pytest_*/
 
 # ===== 项目清理（防复发）=====
 .claude/worktrees/
@@ -299,6 +301,7 @@ output/vision/
 /research/local/
 /output/course_data_review/
 /output/local_test_runs/
+/output/local_audits/
 /output/local_reorganization_*.json
 /.pytest_run_*/
 /.pytest_tmp_codex_*/

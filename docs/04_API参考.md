@@ -1,6 +1,7 @@
 # 04 · API 参考
 
 - 业务端点前缀 `/api`（Blueprint `url_prefix="/api"`）；健康检查 `GET /health` 无前缀（另有 `/api/health` 别名）。
+- 端点清单以 [api/routes.py](../api/routes.py) 与 [app.py](../app.py) 为准；本文档说明主要对外端点。
 - 统一响应：成功 `{"data": {...}}`，失败 `{"error": "code", "message": "..."}`。
 - 主入口是 **POST /api/chat**（全 Agent）；`/parse` 与 `/route` 是拆分式旧管道，Agent 故障时服务端内部也用它们兜底。
 
@@ -99,6 +100,10 @@ NL 或快捷按钮 → TaskIntent。
 ### POST /api/route（旧管道·拆分接口）
 
 结构化意图 → 路径。请求体含 start/end/constraints/weights/mode，可附 `coord_start/coord_end`。响应为路径包（字段同 /chat 的 path_planning 形态）+ `explanation`。
+
+### POST /api/route/replan
+
+已保存路线任务的**方式/策略切换重算**，不经过 LLM。请求体含 `route_state`（带 `data_version`）与 `change`；数据版本不一致时返回 409 `route_state_version_conflict`，路况不可用时拒绝重算。前端切换出行方式、策略按钮走此接口。
 
 ### POST /api/candidates
 
@@ -208,3 +213,8 @@ Query 参数：`type`（类型）、`season`（spring/summer/autumn/winter）、
 ## 出行方式约定
 
 所有规划调用支持 `travel_mode` / `mode = walk | bike | drive`（默认 walk）。服务端最终取值优先级：**NL 显式关键词（骑车/开车/步行，正则后处理纠偏） > body 参数 > 上下文继承 > 默认 walk**。
+
+## 其他接口
+
+- `GET /api/course-spatial-reference`：校方课程数据参考层（对照与研究中用）。
+- `GET/POST /api/manager/vision-*`：管理端视觉任务（状态、任务列表/上传、详情/删除、媒体、复核），详见[视觉识别验收](development/19_视觉图像识别功能实施与验收_20261003.md)与[管理端验收](development/20_管理端双流程实施与验收_20261003.md)。
