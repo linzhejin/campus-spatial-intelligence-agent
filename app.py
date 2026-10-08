@@ -81,7 +81,10 @@ def create_app() -> Flask:
     @app.before_request
     def _set_manager_upload_limit():
         if request.path == "/api/manager/vision-jobs" and request.method == "POST":
-            request.max_content_length = int(os.getenv("VISION_MAX_MEDIA_BYTES", str(24 * 1024 * 1024))) + 1024 * 1024
+            request.max_content_length = config.VISION_MAX_MEDIA_BYTES + 1024 * 1024
+        elif (request.path.startswith("/api/manager/vision-uploads/")
+              and request.path.endswith("/chunks") and request.method == "PUT"):
+            request.max_content_length = config.VISION_CHUNK_BYTES + 1024
 
     if app.config["DATABASE_URL"]:
         from storage.database import initialize

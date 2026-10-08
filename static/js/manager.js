@@ -2,7 +2,8 @@
   'use strict';
 
   var legacyDismissedVisionStorageKey = 'managerDismissedVisionJobs';
-  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxBytes: 24 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxImageBytes: 24 * 1024 * 1024, maxVideoBytes: 1024 * 1024 * 1024, uploadChunkBytes: 8 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
+  var pendingVisionUploadKey = 'whu-walker-pending-vision-video-v1';
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
     var node = byId(id);
@@ -138,8 +139,11 @@
     var mediaKind = isImageFile(file) ? '图片' : isVideoFile(file) ? '视频' : '不支持的文件';
     if (mediaKind === '不支持的文件') {
       state.mediaInvalidReason = '文件格式不受支持，请选择 JPG、PNG、WebP 图片或 MP4、MOV、AVI、WebM 视频。';
-    } else if (file.size > state.maxBytes) {
-      state.mediaInvalidReason = '文件大小为 ' + formatBytes(file.size) + '，超过当前 ' + formatBytes(state.maxBytes) + ' 上限。';
+    } else {
+      var limit = isVideoFile(file) ? state.maxVideoBytes : state.maxImageBytes;
+      if (file.size > limit) {
+        state.mediaInvalidReason = '文件大小为 ' + formatBytes(file.size) + '，超过当前 ' + formatBytes(limit) + ' 上限。';
+      }
     }
     byId('selected-media-name').textContent = file.name || '未命名影像';
     byId('selected-media-meta').textContent = formatBytes(file.size || 0) + ' · ' + mediaKind;
@@ -166,6 +170,8 @@
       message('vision-message', '先选择一张图片或一段短视频。');
     } else if (state.mediaInvalidReason) {
       message('vision-message', state.mediaInvalidReason);
+    } else if (isVideoFile(file) && fileMatchesPending(file, readPendingVisionUpload())) {
+      message('vision-message', '发现这段视频的未完成上传；提交后会从已上传位置继续。', true);
     } else {
       message('vision-message', '影像已准备好，可以开始识别；如有有效候选，将在复核后选择具体道路。', true);
     }
@@ -234,13 +240,16 @@
     }
   }
 
-  async function request(path, method, body) {
+  async function request(path, method, body, extraHeaders) {
     var headers = {};
     if (state.csrf && method !== 'GET') headers['X-CSRF-Token'] = state.csrf;
-    if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    Object.keys(extraHeaders || {}).forEach(function (key) { headers[key] = extraHeaders[key]; });
+    var rawUploadChunk = body && typeof body.size === 'number' && typeof body.arrayBuffer === 'function';
+    if (rawUploadChunk) headers['Content-Type'] = 'application/octet-stream';
+    else if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
     var response = await fetch(path, {
       method: method || 'GET', headers: headers,
-      body: body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
+      body: body === undefined ? undefined : (body instanceof FormData || rawUploadChunk ? body : JSON.stringify(body)),
       credentials: 'same-origin',
     });
     var payload = await response.json().catch(function () { return {}; });
@@ -248,7 +257,9 @@
       if (response.status === 401 && path !== '/api/admin/login') {
         setLoggedOut('管理登录已过期，请重新登录。');
       }
-      throw new Error(payload.message || '请求失败，请重试');
+      var error = new Error(payload.message || '请求失败，请重试');
+      error.status = response.status;
+      throw error;
     }
     return payload.data || payload;
   }
@@ -526,13 +537,124 @@
     }
   }
 
+  function readPendingVisionUpload() {
+    try { return JSON.parse(window.sessionStorage.getItem(pendingVisionUploadKey) || 'null'); }
+    catch (_) { return null; }
+  }
+
+  function savePendingVisionUpload(value) {
+    try {
+      if (value) window.sessionStorage.setItem(pendingVisionUploadKey, JSON.stringify(value));
+      else window.sessionStorage.removeItem(pendingVisionUploadKey);
+    } catch (_) {}
+  }
+
+  function fileMatchesPending(file, pending) {
+    return !!(file && pending && file.name === pending.filename && file.size === pending.size &&
+      Number(file.lastModified || 0) === Number(pending.last_modified || 0));
+  }
+
+  function restorePendingVisionSettings(file) {
+    var pending = readPendingVisionUpload();
+    if (!fileMatchesPending(file, pending) || !isVideoFile(file)) return;
+    byId('camera-stabilized').checked = pending.camera_stabilized === true;
+  }
+
+  function showVisionUploadProgress(offset, total) {
+    var box = byId('vision-upload-progress');
+    var bar = byId('vision-upload-bar');
+    var label = byId('vision-upload-label');
+    if (!box || !bar || !label) return;
+    var percent = total > 0 ? Math.min(100, Math.floor(offset * 100 / total)) : 0;
+    box.hidden = false;
+    bar.value = percent;
+    label.textContent = '已上传 ' + formatVisionBytes(offset) + ' / ' + formatVisionBytes(total) + '（' + percent + '%）';
+  }
+
+  function formatVisionBytes(bytes) {
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  async function uploadVideoInChunks(file, cameraStabilized) {
+    var pending = readPendingVisionUpload();
+    var matchingPending = fileMatchesPending(file, pending) &&
+      pending.camera_stabilized === cameraStabilized;
+    var uploadId = matchingPending ? pending.upload_id : null;
+    var offset = 0;
+    if (uploadId) {
+      try {
+        var resumed = await request('/api/manager/vision-uploads/' + encodeURIComponent(uploadId), 'GET');
+        if (resumed.completed && resumed.job) {
+          savePendingVisionUpload(null);
+          return { job: resumed.job };
+        }
+        if (resumed.size !== file.size) throw new Error('续传文件与当前选择不一致。');
+        offset = resumed.offset;
+      } catch (error) {
+        if (error.status !== 404 && error.status !== 410) throw error;
+        savePendingVisionUpload(null);
+        uploadId = null;
+      }
+    }
+    if (!uploadId) {
+      var started = await request('/api/manager/vision-uploads', 'POST', {
+        filename: file.name, size: file.size, camera_stabilized: cameraStabilized,
+      });
+      uploadId = started.upload_id;
+      offset = started.offset || 0;
+      pending = {
+        upload_id: uploadId, filename: file.name, size: file.size,
+        last_modified: Number(file.lastModified || 0),
+        camera_stabilized: cameraStabilized,
+      };
+      savePendingVisionUpload(pending);
+      if (started.chunk_size) state.uploadChunkBytes = started.chunk_size;
+    }
+
+    showVisionUploadProgress(offset, file.size);
+    while (offset < file.size) {
+      var end = Math.min(file.size, offset + state.uploadChunkBytes);
+      var chunk = file.slice(offset, end);
+      var expectedOffset = end;
+      var attempts = 0;
+      while (true) {
+        try {
+          var uploaded = await request(
+            '/api/manager/vision-uploads/' + encodeURIComponent(uploadId) + '/chunks', 'PUT', chunk,
+            { 'Upload-Offset': String(offset) },
+          );
+          if (uploaded.offset !== expectedOffset) throw new Error('服务器确认的上传位置不一致。');
+          offset = uploaded.offset;
+          break;
+        } catch (error) {
+          attempts += 1;
+          var remote;
+          try { remote = await request('/api/manager/vision-uploads/' + encodeURIComponent(uploadId), 'GET'); }
+          catch (_) { remote = null; }
+          if (remote && remote.offset === expectedOffset) { offset = remote.offset; break; }
+          if (remote && remote.offset !== offset) throw new Error('续传进度发生变化，请重新选择视频后继续。');
+          if (attempts >= 3) throw error;
+          await new Promise(function (resolve) { window.setTimeout(resolve, 300 * attempts); });
+        }
+      }
+      showVisionUploadProgress(offset, file.size);
+    }
+    var complete = await request('/api/manager/vision-uploads/' + encodeURIComponent(uploadId) + '/complete', 'POST', {});
+    savePendingVisionUpload(null);
+    showVisionUploadProgress(file.size, file.size);
+    return complete;
+  }
+
   async function refreshVisionStatus() {
     if (state.visionStatusBusy) return;
     state.visionStatusBusy = true;
     try {
       var data = await request('/api/manager/vision-status', 'GET');
-      byId('vision-status').textContent = data.notice;
-      state.maxBytes = data.max_media_bytes || state.maxBytes;
+      byId('vision-status').textContent = data.notice + ' 图片不超过 ' + Math.round((data.max_image_bytes || data.max_media_bytes || state.maxImageBytes) / (1024 * 1024)) + ' MB；视频不超过 ' + Math.round((data.max_video_bytes || state.maxVideoBytes) / (1024 * 1024)) + ' MB，支持分块续传。';
+      state.maxImageBytes = data.max_image_bytes || data.max_media_bytes || state.maxImageBytes;
+      state.maxVideoBytes = data.max_video_bytes || state.maxVideoBytes;
+      state.uploadChunkBytes = data.upload_chunk_bytes || state.uploadChunkBytes;
       state.inferenceReady = !!data.inference_ready;
       updateVisionSubmitState();
       updateVisionGuidance();
@@ -808,20 +930,38 @@
     if (!state.inferenceReady) { message('vision-message', '视觉分析当前尚未就绪，请稍后重试。'); return; }
     var file = byId('media-file').files[0];
     if (!file) { message('vision-message', '请先选择一张图片或一段视频。'); return; }
-    if (file.size > state.maxBytes) {
-      message('vision-message', '文件过大，当前上限为 ' + Math.round(state.maxBytes / (1024 * 1024)) + ' MB。'); return;
+    var video = isVideoFile(file);
+    var maxBytes = video ? state.maxVideoBytes : state.maxImageBytes;
+    if (file.size > maxBytes) {
+      message('vision-message', '文件超过当前上限：' + (video ? '视频 ' : '图片 ') + Math.round(maxBytes / (1024 * 1024)) + ' MB。'); return;
     }
-    var form = new FormData(); form.append('media', file);
-    form.append('camera_stabilized', String(isVideoFile(file) && byId('camera-stabilized').checked));
+    if (!video && !isImageFile(file)) {
+      message('vision-message', '只支持 JPG、PNG、WebP 图片和 MP4、MOV、AVI、WebM 视频。'); return;
+    }
+    var cameraStabilized = video && byId('camera-stabilized').checked;
     var button = byId('submit-vision');
     state.visionUploadBusy = true;
     updateVisionSubmitState();
-    button.textContent = '正在提交…';
+    button.textContent = video ? '正在上传视频…' : '正在提交…';
     try {
-      var data = await request('/api/manager/vision-jobs', 'POST', form);
+      var data;
+      if (video) {
+        data = await uploadVideoInChunks(file, cameraStabilized);
+      } else {
+        var form = new FormData(); form.append('media', file);
+        form.append('camera_stabilized', String(cameraStabilized));
+        data = await request('/api/manager/vision-jobs', 'POST', form);
+      }
       message('vision-message', '影像任务已入队。分析服务独立运行，不会阻塞路线规划。', true);
       clearSelectedMedia(); refreshVisionJobs();
-    } catch (error) { message('vision-message', error.message || '任务提交失败。'); }
+      var progress = byId('vision-upload-progress');
+      if (progress) progress.hidden = true;
+    } catch (error) {
+      var resumable = video && readPendingVisionUpload();
+      message('vision-message', resumable
+        ? (error.message || '视频上传中断。') + ' 已保存上传进度，重新选择同一视频即可继续。'
+        : error.message || '任务提交失败。');
+    }
     finally {
       state.visionUploadBusy = false;
       button.innerHTML = '开始识别 <span>→</span>';
@@ -915,9 +1055,10 @@
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
     renderSelectedMedia(file);
-    updateVisionSubmitState();
     byId('camera-stabilized').disabled = !isVideoFile(file);
     if (!isVideoFile(file)) byId('camera-stabilized').checked = false;
+    restorePendingVisionSettings(file);
+    updateVisionSubmitState();
     updateVisionGuidance();
   });
   byId('vision-form').addEventListener('submit', submitVision);

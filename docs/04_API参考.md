@@ -190,6 +190,15 @@ Query 参数：`type`（类型）、`season`（spring/summer/autumn/winter）、
 - `POST /api/admin/login` / `POST /api/admin/logout` / `GET /api/admin/status`（返回 `{is_admin, login_enabled}`）
 - 写操作（POST/PATCH/DELETE/snap）任一通道通过即可；普通用户只读且只见到生效中事件。
 
+### 管理员影像上传
+
+图片继续通过 `POST /api/manager/vision-jobs` 上传，默认上限 24 MiB。视频使用分块续传，默认上限 1 GiB、每块 8 MiB；续传会话 24 小时未更新后过期。以下写接口需要管理员登录和 CSRF token。
+
+- `POST /api/manager/vision-uploads`：JSON 提交 `filename`、`size` 和可选 `camera_stabilized`；如需记录观察区域，可同时提交 `lng`、`lat`。返回 `upload_id`、`offset`、`chunk_size`。
+- `GET /api/manager/vision-uploads/<upload_id>`：读取服务器确认的续传偏移 `offset`。
+- `PUT /api/manager/vision-uploads/<upload_id>/chunks`：请求体为当前视频二进制分块，使用 `Upload-Offset` 请求头声明起始字节。服务端只接受与已确认偏移连续的分块。
+- `POST /api/manager/vision-uploads/<upload_id>/complete`：校验文件头和完整长度后，将视频放入影像任务队列。
+
 ## 行为埋点
 
 ### POST /api/telemetry

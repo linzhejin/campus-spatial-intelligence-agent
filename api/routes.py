@@ -14,14 +14,17 @@
 """
 import json
 import hmac
+import hashlib
 import logging
 import math
 import mimetypes
 import os
 import re
 import secrets
+import shutil
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import networkx as nx
@@ -72,6 +75,9 @@ _ADMIN_PASSIVE_ENDPOINTS = {"api.manager_vision_media"}
 _VISION_REVIEW_CANDIDATE_KINDS = {
     "vehicle_cluster_review", "possible_congestion", "possible_accident",
 }
+_VISION_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+_VISION_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
+_VISION_UPLOAD_TTL_SECONDS = 24 * 60 * 60
 
 
 def _valid_review_only_candidate(candidate) -> bool:
@@ -2123,6 +2129,95 @@ def delete_road_condition(cond_id):
     return _ok({"message": "已永久删除路段管制", "id": cond_id})
 
 
+def _vision_upload_root() -> Path:
+    return Path(config.VISION_UPLOAD_DIR).resolve() / ".resumable"
+
+
+def _vision_upload_session_dir(upload_id: str) -> Path | None:
+    if not re.fullmatch(r"[a-f0-9]{32}", upload_id or ""):
+        return None
+    root = _vision_upload_root()
+    candidate = root / upload_id
+    return candidate if candidate.parent == root else None
+
+
+@contextmanager
+def _lock_vision_upload(session_dir: Path):
+    """Serialize status, chunk and completion operations across app workers."""
+    lock_path = session_dir / ".lock"
+    handle = lock_path.open("a+b")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            handle.seek(0, os.SEEK_END)
+            if handle.tell() == 0:
+                handle.write(b"\0")
+                handle.flush()
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
+
+
+def _read_vision_upload(session_dir: Path) -> dict | None:
+    try:
+        with (session_dir / "metadata.json").open("r", encoding="utf-8") as source:
+            metadata = json.load(source)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return metadata if isinstance(metadata, dict) else None
+
+
+def _write_vision_upload(session_dir: Path, metadata: dict) -> None:
+    temporary = session_dir / "metadata.json.tmp"
+    with temporary.open("w", encoding="utf-8") as output:
+        json.dump(metadata, output, ensure_ascii=False)
+        output.flush()
+        os.fsync(output.fileno())
+    os.replace(temporary, session_dir / "metadata.json")
+
+
+def _vision_video_header_valid(path: Path, extension: str) -> bool:
+    with path.open("rb") as source:
+        header = source.read(16)
+    return (
+        (extension in {".mp4", ".mov"} and header[4:8] == b"ftyp")
+        or (extension == ".avi" and header.startswith(b"RIFF") and header[8:12] == b"AVI ")
+        or (extension == ".webm" and header.startswith(b"\x1aE\xdf\xa3"))
+    )
+
+
+def _cleanup_expired_vision_uploads(root: Path) -> None:
+    if not root.is_dir():
+        return
+    now = time.time()
+    for session_dir in root.iterdir():
+        if not session_dir.is_dir() or not re.fullmatch(r"[a-f0-9]{32}", session_dir.name):
+            continue
+        try:
+            with _lock_vision_upload(session_dir):
+                metadata = _read_vision_upload(session_dir)
+                updated_at = float((metadata or {}).get("updated_at", 0))
+                expired = not updated_at or now - updated_at > _VISION_UPLOAD_TTL_SECONDS
+            if expired:
+                shutil.rmtree(session_dir, ignore_errors=True)
+        except OSError:
+            logger.info("跳过正在使用的影像续传会话清理: %s", session_dir.name)
+
+
 def _public_vision_job(job: dict) -> dict:
     visible = {key: value for key, value in job.items() if key not in {"media_path", "sha256"}}
     if visible.get("job_id"):
@@ -2209,6 +2304,9 @@ def manager_vision_status():
         "dependencies_ready": dependencies_ready,
         "worker_ready": worker_ready,
         "max_media_bytes": config.VISION_MAX_MEDIA_BYTES,
+        "max_image_bytes": config.VISION_MAX_MEDIA_BYTES,
+        "max_video_bytes": config.VISION_MAX_VIDEO_BYTES,
+        "upload_chunk_bytes": config.VISION_CHUNK_BYTES,
         "capabilities": {
             "aerial_vehicle_detection": True,
             "congestion_candidate_review": True,
@@ -2221,6 +2319,244 @@ def manager_vision_status():
             "任务上传与审核界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。当前版本不识别事故。"
         ),
     })
+
+
+@api_bp.route("/manager/vision-uploads", methods=["POST"])
+def start_manager_vision_upload():
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    inference_ready, _, _, _ = _vision_inference_readiness(current_app.config.get("DATABASE_URL"))
+    if not inference_ready:
+        return _err("vision_not_ready", "视觉模型、依赖或后台工作进程尚未就绪，暂不能提交任务。", 503)
+
+    body = request.get_json(silent=True) or {}
+    safe_name = secure_filename(str(body.get("filename", "")))
+    extension = Path(safe_name).suffix.lower()
+    size = body.get("size")
+    if extension not in _VISION_VIDEO_EXTENSIONS:
+        return _err("unsupported_media", "分块续传仅支持 MP4、MOV、AVI、WebM 视频。", 415)
+    if isinstance(size, bool) or not isinstance(size, int) or size < 1:
+        return _err("invalid_media_size", "视频文件大小无效。", 400)
+    if size > config.VISION_MAX_VIDEO_BYTES:
+        return _err("media_too_large", f"视频不能超过 {round(config.VISION_MAX_VIDEO_BYTES / (1024 * 1024))} MB。", 413)
+    if config.VISION_CHUNK_BYTES < 1:
+        return _err("upload_unavailable", "视频分块大小配置无效。", 503)
+    anchor_gcj = None
+    raw_lng, raw_lat = body.get("lng"), body.get("lat")
+    if raw_lng is not None or raw_lat is not None:
+        if raw_lng is None or raw_lat is None:
+            return _err("invalid_anchor", "经纬度必须同时提供。", 400)
+        try:
+            lng, lat = float(raw_lng), float(raw_lat)
+        except (TypeError, ValueError):
+            return _err("invalid_anchor", "影像区域坐标无效。", 400)
+        bbox = config.WHU_BBOX
+        if not (bbox["west"] - .01 <= lng <= bbox["east"] + .01
+                and bbox["south"] - .01 <= lat <= bbox["north"] + .01):
+            return _err("outside_campus", "观察点需要落在武汉大学校园范围附近。", 400)
+        anchor_gcj = {"lng": lng, "lat": lat, "crs": "GCJ02"}
+
+    upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
+    sessions_root = upload_dir / ".resumable"
+    try:
+        sessions_root.mkdir(parents=True, exist_ok=True)
+        _cleanup_expired_vision_uploads(sessions_root)
+        upload_id = secrets.token_hex(16)
+        session_dir = sessions_root / upload_id
+        session_dir.mkdir(mode=0o700)
+        (session_dir / "upload.part").touch()
+        now = time.time()
+        metadata = {
+            "upload_id": upload_id, "filename": safe_name[:180], "extension": extension,
+            "size": size, "offset": 0, "chunk_size": config.VISION_CHUNK_BYTES,
+            "anchor_gcj": anchor_gcj,
+            "camera_stabilized": body.get("camera_stabilized") is True,
+            "created_by": _admin_identity() or "unknown", "created_at": now, "updated_at": now,
+        }
+        _write_vision_upload(session_dir, metadata)
+        return _ok({"upload_id": upload_id, "offset": 0, "size": size,
+                    "chunk_size": config.VISION_CHUNK_BYTES}, status=201)
+    except OSError:
+        logger.exception("影像续传会话初始化失败")
+        return _err("vision_upload_unavailable", "无法创建视频上传任务，请稍后重试。", 503)
+
+
+@api_bp.route("/manager/vision-uploads/<upload_id>", methods=["GET"])
+def manager_vision_upload_status(upload_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    session_dir = _vision_upload_session_dir(upload_id)
+    if session_dir is None or not session_dir.is_dir():
+        return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+    expired = False
+    try:
+        with _lock_vision_upload(session_dir):
+            metadata = _read_vision_upload(session_dir)
+            if not metadata:
+                return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+            if time.time() - float(metadata.get("updated_at", 0)) > _VISION_UPLOAD_TTL_SECONDS:
+                expired = True
+            else:
+                if metadata.get("completed_job"):
+                    return _ok({"upload_id": upload_id, "size": metadata["size"],
+                                "offset": metadata["size"], "completed": True,
+                                "job": metadata["completed_job"]})
+                part_path = session_dir / "upload.part"
+                offset = int(metadata.get("offset", 0))
+                if not part_path.is_file() or part_path.stat().st_size < offset:
+                    return _err("upload_data_unavailable", "已上传的视频数据不完整，请重新选择视频。", 409)
+                if part_path.stat().st_size > offset:
+                    with part_path.open("r+b") as output:
+                        output.truncate(offset)
+                return _ok({"upload_id": upload_id, "filename": metadata["filename"],
+                            "size": metadata["size"], "offset": offset,
+                            "chunk_size": metadata["chunk_size"]})
+        if expired:
+            shutil.rmtree(session_dir, ignore_errors=True)
+            return _err("upload_expired", "视频续传任务已过期，请重新选择视频。", 410)
+    except OSError:
+        logger.exception("读取影像续传状态失败")
+        return _err("vision_upload_unavailable", "暂时无法读取视频上传进度，请稍后重试。", 503)
+
+
+@api_bp.route("/manager/vision-uploads/<upload_id>/chunks", methods=["PUT"])
+def append_manager_vision_upload_chunk(upload_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    session_dir = _vision_upload_session_dir(upload_id)
+    if session_dir is None or not session_dir.is_dir():
+        return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+    try:
+        requested_offset = int(request.headers.get("Upload-Offset", "-1"))
+    except (TypeError, ValueError):
+        return _err("invalid_upload_offset", "视频分块位置无效。", 400)
+    try:
+        with _lock_vision_upload(session_dir):
+            metadata = _read_vision_upload(session_dir)
+            if not metadata:
+                return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+            now = time.time()
+            if now - float(metadata.get("updated_at", 0)) > _VISION_UPLOAD_TTL_SECONDS:
+                return _err("upload_expired", "视频续传任务已过期，请重新选择视频。", 410)
+            offset = int(metadata.get("offset", 0))
+            if requested_offset != offset:
+                return _err("upload_offset_conflict", "上传进度已变化，请读取最新进度后继续。", 409)
+            total_size = int(metadata["size"])
+            chunk_size = int(metadata["chunk_size"])
+            if offset < 0 or offset >= total_size:
+                return _err("upload_already_complete", "视频数据已全部上传。", 409)
+            expected_size = min(chunk_size, total_size - offset)
+            if request.content_length != expected_size:
+                return _err("invalid_chunk_size", "视频分块大小不正确，请重新上传当前分块。", 400)
+            part_path = session_dir / "upload.part"
+            if not part_path.is_file() or part_path.stat().st_size < offset:
+                return _err("upload_data_unavailable", "已上传的视频数据不完整，请重新选择视频。", 409)
+            if part_path.stat().st_size > offset:
+                with part_path.open("r+b") as output:
+                    output.truncate(offset)
+
+            staging_path = session_dir / "chunk.tmp"
+            received = 0
+            with staging_path.open("wb") as staging:
+                while received < expected_size:
+                    data = request.stream.read(min(1024 * 1024, expected_size - received))
+                    if not data:
+                        break
+                    received += len(data)
+                    staging.write(data)
+            if received != expected_size:
+                staging_path.unlink(missing_ok=True)
+                return _err("invalid_chunk_size", "视频分块未完整到达，请重试。", 400)
+            with part_path.open("r+b") as output, staging_path.open("rb") as staging:
+                output.seek(offset)
+                shutil.copyfileobj(staging, output, length=1024 * 1024)
+                output.flush()
+                os.fsync(output.fileno())
+                output.truncate(offset + expected_size)
+            staging_path.unlink(missing_ok=True)
+            metadata["offset"] = offset + expected_size
+            metadata["updated_at"] = now
+            _write_vision_upload(session_dir, metadata)
+            return _ok({"upload_id": upload_id, "offset": metadata["offset"], "size": total_size})
+    except OSError:
+        logger.exception("写入视频分块失败")
+        return _err("vision_upload_unavailable", "保存视频分块失败，请重试当前上传。", 503)
+
+
+@api_bp.route("/manager/vision-uploads/<upload_id>/complete", methods=["POST"])
+def complete_manager_vision_upload(upload_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    session_dir = _vision_upload_session_dir(upload_id)
+    if session_dir is None or not session_dir.is_dir():
+        return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+    completed_job = None
+    target = None
+    try:
+        with _lock_vision_upload(session_dir):
+            metadata = _read_vision_upload(session_dir)
+            if not metadata:
+                return _err("upload_not_found", "视频续传任务不存在或已过期，请重新选择视频。", 404)
+            if time.time() - float(metadata.get("updated_at", 0)) > _VISION_UPLOAD_TTL_SECONDS:
+                return _err("upload_expired", "视频续传任务已过期，请重新选择视频。", 410)
+            if metadata.get("completed_job"):
+                return _ok({"job": metadata["completed_job"]}, status=202)
+            if int(metadata.get("offset", 0)) != int(metadata.get("size", -1)):
+                return _err("upload_incomplete", "视频尚未上传完整，请继续上传后再提交分析。", 409)
+            part_path = session_dir / "upload.part"
+            if not part_path.is_file() or part_path.stat().st_size != int(metadata["size"]):
+                return _err("upload_data_unavailable", "视频文件不完整，请重新上传。", 409)
+            if not _vision_video_header_valid(part_path, metadata["extension"]):
+                return _err("invalid_media", "文件内容与扩展名不匹配，或视频文件已损坏。", 400)
+            digest = hashlib.sha256()
+            with part_path.open("rb") as source:
+                for block in iter(lambda: source.read(1024 * 1024), b""):
+                    digest.update(block)
+            upload_dir = Path(config.VISION_UPLOAD_DIR).resolve()
+            job_id = str(uuid.uuid4())
+            stored_name = job_id + metadata["extension"]
+            target = upload_dir / stored_name
+            os.replace(part_path, target)
+            try:
+                from storage import database, vision_repository
+                database.initialize(current_app.config.get("DATABASE_URL"))
+                completed_job = vision_repository.create_job(
+                    current_app.config.get("DATABASE_URL"),
+                    created_by=metadata["created_by"], original_name=metadata["filename"],
+                    media_kind="video", media_path=stored_name, sha256=digest.hexdigest(),
+                    anchor_gcj=metadata["anchor_gcj"],
+                    camera_stabilized=metadata["camera_stabilized"],
+                )
+            except Exception:
+                os.replace(target, part_path)
+                target = None
+                raise
+            public_job = json.loads(current_app.json.dumps(_public_vision_job(completed_job)))
+            metadata["completed_job"] = public_job
+            metadata["updated_at"] = time.time()
+            try:
+                _write_vision_upload(session_dir, metadata)
+            except OSError:
+                # The queued job and media are already durable. Keep the successful
+                # response even if the small resumable-session marker cannot be updated.
+                logger.exception("影像任务已入队，但无法保存上传完成标记")
+        return _ok({"job": _public_vision_job(completed_job)}, status=202)
+    except RuntimeError:
+        logger.exception("影像任务存储不可用")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
+    except OSError:
+        logger.exception("完成视频上传失败")
+        return _err("vision_upload_unavailable", "完成视频上传失败，请重试。", 503)
+    except Exception:
+        logger.exception("影像任务入队失败")
+        return _err("vision_enqueue_failed", "影像任务暂时无法入队，请稍后重试。", 503)
+    finally:
+        if completed_job is None and target is not None:
+            target.unlink(missing_ok=True)
 
 
 @api_bp.route("/manager/vision-jobs", methods=["GET", "POST"])

@@ -23,6 +23,9 @@ function managerHarness(sessionSeed = []) {
   const sessionValues = new Map(sessionSeed);
   let storageFailure = false;
   let visionPostCount = 0;
+  let videoUploadOffset = 0;
+  let videoChunkResponseDrops = true;
+  const videoChunkSizes = [];
   let visionJobs = [];
   let roadEvents = [];
   const calls = [];
@@ -122,6 +125,28 @@ function managerHarness(sessionSeed = []) {
     fetch: async (url, options = {}) => {
       requested.push(url);
       calls.push({ url, options });
+      if (url === '/api/manager/vision-uploads' && options.method === 'POST') {
+        const body = JSON.parse(options.body);
+        return { ok: true, json: async () => ({ data: {
+          upload_id: 'upload-1', offset: 0, chunk_size: body.size > 100 ? 512 : 4, size: body.size,
+        } }) };
+      }
+      if (url.startsWith('/api/manager/vision-uploads/') && options.method === 'GET') {
+        return { ok: true, json: async () => ({ data: { offset: videoUploadOffset } }) };
+      }
+      if (url.endsWith('/chunks') && options.method === 'PUT') {
+        const offset = Number(options.headers['Upload-Offset']);
+        videoChunkSizes.push(options.body.size);
+        videoUploadOffset = offset + options.body.size;
+        if (videoChunkResponseDrops) {
+          videoChunkResponseDrops = false;
+          return { ok: false, status: 503, json: async () => ({ message: '模拟网络中断' }) };
+        }
+        return { ok: true, json: async () => ({ data: { offset: videoUploadOffset } }) };
+      }
+      if (url.endsWith('/complete') && options.method === 'POST') {
+        return { ok: true, json: async () => ({ data: { job: { job_id: 'job-video' } } }) };
+      }
       if (url.startsWith('/api/road-conditions/snap') && deferImpactPreviews) {
         const match = url.match(/[?&]type=([^&]+)/);
         const type = match ? decodeURIComponent(match[1]) : '';
@@ -159,7 +184,8 @@ function managerHarness(sessionSeed = []) {
         },
       };
       else if (url.startsWith('/api/manager/vision-status')) data = {
-        inference_ready: inferenceReady, max_media_bytes: 1024, notice: inferenceReady ? '已就绪' : '尚未就绪',
+        inference_ready: inferenceReady, max_media_bytes: 1024, max_image_bytes: 1024,
+        max_video_bytes: 4096, upload_chunk_bytes: 512, notice: inferenceReady ? '已就绪' : '尚未就绪',
       };
       else if (url.startsWith('/api/manager/vision-jobs')) data = { jobs: visionJobs };
       else if (url.startsWith('/api/road-conditions')) data = { conditions: roadEvents };
@@ -193,6 +219,7 @@ function managerHarness(sessionSeed = []) {
       } }) });
     },
     getVisionPostCount: () => visionPostCount,
+    getVideoChunkSizes: () => videoChunkSizes.slice(),
     releaseVisionUploads: () => uploadResolvers.splice(0).forEach((resolve) => resolve({
       ok: true, json: async () => ({ data: { job: { job_id: 'job-1' } } }),
     })),
@@ -207,8 +234,8 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261005a/);
-  assert.match(managerHtml, /manager\.js\?v=20261005b/);
+  assert.match(managerHtml, /manager\.css\?v=20261008b/);
+  assert.match(managerHtml, /manager\.js\?v=20261008b/);
   assert.doesNotMatch(managerHtml, /id="pick-anchor"|id="selected-anchor"/);
   assert.doesNotMatch(managerHtml, /id="restore-vision-results"/);
 });
@@ -511,6 +538,28 @@ test('a pending preview safely settles after the selected road is cleared', asyn
 
   await assert.doesNotReject(pending);
   assert.equal(elements.get('impact-preview').hidden, true);
+});
+
+test('videos are sent through resumable chunks without requiring a map anchor', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, calls } = harness;
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  elements.get('media-file').files = [{
+    type: 'video/mp4', name: 'campus.mp4', size: 2050, lastModified: 7,
+    slice(start, end) { return { size: end - start, arrayBuffer() { return Promise.resolve(new ArrayBuffer(end - start)); } }; },
+  }];
+  elements.get('media-file').listeners.change();
+  await elements.get('vision-form').listeners.submit({ preventDefault() {} });
+
+  assert.deepEqual(harness.getVideoChunkSizes(), [512, 512, 512, 512, 2]);
+  assert.equal(calls.some((call) => call.url === '/api/manager/vision-jobs' && call.options.method === 'POST'), false);
+  const startRequest = calls.find((call) => call.url === '/api/manager/vision-uploads' && call.options.method === 'POST');
+  assert.equal(JSON.parse(startRequest.options.body).lng, undefined);
+  assert.equal(elements.get('vision-message').textContent.includes('已入队'), true);
 });
 
 test('completed image jobs show vehicle counts and safely render detector boxes', async () => {

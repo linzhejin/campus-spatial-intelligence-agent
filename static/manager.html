@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20261005a">
+  <link rel="stylesheet" href="/css/manager.css?v=20261008b">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20261005b" defer></script>
+  <script src="/js/manager.js?v=20261008b" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -127,7 +127,7 @@
           <div id="vision-upload-card" class="vision-upload-card">
             <div id="vision-status" class="vision-status">正在读取视觉分析配置…</div>
             <form id="vision-form">
-              <label class="upload-label" for="media-file"><span class="upload-symbol">＋</span><strong>选择图片或短视频</strong><small>JPG、PNG、WebP、MP4、MOV、AVI、WebM</small></label>
+              <label class="upload-label" for="media-file"><span class="upload-symbol">＋</span><strong>选择图片或短视频</strong><small>JPG、PNG、WebP 图片；MP4、MOV、AVI、WebM 视频（支持断点续传）</small></label>
               <input id="media-file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-msvideo,video/webm" required>
               <div id="selected-media" class="selected-media" aria-live="polite" hidden>
                 <img id="selected-media-preview" class="selected-media-preview" alt="所选巡查图片预览" hidden>
@@ -140,6 +140,10 @@
               <label class="stabilization-option"><input id="camera-stabilized" type="checkbox"> 视频来自固定机位或已完成稳像（可选）</label>
               <small class="stabilization-note">未勾选时会尝试校正镜头运动；画面特征不足时只显示车辆统计，不生成拥堵候选。本版本不识别事故。</small>
               <button id="submit-vision" class="primary-button" type="submit" disabled>开始识别 <span>→</span></button>
+              <div id="vision-upload-progress" class="vision-upload-progress" hidden>
+                <progress id="vision-upload-bar" max="100" value="0" aria-label="视频上传进度"></progress>
+                <span id="vision-upload-label" role="status"></span>
+              </div>
               <p id="vision-message" class="form-message" role="status"></p>
             </form>
             <p class="vision-disclaimer">单张图片只识别画面中的车辆，不能判断拥堵。识别框不是地面坐标；只有复核出有效候选并转入路况流程后，才需要在地图上选择具体道路。</p>
