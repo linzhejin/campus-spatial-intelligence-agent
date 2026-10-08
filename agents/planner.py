@@ -749,8 +749,10 @@ def run_agent(query: str, context: dict = None, history: list = None,
                         "route_kind": None, "candidates": None,
                         "clarify": {"question": question, "options": choices},
                         "place_request": pending, "suggestions": None, "turns": 0}
-        elif original_request != query:
-            # 起点追问的简短回答（如“工学部”）也是本轮明确位置，应优先采用。
+        elif original_request != query and (
+                not place_request or place_request.get("pending_slot") == "start"):
+            # 只有当前问题确实在询问起点时，才把简短回答解析为新起点。
+            # 例如球类回答“乒乓球”也能命中“乒乓球馆”，不能覆盖已保存起点。
             answered_origin, alternatives = agent_tools.find_poi_ambiguous(query.strip())
             if answered_origin and not alternatives:
                 start_ref = {"type": "poi", "name": answered_origin["name"]}

@@ -84,6 +84,32 @@ def test_ambiguous_ball_request_asks_before_calling_the_model():
     assert result["place_request"]["pending_slot"] == "activity"
 
 
+def test_sport_answer_that_matches_a_poi_does_not_replace_the_saved_origin():
+    original_query = "从信息学部图书馆出发，想去打球"
+    pending = planner.run_agent(original_query)
+    candidate = {
+        "poi_id": "poi_450", "name": "乒乓球馆", "subcategory": "court",
+        "activities": ["table_tennis"], "distance_m": 120,
+    }
+
+    with patch.object(planner.agent_tools, "execute_tool", return_value=(
+        {"candidates": [candidate], "count": 1,
+         "start_name": "武汉大学信息学部图书馆"},
+        {"candidates": [candidate]},
+    )) as execute:
+        result = planner.run_agent("乒乓球", context={
+            "active_task_request": original_query,
+            "place_request": pending["place_request"],
+        })
+
+    assert result["response_kind"] == "candidates"
+    tool_name, args = execute.call_args.args[:2]
+    assert tool_name == "search_poi_candidates"
+    assert args["start"] == {
+        "type": "poi", "name": "武汉大学信息学部图书馆",
+    }
+
+
 def test_basketball_catalog_uses_complete_activity_filtered_master_without_origin():
     basketball = [
         {"poi_id": "poi_083", "name": "文理学部篮球场", "activities": ["basketball"]},
