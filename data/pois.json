@@ -1,6 +1,6 @@
 {
  "source": "历史高德等来源整理的 POI；新增开放 OSM 候选均单独注明来源，历史条目待逐项核实",
- "count": 442,
+ "count": 443,
  "provenance_defaults": {
   "source_refs": [],
   "verification_status": "legacy_unverified"
@@ -68,7 +68,6 @@
     "万林博物馆",
     "万林艺术博物馆",
     "万林艺术馆",
-    "珞珈咖啡",
     "艺术馆"
    ],
    "coordinates": {
@@ -13677,6 +13676,45 @@
     "badminton"
    ],
    "activity_basis": "OSM source names a badminton court in 信息学部",
+   "activity_review_status": "source_supported"
+  },
+  {
+   "id": "poi_452",
+   "name": "珞珈咖啡",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.363032,
+    "lat": 30.536485
+   },
+   "type": "dining",
+   "campus": "文理学部",
+   "category": "dining",
+   "description": "文理学部校内咖啡点；当前营业状态和入口通行情况待核实。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "coffee",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/13246222238",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/13246222238"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "OSM amenity=cafe; separate point is about 100 m from the museum destination pin; cafe status and access remain unverified.",
+   "campus_boundary_refs": [
+    "relation/20349098"
+   ],
+   "poi_id": "poi_452",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
    "activity_review_status": "source_supported"
   }
  ],

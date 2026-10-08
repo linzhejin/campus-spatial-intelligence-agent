@@ -81,6 +81,20 @@ def test_common_sports_nicknames_resolve_to_the_correct_grounds_only():
     assert [poi["id"] for poi in _exact_master_poi_matches("信操", pois)] == ["poi_260"]
 
 
+def test_osm_cafe_is_not_an_alias_of_the_museum_and_is_searchable_as_coffee():
+    pois = _by_id()
+    museum = pois["poi_004"]
+    cafe = pois["poi_452"]
+
+    assert "珞珈咖啡" not in museum["aliases"]
+    assert [poi["id"] for poi in _exact_master_poi_matches(
+        "珞珈咖啡", list(pois.values()))] == ["poi_452"]
+    assert cafe["subcategory"] == "coffee"
+    assert "coffee" in cafe["activities"]
+    assert any(source.get("id") == "node/13246222238"
+               for source in cafe["source_refs"])
+
+
 def test_named_table_tennis_and_badminton_osm_candidates_have_audited_decisions():
     pois = _by_id()
     by_source = {

@@ -16772,11 +16772,13 @@
       "source": "OpenStreetMap",
       "source_id": "node/13246222238",
       "name": "珞珈咖啡",
-      "decision": "existing_name_match",
+      "decision": "included",
       "matched_poi_ids": [
-        "poi_004"
+        "poi_452"
       ],
-      "evidence": "同名或已有别名匹配，坐标80米内；未改动正式记录。"
+      "evidence": "OSM amenity=cafe node at a distinct point about 100 m from the museum destination pin; the prior museum alias match was a location conflict. The cafe and its access are not field verified.",
+      "poi_id": "poi_452",
+      "verification_status": "source_only"
     },
     {
       "source": "OpenStreetMap",

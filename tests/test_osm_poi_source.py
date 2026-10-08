@@ -116,6 +116,33 @@ class ReviewedProductionTests(unittest.TestCase):
         self.assertEqual(report['aliases_added'], 0)
         self.assertEqual(decisions['road_decisions'], [{'sentinel':'unchanged'}])
 
+    def test_osm_candidate_match_report_is_refreshed_against_the_current_master(self):
+        root = Path(__file__).resolve().parents[1]
+        pois = json.loads((root/'data/pois.json').read_text(encoding='utf-8'))['pois']
+        candidates_doc = json.loads(
+            (root/'data/pois_osm_candidates.json').read_text(encoding='utf-8'))
+        candidates = {row['osm_id']: row for row in candidates_doc['candidates']}
+        source_links = {
+            ref['id']: poi['id']
+            for poi in pois
+            for ref in poi.get('source_refs', [])
+            if ref.get('source') == 'OpenStreetMap' and ref.get('id') in candidates
+        }
+
+        for source_id, poi_id in source_links.items():
+            with self.subTest(source_id=source_id):
+                self.assertTrue(candidates[source_id]['already_exists'])
+                self.assertIn(poi_id, candidates[source_id]['matched_poi_ids'])
+
+        expected_missing = {
+            row['osm_id'] for row in candidates_doc['candidates']
+            if not row['already_exists']
+        }
+        reported_missing = {
+            row['osm_id'] for row in candidates_doc['missing_from_production']
+        }
+        self.assertEqual(reported_missing, expected_missing)
+
     def test_reviewed_destinations_and_aliases_are_searchable(self):
         import spatial.poi as poi
         with patch.object(poi, '_record_search'):

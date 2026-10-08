@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-09-26T20:29:05",
+  "fetched_at": "2026-10-09T03:59:42",
   "source": "OpenStreetMap complete evidence: osm_local_evidence.json（WGS-84 已转 GCJ-02）",
   "count": 603,
   "source_snapshot": "hubei-260924.osm.pbf",
@@ -4119,14 +4119,14 @@
       ],
       "coordinate_system": "GCJ-02",
       "geometry_method": "source_point_or_way_center",
-      "already_exists": false,
-      "matched_poi_ids": [],
-      "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": null,
-      "nearby_same_category_poi_id": "poi_259",
-      "review_flags": [
-        "possible_alias_of_nearby_poi"
+      "already_exists": true,
+      "matched_poi_ids": [
+        "poi_450"
       ],
+      "distant_name_match_poi_ids": [],
+      "distance_to_existing_m": 0.0,
+      "nearby_same_category_poi_id": "poi_450",
+      "review_flags": [],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -4388,14 +4388,14 @@
       ],
       "coordinate_system": "GCJ-02",
       "geometry_method": "source_point_or_way_center",
-      "already_exists": false,
-      "matched_poi_ids": [],
-      "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": null,
-      "nearby_same_category_poi_id": "poi_259",
-      "review_flags": [
-        "possible_alias_of_nearby_poi"
+      "already_exists": true,
+      "matched_poi_ids": [
+        "poi_451"
       ],
+      "distant_name_match_poi_ids": [],
+      "distance_to_existing_m": 0.1,
+      "nearby_same_category_poi_id": "poi_451",
+      "review_flags": [],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -4703,7 +4703,7 @@
         "poi_247"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 10.4,
+      "distance_to_existing_m": 19.7,
       "nearby_same_category_poi_id": "poi_247",
       "review_flags": [],
       "source_refs": [
@@ -5653,16 +5653,17 @@
       ],
       "coordinate_system": "GCJ-02",
       "geometry_method": "source_point_or_way_center",
-      "already_exists": false,
-      "matched_poi_ids": [],
+      "already_exists": true,
+      "matched_poi_ids": [
+        "poi_247"
+      ],
       "distant_name_match_poi_ids": [
         "poi_250"
       ],
-      "distance_to_existing_m": null,
-      "nearby_same_category_poi_id": "poi_247",
+      "distance_to_existing_m": 30.5,
+      "nearby_same_category_poi_id": null,
       "review_flags": [
-        "same_name_distant_existing",
-        "possible_alias_of_nearby_poi"
+        "same_name_distant_existing"
       ],
       "source_refs": [
         {
@@ -11940,11 +11941,11 @@
       "geometry_method": "source_point_or_way_center",
       "already_exists": true,
       "matched_poi_ids": [
-        "poi_004"
+        "poi_452"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 20.2,
-      "nearby_same_category_poi_id": null,
+      "distance_to_existing_m": 0.0,
+      "nearby_same_category_poi_id": "poi_452",
       "review_flags": [],
       "source_refs": [
         {
@@ -16819,7 +16820,7 @@
         "poi_034"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 13.1,
+      "distance_to_existing_m": 6.4,
       "nearby_same_category_poi_id": null,
       "review_flags": [],
       "source_refs": [
@@ -17364,14 +17365,16 @@
       ],
       "coordinate_system": "GCJ-02",
       "geometry_method": "complete_area_bbox_center",
-      "already_exists": true,
-      "matched_poi_ids": [
+      "already_exists": false,
+      "matched_poi_ids": [],
+      "distant_name_match_poi_ids": [
         "poi_004"
       ],
-      "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 9.9,
+      "distance_to_existing_m": null,
       "nearby_same_category_poi_id": null,
-      "review_flags": [],
+      "review_flags": [
+        "same_name_distant_existing"
+      ],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -18054,7 +18057,7 @@
         "poi_034"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 1.3,
+      "distance_to_existing_m": 14.6,
       "nearby_same_category_poi_id": "poi_147",
       "review_flags": [],
       "source_refs": [
@@ -18102,14 +18105,16 @@
       ],
       "coordinate_system": "GCJ-02",
       "geometry_method": "complete_area_bbox_center",
-      "already_exists": true,
-      "matched_poi_ids": [
+      "already_exists": false,
+      "matched_poi_ids": [],
+      "distant_name_match_poi_ids": [
         "poi_140"
       ],
-      "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 2.9,
+      "distance_to_existing_m": null,
       "nearby_same_category_poi_id": null,
-      "review_flags": [],
+      "review_flags": [
+        "same_name_distant_existing"
+      ],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -18595,7 +18600,7 @@
         "poi_035"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 20.3,
+      "distance_to_existing_m": 35.5,
       "nearby_same_category_poi_id": null,
       "review_flags": [],
       "source_refs": [
@@ -19131,14 +19136,10 @@
       "matched_poi_ids": [
         "poi_085"
       ],
-      "distant_name_match_poi_ids": [
-        "poi_110"
-      ],
+      "distant_name_match_poi_ids": [],
       "distance_to_existing_m": 21.8,
       "nearby_same_category_poi_id": "poi_085",
-      "review_flags": [
-        "same_name_distant_existing"
-      ],
+      "review_flags": [],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -19174,14 +19175,10 @@
       "matched_poi_ids": [
         "poi_082"
       ],
-      "distant_name_match_poi_ids": [
-        "poi_151"
-      ],
+      "distant_name_match_poi_ids": [],
       "distance_to_existing_m": 5.2,
       "nearby_same_category_poi_id": "poi_082",
-      "review_flags": [
-        "same_name_distant_existing"
-      ],
+      "review_flags": [],
       "source_refs": [
         {
           "source": "OpenStreetMap",
@@ -22136,7 +22133,7 @@
         "poi_034"
       ],
       "distant_name_match_poi_ids": [],
-      "distance_to_existing_m": 1.6,
+      "distance_to_existing_m": 13.4,
       "nearby_same_category_poi_id": "poi_034",
       "review_flags": [],
       "source_refs": [
@@ -23545,32 +23542,6 @@
       "nearby_same_category_poi_id": null
     },
     {
-      "osm_id": "node/2177869899",
-      "name": "乒乓球馆",
-      "campus": "信息学部",
-      "category": "sports",
-      "lng": 114.362332,
-      "lat": 30.527828,
-      "reason": "source_present_production_name_missing",
-      "review_flags": [
-        "possible_alias_of_nearby_poi"
-      ],
-      "nearby_same_category_poi_id": "poi_259"
-    },
-    {
-      "osm_id": "node/10742578168",
-      "name": "羽毛球场",
-      "campus": "信息学部",
-      "category": "sports",
-      "lng": 114.362339,
-      "lat": 30.527535,
-      "reason": "source_present_production_name_missing",
-      "review_flags": [
-        "possible_alias_of_nearby_poi"
-      ],
-      "nearby_same_category_poi_id": "poi_259"
-    },
-    {
       "osm_id": "node/13242699687",
       "name": "中国南极测绘研究中心",
       "campus": "信息学部",
@@ -23788,20 +23759,6 @@
         "possible_alias_of_nearby_poi"
       ],
       "nearby_same_category_poi_id": "poi_234"
-    },
-    {
-      "osm_id": "node/13242699684",
-      "name": "遥感信息工程学院",
-      "campus": "信息学部",
-      "category": "study",
-      "lng": 114.359905,
-      "lat": 30.525944,
-      "reason": "source_present_production_name_missing",
-      "review_flags": [
-        "same_name_distant_existing",
-        "possible_alias_of_nearby_poi"
-      ],
-      "nearby_same_category_poi_id": "poi_247"
     },
     {
       "osm_id": "node/13615527508",
@@ -25460,6 +25417,19 @@
       "nearby_same_category_poi_id": null
     },
     {
+      "osm_id": "way/103752732",
+      "name": "万林艺术博物馆",
+      "campus": "文理学部",
+      "category": "scenery",
+      "lng": 114.363121,
+      "lat": 30.536596,
+      "reason": "source_present_production_name_missing",
+      "review_flags": [
+        "same_name_distant_existing"
+      ],
+      "nearby_same_category_poi_id": null
+    },
+    {
       "osm_id": "node/13249113624",
       "name": "作涛文化空间",
       "campus": "文理学部",
@@ -25621,6 +25591,19 @@
       "review_flags": [
         "same_name_distant_existing",
         "same_name_nearby_source_object"
+      ],
+      "nearby_same_category_poi_id": null
+    },
+    {
+      "osm_id": "way/1389860246",
+      "name": "武汉大学牌楼",
+      "campus": "文理学部",
+      "category": "scenery",
+      "lng": 114.35821,
+      "lat": 30.53335,
+      "reason": "source_present_production_name_missing",
+      "review_flags": [
+        "same_name_distant_existing"
       ],
       "nearby_same_category_poi_id": null
     },
