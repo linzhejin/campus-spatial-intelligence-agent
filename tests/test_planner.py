@@ -272,45 +272,47 @@ class TestAgentLoop:
 
     def test_manual_map_start_is_used_when_natural_language_omits_the_origin(self):
         selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
-        client = FakeClient([_fake_response(tool_calls=[_fake_tool_call("plan_route", {
-            "end": {"name": "星湖园食堂"},
-        })])])
+        client = FakeClient([])
+        candidate = {"name": "星湖园食堂", "distance_m": 320, "subcategory": "canteen"}
         route = {"recommended": [[114.31, 30.51]], "start_name": "地图起点",
                  "end_name": "星湖园食堂", "mode": "walk"}
         with patch.object(planner, "_make_client", return_value=client), \
              patch.object(planner.agent_tools, "execute_tool",
-                          return_value=(route, {"route": route})) as execute:
+                          side_effect=[
+                              ({"start_name": "地图起点", "candidates": [candidate]},
+                               {"candidates": [candidate]}),
+                              (route, {"route": route}),
+                          ]) as execute:
             result = planner.run_agent("带我去最近的食堂", coord_start=selected_start)
 
-        args = execute.call_args.args[1]
-        assert args["start"] == {
+        search_args = execute.call_args_list[0].args[1]
+        assert search_args["start"] == {
             "name": "地图起点", "type": "coord", "lng": 114.31, "lat": 30.51,
         }
+        route_args = execute.call_args_list[1].args[1]
+        assert route_args["end"] == {"name": "星湖园食堂", "type": "poi"}
         assert result["response_kind"] == "route"
-        assert any("用户在地图上手动选定的起点" in str(message["content"])
-                   for message in client.calls[0]["messages"])
+        assert client.calls == []
 
     def test_agent_cannot_ask_for_start_again_after_map_selection(self):
         selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}
-        client = FakeClient([
-            _fake_response(tool_calls=[_fake_tool_call("ask_user", {
-                "question": "你现在在哪里？请告诉我起点。",
-            })]),
-            _fake_response(tool_calls=[_fake_tool_call("plan_route", {
-                "end": {"name": "星湖园食堂"},
-            })]),
-        ])
+        client = FakeClient([])
+        candidate = {"name": "星湖园食堂", "distance_m": 320, "subcategory": "canteen"}
         route = {"recommended": [[114.31, 30.51]], "start_name": "地图起点",
                  "end_name": "星湖园食堂", "mode": "walk"}
         with patch.object(planner, "_make_client", return_value=client), \
              patch.object(planner.agent_tools, "execute_tool",
-                          return_value=(route, {"route": route})) as execute:
+                          side_effect=[
+                              ({"start_name": "地图起点", "candidates": [candidate]},
+                               {"candidates": [candidate]}),
+                              (route, {"route": route}),
+                          ]) as execute:
             result = planner.run_agent("带我去最近的食堂", coord_start=selected_start)
 
         assert result["response_kind"] == "route"
-        assert execute.call_count == 1  # origin-only ask_user is answered internally
-        assert execute.call_args.args[1]["start"]["type"] == "coord"
-        assert "地图起点" in client.calls[1]["messages"][-1]["content"]
+        assert execute.call_count == 2
+        assert execute.call_args_list[1].args[1]["start"]["type"] == "coord"
+        assert client.calls == []
 
     def test_explicit_named_start_in_text_overrides_the_map_selection(self):
         selected_start = {"lng": 114.31, "lat": 30.51, "name": "地图起点"}

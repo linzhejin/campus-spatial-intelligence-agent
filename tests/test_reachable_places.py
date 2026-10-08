@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import networkx as nx
+import pytest
 
 import agents.tools as tools
 
@@ -44,6 +45,40 @@ def test_find_reachable_places_uses_network_distance_and_respects_budget(monkeyp
     assert artifact["candidates"] == result["candidates"]
     assert candidate["access_link_verified"] is False
     assert candidate["access_link_basis"] == "straight_line_to_nearest_network_node"
+
+
+def test_find_reachable_places_includes_start_connector_in_ranked_distance(monkeypatch):
+    graph = nx.MultiDiGraph()
+    graph.add_node(1, x=114.3600, y=30.5300)
+    graph.add_node(2, x=114.3610, y=30.5300)
+    graph.add_edge(1, 2, 0, length=100.0)
+    mode_index = SimpleNamespace(graph=graph, mode_penalty={})
+    poi = {"id": "poi-2", "name": "附近食堂", "type": "dining", "subcategory": "canteen",
+           "coordinates": {"lng": 114.3610, "lat": 30.5300},
+           "lat": 30.5300, "lon": 114.3610}
+    monkeypatch.setattr(tools, "_ensure_graph", lambda: graph)
+    monkeypatch.setattr(tools, "get_routing_index",
+                        lambda _graph: SimpleNamespace(for_mode=lambda _mode: mode_index))
+    monkeypatch.setattr(tools, "_resolve_endpoint", lambda *_: (1, "起点", None))
+    monkeypatch.setattr(tools, "search_by_category", lambda **_: [poi])
+    monkeypatch.setattr(tools, "gcj02_to_wgs84", lambda lng, lat: (lng, lat))
+    monkeypatch.setattr(tools, "list_conditions", lambda **_kwargs: [])
+
+    result, _ = tools.execute_tool("find_reachable_places", {
+        "start": {"type": "coord", "name": "地图起点", "lng": 114.3595, "lat": 30.5300},
+        "subcategory": "canteen",
+        "mode": "walk",
+        "max_distance_m": 500,
+    })
+
+    candidate = result["candidates"][0]
+    assert candidate["start_access_m"] == pytest.approx(48.2, abs=0.5)
+    assert candidate["network_path_distance_m"] == 100
+    assert candidate["access_snap_m"] == 0
+    assert candidate["network_distance_m"] == round(
+        candidate["start_access_m"] + candidate["network_path_distance_m"]
+        + candidate["access_snap_m"]
+    )
 
 
 def test_find_reachable_places_rejects_conflicting_or_invalid_budgets():

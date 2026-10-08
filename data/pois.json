@@ -75,7 +75,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.7,
+   "rating": null,
    "subcategory": "culture",
    "is_minor": false,
    "coordinate_system": "GCJ-02",
@@ -285,7 +285,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.6,
+   "rating": null,
    "subcategory": "college",
    "is_minor": false
   },
@@ -387,7 +387,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.8,
+   "rating": null,
    "subcategory": "library",
    "is_minor": false,
    "source_refs": [
@@ -1159,7 +1159,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -1388,7 +1388,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -1575,7 +1575,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -1662,7 +1662,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1753,7 +1753,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1777,7 +1777,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1799,7 +1799,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1823,7 +1823,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1848,7 +1848,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -1892,7 +1892,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "pool",
    "is_minor": false
   },
@@ -1958,7 +1958,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.8,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -1986,7 +1986,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "gym",
    "is_minor": false
   },
@@ -2009,7 +2009,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -2032,7 +2032,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -2055,7 +2055,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -2079,7 +2079,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -2101,7 +2101,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "gym",
    "is_minor": false
   },
@@ -3423,7 +3423,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.7,
+   "rating": null,
    "subcategory": "gate",
    "is_minor": false,
    "source_refs": [
@@ -3626,7 +3626,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.7,
+   "rating": null,
    "subcategory": "lake",
    "is_minor": false
   },
@@ -3649,7 +3649,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.8,
+   "rating": null,
    "subcategory": "lake",
    "is_minor": false
   },
@@ -3716,7 +3716,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -3738,7 +3738,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -3760,7 +3760,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -3785,7 +3785,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -3807,7 +3807,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -3827,7 +3827,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "park",
    "is_minor": false
   },
@@ -3852,7 +3852,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "park",
    "is_minor": false
   },
@@ -3875,7 +3875,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "sakura",
    "is_minor": false
   },
@@ -3902,7 +3902,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "sakura",
    "is_minor": false
   },
@@ -3924,8 +3924,8 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 2.8,
-   "subcategory": "hill",
+   "rating": null,
+   "subcategory": "park",
    "is_minor": false
   },
   {
@@ -3946,7 +3946,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.0,
+   "rating": null,
    "subcategory": "hill",
    "is_minor": false
   },
@@ -3968,7 +3968,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "sakura",
    "is_minor": false
   },
@@ -3995,7 +3995,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "hill",
    "is_minor": false
   },
@@ -4017,7 +4017,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "hill",
    "is_minor": false
   },
@@ -4039,7 +4039,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "park",
    "is_minor": false
   },
@@ -4061,7 +4061,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 2.8,
+   "rating": null,
    "subcategory": "park",
    "is_minor": false
   },
@@ -4120,7 +4120,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "lake",
    "is_minor": false
   },
@@ -4145,7 +4145,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -4167,7 +4167,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "park",
    "is_minor": false
   },
@@ -4187,7 +4187,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "hill",
    "is_minor": false
   },
@@ -4235,7 +4235,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "post",
    "is_minor": false
   },
@@ -4423,7 +4423,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -4791,7 +4791,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -4813,7 +4813,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -4944,7 +4944,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "culture",
    "is_minor": false
   },
@@ -5061,7 +5061,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -5111,7 +5111,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -5133,7 +5133,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "gym",
    "is_minor": false
   },
@@ -5177,7 +5177,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -5695,7 +5695,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "gate",
    "is_minor": false,
    "source_refs": [
@@ -5755,7 +5755,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "gate",
    "is_minor": false,
    "source_refs": [
@@ -5806,7 +5806,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -5826,7 +5826,7 @@
     "all"
    ],
    "scenery_score": 3,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "landmark",
    "is_minor": false
   },
@@ -5874,7 +5874,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "supermarket",
    "is_minor": false
   },
@@ -5915,7 +5915,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "classroom",
+   "subcategory": "building",
    "is_minor": false
   },
   {
@@ -6080,7 +6080,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -6102,7 +6102,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "college",
+   "subcategory": "laboratory",
    "is_minor": false
   },
   {
@@ -6376,7 +6376,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -6403,7 +6403,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -6430,7 +6430,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.7,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -6450,7 +6450,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
+   "rating": null,
    "subcategory": "gym",
    "is_minor": false
   },
@@ -6472,8 +6472,8 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
-   "subcategory": "sports_other",
+   "rating": null,
+   "subcategory": "sports_field",
    "is_minor": false
   },
   {
@@ -6495,7 +6495,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "gym",
    "is_minor": false
   },
@@ -6517,7 +6517,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -6540,7 +6540,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "pool",
    "is_minor": false,
    "source_refs": [
@@ -6571,7 +6571,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "field",
    "is_minor": false
   },
@@ -7725,7 +7725,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -7770,8 +7770,8 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.6,
-   "subcategory": "restaurant",
+   "rating": null,
+   "subcategory": "canteen",
    "is_minor": false
   },
   {
@@ -7793,7 +7793,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -7816,7 +7816,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.6,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -7838,7 +7838,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -7861,8 +7861,8 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
-   "subcategory": "canteen",
+   "rating": null,
+   "subcategory": "tea_drink",
    "is_minor": false
   },
   {
@@ -7884,7 +7884,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 0.9,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -7906,7 +7906,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -7952,7 +7952,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -7974,7 +7974,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -7996,7 +7996,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.4,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8018,7 +8018,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.6,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8040,7 +8040,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8063,7 +8063,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8107,7 +8107,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8129,7 +8129,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8151,7 +8151,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8173,7 +8173,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8195,7 +8195,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8217,7 +8217,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8239,7 +8239,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8261,7 +8261,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8283,7 +8283,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.2,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8327,7 +8327,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8349,7 +8349,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8371,7 +8371,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8394,7 +8394,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8416,7 +8416,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8438,7 +8438,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8460,7 +8460,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8482,7 +8482,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8504,7 +8504,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -8526,7 +8526,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8548,7 +8548,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8570,7 +8570,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8592,7 +8592,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8614,7 +8614,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8659,7 +8659,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8682,7 +8682,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8704,7 +8704,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8726,7 +8726,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8748,7 +8748,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8770,7 +8770,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8792,7 +8792,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8814,7 +8814,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.4,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8836,7 +8836,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -8858,7 +8858,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.4,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8880,7 +8880,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 0.6,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -8902,7 +8902,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8924,7 +8924,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.2,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -8946,7 +8946,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -8968,7 +8968,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "canteen",
    "is_minor": false
   },
@@ -8990,7 +8990,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.3,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9012,7 +9012,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9034,7 +9034,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.0,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9056,8 +9056,8 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.4,
-   "subcategory": "canteen",
+   "rating": null,
+   "subcategory": "tea_drink",
    "is_minor": false
   },
   {
@@ -9078,7 +9078,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.0,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9100,7 +9100,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9122,7 +9122,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9144,7 +9144,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9166,7 +9166,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.0,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9189,7 +9189,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.5,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9209,7 +9209,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -9231,7 +9231,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9253,7 +9253,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9275,7 +9275,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9297,7 +9297,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9319,7 +9319,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9341,7 +9341,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9363,7 +9363,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9385,7 +9385,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9407,7 +9407,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9451,7 +9451,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9473,7 +9473,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -9495,7 +9495,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9517,7 +9517,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -9539,7 +9539,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 0.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9561,7 +9561,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9583,7 +9583,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.1,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9605,7 +9605,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9627,7 +9627,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.3,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9649,7 +9649,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9671,7 +9671,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.2,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9693,7 +9693,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.1,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9716,7 +9716,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true,
    "campus_boundary_refs": [
@@ -9741,7 +9741,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -9763,7 +9763,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.4,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false,
    "campus_boundary_refs": [
@@ -9811,7 +9811,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.0,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9833,7 +9833,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.3,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -9855,7 +9855,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 1.5,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9877,7 +9877,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9899,7 +9899,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.8,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -9921,7 +9921,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.1,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -9943,8 +9943,8 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.2,
-   "subcategory": "canteen",
+   "rating": null,
+   "subcategory": "coffee",
    "is_minor": false
   },
   {
@@ -9965,7 +9965,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -9987,7 +9987,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 4.0,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -10009,7 +10009,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.8,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -10031,7 +10031,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.9,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -10053,7 +10053,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.6,
+   "rating": null,
    "subcategory": "coffee",
    "is_minor": true
   },
@@ -10075,7 +10075,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "tea_drink",
    "is_minor": true
   },
@@ -10097,7 +10097,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -10119,7 +10119,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 3.7,
+   "rating": null,
    "subcategory": "fastfood",
    "is_minor": true
   },
@@ -10141,7 +10141,7 @@
     "all"
    ],
    "scenery_score": 1,
-   "rating": 2.9,
+   "rating": null,
    "subcategory": "restaurant",
    "is_minor": false
   },
@@ -10755,7 +10755,7 @@
    ],
    "scenery_score": 1,
    "rating": null,
-   "subcategory": "service",
+   "subcategory": "post",
    "is_minor": false,
    "source_refs": [
     {

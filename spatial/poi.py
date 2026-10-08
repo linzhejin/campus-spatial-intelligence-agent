@@ -423,6 +423,10 @@ def _flatten_poi(poi: dict) -> dict:
         "aliases": poi.get("aliases", []),
         "season_tags": poi.get("season_tags", []),
         "scenery_score": poi.get("scenery_score", 3),
+        "source_refs": poi.get("source_refs", []),
+        "verification_status": poi.get("verification_status", "legacy_unverified"),
+        "coordinate_verification_status": poi.get("coordinate_verification_status", "unknown"),
+        "opening_hours": poi.get("opening_hours", "unknown"),
     }
 
 
@@ -470,13 +474,18 @@ def find_poi_ambiguous(name: str, min_score: float = 0.6):
 
 
 def search_pois(keyword: str, poi_type: str = None, season: str = None,
-                subcategory: str = None, include_minor: bool = True) -> list:
+                subcategory: str = None, include_minor: bool = True,
+                limit: int = 50) -> list:
     """模糊检索 POI，支持 type / subcategory / season 筛选。
 
     include_minor=False 时过滤小店铺（is_minor 标记），用于泛推荐场景；
     用户明确按类别检索时保持 True，保证"想喝咖啡"能命中瑞幸等小店。
     """
-    candidates = find_poi_candidates(keyword, limit=50, min_score=0.3)
+    try:
+        candidate_limit = max(1, min(int(limit), len(load_pois())))
+    except (TypeError, ValueError):
+        candidate_limit = 50
+    candidates = find_poi_candidates(keyword, limit=candidate_limit, min_score=0.3)
     results = []
     for poi, score in candidates:
         flat = _flatten_poi(poi)

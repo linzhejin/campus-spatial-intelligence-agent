@@ -3417,13 +3417,22 @@
         }
     }
 
-    // 确保有定位：优先用已有的 state.userLocation（页面加载自动跟踪已赋值），
-    // 如果还没有（比如用户拒绝了权限），则主动启动跟踪并等第一次回调。
+    // 附近推荐只接收近期、精度合格的真实 GPS 修复；缓存点和手动临时点不能当作当前位置。
+    function hasFreshAccurateGpsFix() {
+        var fix = state._dispFix;
+        if (!state.userLocation || !fix || fix.provisional) return false;
+        var age = Date.now() - Number(fix.ts);
+        var accuracy = Number(fix.acc);
+        return isFinite(age) && age >= 0 && age <= 120000
+            && isFinite(accuracy) && accuracy > 0 && accuracy <= 100;
+    }
+
+    // 确保有近期定位：已有定位过期或精度不够时，重新等一次可信修复。
     function ensureUserLocation() {
         if (state.productMode === 'planning' || !isNavigationDevice()) {
             return Promise.reject(new Error('电脑规划模式不使用自动定位，请用地图右上角“起点”选点，或输入明确的出发地点。'));
         }
-        if (state.userLocation) return Promise.resolve(state.userLocation);
+        if (hasFreshAccurateGpsFix()) return Promise.resolve(state.userLocation);
 
         return new Promise(function (resolve, reject) {
             // 启动跟踪（如果还没启动），等第一次 renderUserLocation 后 resolve
@@ -3432,7 +3441,11 @@
             // 临时包装 renderUserLocation，第一次被调时 resolve
             renderUserLocation = function (lng, lat, accuracy, isManual) {
                 origRender(lng, lat, accuracy, isManual);
-                if (!resolved) { resolved = true; resolve(state.userLocation); }
+                if (!resolved && hasFreshAccurateGpsFix()) {
+                    resolved = true;
+                    renderUserLocation = origRender;
+                    resolve(state.userLocation);
+                }
             };
             // 启动跟踪
             startTracking(true);
@@ -3494,9 +3507,8 @@
                     return { lng: point.lng, lat: point.lat };
                 });
             }
-            // 兜底：用户之前已定位过（点过◎或之前轮次），且没显式说起点 → 自动附起点
-            // 这样用户说"去珞珈山"时，如果之前已定位过，后端直接拿到坐标，不再追问
-            if (!requestBody.coord_start && state.userLocation && !query._auto_located) {
+            // 自动附起点仅使用近期且精度合格的 GPS。过期、粗略或缓存定位交给后端追问。
+            if (!requestBody.coord_start && hasFreshAccurateGpsFix() && !query._auto_located) {
                 requestBody.coord_start = {
                     lng: state.userLocation.lng, lat: state.userLocation.lat, name: '我的位置',
                 };
@@ -3785,7 +3797,15 @@
         return overview;
     }
 
-    // 候选 POI 卡片（response_kind=candidates）：点击卡片 → 以该点为终点发起规划
+    function candidateRouteQuery(candidate) {
+        var name = String(candidate && candidate.name || '').trim();
+        var startName = String(candidate && candidate.recommendation_start_name || '').trim();
+        return startName && startName !== '我的位置'
+            ? '从' + startName + '到' + name
+            : '去' + name;
+    }
+
+    // 候选 POI 卡片（response_kind=candidates）：点击时沿用文字起点或当前选定位置
     function renderCandidateCards(candidates) {
         var chatContent = document.getElementById('chat-content');
         if (!chatContent || !candidates.length) return;
@@ -3829,7 +3849,7 @@
                 // 防连点：点击后整组卡片禁用
                 wrap.querySelectorAll('.candidate-card').forEach(function (b) { b.disabled = true; });
                 trackEvent('candidate_click', { name: p.name, subcategory: p.subcategory || null });
-                handleNlSubmit('去' + (p.name || ''));
+                handleNlSubmit(candidateRouteQuery(p));
             });
             wrap.appendChild(btn);
         });
@@ -3847,7 +3867,7 @@
                 // 点地图标记 = 选这个候选（跟点卡片一样）
                 marker.on('click', function () {
                     trackEvent('candidate_click_map', { name: p.name, subcategory: p.subcategory || null });
-                    handleNlSubmit('去' + (p.name || ''));
+                    handleNlSubmit(candidateRouteQuery(p));
                 });
                 state.poiMarkers.push(marker);
                 bounds.push(marker.getLatLng());

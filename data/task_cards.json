@@ -22,7 +22,7 @@
       "name": "觅食",
       "triggers": ["吃饭", "饿", "食堂", "吃什么", "干饭", "午饭", "晚饭", "早餐"],
       "applies_to": ["search_poi_candidates"],
-      "advice": "想吃饭先 search_poi_candidates(subcategory=canteen, near_poi=用户位置或常去地)。食堂便宜量大，餐厅（subcategory=restaurant）适合聚餐，快餐（fastfood）适合赶时间。推荐时说清类别差异，给 2~3 个不同距离的选项。",
+      "advice": "位置优先。‘找食堂’只查 canteen；‘想吃美食/吃饭’同时查 canteen、restaurant、fastfood。附近推荐必须传本轮起点 start（用户明确位置、地图选点或近期高精度 GPS），先完整检索全部类别，再按当前路网距离返回最近 2~4 个。没有起点先询问；不能用热度或固定名单代替距离。评分来源与时效未核实时，不说最好吃、评分最高或性价比最高；末端接驳未核实要如实说明。",
       "default_weights": {"distance": 0.7, "slope": 0.15, "scenery": 0.15}
     },
     {
@@ -30,7 +30,7 @@
       "name": "咖啡茶饮",
       "triggers": ["咖啡", "奶茶", "喝", "果茶", "柠檬茶"],
       "applies_to": ["search_poi_candidates"],
-      "advice": "咖啡调 search_poi_candidates(subcategory=coffee)，奶茶果茶用 tea_drink。校内连锁小店密集，直接按 near_poi 距离排序推荐最近的即可。",
+      "advice": "咖啡用 coffee，奶茶和果茶用 tea_drink；‘喝点东西/饮品’同时查 coffee、tea_drink。附近推荐必须传本轮起点 start，按当前路网距离排序；没有起点先询问，不使用 near_poi 直线距离、固定店名或热度代替位置。",
       "default_weights": {"distance": 0.8, "slope": 0.1, "scenery": 0.1}
     },
     {
@@ -46,7 +46,7 @@
       "name": "办事购物",
       "triggers": ["买", "超市", "打印", "取快递", "银行", "邮局", "医院", "文具", "笔记本"],
       "applies_to": ["search_poi_candidates", "plan_via_route"],
-      "advice": "买东西优先 supermarket（自强超市是校内最大综合超市，文具/日用品都有）；打印查 keyword=打印；取快递查 keyword=快递。作为途经点时用 plan_via_route 的 via_subcategory 自动选最顺路的。",
+      "advice": "找超市或便利店查 supermarket；打印、快递分别按名称关键词查。附近推荐必须使用本轮起点并按当前路网距离排序；没有起点先询问，不凭印象指定某家店或宣称它最大。作为途经点时用 plan_via_route 的 via_subcategory 自动选最顺路的。",
       "default_weights": {"distance": 0.7, "slope": 0.2, "scenery": 0.1}
     },
     {
@@ -54,7 +54,7 @@
       "name": "运动锻炼",
       "triggers": ["跑步", "锻炼", "运动", "健身", "打球", "游泳", "操场"],
       "applies_to": ["search_poi_candidates", "plan_route"],
-      "advice": "跑步/散步推荐 field（操场）或 plan_tour 景观环线；打球游泳用对应 subcategory（field/gym/pool）。九一二运动场和梅园操场是跑步热门地。",
+      "advice": "跑步查 field、sports_field；打球查 court；游泳查 pool；泛运动查 field、sports_field、court、gym、pool、sports_centre、sports_other。附近推荐必须传本轮起点 start，并先检索完整类别再按路网距离排序；没有起点先询问，不凭热门地点固定推荐。",
       "default_weights": {"distance": 0.5, "slope": 0.2, "scenery": 0.3}
     },
     {

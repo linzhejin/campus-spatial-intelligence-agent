@@ -142,10 +142,11 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "search_poi_candidates",
-            "description": "按类别/关键词检索校内地点候选。用户说'想吃饭/想喝咖啡/想跑步'这类只有目的没有具体地点的需求时调用。",
+            "description": "按类别/关键词检索校内地点候选。推荐附近地点时必须传用户本轮起点；工具会先检索完整类别，再按当前可用路网距离排序，估算距离包含起点和地点到路网节点的直线接驳，两端都未经现场核实。没有起点时应先询问；列举目录时可以不传起点。",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "start": {**_ENDPOINT_SCHEMA, "description": "附近推荐的本轮起点，可为坐标或校内地点；不可用旧路线终点代替"},
                     "subcategory": {
                         "type": "string",
                         "description": "细分类别：canteen 食堂 / restaurant 餐厅 / fastfood 快餐小吃 / "
@@ -154,14 +155,20 @@ TOOL_SCHEMAS = [
                                        "pool 游泳池 / sakura 赏樱 / lake 湖泊 / hill 山景 / park 公园广场 / "
                                        "landmark 地标 / bank 银行 / hospital 医院 / post 邮政 等",
                     },
+                    "subcategories": {
+                        "type": "array", "items": {"type": "string"},
+                        "description": "一个模糊需求覆盖的多个细分类；例如‘美食’传 canteen、restaurant、fastfood",
+                    },
                     "poi_type": {"type": "string", "enum": ["dining", "study", "sports", "dorm", "gate",
                                                             "scenery", "service", "area"]},
                     "keyword": {"type": "string", "description": "名称关键词模糊匹配"},
                     "season": {"type": "string", "enum": ["spring", "summer", "autumn", "winter"]},
-                    "near_poi": {"type": "string", "description": "限定在该地点附近（POI 名），返回带距离"},
+                    "near_poi": {"type": "string", "description": "兼容旧调用的起点 POI 名；推荐优先传 start"},
+                    "mode": {"type": "string", "enum": ["walk", "bike", "drive"], "default": "walk"},
                     "include_minor": {"type": "boolean",
                                       "description": "是否包含小店铺（连锁奶茶/咖啡档口），默认 true"},
-                    "limit": {"type": "integer", "description": "返回数量上限，默认 10"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 20,
+                               "description": "附近推荐默认 4 个，目录检索默认 10 个"},
                 },
             },
         },
@@ -545,10 +552,12 @@ def _haversine(lat1, lon1, lat2, lon2):
 
 def _poi_public(poi: dict, with_coords: bool = True, with_provenance: bool = False) -> dict:
     """给 LLM/前端看的精简 POI 结构（坐标保持 GCJ-02，与前端一致）。"""
+    subcategory = poi.get("subcategory", "")
     out = {
         "name": poi.get("name", ""),
         "type": poi.get("type", ""),
-        "subcategory": poi.get("subcategory", ""),
+        "subcategory": subcategory,
+        "subcategory_label": _SUBCATEGORY_LABELS.get(subcategory, subcategory),
         "description": (poi.get("description") or "")[:120],
         "scenery_score": poi.get("scenery_score"),
     }
@@ -564,6 +573,208 @@ def _poi_public(poi: dict, with_coords: bool = True, with_provenance: bool = Fal
             "opening_hours": poi.get("opening_hours") or "unknown",
         })
     return out
+
+
+_SUBCATEGORY_LABELS = {
+    "canteen": "食堂", "restaurant": "餐厅", "fastfood": "快餐/小吃",
+    "coffee": "咖啡", "tea_drink": "茶饮", "supermarket": "超市",
+    "library": "图书馆", "classroom": "教学楼", "college": "院系楼",
+    "laboratory": "实验室", "building": "建筑",
+    "study_other": "学习场所", "field": "运动场", "sports_field": "运动场地",
+    "gym": "体育馆", "court": "球场", "pool": "游泳场馆",
+    "sports_centre": "综合体育设施", "sports_other": "其他运动设施",
+    "sakura": "赏樱点", "lake": "湖景", "hill": "山景", "park": "公园",
+    "square": "广场", "landmark": "地标", "gate": "校门", "dormitory": "宿舍",
+    "hospital": "医院", "bank": "银行", "post": "邮政", "activity_center": "活动中心",
+    "area": "区域", "museum": "展馆", "culture": "文化场所", "service": "服务点",
+    "pavilion": "亭阁",
+}
+
+
+def infer_recommendation_subcategories(query: str) -> list[str] | None:
+    """把模糊地点需求映射到校园主数据已有类别；无法可靠判断时返回 None。"""
+    text = re.sub(r"\s+", "", str(query or "")).lower()
+    if not text:
+        return None
+
+    broad_food = r"美食|吃饭|吃点|吃什么|吃东西|吃的|觅食|饿了|早点|午饭|午餐|晚饭|晚餐|早餐|早饭|夜宵|餐饮"
+    if "食堂" in text and not re.search(broad_food, text):
+        return ["canteen"]
+    if "餐厅" in text and not re.search(broad_food, text):
+        return ["restaurant"]
+    if "快餐" in text and not re.search(broad_food, text):
+        return ["fastfood"]
+    if re.search(broad_food + r"|好吃|味道好", text):
+        return ["canteen", "restaurant", "fastfood"]
+    if any(term in text for term in ("快餐", "小吃", "炸鸡", "汉堡")):
+        return ["fastfood"]
+    if any(term in text for term in ("餐厅", "饭店", "聚餐")):
+        return ["restaurant"]
+
+    asks_coffee = any(term in text for term in ("咖啡", "coffee", "拿铁", "美式"))
+    asks_tea = any(term in text for term in ("奶茶", "茶饮", "果茶", "果汁", "柠檬茶", "喝饮料"))
+    if asks_coffee and asks_tea:
+        return ["coffee", "tea_drink"]
+    if asks_coffee:
+        return ["coffee"]
+    if asks_tea:
+        return ["tea_drink"]
+    if any(term in text for term in ("喝点东西", "喝点啥", "喝的", "饮品", "饮品店", "饮料", "饮料店", "来杯")):
+        return ["coffee", "tea_drink"]
+
+    if any(term in text for term in ("游泳", "游个泳")):
+        return ["pool"]
+    if any(term in text for term in ("打球", "球场")):
+        return ["court"]
+    if any(term in text for term in ("跑步", "操场")):
+        return ["field", "sports_field"]
+    if any(term in text for term in ("运动", "锻炼", "健身")):
+        return ["field", "sports_field", "court", "gym", "pool", "sports_centre", "sports_other"]
+
+    if "图书馆" in text:
+        return ["library"]
+    if any(term in text for term in (
+            "自习", "学习的地方", "找地方学习", "学习场所", "想学习",
+            "看书", "复习", "备考", "写作业", "安静的地方")):
+        return ["library", "study_other"]
+    if any(term in text for term in (
+            "超市", "便利店", "买东西", "零食", "文具", "购物")):
+        return ["supermarket"]
+    if any(term in text for term in ("赏樱", "看樱花", "樱花")):
+        return ["sakura"]
+    if any(term in text for term in ("看湖", "湖边", "东湖边", "看湖景")):
+        return ["lake"]
+    return None
+
+
+def is_poi_catalog_query(query: str) -> bool:
+    """区分无位置要求的目录问题与需要按当前位置排序的推荐。"""
+    text = str(query or "")
+    if re.search(r"附近|周边|最近|离我|从.{1,20}(?:找|推荐|去哪)|按距离|推薦|推荐|帮我挑", text):
+        return False
+    return bool(re.search(r"有哪些|都有哪些|列出|列一下|名单|清单|全部|所有|一共有多少|有多少", text))
+
+
+def recommendation_origin_from_text(query: str) -> str | None:
+    """提取用户本轮明确说出的推荐起点，不从上一条路线推断。"""
+    text = str(query or "").strip()
+    patterns = (
+        r"我(?:现在)?在\s*([^，,。；;]+)",
+        r"(?:从|由)\s*([^，,。；;]+)",
+        r"起点(?:设为|是|为|在|[:：])\s*([^，,。；;]+)",
+    )
+    stop_words = r"(?:附近|周边|旁边|周围|一带|这边|出发|开始|想|准备|打算|帮我|请|推荐|找|吃|喝|运动|锻炼|学习|逛|游玩|去|到).*$"
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if not match:
+            continue
+        name = re.sub(stop_words, "", match.group(1)).strip()
+        if name and name not in {"我这", "我这里", "我的位置", "当前位置", "这里", "这儿"}:
+            return name
+    return None
+
+
+def _query_has_explicit_poi_destination(query: str) -> bool:
+    text = re.sub(r"\s+", "", str(query or ""))
+    if not text:
+        return False
+    target = re.search(r"(?:导航到|带我(?:去|到)|前往|去|到|找|定位到)(.+)$", text)
+    if not target:
+        return False
+    tail = target.group(1)
+    generic = {"食堂", "餐厅", "饭店", "咖啡", "咖啡店", "奶茶", "茶饮", "超市",
+               "图书馆", "自习室", "操场", "体育馆", "球场", "游泳馆", "学习的地方"}
+    for poi in load_pois():
+        name = re.sub(r"\s+", "", str(poi.get("name") or ""))
+        if len(name) >= 3 and name not in generic and name in tail:
+            return True
+        for alias in poi.get("aliases") or []:
+            alias = re.sub(r"\s+", "", str(alias or ""))
+            if len(alias) >= 3 and alias not in generic and alias in tail:
+                return True
+    return False
+
+
+def query_requests_route(query: str) -> bool:
+    """True when the user explicitly wants directions rather than a place shortlist."""
+    text = str(query or "")
+    return bool(re.search(
+        r"路线|导航|怎么走|帶我(?:去|到)|带我(?:去|到)|送我(?:去|到)|"
+        r"从.{1,30}(?:到|前往)|由.{1,30}(?:到|前往)|规划.{0,8}(?:路线|怎么走)", text
+    ))
+
+
+def _search_poi_categories(subcategories: list[str] | None, poi_type: str | None,
+                           keyword: str, season: str | None,
+                           include_minor: bool) -> list[dict]:
+    """先完整检索所有目标类别，再做跨类别去重；不受热度截断影响。"""
+    categories = list(dict.fromkeys(str(item) for item in (subcategories or []) if item))
+    if categories:
+        records = []
+        for category in categories:
+            found = (search_pois(keyword, poi_type=poi_type, season=season,
+                                 subcategory=category, include_minor=include_minor, limit=2000)
+                     if keyword else
+                     search_by_category(subcategory=category, poi_type=poi_type,
+                                        season=season, include_minor=include_minor, limit=2000))
+            records.extend(found)
+    elif keyword:
+        records = search_pois(keyword, poi_type=poi_type, season=season,
+                              include_minor=include_minor, limit=2000)
+    else:
+        records = search_by_category(poi_type=poi_type, season=season,
+                                     include_minor=include_minor, limit=2000)
+
+    unique = []
+    seen_ids = set()
+    for poi in records:
+        poi_id = str(poi.get("id") or "")
+        normalized_name = re.sub(r"[\s\u3000\-—_()（）·]+", "", str(poi.get("name") or "")).casefold()
+        if poi_id and poi_id in seen_ids:
+            continue
+        if poi_id:
+            seen_ids.add(poi_id)
+        coords = poi.get("coordinates") or {}
+        try:
+            lng = float(coords.get("lng", poi.get("lon", poi.get("lng"))))
+            lat = float(coords.get("lat", poi.get("lat")))
+            has_coords = math.isfinite(lng) and math.isfinite(lat)
+        except (TypeError, ValueError):
+            has_coords = False
+            lng = lat = 0.0
+        tokens = {
+            re.sub(r"[\s\u3000\-—_()（）·]+", "", str(value or "")).casefold()
+            for value in [poi.get("name"), *(poi.get("aliases") or [])]
+        }
+        duplicate = False
+        for existing in unique:
+            if (poi.get("type") != existing.get("type")
+                    or poi.get("subcategory") != existing.get("subcategory")):
+                continue
+            old_coords = existing.get("coordinates") or {}
+            try:
+                old_lng = float(old_coords.get("lng", existing.get("lon", existing.get("lng"))))
+                old_lat = float(old_coords.get("lat", existing.get("lat")))
+                old_has_coords = math.isfinite(old_lng) and math.isfinite(old_lat)
+            except (TypeError, ValueError):
+                old_has_coords = False
+                old_lng = old_lat = 0.0
+            old_tokens = {
+                re.sub(r"[\s\u3000\-—_()（）·]+", "", str(value or "")).casefold()
+                for value in [existing.get("name"), *(existing.get("aliases") or [])]
+            }
+            common_tokens = {token for token in tokens & old_tokens if len(token) >= 3}
+            if normalized_name and normalized_name == re.sub(
+                    r"[\s\u3000\-—_()（）·]+", "", str(existing.get("name") or "")).casefold():
+                duplicate = not (has_coords and old_has_coords) or _haversine(lat, lng, old_lat, old_lng) <= 15
+            elif common_tokens and has_coords and old_has_coords:
+                duplicate = _haversine(lat, lng, old_lat, old_lng) <= 15
+            if duplicate:
+                break
+        if duplicate:
+            continue
+        unique.append(poi)
+    return unique
 
 
 def _endpoint_target_wgs(ref: dict, mode: str):
@@ -776,40 +987,82 @@ def _tool_resolve_poi(args, ctx):
 
 
 def _tool_search_poi_candidates(args, ctx):
-    limit = max(1, min(int(args.get("limit", 10) or 10), 20))
+    context = dict(ctx) if isinstance(ctx, dict) else {}
+    query = str(context.get("query") or "")
+    limit = max(1, min(int(args.get("limit", 4 if args.get("start") or args.get("near_poi") else 10) or 10), 20))
     include_minor = bool(args.get("include_minor", True))
+    raw_subcategories = args.get("subcategories")
+    subcategories = ([str(item) for item in raw_subcategories if item]
+                     if isinstance(raw_subcategories, list) else [])
     subcategory = args.get("subcategory")
+    if not subcategories and subcategory:
+        subcategories = [subcategory]
+    inferred = infer_recommendation_subcategories(query)
+    if inferred and not is_poi_catalog_query(query):
+        subcategories = inferred
     poi_type = args.get("poi_type")
     keyword = (args.get("keyword") or "").strip()
     season = args.get("season")
 
-    if keyword:
-        results = search_pois(keyword, poi_type=poi_type, season=season,
-                              subcategory=subcategory, include_minor=include_minor)[:limit]
-    else:
-        results = search_by_category(subcategory=subcategory, poi_type=poi_type,
-                                     season=season, include_minor=include_minor,
-                                     limit=limit)
+    start_ref = args.get("start")
+    near_name = (args.get("near_poi") or "").strip()
+    if near_name and not start_ref:
+        near_poi, alternatives = find_poi_ambiguous(near_name)
+        if near_poi is None:
+            return {"error": "poi_not_found", "message": f"无法确认附近起点「{near_name}」",
+                    "alternatives": [_poi_public(item, with_coords=False) for item in alternatives]}, None
+        start_ref = {"name": near_poi["name"], "type": "poi"}
+
+    if (inferred and not is_poi_catalog_query(query) and not start_ref
+            and not near_name and not _query_has_explicit_poi_destination(query)):
+        question = "你从哪里出发？可以在地图上点起点，或告诉我所在的地点，我再按路网距离推荐。"
+        return {"question": question, "options": ["地图上选起点", "告诉我所在地点"]}, {
+            "clarify": {"question": question, "options": ["地图上选起点", "告诉我所在地点"]}
+        }
+
+    if start_ref:
+        reachable_args = {
+            "start": start_ref,
+            "subcategories": subcategories or None,
+            "subcategory": subcategory if not subcategories else None,
+            "poi_type": poi_type,
+            "keyword": keyword,
+            "season": season,
+            "include_minor": include_minor,
+            "mode": args.get("mode") or "walk",
+            "max_distance_m": args.get("max_distance_m") or 10000,
+            "limit": limit,
+        }
+        result, artifact = _tool_find_reachable_places(reachable_args, context)
+        if result.get("error"):
+            return result, None
+        candidates = result.get("candidates") or []
+        for candidate in candidates:
+            candidate["distance_m"] = candidate.get("network_distance_m")
+            candidate["distance_basis"] = result.get("reachability_basis")
+        result["candidate_count"] = len(candidates)
+        result["count"] = len(candidates)
+        result["candidates"] = candidates
+        result["message"] = (
+            "已按当前路网距离排序；起点和地点到道路的末端接驳均为直线估算，尚未核实通行。"
+            if candidates else result.get("message", "校内没有找到符合条件的附近地点。")
+        )
+        return result, {"candidates": candidates}
+
+    results = _search_poi_categories(
+        subcategories or None, poi_type, keyword, season, include_minor,
+    )
+    results.sort(key=importance_score, reverse=True)
+    results = results[:limit]
     if not results:
         return {"candidates": [], "message": "校内暂无匹配的地点，可换个类别或关键词试试"}, None
-
-    # near_poi：附直线距离（km 级排序够用，路网距离留给规划工具）
-    near_name = (args.get("near_poi") or "").strip()
-    if near_name:
-        near_poi, _ = find_poi_ambiguous(near_name)
-        if near_poi:
-            for p in results:
-                p["distance_m"] = round(_haversine(
-                    near_poi["lat"], near_poi["lon"], p.get("lat", 0), p.get("lon", p.get("lng", 0))
-                ), 0)
-            results.sort(key=lambda p: p["distance_m"])
 
     candidates = [_poi_public(p, with_provenance=True) for p in results]
     return {"candidates": candidates, "count": len(candidates)}, {"candidates": candidates}
 
 
 def _tool_find_reachable_places(args, ctx):
-    """按已标注路网搜索候选地点，并披露未经核实的末端接驳。"""
+    """按已标注路网搜索候选地点，将起点与地点的接驳估算计入距离。"""
     has_distance = args.get("max_distance_m") is not None
     has_time = args.get("max_time_min") is not None
     if has_distance and has_time:
@@ -885,6 +1138,16 @@ def _tool_find_reachable_places(args, ctx):
         return {"error": "start_unreachable",
                 "message": f"起点「{start_name}」在当前出行方式或管制条件下无法接入路网"}, None
 
+    start_access = _endpoint_access_evidence(start_ref, start_node, filtered_graph, mode)
+    try:
+        start_access_distance = float(start_access["snap_distance_m"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "start_access_unavailable",
+                "message": "起点到可规划道路的接驳距离暂时无法核实，附近地点候选暂不可用。"}, None
+    if not math.isfinite(start_access_distance):
+        return {"error": "start_access_unavailable",
+                "message": "起点到可规划道路的接驳距离暂时无法核实，附近地点候选暂不可用。"}, None
+
     try:
         distances = nx.single_source_dijkstra_path_length(
             filtered_graph, start_node, cutoff=max_distance, weight="length",
@@ -894,19 +1157,22 @@ def _tool_find_reachable_places(args, ctx):
         return {"error": "reachability_failed", "message": "附近地点暂时查不到，请稍后重试"}, None
 
     subcategory = args.get("subcategory")
+    raw_subcategories = args.get("subcategories")
+    subcategories = ([str(item) for item in raw_subcategories if item]
+                     if isinstance(raw_subcategories, list) else [])
+    if not subcategories and subcategory:
+        subcategories = [subcategory]
+    if not subcategories:
+        subcategories = infer_recommendation_subcategories(
+            (ctx or {}).get("query", "") if isinstance(ctx, dict) else ""
+        ) or []
     poi_type = args.get("poi_type")
     keyword = (args.get("keyword") or "").strip()
     include_minor = bool(args.get("include_minor", True))
-    if keyword:
-        places = search_pois(
-            keyword, poi_type=poi_type, subcategory=subcategory,
-            include_minor=include_minor,
-        )
-    else:
-        places = search_by_category(
-            subcategory=subcategory, poi_type=poi_type,
-            include_minor=include_minor, limit=2000,
-        )
+    season = args.get("season")
+    places = _search_poi_categories(
+        subcategories or None, poi_type, keyword, season, include_minor,
+    )
 
     reachable = []
     excluded_long_access = 0
@@ -924,17 +1190,22 @@ def _tool_find_reachable_places(args, ctx):
             if access_distance > _REACHABILITY_MAX_ACCESS_SNAP_M:
                 excluded_long_access += 1
                 continue
-            network_distance = float(distances[node]) + access_distance
+            network_path_distance = float(distances[node])
+            network_distance = start_access_distance + network_path_distance + access_distance
         except (TypeError, ValueError, KeyError, RuntimeError):
             continue
         if network_distance > max_distance:
             continue
-        public = _poi_public(poi)
-        public["network_path_distance_m"] = round(float(distances[node]))
+        public = _poi_public(poi, with_provenance=True)
+        public["network_path_distance_m"] = round(network_path_distance)
         public["network_distance_m"] = round(network_distance)
+        public["distance_m"] = round(network_distance)
+        public["distance_basis"] = "network_path_plus_unverified_straight_line_access_estimate"
+        public["start_access_m"] = round(start_access_distance, 1)
         public["access_snap_m"] = round(access_distance, 1)
         public["access_link_verified"] = False
         public["access_link_basis"] = "straight_line_to_nearest_network_node"
+        public["start_access_link_verified"] = False
         if avoid_steps_requested:
             public["step_access_status"] = "known_tagged_steps_filtered_unknown_edges_unverified"
         public["estimated_duration_min"] = estimate_duration_min(network_distance, mode)
@@ -949,6 +1220,7 @@ def _tool_find_reachable_places(args, ctx):
         "count": len(reachable),
         "candidates": reachable,
         "reachability_basis": "network_path_plus_unverified_straight_line_access_estimate",
+        "start_access": start_access,
         "max_distance_m": round(max_distance),
         "max_time_min": round(max_time, 1) if max_time is not None else None,
         "max_access_snap_m": _REACHABILITY_MAX_ACCESS_SNAP_M,
@@ -965,8 +1237,8 @@ def _tool_find_reachable_places(args, ctx):
         "road_condition_version": current_road_condition_version(active_conditions),
         "data_source": "校园 POI 主数据与当前交通方式可用的已标记路网",
         "geometry_crs": "GCJ-02",
-        "access_link_note": "地点到最近路网节点的末端接驳只按直线距离估算，未核实是否存在实际步行通道；距离超过 60 米的地点不列为候选。候选地点应再用路线工具核查。",
-        "estimate_note": "距离由路网路径与未核实的直线末端接驳组成；时间按该出行方式平均速度估算，不等同导航实时 ETA。",
+        "access_link_note": "起点和地点到最近路网节点的末端接驳只按直线距离估算，未核实是否存在实际步行通道；地点接驳距离超过 60 米的不列为候选。候选地点应再用路线工具核查。",
+        "estimate_note": "距离由起点接驳、路网路径和地点接驳组成；两端接驳均为未核实的直线估算。时间按该出行方式平均速度估算，不等同导航实时 ETA。",
     }
     if not reachable:
         result["message"] = "当前路网估算范围内没有找到候选地点；地点入口与末端通道尚未逐一核实，可扩大范围或换个类别。"

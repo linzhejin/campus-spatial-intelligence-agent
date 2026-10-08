@@ -31,7 +31,15 @@ function harness(storage = new Map()) {
             clearRouteResult: () => { clears++; stopped++; }, clearMap: () => { clears++; },
             stopNavigation: () => { stopped++; },
             renderRoute: r => { rendered.push(r); context.app.state.routeStore.replace(r.route_state || null); },
-            ensureUserLocation: async () => { locationCalls++; return { lng: 114.3, lat: 30.5 }; },
+            ensureUserLocation: async () => {
+                locationCalls++;
+                const fix = { lng: 114.3, lat: 30.5, accuracy: 35 };
+                context.app.state.userLocation = fix;
+                context.app.state._dispFix = {
+                    lng: fix.lng, lat: fix.lat, acc: fix.accuracy, ts: Date.now(), provisional: false,
+                };
+                return fix;
+            },
             apiRequest: async (url, body) => { requests.push({ url, body }); return context.reply; },
             logRequest: (url, body) => requests.push({ url, body }),
         },
@@ -59,6 +67,7 @@ function harness(storage = new Map()) {
         apiRequest = boundaries.apiRequest;
         var realSubmitQueuedMessage = submitQueuedMessage;
         globalThis.app = { state: state, init: init, submit: handleNlSubmit, reset: handleReset,
+            candidateRouteQuery: candidateRouteQuery,
             globalKeydown: handleGlobalKeydown,
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
             removeMapPoint: removeMapPoint,
@@ -325,6 +334,54 @@ test('a natural-language route request receives manually selected start and via 
     assert.deepEqual({ lng: sent.coord_start.lng, lat: sent.coord_start.lat, name: sent.coord_start.name },
         { lng: 114.31, lat: 30.51, name: '地图起点' });
     assert.deepEqual(Array.from(sent.coord_waypoints, point => [point.lng, point.lat]), [[114.32, 30.52]]);
+});
+
+test('nearby recommendation does not reuse stale, coarse, or provisional GPS as its origin', async () => {
+    for (const fix of [
+        { ts: Date.now() - 121000, acc: 20, provisional: false },
+        { ts: Date.now(), acc: 101, provisional: false },
+        { ts: Date.now(), acc: 20, provisional: true },
+    ]) {
+        const h = harness();
+        h.state.userLocation = { lng: 114.3, lat: 30.5, accuracy: fix.acc };
+        h.state._dispFix = { lat: 30.5, lng: 114.3, ...fix };
+        let sent;
+        h.setApi(async (_url, body) => {
+            sent = body;
+            return { task_type: 'chat', reply: '请先告诉我从哪里出发。' };
+        });
+
+        await h.submit('我想吃美食');
+
+        assert.equal(sent.coord_start, undefined);
+    }
+});
+
+test('nearby recommendation may use only a recent accurate GPS fix as its origin', async () => {
+    const h = harness();
+    h.state.userLocation = { lng: 114.3, lat: 30.5, accuracy: 35 };
+    h.state._dispFix = { lat: 30.5, lng: 114.3, acc: 35, ts: Date.now(), provisional: false };
+    let sent;
+    h.setApi(async (_url, body) => {
+        sent = body;
+        return { task_type: 'chat', reply: '按附近地点为你推荐。' };
+    });
+
+    await h.submit('我想吃美食');
+
+    assert.deepEqual(
+        { lng: sent.coord_start.lng, lat: sent.coord_start.lat, name: sent.coord_start.name },
+        { lng: 114.3, lat: 30.5, name: '我的位置' },
+    );
+});
+
+test('clicking a candidate keeps a typed origin while GPS and map origins stay attached by state', () => {
+    const h = harness();
+    assert.equal(h.candidateRouteQuery({ name: '工学部清真食堂', recommendation_start_name: '工学部' }),
+        '从工学部到工学部清真食堂');
+    assert.equal(h.candidateRouteQuery({ name: '附近食堂', recommendation_start_name: '我的位置' }),
+        '去附近食堂');
+    assert.equal(h.candidateRouteQuery({ name: '附近食堂' }), '去附近食堂');
 });
 
 test('R shortcut and header button both start a new conversation', () => {

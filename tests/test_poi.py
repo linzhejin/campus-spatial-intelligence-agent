@@ -144,6 +144,7 @@ class TestGetPoi:
         assert dining is not None
         assert dining["id"] == "poi_307"
         assert dining["name"] == "星湖园食堂"
+        assert dining["subcategory"] == "canteen"
         assert "星湖园餐厅" in dining["aliases"]
         assert xingyuan is None
         assert search_results[0]["id"] == "poi_307"

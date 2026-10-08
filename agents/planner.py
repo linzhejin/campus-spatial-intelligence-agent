@@ -528,6 +528,116 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 "clarify": {"question": question, "options": []},
                 "suggestions": None, "turns": 0}
 
+    # 模糊的类别需求走确定性的候选检索，避免模型按熟悉度挑固定 POI。
+    # 起点只取本轮坐标、用户本轮明确说出的地点，或正在回答的起点追问；不继承旧路线终点。
+    recommendation_query = original_request
+    recommendation_categories = agent_tools.infer_recommendation_subcategories(recommendation_query)
+    recommendation_is_catalog = agent_tools.is_poi_catalog_query(recommendation_query)
+    recommendation_has_target = agent_tools._query_has_explicit_poi_destination(recommendation_query)
+    route_to_nearest = bool(
+        agent_tools.query_requests_route(recommendation_query)
+        and re.search(r"最近|离我最(?:近|方便)|距离最短", recommendation_query)
+    )
+    if (recommendation_categories and not recommendation_is_catalog
+            and not recommendation_has_target
+            and (not agent_tools.query_requests_route(recommendation_query) or route_to_nearest)):
+        start_ref = None
+        explicit_origin = agent_tools.recommendation_origin_from_text(query)
+        if explicit_origin:
+            # 本轮文字明确给出的地点优先于页面附带的 GPS 或地图坐标。
+            start_ref = {"type": "poi", "name": explicit_origin}
+        elif original_request != query:
+            # 起点追问的简短回答（如“工学部”）也是本轮明确位置，应优先采用。
+            answered_origin, alternatives = agent_tools.find_poi_ambiguous(query.strip())
+            if answered_origin and not alternatives:
+                start_ref = {"type": "poi", "name": answered_origin["name"]}
+
+        if start_ref is None and isinstance(coord_start, dict):
+            try:
+                lng, lat = float(coord_start.get("lng")), float(coord_start.get("lat"))
+                if (-180 <= lng <= 180 and -90 <= lat <= 90):
+                    start_ref = {"type": "coord", "name": coord_start.get("name") or "我的位置",
+                                 "lng": lng, "lat": lat}
+            except (TypeError, ValueError):
+                start_ref = None
+
+        if start_ref is None:
+            question = "你从哪里出发？可以在地图上点起点，或告诉我所在的地点，我再按路网距离推荐。"
+            options = ["地图上选起点", "告诉我所在地点"]
+            return {"response_kind": "clarify", "message": question,
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": {"question": question, "options": options},
+                    "suggestions": None, "turns": 0}
+
+        recommendation_args = {
+            "start": start_ref,
+            "subcategories": recommendation_categories,
+            "mode": travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk",
+            "max_distance_m": 10000,
+            "limit": 4,
+        }
+        result, artifact = agent_tools.execute_tool(
+            "search_poi_candidates", recommendation_args,
+            {"query": recommendation_query, "uid": uid},
+        )
+        candidates = (artifact or {}).get("candidates") if isinstance(artifact, dict) else None
+        if result.get("error"):
+            return {"response_kind": "chat", "message": result.get("message") or "附近地点暂时无法核实。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": None, "suggestions": None, "turns": 0}
+        if not candidates:
+            return {"response_kind": "chat",
+                    "message": result.get("message") or "当前路网范围内没有找到合适的地点。",
+                    "route": None, "route_kind": None, "candidates": [],
+                    "clarify": None, "suggestions": None, "turns": 0}
+
+        if route_to_nearest:
+            route_request = str(recommendation_query) + " " + str(query)
+            route_args = {
+                "start": start_ref,
+                "end": {"type": "poi", "name": candidates[0].get("name", "")},
+                "mode": recommendation_args["mode"],
+            }
+            if re.search(r"平坦优先|少爬坡|少走坡|避坡|不想爬坡", route_request):
+                route_args["weights"] = {"distance": 0.2, "slope": 0.6, "scenery": 0.2}
+                route_args["constraints"] = {"slope": "avoid"}
+            elif re.search(r"风景优先|景观优先|赏樱|看风景|风景好", route_request):
+                route_args["weights"] = {"distance": 0.15, "slope": 0.15, "scenery": 0.7}
+            if re.search(r"(?:不走|避开|不要走|绕开)(?:楼梯|台阶)", route_request):
+                route_args["constraints"] = {**route_args.get("constraints", {}), "avoid_steps": True}
+            route_result, route_artifact = agent_tools.execute_tool(
+                "plan_route", route_args, {"query": route_request, "uid": uid},
+            )
+            route = ((route_artifact or {}).get("route")
+                     if isinstance(route_artifact, dict) else None)
+            if route:
+                route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+                return {"response_kind": "route", "message": _build_route_message(route),
+                        "route": route, "route_kind": "direct", "candidates": None,
+                        "clarify": None, "suggestions": None, "turns": 0}
+            if route_result.get("error"):
+                return {"response_kind": "chat",
+                        "message": route_result.get("message") or "找到附近地点，但当前无法生成可靠路线。",
+                        "route": None, "route_kind": None, "candidates": None,
+                        "clarify": None, "suggestions": None, "turns": 0}
+
+        first = candidates[0]
+        start_name = result.get("start_name") or start_ref.get("name") or "你选定的起点"
+        if start_ref.get("type") == "poi":
+            for candidate in candidates:
+                candidate["recommendation_start_name"] = start_name
+        category = first.get("subcategory_label") or first.get("subcategory")
+        distance = first.get("distance_m")
+        if distance is not None:
+            summary = (f"从{start_name}出发，我按当前路网估算距离排了 {len(candidates)} 个选项。"
+                       f"最近的是{first.get('name', '候选地点')}（{category}，约 {round(float(distance))} 米）。")
+        else:
+            summary = f"我按从{start_name}出发的路网距离排了 {len(candidates)} 个选项。"
+        summary += "起点和地点到道路的接驳按直线估算，未核实实际通行；点选地点可继续规划路线。"
+        return {"response_kind": "candidates", "message": summary,
+                "route": None, "route_kind": None, "candidates": candidates,
+                "clarify": None, "suggestions": None, "turns": 0}
+
     if not config.DEEPSEEK_API_KEY:
         raise PlannerError("DEEPSEEK_API_KEY 未配置")
 
