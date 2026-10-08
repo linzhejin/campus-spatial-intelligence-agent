@@ -76,7 +76,10 @@ def test_curated_pois_carry_audited_activity_provenance():
 
 def test_common_sports_nicknames_resolve_to_the_correct_grounds_only():
     pois = load_pois()
-    assert [poi["id"] for poi in _exact_master_poi_matches("桂操", pois)] == ["poi_085"]
+    guicao = _exact_master_poi_matches("桂操", pois)
+    assert [poi["id"] for poi in guicao] == ["poi_085"]
+    assert guicao[0]["name"] == "武汉大学桂园操场"
+    assert [poi["id"] for poi in _exact_master_poi_matches("武汉大学足球场", pois)] == ["poi_085"]
     assert [poi["id"] for poi in _exact_master_poi_matches("梅操", pois)] == ["poi_082"]
     assert [poi["id"] for poi in _exact_master_poi_matches("信操", pois)] == ["poi_260"]
 
