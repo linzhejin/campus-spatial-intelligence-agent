@@ -17,7 +17,8 @@ test('deployed app bundle uses a fresh and consistent service-worker cache key',
   assert.ok(cacheVersion, 'the service worker must declare its cache version');
   assert.equal(htmlAsset[1], workerAsset[1]);
   assert.notEqual(htmlAsset[2], '20261003a');
-  assert.ok(Number(cacheVersion[1]) > 70);
+  assert.notEqual(htmlAsset[2], '20261007a');
+  assert.ok(Number(cacheVersion[1]) > 84);
 });
 
 function loadWorker(overrides = {}) {
