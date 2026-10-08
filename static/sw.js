@@ -10,7 +10,7 @@ var CACHE_NAME = 'whu-walker-v86';
 var PRECACHE_URLS = [
     '/',
     '/index.html',
-    '/css/style.css?v=20261008c',
+    '/css/style.css?v=20261009a',
     '/js/app.js?v=20261009b',
     '/js/config.js',
     '/js/voice-output.js',
