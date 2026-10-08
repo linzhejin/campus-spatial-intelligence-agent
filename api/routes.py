@@ -2755,6 +2755,21 @@ def review_manager_vision_job(job_id):
     review_status = body.get("status")
     if review_status not in {"confirmed", "dismissed"}:
         return _err("invalid_review", "审核状态只能为 confirmed 或 dismissed。", 400)
+    try:
+        uuid.UUID(job_id)
+    except ValueError:
+        return _err("invalid_job_id", "影像任务标识无效。", 400)
+    try:
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        existing_job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
+    except RuntimeError:
+        logger.exception("影像审核存储不可用")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
+    if (not existing_job or existing_job.get("status") != "needs_review"
+            or existing_job.get("review_status") is not None):
+        return _err("job_not_reviewable", "任务不存在，或当前状态不可审核。", 409)
+
     review_note = str(body.get("note") or "").strip()
     if len(review_note) < 8 or len(review_note) > 1000:
         return _err("review_note_required", "请填写影像复核依据（8 至 1000 字）。", 400)
@@ -2767,12 +2782,8 @@ def review_manager_vision_job(job_id):
     if review_status == "dismissed":
         candidate_index = None
     try:
-        uuid.UUID(job_id)
-        from storage import database, vision_repository
-        database.initialize(current_app.config.get("DATABASE_URL"))
         if review_status == "confirmed":
-            job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
-            candidates = (job.get("result") or {}).get("candidates") if job else None
+            candidates = (existing_job.get("result") or {}).get("candidates")
             if (not isinstance(candidates, list)
                     or candidate_index >= len(candidates)
                     or not _valid_review_only_candidate(candidates[candidate_index])):
