@@ -2019,6 +2019,10 @@ body.is-planning-mode .desktop-route-workbench {
     font-size: 11px;
     color: var(--color-poi);
 }
+.candidate-campus {
+    font-size: 11px;
+    color: var(--ink-light);
+}
 .candidate-dist {
     font-size: 11px;
     color: var(--ink-light);

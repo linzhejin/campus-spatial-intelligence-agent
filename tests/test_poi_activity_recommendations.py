@@ -110,6 +110,26 @@ def test_sport_answer_that_matches_a_poi_does_not_replace_the_saved_origin():
     }
 
 
+def test_candidate_summary_formats_activity_labels_as_plain_text_without_repeating_poi_name():
+    original_query = "从信息学部图书馆出发，想去打乒乓球"
+    candidate = {
+        "poi_id": "poi_450", "name": "乒乓球馆", "subcategory": "court",
+        "activities": ["table_tennis"], "activity_labels": ["乒乓球馆"],
+        "distance_m": 274,
+    }
+    with patch.object(planner.agent_tools, "execute_tool", return_value=(
+        {"candidates": [candidate], "count": 1,
+         "start_name": "武汉大学信息学部图书馆"},
+        {"candidates": [candidate]},
+    )):
+        result = planner.run_agent(original_query)
+
+    assert result["response_kind"] == "candidates"
+    assert "['乒乓球馆']" not in result["message"]
+    assert "乒乓球馆（乒乓球馆" not in result["message"]
+    assert "约 274 米" in result["message"]
+
+
 def test_basketball_catalog_uses_complete_activity_filtered_master_without_origin():
     basketball = [
         {"poi_id": "poi_083", "name": "文理学部篮球场", "activities": ["basketball"]},

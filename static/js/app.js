@@ -3839,9 +3839,14 @@
             nameEl.textContent = p.name || '';
             btn.appendChild(nameEl);
 
-            var cat = Array.isArray(p.activity_labels) && p.activity_labels.length
-                ? p.activity_labels.join('、')
+            var placeName = String(p.name || '');
+            var activityLabels = Array.isArray(p.activity_labels) ? p.activity_labels : [];
+            var cat = activityLabels.length
+                ? activityLabels.filter(function (label) {
+                    return label && !placeName.includes(String(label));
+                }).join('、')
                 : (p.category_label || p.subcategory_label || p.subcategory || '');
+            if (cat && placeName.includes(String(cat))) cat = '';
             if (cat) {
                 var catEl = document.createElement('span');
                 catEl.className = 'candidate-cat';
@@ -3849,12 +3854,19 @@
                 btn.appendChild(catEl);
             }
 
+            if (p.campus && !placeName.includes(String(p.campus))) {
+                var campusEl = document.createElement('span');
+                campusEl.className = 'candidate-campus';
+                campusEl.textContent = p.campus;
+                btn.appendChild(campusEl);
+            }
+
             if (p.distance_m != null) {
                 var distEl = document.createElement('span');
                 distEl.className = 'candidate-dist';
                 distEl.textContent = p.distance_m >= 1000
-                    ? (p.distance_m / 1000).toFixed(1) + 'km'
-                    : Math.round(p.distance_m) + 'm';
+                    ? '约 ' + (p.distance_m / 1000).toFixed(1) + ' km'
+                    : '约 ' + Math.round(p.distance_m) + ' m';
                 btn.appendChild(distEl);
             }
 

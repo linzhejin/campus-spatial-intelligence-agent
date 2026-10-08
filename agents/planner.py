@@ -867,11 +867,19 @@ def run_agent(query: str, context: dict = None, history: list = None,
         if start_ref.get("type") == "poi":
             for candidate in candidates:
                 candidate["recommendation_start_name"] = start_name
-        category = first.get("activity_labels") or first.get("subcategory_label") or first.get("subcategory")
+        raw_category = first.get("activity_labels") or first.get("subcategory_label") or first.get("subcategory")
+        if isinstance(raw_category, (list, tuple)):
+            category = "、".join(str(label).strip() for label in raw_category if str(label).strip())
+        else:
+            category = str(raw_category or "").strip()
+        place_name = str(first.get("name", "候选地点"))
+        if category and category in place_name:
+            category = ""
         distance = first.get("distance_m")
         if distance is not None:
+            category_suffix = f"（{category}）" if category else ""
             summary = (f"从{start_name}出发，我按当前路网估算距离排了 {len(candidates)} 个选项。"
-                       f"最近的是{first.get('name', '候选地点')}（{category}，约 {round(float(distance))} 米）。")
+                       f"最近的是{place_name}{category_suffix}，约 {round(float(distance))} 米。")
         else:
             summary = f"我按从{start_name}出发的路网距离排了 {len(candidates)} 个选项。"
         summary += "起点和地点到道路的接驳按直线估算，未核实实际通行；点选地点可继续规划路线。"
