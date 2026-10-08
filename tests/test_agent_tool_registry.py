@@ -13,7 +13,9 @@ def test_non_routing_tool_executors_return_schema_shaped_results(monkeypatch):
     assert artifact is None
 
     monkeypatch.setattr(tools, "search_by_category", lambda **kwargs: [poi])
-    result, artifact = tools.execute_tool("search_poi_candidates", {"subcategory": "gym"})
+    result, artifact = tools.execute_tool("search_poi_candidates", {"subcategory": "gym"}, {
+        "query": "武汉大学有哪些体育馆",
+    })
     assert result["count"] == 1
     assert artifact["candidates"][0]["name"] == "卓尔体育馆"
 

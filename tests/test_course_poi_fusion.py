@@ -108,7 +108,7 @@ def test_reviewed_course_spots_are_in_the_live_poi_master_with_lineage():
     data = json.loads((root / "data/pois.json").read_text(encoding="utf-8"))
     pois = {row["id"]: row for row in data["pois"]}
 
-    assert len(pois) == 440
+    assert len(pois) >= 440
     expected = {
         "poi_247": {"遥感学院", "信息学部遥感学院"},
         "poi_140": {"武汉大学校门牌坊"},

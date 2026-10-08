@@ -128,6 +128,22 @@ class Requirement(Contract):
     status: Literal["pending", "satisfied", "failed", "needs_input"] = "pending"
 
 
+class PlaceRequestState(Contract):
+    """Durable intent slots for activity discovery and its follow-up answers."""
+
+    request_id: Identifier
+    original_query: str = Field(min_length=1, max_length=2000)
+    activities: list[Identifier] = Field(default_factory=list, max_length=20)
+    subcategories: list[Identifier] = Field(default_factory=list, max_length=50)
+    follow_up_requests: list[dict[str, Any]] = Field(default_factory=list, max_length=10)
+    pending_slot: Literal["activity", "start", "selection"] | None = None
+    start: dict[str, Any] | None = None
+    selected_poi_id: Identifier | None = None
+    candidate_poi_ids: list[Identifier] = Field(default_factory=list, max_length=20)
+    mode: TravelMode = "walk"
+    constraints: HardConstraints = Field(default_factory=HardConstraints)
+
+
 class FieldProvenance(Contract):
     source: PatchSource
     scope: MemoryScope = "task"
@@ -142,6 +158,7 @@ class TaskState(Contract):
     task_kind: Literal["route", "information", "composite", "comparison", "itinerary"] = "route"
     status: Literal["draft", "ready", "queued", "running", "needs_input", "completed", "partial", "failed", "cancelled", "superseded"] = "draft"
     route_spec: RouteSpec = Field(default_factory=RouteSpec)
+    place_request: PlaceRequestState | None = None
     requirements: list[Requirement] = Field(default_factory=list, max_length=100)
     pending_questions: list[str] = Field(default_factory=list, max_length=100)
     artifact_ids: list[Identifier] = Field(default_factory=list, max_length=500)

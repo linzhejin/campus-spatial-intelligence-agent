@@ -4,6 +4,7 @@
 路网/边覆盖/SW/APK/迁移），与 docs/当前事实.md 及 README/HANDOFF/CLAUDE
 标记块比对；git 状态与生成时间不参与校验。
 """
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -20,6 +21,7 @@ def test_docs_facts_up_to_date():
         text=True,
         encoding="utf-8",
         errors="replace",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
     if proc.returncode != 0:
         raise AssertionError(

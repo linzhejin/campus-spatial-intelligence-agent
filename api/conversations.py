@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -179,7 +180,7 @@ def submit_message(conversation_id: str):
     if not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 200:
         return _failure("missing_request_id", "每条消息必须带唯一 request_id。", 422)
     if set(body) - {"query", "request_id", "travel_mode", "coord_start", "coord_end", "coord_waypoints",
-                    "continuation_task_id", "base_revision"}:
+                    "continuation_task_id", "base_revision", "selected_poi_id"}:
         return _failure("invalid_request", "消息包含不支持的字段。", 422)
 
     def location_ref(value, label):
@@ -225,6 +226,12 @@ def submit_message(conversation_id: str):
         RouteSpec.model_validate({**RouteSpec().model_dump(mode="python"), **route_spec})
         continuation_task_id = body.get("continuation_task_id")
         base_revision = body.get("base_revision")
+        selected_poi_id = body.get("selected_poi_id")
+        if selected_poi_id is not None:
+            if not isinstance(selected_poi_id, str) or not re.fullmatch(r"poi_\d{3,}", selected_poi_id):
+                raise ValueError("selected_poi_id 格式无效")
+            if continuation_task_id is None:
+                raise ValueError("selected_poi_id 只能用于续接当前候选任务")
         if continuation_task_id is not None:
             if not isinstance(continuation_task_id, str) or not isinstance(base_revision, int) or isinstance(base_revision, bool):
                 raise ValueError("continuation_task_id 与 base_revision 格式无效")
@@ -235,6 +242,7 @@ def submit_message(conversation_id: str):
             _database_url(), owner_id, conversation_id, query,
             request_id.strip(), deadline, route_spec=route_spec,
             continuation_task_id=continuation_task_id, base_revision=base_revision,
+            selected_poi_id=selected_poi_id,
         )
     except TaskContinuationConflict as error:
         return _failure("task_revision_conflict", str(error), 409)

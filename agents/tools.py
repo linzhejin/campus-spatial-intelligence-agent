@@ -21,6 +21,10 @@ from spatial.poi import (
     find_poi_ambiguous, search_by_category, search_pois, list_all_pois,
     load_pois, importance_score, _flatten_poi,
 )
+from spatial.poi_taxonomy import (
+    ACTIVITY_LABELS, ACTIVITY_SUBCATEGORIES, activities_for_poi,
+    matches_activities, resolve_activity_query, resolve_activity_sequence,
+)
 from spatial.network import get_network, load_or_download_network, get_nearest_node, get_node_coords
 from spatial.routing import (
     compute_route, compute_via_route, compute_tour_route,
@@ -81,6 +85,7 @@ _ENDPOINT_SCHEMA = {
     "type": "object",
     "properties": {
         "name": {"type": "string", "description": "地点名称（POI 名/别名）；coord 类型时为显示名"},
+        "poi_id": {"type": "string", "description": "已检索候选地点的稳定 ID；优先于名称重新匹配"},
         "type": {"type": "string", "enum": ["poi", "coord"],
                  "description": "poi=校内地点名；coord=WGS-84 坐标（如用户 GPS 定位）"},
         "lng": {"type": "number", "description": "经度（仅 type=coord 时填，WGS-84）"},
@@ -159,6 +164,10 @@ TOOL_SCHEMAS = [
                         "type": "array", "items": {"type": "string"},
                         "description": "一个模糊需求覆盖的多个细分类；例如‘美食’传 canteen、restaurant、fastfood",
                     },
+                    "activities": {
+                        "type": "array", "items": {"type": "string", "enum": sorted(ACTIVITY_LABELS)},
+                        "description": "按地点支持的用途精确筛选；例如 basketball、badminton、running、meal",
+                    },
                     "poi_type": {"type": "string", "enum": ["dining", "study", "sports", "dorm", "gate",
                                                             "scenery", "service", "area"]},
                     "keyword": {"type": "string", "description": "名称关键词模糊匹配"},
@@ -183,6 +192,10 @@ TOOL_SCHEMAS = [
                 "properties": {
                     "start": _ENDPOINT_SCHEMA,
                     "subcategory": {"type": "string", "description": "地点细分类，如 canteen、coffee、gym、library"},
+                    "activities": {
+                        "type": "array", "items": {"type": "string", "enum": sorted(ACTIVITY_LABELS)},
+                        "description": "按地点支持的用途精确筛选，如 basketball、running、meal",
+                    },
                     "poi_type": {"type": "string", "enum": ["dining", "study", "sports", "dorm", "gate", "scenery", "service", "area"]},
                     "keyword": {"type": "string", "description": "地点名称关键词"},
                     "mode": {"type": "string", "enum": ["walk", "bike", "drive"], "default": "walk"},
@@ -253,6 +266,8 @@ TOOL_SCHEMAS = [
                     "via_subcategory": {"type": "string",
                                         "description": "途经类别（如 supermarket/coffee/canteen），"
                                                        "自动选顺路的，与 via_name 二选一"},
+                    "via_activity": {"type": "string", "enum": sorted(ACTIVITY_LABELS),
+                                     "description": "按用途选一个顺路地点，例如 basketball、coffee、meal"},
                     "via_coord": {"type": "object",
                                   "description": "途经点坐标（WGS-84），与 via_name/via_subcategory 三选一",
                                   "properties": {
@@ -553,11 +568,15 @@ def _haversine(lat1, lon1, lat2, lon2):
 def _poi_public(poi: dict, with_coords: bool = True, with_provenance: bool = False) -> dict:
     """给 LLM/前端看的精简 POI 结构（坐标保持 GCJ-02，与前端一致）。"""
     subcategory = poi.get("subcategory", "")
+    supported_activities = sorted(activities_for_poi(poi))
     out = {
         "name": poi.get("name", ""),
         "type": poi.get("type", ""),
         "subcategory": subcategory,
         "subcategory_label": _SUBCATEGORY_LABELS.get(subcategory, subcategory),
+        "campus": poi.get("campus") or "",
+        "activities": supported_activities,
+        "activity_labels": [ACTIVITY_LABELS[value] for value in supported_activities],
         "description": (poi.get("description") or "")[:120],
         "scenery_score": poi.get("scenery_score"),
     }
@@ -593,6 +612,11 @@ _SUBCATEGORY_LABELS = {
 
 def infer_recommendation_subcategories(query: str) -> list[str] | None:
     """把模糊地点需求映射到校园主数据已有类别；无法可靠判断时返回 None。"""
+    controlled = resolve_activity_query(query)
+    if controlled:
+        if controlled.get("status") != "resolved":
+            return None
+        return list(controlled.get("subcategories") or []) or None
     text = re.sub(r"\s+", "", str(query or "")).lower()
     if not text:
         return None
@@ -683,7 +707,8 @@ def _query_has_explicit_poi_destination(query: str) -> bool:
         return False
     tail = target.group(1)
     generic = {"食堂", "餐厅", "饭店", "咖啡", "咖啡店", "奶茶", "茶饮", "超市",
-               "图书馆", "自习室", "操场", "体育馆", "球场", "游泳馆", "学习的地方"}
+               "图书馆", "自习室", "操场", "体育馆", "球场", "篮球场", "篮球馆",
+               "羽毛球场", "乒乓球馆", "足球场", "排球场", "网球场", "游泳馆", "学习的地方"}
     for poi in load_pois():
         name = re.sub(r"\s+", "", str(poi.get("name") or ""))
         if len(name) >= 3 and name not in generic and name in tail:
@@ -706,7 +731,7 @@ def query_requests_route(query: str) -> bool:
 
 def _search_poi_categories(subcategories: list[str] | None, poi_type: str | None,
                            keyword: str, season: str | None,
-                           include_minor: bool) -> list[dict]:
+                           include_minor: bool, activities: list[str] | None = None) -> list[dict]:
     """先完整检索所有目标类别，再做跨类别去重；不受热度截断影响。"""
     categories = list(dict.fromkeys(str(item) for item in (subcategories or []) if item))
     if categories:
@@ -724,6 +749,9 @@ def _search_poi_categories(subcategories: list[str] | None, poi_type: str | None
     else:
         records = search_by_category(poi_type=poi_type, season=season,
                                      include_minor=include_minor, limit=2000)
+
+    if activities:
+        records = [poi for poi in records if matches_activities(poi, activities)]
 
     unique = []
     seen_ids = set()
@@ -801,6 +829,13 @@ def _endpoint_target_wgs(ref: dict, mode: str):
                 return None, None, None, {"error": "invalid_coord", "message": "坐标超出有效范围"}
             return lng, lat, name or "我的位置", None
         return None, None, None, {"error": "invalid_coord", "message": "缺少有效坐标"}
+    selected_id = str(ref.get("poi_id") or "").strip()
+    if selected_id:
+        poi = next((item for item in load_pois() if item.get("id") == selected_id), None)
+        if poi is None:
+            return None, None, None, {"error": "poi_not_found", "message": "候选地点已不在当前主数据中"}
+        lng_wgs, lat_wgs = navigation_wgs(poi, mode)
+        return lng_wgs, lat_wgs, poi.get("name") or name or selected_id, None
     if not name:
         return None, None, None, {"error": "missing_name", "message": "地点名为空"}
     poi, alts = find_poi_ambiguous(name)
@@ -989,7 +1024,9 @@ def _tool_resolve_poi(args, ctx):
 def _tool_search_poi_candidates(args, ctx):
     context = dict(ctx) if isinstance(ctx, dict) else {}
     query = str(context.get("query") or "")
-    limit = max(1, min(int(args.get("limit", 4 if args.get("start") or args.get("near_poi") else 10) or 10), 20))
+    is_catalog = is_poi_catalog_query(query)
+    default_limit = 4 if args.get("start") or args.get("near_poi") else 20 if is_catalog else 10
+    limit = max(1, min(int(args.get("limit", default_limit) or default_limit), 20))
     include_minor = bool(args.get("include_minor", True))
     raw_subcategories = args.get("subcategories")
     subcategories = ([str(item) for item in raw_subcategories if item]
@@ -997,8 +1034,24 @@ def _tool_search_poi_candidates(args, ctx):
     subcategory = args.get("subcategory")
     if not subcategories and subcategory:
         subcategories = [subcategory]
+    activity_request = resolve_activity_query(query)
+    activities = [str(value) for value in args.get("activities", []) if value] \
+        if isinstance(args.get("activities"), list) else []
+    if activity_request and activity_request.get("status") == "needs_clarification" and not activities:
+        question = activity_request["question"]
+        return {"question": question, "options": activity_request["options"]}, {
+            "clarify": {"question": question, "options": activity_request["options"]}
+        }
+    if activity_request and activity_request.get("status") == "resolved" and not is_catalog:
+        subcategories = list(activity_request.get("subcategories") or subcategories)
+        activities = list(activity_request.get("activities") or activities)
+    elif activities and not subcategories:
+        subcategories = list(dict.fromkeys(
+            category for activity in activities
+            for category in ACTIVITY_SUBCATEGORIES.get(activity, ())
+        ))
     inferred = infer_recommendation_subcategories(query)
-    if inferred and not is_poi_catalog_query(query):
+    if inferred and not is_catalog:
         subcategories = inferred
     poi_type = args.get("poi_type")
     keyword = (args.get("keyword") or "").strip()
@@ -1013,8 +1066,9 @@ def _tool_search_poi_candidates(args, ctx):
                     "alternatives": [_poi_public(item, with_coords=False) for item in alternatives]}, None
         start_ref = {"name": near_poi["name"], "type": "poi"}
 
-    if (inferred and not is_poi_catalog_query(query) and not start_ref
-            and not near_name and not _query_has_explicit_poi_destination(query)):
+    needs_origin = bool(subcategories or activities or inferred) and not is_catalog
+    if (needs_origin and not start_ref and not near_name
+            and not _query_has_explicit_poi_destination(query)):
         question = "你从哪里出发？可以在地图上点起点，或告诉我所在的地点，我再按路网距离推荐。"
         return {"question": question, "options": ["地图上选起点", "告诉我所在地点"]}, {
             "clarify": {"question": question, "options": ["地图上选起点", "告诉我所在地点"]}
@@ -1024,6 +1078,7 @@ def _tool_search_poi_candidates(args, ctx):
         reachable_args = {
             "start": start_ref,
             "subcategories": subcategories or None,
+            "activities": activities or None,
             "subcategory": subcategory if not subcategories else None,
             "poi_type": poi_type,
             "keyword": keyword,
@@ -1050,7 +1105,7 @@ def _tool_search_poi_candidates(args, ctx):
         return result, {"candidates": candidates}
 
     results = _search_poi_categories(
-        subcategories or None, poi_type, keyword, season, include_minor,
+        subcategories or None, poi_type, keyword, season, include_minor, activities=activities,
     )
     results.sort(key=importance_score, reverse=True)
     results = results[:limit]
@@ -1166,12 +1221,29 @@ def _tool_find_reachable_places(args, ctx):
         subcategories = infer_recommendation_subcategories(
             (ctx or {}).get("query", "") if isinstance(ctx, dict) else ""
         ) or []
+    query = (ctx or {}).get("query", "") if isinstance(ctx, dict) else ""
+    activity_request = resolve_activity_query(query)
+    activities = ([str(value) for value in args.get("activities", []) if value]
+                  if isinstance(args.get("activities"), list) else [])
+    if activity_request and activity_request.get("status") == "needs_clarification" and not activities:
+        question = activity_request["question"]
+        return {"question": question, "options": activity_request["options"]}, {
+            "clarify": {"question": question, "options": activity_request["options"]}
+        }
+    if activity_request and activity_request.get("status") == "resolved" and not is_poi_catalog_query(query):
+        activities = list(activity_request.get("activities") or activities)
+        subcategories = list(activity_request.get("subcategories") or subcategories)
+    elif activities and not subcategories:
+        subcategories = list(dict.fromkeys(
+            category for activity in activities
+            for category in ACTIVITY_SUBCATEGORIES.get(activity, ())
+        ))
     poi_type = args.get("poi_type")
     keyword = (args.get("keyword") or "").strip()
     include_minor = bool(args.get("include_minor", True))
     season = args.get("season")
     places = _search_poi_categories(
-        subcategories or None, poi_type, keyword, season, include_minor,
+        subcategories or None, poi_type, keyword, season, include_minor, activities=activities,
     )
 
     reachable = []
@@ -1518,8 +1590,11 @@ def _tool_plan_via_route(args, ctx):
     requested_points = args.get("via_points")
     via_name = (args.get("via_name") or "").strip()
     via_sub = (args.get("via_subcategory") or "").strip()
+    via_activity = (args.get("via_activity") or "").strip()
+    if not via_activity and via_sub in ACTIVITY_LABELS:
+        via_activity, via_sub = via_sub, ""
     via_coord = args.get("via_coord")
-    has_single_via = bool(via_name or via_sub or via_coord)
+    has_single_via = bool(via_name or via_sub or via_activity or via_coord)
     if requested_points is not None and has_single_via:
         return {"error": "conflicting_via_arguments",
                 "message": "多个途经点 via_points 不能与单个途经点参数同时使用"}, None
@@ -1529,7 +1604,7 @@ def _tool_plan_via_route(args, ctx):
             return {"error": "invalid_via_points",
                     "message": f"途经点需按顺序提供 1 到 {_MAX_VIA_POINTS} 个地点或坐标"}, None
     elif not has_single_via:
-        return {"error": "missing_via", "message": "缺少途经点：请用 via_name、via_subcategory 或 via_coord 指定"}, None
+        return {"error": "missing_via", "message": "缺少途经点：请用 via_name、via_subcategory、via_activity 或 via_coord 指定"}, None
 
     via_entries = []
     detour_ratio = None
@@ -1601,10 +1676,19 @@ def _tool_plan_via_route(args, ctx):
         detour_ratio = None
     else:
         # 类别途经：检索候选 → 顺路性排序 → 取最顺路的
-        cands = search_by_category(subcategory=via_sub, include_minor=True, limit=10)
+        via_activities = [via_activity] if via_activity else None
+        via_categories = (list(ACTIVITY_SUBCATEGORIES.get(via_activity, ()))
+                          if via_activity else [via_sub])
+        via_type = "sports" if via_activity in {
+            "basketball", "badminton", "table_tennis", "football", "volleyball",
+            "tennis", "running", "fitness", "swimming",
+        } else None
+        cands = _search_poi_categories(
+            via_categories, via_type, "", None, True, activities=via_activities,
+        )
         if not cands:
             return {"error": "no_via_candidates",
-                    "message": f"校内没有「{via_sub}」类别的地点，换个类别试试"}, None
+                    "message": f"校园主数据中没有找到「{ACTIVITY_LABELS.get(via_activity, via_sub)}」途经地点"}, None
         poi_nodes = []
         for p in cands:
             try:

@@ -427,6 +427,13 @@ def _flatten_poi(poi: dict) -> dict:
         "verification_status": poi.get("verification_status", "legacy_unverified"),
         "coordinate_verification_status": poi.get("coordinate_verification_status", "unknown"),
         "opening_hours": poi.get("opening_hours", "unknown"),
+        # Keep the audited use tags across the shared search/ranking boundary.
+        # Candidate tools filter the flattened records, so dropping these here
+        # silently made every activity-specific query look empty.
+        "activities": list(poi.get("activities") or []),
+        "activity_basis": poi.get("activity_basis", ""),
+        "activity_review_status": poi.get("activity_review_status", "unknown"),
+        "activity_taxonomy_version": poi.get("activity_taxonomy_version"),
     }
 
 

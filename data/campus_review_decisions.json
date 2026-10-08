@@ -15126,10 +15126,19 @@
     {
       "source": "OpenStreetMap",
       "source_id": "node/2177869899",
-      "name": "乒乓球馆",
-      "decision": "pending_review",
-      "matched_poi_ids": [],
-      "evidence": "已按完整校园面采集，尚未逐项确认名称、层级或用途。"
+      "decision": "included",
+      "poi_id": "poi_450",
+      "verification_status": "source_only",
+      "evidence": "OSM 在信息学部校界内标有独立命名的乒乓球设施与 sport=table_tennis；与11米外体育馆保留为独立设施。坐标和设施名来自开放源，入口与开放状态未核实。",
+      "boundary_refs": [
+        "relation/7728026"
+      ],
+      "source_ref": {
+        "source": "OpenStreetMap",
+        "id": "node/2177869899",
+        "license": "ODbL-1.0",
+        "url": "https://www.openstreetmap.org/node/2177869899"
+      }
     },
     {
       "source": "OpenStreetMap",
@@ -15198,10 +15207,19 @@
     {
       "source": "OpenStreetMap",
       "source_id": "node/10742578168",
-      "name": "羽毛球场",
-      "decision": "pending_review",
-      "matched_poi_ids": [],
-      "evidence": "已按完整校园面采集，尚未逐项确认名称、层级或用途。"
+      "decision": "included",
+      "poi_id": "poi_451",
+      "verification_status": "source_only",
+      "evidence": "OSM 在信息学部校界内标有独立命名的球场与 sport=badminton；与附近体育馆保留为独立设施。坐标和设施名来自开放源，入口与开放状态未核实。",
+      "boundary_refs": [
+        "relation/7728026"
+      ],
+      "source_ref": {
+        "source": "OpenStreetMap",
+        "id": "node/10742578168",
+        "license": "ODbL-1.0",
+        "url": "https://www.openstreetmap.org/node/10742578168"
+      }
     },
     {
       "source": "OpenStreetMap",

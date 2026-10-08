@@ -1,6 +1,6 @@
 {
  "source": "历史高德等来源整理的 POI；新增开放 OSM 候选均单独注明来源，历史条目待逐项核实",
- "count": 440,
+ "count": 442,
  "provenance_defaults": {
   "source_refs": [],
   "verification_status": "legacy_unverified"
@@ -26,7 +26,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_001",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_002",
@@ -51,7 +55,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_002",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_004",
@@ -124,7 +132,11 @@
     "whu_course_4392126ae0613239:spot:0004"
    ],
    "course_match_basis": "exact existing alias 万林博物馆; course point is 81.2 m from current POI",
-   "source_priority": "course_wins_static_conflicts"
+   "source_priority": "course_wins_static_conflicts",
+   "poi_id": "poi_004",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_005",
@@ -148,7 +160,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_005",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_006",
@@ -170,7 +186,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_006",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_007",
@@ -200,7 +220,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_007",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_008",
@@ -223,7 +247,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_008",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_009",
@@ -243,7 +271,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_009",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_010",
@@ -263,7 +295,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_010",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_011",
@@ -287,7 +323,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_011",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_012",
@@ -309,7 +349,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_012",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_013",
@@ -331,7 +375,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_013",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_014",
@@ -358,7 +406,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_014",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_015",
@@ -398,7 +450,13 @@
      "url": "https://www.openstreetmap.org/relation/19725659"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_015",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_016",
@@ -424,7 +482,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_016",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_017",
@@ -444,7 +508,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_017",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_018",
@@ -468,7 +536,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_018",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_019",
@@ -491,7 +563,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_019",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_020",
@@ -513,7 +589,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "study_other",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_020",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_021",
@@ -536,7 +616,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_021",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_022",
@@ -558,7 +642,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_022",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_023",
@@ -580,7 +668,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_023",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_024",
@@ -603,7 +695,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "study_other",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_024",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_025",
@@ -639,7 +735,11 @@
      "url": "https://www.openstreetmap.org/way/103752729"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_025",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_026",
@@ -661,7 +761,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_026",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_027",
@@ -687,7 +791,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_027",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_028",
@@ -710,7 +818,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_028",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_029",
@@ -735,7 +847,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_029",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_030",
@@ -765,7 +881,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_030",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_031",
@@ -794,7 +914,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_031",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_032",
@@ -822,7 +946,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_032",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_033",
@@ -842,7 +970,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_033",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_034",
@@ -919,7 +1051,13 @@
     "whu_course_4392126ae0613239:spot:0002"
    ],
    "course_match_basis": "exact existing alias 校史馆; course point is 13.3 m from current POI",
-   "source_priority": "course_wins_static_conflicts"
+   "source_priority": "course_wins_static_conflicts",
+   "poi_id": "poi_034",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_035",
@@ -992,7 +1130,11 @@
     "whu_course_4392126ae0613239:spot:0003"
    ],
    "course_match_basis": "exact existing alias 行政楼; course point is 16.0 m from current POI",
-   "source_priority": "course_wins_static_conflicts"
+   "source_priority": "course_wins_static_conflicts",
+   "poi_id": "poi_035",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_036",
@@ -1017,7 +1159,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_036",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_037",
@@ -1040,7 +1186,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_037",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_038",
@@ -1062,7 +1212,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_038",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_039",
@@ -1084,7 +1238,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_039",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_040",
@@ -1112,7 +1272,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_040",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_041",
@@ -1137,7 +1301,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_041",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_042",
@@ -1160,7 +1328,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_042",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_043",
@@ -1182,7 +1354,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_043",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_044",
@@ -1207,7 +1383,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_044",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_045",
@@ -1230,7 +1410,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_045",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_046",
@@ -1252,7 +1436,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_046",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_047",
@@ -1275,7 +1463,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_047",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_048",
@@ -1297,7 +1489,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_048",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_049",
@@ -1319,7 +1515,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_049",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_050",
@@ -1344,7 +1544,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_050",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_051",
@@ -1366,7 +1570,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_051",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_052",
@@ -1389,7 +1597,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_052",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_053",
@@ -1411,7 +1623,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_053",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_054",
@@ -1433,7 +1649,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_054",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_055",
@@ -1455,7 +1675,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_055",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_056",
@@ -1487,7 +1711,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_056",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_057",
@@ -1510,7 +1738,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_057",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_058",
@@ -1534,7 +1766,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_058",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_059",
@@ -1554,7 +1790,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_059",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_060",
@@ -1576,7 +1816,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_060",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_061",
@@ -1601,7 +1845,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_061",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_062",
@@ -1621,7 +1869,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_062",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_064",
@@ -1641,7 +1893,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_064",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_067",
@@ -1664,7 +1920,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_067",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_068",
@@ -1688,7 +1950,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_068",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_069",
@@ -1713,7 +1981,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_069",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_070",
@@ -1733,7 +2007,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_070",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_071",
@@ -1755,7 +2035,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_071",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_072",
@@ -1779,7 +2065,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_072",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_073",
@@ -1801,7 +2093,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_073",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_074",
@@ -1825,7 +2123,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_074",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_075",
@@ -1850,7 +2154,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_075",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_076",
@@ -1872,7 +2182,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_076",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_077",
@@ -1894,7 +2210,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "pool",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_077",
+   "activities": [
+    "swimming"
+   ],
+   "activity_basis": "poi name identifies a swimming pool",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_078",
@@ -1914,7 +2236,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_078",
+   "activities": [
+    "volleyball"
+   ],
+   "activity_basis": "poi name identifies volleyball ground",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_079",
@@ -1934,7 +2262,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_079",
+   "activities": [
+    "badminton"
+   ],
+   "activity_basis": "poi name identifies badminton court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_080",
@@ -1960,7 +2294,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_080",
+   "activities": [
+    "running"
+   ],
+   "activity_basis": "named athletic ground and aliases identify the running track",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_081",
@@ -1988,14 +2328,21 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gym",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_081",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_082",
    "name": "武汉大学梅园操场",
    "aliases": [
     "梅园小操场",
-    "梅园操场"
+    "梅园操场",
+    "梅操"
    ],
    "coordinates": {
     "lng": 114.3648,
@@ -2011,7 +2358,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_082",
+   "activities": [
+    "running"
+   ],
+   "activity_basis": "poi name identifies an athletic ground",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_083",
@@ -2034,7 +2387,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_083",
+   "activities": [
+    "basketball"
+   ],
+   "activity_basis": "poi name and OSM reviewed sports feature identify basketball",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_084",
@@ -2057,7 +2416,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_084",
+   "activities": [
+    "tennis"
+   ],
+   "activity_basis": "poi name and OSM reviewed sports feature identify tennis",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_085",
@@ -2065,7 +2430,8 @@
    "aliases": [
     "桂园操场",
     "武汉大学桂园操场",
-    "足球场"
+    "足球场",
+    "桂操"
    ],
    "coordinates": {
     "lng": 114.36062,
@@ -2081,7 +2447,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_085",
+   "activities": [
+    "football"
+   ],
+   "activity_basis": "poi name and aliases identify the football ground",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_086",
@@ -2103,7 +2475,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gym",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_086",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "indoor wind-and-rain sports hall; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_087",
@@ -2136,7 +2514,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_087",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_088",
@@ -2162,7 +2544,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_088",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_089",
@@ -2188,7 +2574,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_089",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_090",
@@ -2214,7 +2604,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_090",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_091",
@@ -2236,7 +2630,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_091",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_092",
@@ -2263,7 +2661,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_092",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_093",
@@ -2290,7 +2692,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_093",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_094",
@@ -2317,7 +2723,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_094",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_095",
@@ -2344,7 +2754,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_095",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_096",
@@ -2371,7 +2785,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_096",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_097",
@@ -2398,7 +2816,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_097",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_098",
@@ -2425,7 +2847,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_098",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_099",
@@ -2457,7 +2883,11 @@
      "url": "https://www.openstreetmap.org/way/103940881"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_099",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_100",
@@ -2484,7 +2914,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_100",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_101",
@@ -2511,7 +2945,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_101",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_102",
@@ -2538,7 +2976,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_102",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_103",
@@ -2565,7 +3007,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_103",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_104",
@@ -2590,7 +3036,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_104",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_105",
@@ -2612,7 +3062,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_105",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_106",
@@ -2639,7 +3093,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_106",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_107",
@@ -2666,7 +3124,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_107",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_108",
@@ -2693,7 +3155,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_108",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_109",
@@ -2720,7 +3186,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_109",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_110",
@@ -2736,7 +3206,6 @@
     "桂园宿舍区",
     "桂园路",
     "桂园风雨操场",
-    "桂操",
     "武汉大学桂园学生宿舍"
    ],
    "coordinates": {
@@ -2753,7 +3222,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_110",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_111",
@@ -2780,7 +3253,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_111",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_112",
@@ -2807,7 +3284,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_112",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_113",
@@ -2834,7 +3315,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_113",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_114",
@@ -2861,7 +3346,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_114",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_115",
@@ -2888,7 +3377,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_115",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_116",
@@ -2915,7 +3408,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_116",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_117",
@@ -2942,7 +3439,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_117",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_118",
@@ -2970,7 +3471,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_118",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_119",
@@ -2998,7 +3503,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_119",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_120",
@@ -3026,7 +3535,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_120",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_121",
@@ -3049,7 +3562,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_121",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_122",
@@ -3075,7 +3592,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_122",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_123",
@@ -3100,7 +3621,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_123",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_124",
@@ -3124,7 +3649,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_124",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_125",
@@ -3148,7 +3677,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_125",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_126",
@@ -3172,7 +3705,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_126",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_127",
@@ -3196,7 +3733,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_127",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_128",
@@ -3220,7 +3761,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_128",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_129",
@@ -3244,7 +3789,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_129",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_130",
@@ -3268,7 +3817,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_130",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_131",
@@ -3290,7 +3843,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_131",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_132",
@@ -3312,7 +3869,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_132",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_133",
@@ -3334,7 +3895,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_133",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_134",
@@ -3356,7 +3921,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_134",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_135",
@@ -3378,7 +3947,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_135",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_136",
@@ -3400,7 +3973,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_136",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_137",
@@ -3453,7 +4030,11 @@
       "opening_hours": "Mo-Su 07:00-22:00"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_137",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_138",
@@ -3478,7 +4059,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_138",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_139",
@@ -3526,7 +4111,11 @@
       "name": "武汉大学科技门"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_139",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_140",
@@ -3605,7 +4194,11 @@
     "whu_course_4392126ae0613239:spot:0001"
    ],
    "course_match_basis": "same main gate/archway entity; existing aliases include 牌坊, 校门 and 正门; course point is 80.3 m from current entrance pin",
-   "source_priority": "course_wins_static_conflicts"
+   "source_priority": "course_wins_static_conflicts",
+   "poi_id": "poi_140",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_141",
@@ -3628,7 +4221,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_141",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_142",
@@ -3651,7 +4250,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_142",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_143",
@@ -3674,7 +4279,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_143",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_144",
@@ -3696,7 +4307,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "sakura",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_144",
+   "activities": [
+    "view_sakura"
+   ],
+   "activity_basis": "category_supported: category=sakura",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_145",
@@ -3718,7 +4335,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_145",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_146",
@@ -3740,7 +4361,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_146",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_147",
@@ -3762,7 +4387,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_147",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_148",
@@ -3787,7 +4416,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_148",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_149",
@@ -3809,7 +4442,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_149",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_150",
@@ -3829,7 +4466,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_150",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_151",
@@ -3837,8 +4478,7 @@
    "aliases": [
     "梅园CBD",
     "梅园一舍二舍",
-    "梅园宿舍区",
-    "梅操"
+    "梅园宿舍区"
    ],
    "coordinates": {
     "lng": 114.364587,
@@ -3854,7 +4494,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_151",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_152",
@@ -3877,7 +4521,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "sakura",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_152",
+   "activities": [
+    "view_sakura"
+   ],
+   "activity_basis": "category_supported: category=sakura",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_153",
@@ -3904,7 +4554,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "sakura",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_153",
+   "activities": [
+    "view_sakura"
+   ],
+   "activity_basis": "category_supported: category=sakura",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_154",
@@ -3926,7 +4582,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_154",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_155",
@@ -3948,7 +4608,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "hill",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_155",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_156",
@@ -3970,7 +4634,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "sakura",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_156",
+   "activities": [
+    "view_sakura"
+   ],
+   "activity_basis": "category_supported: category=sakura",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_157",
@@ -3997,7 +4667,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "hill",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_157",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_158",
@@ -4019,7 +4693,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "hill",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_158",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_159",
@@ -4041,7 +4719,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_159",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_160",
@@ -4063,7 +4745,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_160",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_161",
@@ -4100,7 +4786,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "sakura",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_161",
+   "activities": [
+    "view_sakura"
+   ],
+   "activity_basis": "category_supported: category=sakura",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_162",
@@ -4122,7 +4814,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_162",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_163",
@@ -4147,7 +4845,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_163",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_164",
@@ -4169,7 +4871,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "park",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_164",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_165",
@@ -4189,7 +4895,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "hill",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_165",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_166",
@@ -4211,7 +4921,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "bank",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_166",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_167",
@@ -4237,7 +4951,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "post",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_167",
+   "activities": [
+    "postal_service"
+   ],
+   "activity_basis": "category_supported: category=post",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_168",
@@ -4261,7 +4981,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "hospital",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_168",
+   "activities": [
+    "medical"
+   ],
+   "activity_basis": "category_supported: category=hospital",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_169",
@@ -4283,7 +5009,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "activity_center",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_169",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_170",
@@ -4305,7 +5035,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "activity_center",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_170",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_171",
@@ -4325,7 +5059,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_171",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_172",
@@ -4354,7 +5092,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_172",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_173",
@@ -4377,7 +5119,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_173",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_174",
@@ -4402,7 +5148,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_174",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_175",
@@ -4424,7 +5174,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_175",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_176",
@@ -4447,7 +5201,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_176",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_177",
@@ -4469,7 +5227,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_177",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_178",
@@ -4493,7 +5255,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_178",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_179",
@@ -4515,7 +5281,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_179",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_180",
@@ -4538,7 +5308,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_180",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_181",
@@ -4560,7 +5334,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_181",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_182",
@@ -4591,7 +5369,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_182",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_183",
@@ -4623,7 +5405,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_183",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_184",
@@ -4654,7 +5440,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "study_other",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_184",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_185",
@@ -4684,7 +5474,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_185",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_186",
@@ -4706,7 +5500,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_186",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_187",
@@ -4740,7 +5538,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "study_other",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_187",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_188",
@@ -4770,7 +5572,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_188",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_189",
@@ -4792,7 +5598,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_189",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_190",
@@ -4814,7 +5624,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_190",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_191",
@@ -4837,7 +5651,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_191",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_192",
@@ -4857,7 +5675,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_192",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_193",
@@ -4877,7 +5699,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_193",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_194",
@@ -4901,7 +5727,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_194",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_195",
@@ -4924,7 +5756,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_195",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_196",
@@ -4946,7 +5782,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "culture",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_196",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_197",
@@ -4968,7 +5808,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_197",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_198",
@@ -4991,7 +5835,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_198",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_199",
@@ -5016,7 +5864,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_199",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_200",
@@ -5039,7 +5891,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_200",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_201",
@@ -5063,7 +5919,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_201",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_202",
@@ -5085,7 +5947,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_202",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_203",
@@ -5113,7 +5981,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_203",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_204",
@@ -5135,7 +6009,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gym",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_204",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_205",
@@ -5159,7 +6039,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_205",
+   "activities": [
+    "running"
+   ],
+   "activity_basis": "aliases identify the athletics ground",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_206",
@@ -5179,7 +6065,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_206",
+   "activities": [
+    "basketball"
+   ],
+   "activity_basis": "poi name identifies basketball court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_207",
@@ -5205,7 +6097,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_207",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_208",
@@ -5231,7 +6127,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_208",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_209",
@@ -5257,7 +6157,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_209",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_210",
@@ -5283,7 +6187,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_210",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_211",
@@ -5309,7 +6217,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_211",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_212",
@@ -5336,7 +6248,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_212",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_213",
@@ -5363,7 +6279,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_213",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_214",
@@ -5390,7 +6310,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_214",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_215",
@@ -5417,7 +6341,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_215",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_216",
@@ -5444,7 +6372,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_216",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_217",
@@ -5471,7 +6403,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_217",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_218",
@@ -5493,7 +6429,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_218",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_219",
@@ -5520,7 +6460,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_219",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_220",
@@ -5547,7 +6491,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_220",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_221",
@@ -5575,7 +6523,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_221",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_222",
@@ -5597,7 +6549,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_222",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_223",
@@ -5624,7 +6580,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_223",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_224",
@@ -5651,7 +6611,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_224",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_225",
@@ -5673,7 +6637,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_225",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_226",
@@ -5733,7 +6701,11 @@
       "opening_hours": "24/7"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_226",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_227",
@@ -5786,7 +6758,11 @@
       "opening_hours": "Mo-Su 07:00-22:00"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_227",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_228",
@@ -5808,7 +6784,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_228",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_229",
@@ -5828,7 +6808,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "landmark",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_229",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_230",
@@ -5850,7 +6834,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "activity_center",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_230",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_231",
@@ -5876,7 +6864,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "supermarket",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_231",
+   "activities": [
+    "shopping"
+   ],
+   "activity_basis": "category_supported: category=supermarket",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_234",
@@ -5896,7 +6890,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_234",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_237",
@@ -5916,7 +6914,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "building",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_237",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_238",
@@ -5952,7 +6954,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_238",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_239",
@@ -5984,7 +6990,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_239",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_240",
@@ -6009,7 +7019,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "library",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_240",
+   "activities": [
+    "study"
+   ],
+   "activity_basis": "category_supported: category=library",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_241",
@@ -6036,7 +7052,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_241",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_242",
@@ -6059,7 +7079,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_242",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_243",
@@ -6081,7 +7105,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_243",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_244",
@@ -6103,7 +7131,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "laboratory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_244",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_245",
@@ -6135,7 +7167,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "classroom",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_245",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_246",
@@ -6161,7 +7197,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_246",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_247",
@@ -6262,7 +7302,11 @@
     "whu_course_4392126ae0613239:spot:0005"
    ],
    "course_match_basis": "same remote-sensing engineering college; course point is 18.0 m from current POI",
-   "source_priority": "course_wins_static_conflicts"
+   "source_priority": "course_wins_static_conflicts",
+   "poi_id": "poi_247",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_248",
@@ -6284,7 +7328,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_248",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_249",
@@ -6306,7 +7354,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_249",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_250",
@@ -6329,7 +7381,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "college",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_250",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_253",
@@ -6351,7 +7407,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_253",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_254",
@@ -6378,7 +7440,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_254",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_255",
@@ -6405,7 +7473,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_255",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_256",
@@ -6432,7 +7506,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_256",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_257",
@@ -6452,7 +7532,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gym",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_257",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_258",
@@ -6474,7 +7560,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "sports_field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_258",
+   "activities": [],
+   "activity_basis": "reviewed: sports field has no supported specific activity tag",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_259",
@@ -6497,13 +7587,20 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gym",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_259",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_260",
    "name": "武汉大学信息学部操场",
    "aliases": [
-    "信息学部操场"
+    "信息学部操场",
+    "信操"
    ],
    "coordinates": {
     "lng": 114.36127,
@@ -6519,7 +7616,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_260",
+   "activities": [
+    "running"
+   ],
+   "activity_basis": "poi name identifies an athletic ground",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_261",
@@ -6551,7 +7654,13 @@
      "url": "https://www.openstreetmap.org/way/85985416"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_261",
+   "activities": [
+    "swimming"
+   ],
+   "activity_basis": "poi name and OSM source identify swimming pool",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_262",
@@ -6573,7 +7682,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "field",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_262",
+   "activities": [
+    "basketball"
+   ],
+   "activity_basis": "poi name identifies basketball court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_263",
@@ -6601,7 +7716,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_263",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_270",
@@ -6630,7 +7749,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_270",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_271",
@@ -6653,7 +7776,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_271",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_272",
@@ -6683,7 +7810,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_272",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_273",
@@ -6713,7 +7844,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_273",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_274",
@@ -6743,7 +7878,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_274",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_275",
@@ -6773,7 +7912,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_275",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_276",
@@ -6803,7 +7946,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_276",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_277",
@@ -6833,7 +7980,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_277",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_278",
@@ -6864,7 +8015,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_278",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_279",
@@ -6894,7 +8049,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_279",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_280",
@@ -6924,7 +8083,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_280",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_281",
@@ -6956,7 +8119,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_281",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_282",
@@ -6989,7 +8156,11 @@
      "url": "https://www.openstreetmap.org/way/104372405"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_282",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_283",
@@ -7022,7 +8193,11 @@
      "url": "https://www.openstreetmap.org/way/104372401"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_283",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_284",
@@ -7055,7 +8230,11 @@
      "url": "https://www.openstreetmap.org/way/236801236"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_284",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_285",
@@ -7085,7 +8264,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_285",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_286",
@@ -7115,7 +8298,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_286",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_287",
@@ -7145,7 +8332,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_287",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_288",
@@ -7175,7 +8366,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_288",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_289",
@@ -7197,7 +8392,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_289",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_290",
@@ -7227,7 +8426,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_290",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_291",
@@ -7249,7 +8452,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_291",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_292",
@@ -7271,7 +8478,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_292",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_293",
@@ -7293,7 +8504,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_293",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_294",
@@ -7317,7 +8532,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "dormitory",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_294",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_295",
@@ -7370,7 +8589,11 @@
       "opening_hours": "24/7"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_295",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_296",
@@ -7424,7 +8647,11 @@
       "opening_hours": "24/7"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_296",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_297",
@@ -7503,7 +8730,11 @@
       "opening_hours": "Mo-Su 07:00-23:00"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_297",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_298",
@@ -7527,7 +8758,13 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_298",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_299",
@@ -7549,7 +8786,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "activity_center",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_299",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_300",
@@ -7573,7 +8814,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "hospital",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_300",
+   "activities": [
+    "medical"
+   ],
+   "activity_basis": "category_supported: category=hospital",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_301",
@@ -7626,7 +8873,11 @@
       "opening_hours": "24/7"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_301",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_302",
@@ -7650,7 +8901,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "gate",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_302",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_303",
@@ -7704,7 +8959,11 @@
       "old_name": "烟波门"
      }
     }
-   ]
+   ],
+   "poi_id": "poi_303",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_305",
@@ -7727,7 +8986,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_305",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_306",
@@ -7750,7 +9015,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_306",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_307",
@@ -7772,7 +9043,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_307",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_308",
@@ -7795,7 +9072,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_308",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_309",
@@ -7818,7 +9101,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_309",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_310",
@@ -7840,7 +9129,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_310",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_311",
@@ -7863,7 +9158,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_311",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_312",
@@ -7886,7 +9187,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_312",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_313",
@@ -7908,7 +9215,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_313",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_314",
@@ -7931,7 +9244,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_314",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_315",
@@ -7954,7 +9273,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_315",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_316",
@@ -7976,7 +9301,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_316",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_317",
@@ -7998,7 +9329,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_317",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_318",
@@ -8020,7 +9357,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_318",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_319",
@@ -8042,7 +9385,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_319",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_320",
@@ -8065,7 +9414,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_320",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_321",
@@ -8087,7 +9442,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_321",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_322",
@@ -8109,7 +9470,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_322",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_323",
@@ -8131,7 +9498,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_323",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_324",
@@ -8153,7 +9526,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_324",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_325",
@@ -8175,7 +9554,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_325",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_326",
@@ -8197,7 +9582,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_326",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_327",
@@ -8219,7 +9610,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_327",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_328",
@@ -8241,7 +9638,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_328",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_329",
@@ -8263,7 +9666,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_329",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_330",
@@ -8285,7 +9694,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_330",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_331",
@@ -8307,7 +9722,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_331",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_332",
@@ -8329,7 +9750,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_332",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_333",
@@ -8351,7 +9778,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_333",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_334",
@@ -8373,7 +9806,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_334",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_335",
@@ -8396,7 +9835,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_335",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_336",
@@ -8418,7 +9863,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_336",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_337",
@@ -8440,7 +9891,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_337",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_338",
@@ -8462,7 +9919,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_338",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_339",
@@ -8484,7 +9947,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_339",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_340",
@@ -8506,7 +9975,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_340",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_341",
@@ -8528,7 +10003,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_341",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_342",
@@ -8550,7 +10031,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_342",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_343",
@@ -8572,7 +10059,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_343",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_344",
@@ -8594,7 +10087,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_344",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_345",
@@ -8616,7 +10115,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_345",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_346",
@@ -8638,7 +10143,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_346",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_347",
@@ -8661,7 +10172,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_347",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_348",
@@ -8684,7 +10201,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_348",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_349",
@@ -8706,7 +10229,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_349",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_350",
@@ -8728,7 +10257,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_350",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_351",
@@ -8750,7 +10285,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_351",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_352",
@@ -8772,7 +10313,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_352",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_353",
@@ -8794,7 +10341,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_353",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_354",
@@ -8816,7 +10369,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_354",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_355",
@@ -8838,7 +10397,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_355",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_356",
@@ -8860,7 +10425,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_356",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_357",
@@ -8882,7 +10453,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_357",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_358",
@@ -8904,7 +10481,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_358",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_359",
@@ -8926,7 +10509,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_359",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_360",
@@ -8948,7 +10537,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_360",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_361",
@@ -8970,7 +10565,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "canteen",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_361",
+   "activities": [
+    "canteen_meal"
+   ],
+   "activity_basis": "category_supported: category=canteen",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_362",
@@ -8992,7 +10593,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_362",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_363",
@@ -9014,7 +10621,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_363",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_364",
@@ -9036,7 +10649,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_364",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_365",
@@ -9058,7 +10677,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_365",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_366",
@@ -9080,7 +10705,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_366",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_367",
@@ -9102,7 +10733,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_367",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_368",
@@ -9124,7 +10761,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_368",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_369",
@@ -9146,7 +10789,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_369",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_370",
@@ -9168,7 +10817,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_370",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_371",
@@ -9191,7 +10846,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_371",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_372",
@@ -9211,7 +10872,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_372",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_373",
@@ -9233,7 +10900,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_373",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_374",
@@ -9255,7 +10928,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_374",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_375",
@@ -9277,7 +10956,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_375",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_376",
@@ -9299,7 +10984,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_376",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_377",
@@ -9321,7 +11012,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_377",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_378",
@@ -9343,7 +11040,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_378",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_379",
@@ -9365,7 +11068,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_379",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_380",
@@ -9387,7 +11096,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_380",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_381",
@@ -9409,7 +11124,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_381",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_382",
@@ -9431,7 +11152,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_382",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_383",
@@ -9453,7 +11180,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_383",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_384",
@@ -9475,7 +11208,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_384",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_385",
@@ -9497,7 +11236,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_385",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_386",
@@ -9519,7 +11264,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_386",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_387",
@@ -9541,7 +11292,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_387",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_388",
@@ -9563,7 +11320,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_388",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_389",
@@ -9585,7 +11348,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_389",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_390",
@@ -9607,7 +11376,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_390",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_391",
@@ -9629,7 +11404,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_391",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_392",
@@ -9651,7 +11432,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_392",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_393",
@@ -9673,7 +11460,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_393",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_394",
@@ -9695,7 +11488,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_394",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_395",
@@ -9721,7 +11520,13 @@
    "is_minor": true,
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_395",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_396",
@@ -9743,7 +11548,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_396",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_397",
@@ -9768,7 +11579,13 @@
    "is_minor": false,
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_397",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_398",
@@ -9791,7 +11608,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_398",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_399",
@@ -9813,7 +11636,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_399",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_400",
@@ -9835,7 +11664,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_400",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_401",
@@ -9857,7 +11692,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_401",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_402",
@@ -9879,7 +11720,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_402",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_403",
@@ -9901,7 +11748,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_403",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_404",
@@ -9923,7 +11776,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_404",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_405",
@@ -9945,7 +11804,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_405",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_406",
@@ -9967,7 +11832,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_406",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_407",
@@ -9989,7 +11860,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_407",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_408",
@@ -10011,7 +11888,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_408",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_409",
@@ -10033,7 +11916,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_409",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_410",
@@ -10055,7 +11944,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "coffee",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_410",
+   "activities": [
+    "coffee"
+   ],
+   "activity_basis": "category_supported: category=coffee",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_411",
@@ -10077,7 +11972,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "tea_drink",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_411",
+   "activities": [
+    "tea_drink"
+   ],
+   "activity_basis": "category_supported: category=tea_drink",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_412",
@@ -10099,7 +12000,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_412",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_413",
@@ -10121,7 +12028,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "fastfood",
-   "is_minor": true
+   "is_minor": true,
+   "poi_id": "poi_413",
+   "activities": [
+    "fast_food"
+   ],
+   "activity_basis": "category_supported: category=fastfood",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_414",
@@ -10143,7 +12056,13 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "restaurant",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_414",
+   "activities": [
+    "restaurant_meal"
+   ],
+   "activity_basis": "category_supported: category=restaurant",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_415",
@@ -10171,7 +12090,13 @@
    "is_minor": false,
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_415",
+   "activities": [
+    "shopping"
+   ],
+   "activity_basis": "category_supported: category=supermarket",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_416",
@@ -10194,7 +12119,11 @@
    "scenery_score": 1,
    "rating": null,
    "subcategory": "activity_center",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_416",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_417",
@@ -10215,7 +12144,13 @@
    ],
    "scenery_score": 3,
    "subcategory": "lake",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "poi_417",
+   "activities": [
+    "view_lake"
+   ],
+   "activity_basis": "category_supported: category=lake",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "area_梅园",
@@ -10233,7 +12168,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_梅园",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_枫园",
@@ -10251,7 +12190,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_枫园",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_桂园",
@@ -10269,7 +12212,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_桂园",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_樱园",
@@ -10287,7 +12234,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_樱园",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_湖滨",
@@ -10305,7 +12256,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_湖滨",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_信息学部",
@@ -10325,7 +12280,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_信息学部",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "area_工学部",
@@ -10345,7 +12304,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_工学部",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_418",
@@ -10376,7 +12339,13 @@
      "license": "ODbL-1.0"
     }
    ],
-   "verification_status": "source_only"
+   "verification_status": "source_only",
+   "poi_id": "poi_418",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "area_文理学部",
@@ -10396,7 +12365,11 @@
    "scenery_score": 3,
    "rating": null,
    "subcategory": "area",
-   "is_minor": false
+   "is_minor": false,
+   "poi_id": "area_文理学部",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_419",
@@ -10436,7 +12409,11 @@
     "foot": "permit",
     "bicycle": "permit",
     "motor_vehicle": "no"
-   }
+   },
+   "poi_id": "poi_419",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_420",
@@ -10476,7 +12453,11 @@
     "bicycle": "permit",
     "motor_vehicle": "no",
     "opening_hours": "Mo-Su 06:30-22:30"
-   }
+   },
+   "poi_id": "poi_420",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_421",
@@ -10518,7 +12499,11 @@
     "bicycle": "permit",
     "motor_vehicle": "no",
     "opening_hours": "Mo-Su 07:00-22:00"
-   }
+   },
+   "poi_id": "poi_421",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_422",
@@ -10560,7 +12545,11 @@
     "bicycle": "permit",
     "motor_vehicle": "no",
     "opening_hours": "24/7"
-   }
+   },
+   "poi_id": "poi_422",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_423",
@@ -10595,7 +12584,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_423",
+   "activities": [
+    "package_pickup"
+   ],
+   "activity_basis": "name_supported: parcel service name",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_424",
@@ -10630,7 +12625,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_424",
+   "activities": [
+    "package_pickup"
+   ],
+   "activity_basis": "name_supported: parcel service name",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_425",
@@ -10667,7 +12668,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_425",
+   "activities": [
+    "medical"
+   ],
+   "activity_basis": "category_supported: category=hospital",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_426",
@@ -10703,7 +12710,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_426",
+   "activities": [
+    "medical"
+   ],
+   "activity_basis": "category_supported: category=hospital",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_427",
@@ -10736,7 +12749,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_427",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_428",
@@ -10769,7 +12786,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_428",
+   "activities": [
+    "postal_service"
+   ],
+   "activity_basis": "category_supported: category=post",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_429",
@@ -10802,7 +12825,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_429",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_430",
@@ -10835,7 +12862,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_430",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_431",
@@ -10868,7 +12899,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_431",
+   "activities": [
+    "fitness"
+   ],
+   "activity_basis": "sports hall subcategory; no ball sport is claimed",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_432",
@@ -10901,7 +12938,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_432",
+   "activities": [
+    "volleyball"
+   ],
+   "activity_basis": "OSM reviewed source names a volleyball court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_433",
@@ -10934,7 +12977,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_433",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_434",
@@ -10967,7 +13014,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_434",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_435",
@@ -11000,7 +13051,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_435",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_436",
@@ -11033,7 +13088,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_436",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_437",
@@ -11066,7 +13125,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_437",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_438",
@@ -11099,7 +13162,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_438",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_439",
@@ -11132,7 +13199,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_439",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_440",
@@ -11165,7 +13236,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_440",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_441",
@@ -11198,7 +13273,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_441",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_442",
@@ -11231,7 +13310,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_442",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_443",
@@ -11264,7 +13347,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_443",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_444",
@@ -11299,7 +13386,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_444",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_445",
@@ -11332,7 +13423,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_445",
+   "activities": [],
+   "activity_basis": "reviewed: sports venue has no supported specific activity tag",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_446",
@@ -11365,7 +13460,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/7728026"
-   ]
+   ],
+   "poi_id": "poi_446",
+   "activities": [
+    "tennis"
+   ],
+   "activity_basis": "OSM reviewed source names a tennis court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_447",
@@ -11398,7 +13499,13 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349097"
-   ]
+   ],
+   "poi_id": "poi_447",
+   "activities": [
+    "badminton"
+   ],
+   "activity_basis": "OSM reviewed source names a badminton court",
+   "activity_review_status": "source_supported"
   },
   {
    "id": "poi_448",
@@ -11431,7 +13538,11 @@
    "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
    "campus_boundary_refs": [
     "relation/20349098"
-   ]
+   ],
+   "poi_id": "poi_448",
+   "activities": [],
+   "activity_basis": "reviewed: multi-purpose sports centre; no specific activity is verified",
+   "activity_review_status": "reviewed_no_supported_activity"
   },
   {
    "id": "poi_449",
@@ -11484,7 +13595,90 @@
     "foot": "yes",
     "bicycle": "yes",
     "motor_vehicle": "no"
-   }
+   },
+   "poi_id": "poi_449",
+   "activities": [],
+   "activity_basis": "reviewed: no specific activity supported by current POI evidence",
+   "activity_review_status": "reviewed_no_supported_activity"
+  },
+  {
+   "id": "poi_450",
+   "name": "乒乓球馆",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.362332,
+    "lat": 30.527828
+   },
+   "type": "sports",
+   "campus": "信息学部",
+   "category": "sports",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "court",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/2177869899",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/2177869899"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ],
+   "poi_id": "poi_450",
+   "activities": [
+    "table_tennis"
+   ],
+   "activity_basis": "OSM source names a table-tennis facility in 信息学部",
+   "activity_review_status": "source_supported"
+  },
+  {
+   "id": "poi_451",
+   "name": "羽毛球场",
+   "aliases": [],
+   "coordinates": {
+    "lng": 114.362339,
+    "lat": 30.527535
+   },
+   "type": "sports",
+   "campus": "信息学部",
+   "category": "sports",
+   "description": "武汉大学信息学部校内地点。",
+   "season_tags": [
+    "all"
+   ],
+   "scenery_score": 1,
+   "rating": null,
+   "subcategory": "court",
+   "is_minor": false,
+   "source_refs": [
+    {
+     "source": "OpenStreetMap",
+     "id": "node/10742578168",
+     "license": "ODbL-1.0",
+     "url": "https://www.openstreetmap.org/node/10742578168"
+    }
+   ],
+   "verification_status": "source_only",
+   "review_basis": "osm_name_full_geometry_campus_and_existing_poi_review",
+   "campus_boundary_refs": [
+    "relation/7728026"
+   ],
+   "poi_id": "poi_451",
+   "activities": [
+    "badminton"
+   ],
+   "activity_basis": "OSM source names a badminton court in 信息学部",
+   "activity_review_status": "source_supported"
   }
- ]
+ ],
+ "activity_taxonomy_version": 1
 }

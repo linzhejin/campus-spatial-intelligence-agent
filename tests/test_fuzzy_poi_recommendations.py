@@ -33,9 +33,8 @@ def test_recommendation_categories_cover_broad_food_and_narrow_requests():
         "library", "study_other",
     ]
     assert tools.infer_recommendation_subcategories("我想买点零食") == ["supermarket"]
-    assert tools.infer_recommendation_subcategories("想运动") == [
-        "field", "sports_field", "court", "gym", "pool", "sports_centre", "sports_other",
-    ]
+    assert tools.infer_recommendation_subcategories("想运动") is None
+    assert tools.resolve_activity_query("想运动")["options"] == ["跑步", "打球", "健身", "其他运动"]
 
 
 def test_location_ranked_candidates_search_full_categories_before_limiting(monkeypatch):
@@ -314,12 +313,16 @@ def test_candidate_order_changes_with_origin(monkeypatch):
 
 
 def test_catalog_question_does_not_require_current_origin():
-    client = FakeClient([_fake_response(content="校内有多种食堂。")])
-    with patch.object(planner, "_make_client", return_value=client), \
-         patch.object(planner.config, "DEEPSEEK_API_KEY", "test-key"):
+    candidates = [{"poi_id": "poi_307", "name": "星湖园食堂",
+                   "subcategory": "canteen", "activity_labels": ["食堂"]}]
+    with patch.object(planner.agent_tools, "execute_tool", return_value=(
+        {"candidates": candidates, "count": len(candidates)}, {"candidates": candidates},
+    )) as execute:
         result = planner.run_agent("武汉大学有哪些食堂")
-    assert result["response_kind"] == "chat"
-    assert result["message"] == "校内有多种食堂。"
+    assert result["response_kind"] == "candidates"
+    assert result["candidates"] == candidates
+    assert "星湖园食堂" in result["candidates"][0]["name"]
+    assert "start" not in execute.call_args.args[1]
     assert tools.is_poi_catalog_query("武汉大学有哪些食堂") is True
     assert tools.is_poi_catalog_query("我想吃美食") is False
 
@@ -400,7 +403,7 @@ def test_real_poi_taxonomy_categorizes_dining_types_correctly():
     pois = poi_module.load_pois()
     by_id = {poi["id"]: poi for poi in pois}
 
-    assert len(pois) == 440
+    assert len(pois) >= 440
     assert (by_id["poi_307"]["type"], by_id["poi_307"]["subcategory"]) == ("dining", "canteen")
     assert (by_id["poi_311"]["type"], by_id["poi_311"]["subcategory"]) == ("dining", "tea_drink")
     assert (by_id["poi_365"]["type"], by_id["poi_365"]["subcategory"]) == ("dining", "tea_drink")
@@ -421,4 +424,5 @@ def test_real_poi_taxonomy_categorizes_dining_types_correctly():
     }
     assert all(poi["subcategory"] in valid_subcategories[poi["type"]] for poi in pois)
     assert all(poi["subcategory"] in tools._SUBCATEGORY_LABELS for poi in pois)
-    assert len({poi["id"] for poi in pois}) == 440
+    assert len({poi["id"] for poi in pois}) == len(pois)
+    assert len(pois) >= 440

@@ -3394,6 +3394,11 @@
         // pending place question, even when it is not an exact POI name.
         if (/(起点|出发|终点|目的地|从哪里|到哪里|地点|哪儿|哪里)/.test(state.pendingServerQuestion || '')
                 && text.length <= 40 && !/[？?]/.test(text)) return true;
+        // 活动澄清（例如“想打什么球？”）的按钮或自由输入也必须续接
+        // 当前任务，不能因为它不是路线槽位而被当成新任务。
+        if (/(什么球|哪种运动|球类|运动类型)/.test(state.pendingServerQuestion || '')
+                && text.length <= 20 && !/[？?]/.test(text)
+                && !/(天气|路线|导航|帮我|推荐|附近|哪里|哪儿)/.test(text)) return true;
         return false;
     }
 
@@ -3601,7 +3606,13 @@
                 hideWelcomeElements();
                 var cands = result.candidates || [];
                 updateChatBubble(thinkingBubble, result.message || (cands.length ? '帮你找到这些地点，点一个我帮你规划路线～' : '校内没找到匹配的地点，换个说法试试？'));
-                if (cands.length) renderCandidateCards(cands);
+                // 候选本身也是一个待完成任务：保留任务版本，点选时把
+                // 稳定 poi_id 续回后端，避免按名称重新匹配到别的地点。
+                if (setPendingServerClarification(
+                    result._task_id, result._task_revision,
+                    cands.length ? '请选择一个地点继续规划路线。' : null, turnId
+                )) saveContext();
+                if (cands.length) renderCandidateCards(cands, result._task_id, result._task_revision);
                 addConversationTurn(query, result, turnId);
                 return;
             }
@@ -3806,7 +3817,7 @@
     }
 
     // 候选 POI 卡片（response_kind=candidates）：点击时沿用文字起点或当前选定位置
-    function renderCandidateCards(candidates) {
+    function renderCandidateCards(candidates, taskId, taskRevision) {
         var chatContent = document.getElementById('chat-content');
         if (!chatContent || !candidates.length) return;
         var followLatest = chatIsNearLatest(chatContent);
@@ -3828,7 +3839,9 @@
             nameEl.textContent = p.name || '';
             btn.appendChild(nameEl);
 
-            var cat = p.category_label || p.subcategory_label || p.subcategory || '';
+            var cat = Array.isArray(p.activity_labels) && p.activity_labels.length
+                ? p.activity_labels.join('、')
+                : (p.category_label || p.subcategory_label || p.subcategory || '');
             if (cat) {
                 var catEl = document.createElement('span');
                 catEl.className = 'candidate-cat';
@@ -3849,7 +3862,11 @@
                 // 防连点：点击后整组卡片禁用
                 wrap.querySelectorAll('.candidate-card').forEach(function (b) { b.disabled = true; });
                 trackEvent('candidate_click', { name: p.name, subcategory: p.subcategory || null });
-                handleNlSubmit(candidateRouteQuery(p));
+                var continuation = taskId && Number.isInteger(taskRevision)
+                    ? { continuation_task_id: taskId, base_revision: taskRevision,
+                        selected_poi_id: p.poi_id || p.place_id || null }
+                    : { selected_poi_id: p.poi_id || p.place_id || null };
+                handleNlSubmit(candidateRouteQuery(p), false, null, continuation);
             });
             wrap.appendChild(btn);
         });
@@ -3867,7 +3884,11 @@
                 // 点地图标记 = 选这个候选（跟点卡片一样）
                 marker.on('click', function () {
                     trackEvent('candidate_click_map', { name: p.name, subcategory: p.subcategory || null });
-                    handleNlSubmit(candidateRouteQuery(p));
+                    var continuation = taskId && Number.isInteger(taskRevision)
+                        ? { continuation_task_id: taskId, base_revision: taskRevision,
+                            selected_poi_id: p.poi_id || p.place_id || null }
+                        : { selected_poi_id: p.poi_id || p.place_id || null };
+                    handleNlSubmit(candidateRouteQuery(p), false, null, continuation);
                 });
                 state.poiMarkers.push(marker);
                 bounds.push(marker.getLatLng());
@@ -3895,12 +3916,26 @@
         row.appendChild(wrap);
         chatContent.appendChild(row);
 
-        options.slice(0, 4).forEach(function (opt) {
+        options.slice(0, 5).forEach(function (opt) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'clarify-chip';
             btn.textContent = opt;
             btn.addEventListener('click', function () {
+                // “其他”不是一个地点。把输入焦点交还给用户，并保留
+                // 当前澄清任务，避免把它提交成固定 POI 查询。
+                if (/^其他(?:球类|运动)?$/.test(String(opt || '').trim())) {
+                    var input = document.getElementById('nl-input');
+                    if (input) {
+                        input.placeholder = /球/.test(opt)
+                            ? '请补充球类，例如排球、网球…'
+                            : '请补充运动类型，例如游泳、瑜伽…';
+                        input.focus();
+                    }
+                    wrap.querySelectorAll('.clarify-chip').forEach(function (b) { b.disabled = false; });
+                    trackEvent('clarify_custom_input', { answer: opt });
+                    return;
+                }
                 wrap.querySelectorAll('.clarify-chip').forEach(function (b) { b.disabled = true; });
                 trackEvent('clarify_answer', { answer: opt });
                 var continuation = taskId && Number.isInteger(taskRevision)
@@ -4525,7 +4560,17 @@
                             state.pendingServerTaskId, state.pendingServerTaskRevision);
                     }
                 } else if (result.response_kind === 'candidates' && result.candidates && result.candidates.length) {
-                    renderCandidateCards(result.candidates);
+                    var candidateTaskId = result._task_id || active.task_id;
+                    var candidateRevision = Number.isInteger(result._task_revision)
+                        ? result._task_revision : active.task_revision;
+                    var acceptedCandidates = setPendingServerClarification(
+                        candidateTaskId, candidateRevision,
+                        '请选择一个地点继续规划路线。', turnId
+                    );
+                    if (acceptedCandidates) {
+                        saveContext();
+                        renderCandidateCards(result.candidates, candidateTaskId, candidateRevision);
+                    }
                 } else if (result.task_type === 'poi_query' && result.poi && state.map) {
                     focusPoiOnMap(result.poi);
                 }

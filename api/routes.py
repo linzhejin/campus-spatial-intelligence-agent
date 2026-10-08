@@ -593,6 +593,7 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
             "response_kind": kind,
             "message": resp.get("message", ""),
             "candidates": resp.get("candidates") or [],
+            "place_request": resp.get("place_request"),
         }
 
     if kind == "clarify":
@@ -602,6 +603,7 @@ def _agent_response_to_legacy(resp: dict, coord_start=None, coord_end=None) -> d
             "response_kind": kind,
             "message": clarify.get("question") or resp.get("message", ""),
             "clarify": clarify,
+            "place_request": resp.get("place_request"),
         }
 
     return {

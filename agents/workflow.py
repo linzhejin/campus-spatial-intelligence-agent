@@ -119,6 +119,10 @@ def build_agent_workflow(
         )
         if continuation and isinstance(origin_query, str) and origin_query.strip():
             context["active_task_request"] = origin_query.strip()
+        if isinstance(task.get("place_request"), dict):
+            context["place_request"] = task["place_request"]
+        if data.get("selected_poi_id"):
+            context["selected_poi_id"] = data["selected_poi_id"]
         from api.routes import _normalize_chat_context
         context = _normalize_chat_context(context)
         route_state = task.get("route_spec") or {}
@@ -152,7 +156,8 @@ def build_agent_workflow(
                         raise TypeError("agent returned a non-object response")
                     agent_requirement = plan.nodes[0].requirement_ids[0]
                     requirement_results[agent_requirement] = (
-                        "needs_input" if response.get("response_kind") == "clarify" else "satisfied"
+                        "needs_input" if response.get("response_kind") in {"clarify", "candidates"}
+                        else "satisfied"
                     )
                 except Exception as error:
                     agent_requirement = plan.nodes[0].requirement_ids[0]
@@ -177,13 +182,15 @@ def build_agent_workflow(
                 if not isinstance(response, dict):
                     raise TypeError("agent returned a non-object response")
                 requirement_results["route" if plan.kind == "route" else "answer"] = (
-                    "needs_input" if response.get("response_kind") == "clarify" else "satisfied"
+                    "needs_input" if response.get("response_kind") in {"clarify", "candidates"}
+                    else "satisfied"
                 )
             except Exception as error:
                 errors["route" if plan.kind == "route" else "answer"] = type(error).__name__
                 requirement_results["route" if plan.kind == "route" else "answer"] = "failed"
 
         clarify = bool(response and response.get("response_kind") == "clarify")
+        needs_user_selection = bool(response and response.get("response_kind") == "candidates")
         succeeded = sum(value in {"satisfied", "needs_input"} for value in requirement_results.values())
         total = len(plan.requirements)
         execution_status = "completed" if succeeded == total else ("partial" if succeeded else "failed")
@@ -214,7 +221,7 @@ def build_agent_workflow(
             "execution_status": execution_status,
             "requirement_results": requirement_results,
             "requirement_errors": errors,
-            "needs_input": clarify,
+            "needs_input": clarify or needs_user_selection,
         })
         _emit(state, runtime, "node_completed", "execute_agent", "需求分析与空间工具执行完成", database_url)
         return {"agent_response": response}
@@ -229,7 +236,8 @@ def build_agent_workflow(
         end = _coordinate(route_spec.get("end"))
         result = _agent_response_to_legacy(state["agent_response"], start, end)
         response = state["agent_response"]
-        for key in ("weather", "execution_status", "requirement_results", "requirement_errors"):
+        for key in ("weather", "execution_status", "requirement_results", "requirement_errors",
+                    "place_request"):
             result[key] = response.get(key)
         if response.get("needs_input"):
             result["needs_input"] = True

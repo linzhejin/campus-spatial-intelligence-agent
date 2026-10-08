@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import secrets
 import uuid
 from datetime import datetime
@@ -77,6 +78,7 @@ def create_task_run(
     *, route_spec: dict[str, Any] | None = None,
     continuation_task_id: str | None = None,
     base_revision: int | None = None,
+    selected_poi_id: str | None = None,
 ) -> dict:
     """Atomically accept a user message, task snapshot and queued run."""
     from agents.state_models import Requirement, RouteSpec, TaskState
@@ -93,6 +95,12 @@ def create_task_run(
         raise ValueError("continuation requires a nonnegative base_revision")
     submission = {"request_id": idempotency_key, "route_spec": route_spec,
                   "continuation_task_id": continuation_task_id}
+    if selected_poi_id is not None:
+        if not isinstance(selected_poi_id, str) or not re.fullmatch(r"poi_\d{3,}", selected_poi_id):
+            raise ValueError("selected_poi_id must be a stable POI ID")
+        if continuation_task_id is None:
+            raise ValueError("selected_poi_id requires a clarification task")
+        submission["selected_poi_id"] = selected_poi_id
     task_id, run_id = str(continuation_task_id or uuid.uuid4()), str(uuid.uuid4())
     with database.connect(url) as conn:
         conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 73518264))", (idempotency_key,))
@@ -220,7 +228,7 @@ def get_run_input(url: str | None, run_id: str) -> dict | None:
         if not row:
             return None
         user_message = conn.execute(
-            "SELECT seq, content FROM conversation_message"
+            "SELECT seq, content, metadata FROM conversation_message"
             " WHERE task_id=%s AND role='user' ORDER BY seq DESC LIMIT 1",
             (row["task_id"],),
         ).fetchone()
@@ -260,6 +268,7 @@ def get_run_input(url: str | None, run_id: str) -> dict | None:
         "task_revision": row["task_revision"], "task_revision_current": row["revision"],
         "conversation_id": str(row["conversation_id"]), "owner_id": str(row["owner_id"]),
         "task": row["state"], "query": user_message["content"], "history": history,
+        "selected_poi_id": ((user_message.get("metadata") or {}).get("request") or {}).get("selected_poi_id"),
         "task_origin_query": origin_message["content"] if origin_message else None,
         "previous_route_state": previous["route_state"] if previous else None,
         "previous_route_state_task_id": str(previous["task_id"]) if previous and previous["task_id"] else None,
@@ -695,7 +704,13 @@ def finish_run(
             if actual_status == "needs_input" and isinstance(result, dict):
                 clarify = result.get("clarify") or {}
                 question = clarify.get("question") if isinstance(clarify, dict) else None
+                if not question and result.get("response_kind") == "candidates":
+                    question = "请选择一个地点继续规划路线。"
                 document["pending_questions"] = [question] if question else []
+            if isinstance(result, dict) and isinstance(result.get("place_request"), dict):
+                document["place_request"] = result["place_request"]
+            elif actual_status in {"completed", "partial", "failed"}:
+                document["place_request"] = None
             requirement_results = result.get("requirement_results", {}) if isinstance(result, dict) else {}
             for requirement in document.get("requirements", []):
                 requirement_id = requirement["requirement_id"]

@@ -357,6 +357,30 @@ def _build_messages(query: str, context: dict = None, history: list = None,
     return messages
 
 
+def _place_request_state(query: str, *, activities=None, subcategories=None,
+                         pending_slot=None, start=None, constraints=None,
+                         previous=None, candidate_poi_ids=None, selected_poi_id=None,
+                         follow_up_requests=None,
+                         mode="walk") -> dict:
+    previous = previous if isinstance(previous, dict) else {}
+    return {
+        "request_id": previous.get("request_id") or uuid4().hex,
+        "original_query": previous.get("original_query") or query,
+        "activities": list(activities if activities is not None else previous.get("activities") or []),
+        "subcategories": list(subcategories if subcategories is not None else previous.get("subcategories") or []),
+        "follow_up_requests": list(follow_up_requests if follow_up_requests is not None
+                                   else previous.get("follow_up_requests") or []),
+        "pending_slot": pending_slot,
+        "start": start if start is not None else previous.get("start"),
+        "selected_poi_id": (selected_poi_id if selected_poi_id is not None
+                             else previous.get("selected_poi_id")),
+        "candidate_poi_ids": list(candidate_poi_ids if candidate_poi_ids is not None
+                                   else previous.get("candidate_poi_ids") or []),
+        "mode": previous.get("mode") or mode,
+        "constraints": constraints if constraints is not None else previous.get("constraints") or {},
+    }
+
+
 def run_agent(query: str, context: dict = None, history: list = None,
               coord_start: dict = None, coord_end: dict = None,
               uid: str = None, travel_mode: str = None,
@@ -528,29 +552,210 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 "clarify": {"question": question, "options": []},
                 "suggestions": None, "turns": 0}
 
+    # Activity choices and candidate IDs resume the same durable POI request.
+    place_request = (context or {}).get("place_request") if isinstance(context, dict) else None
+    place_request = dict(place_request) if isinstance(place_request, dict) else None
+    selected_poi_id = ((context or {}).get("selected_poi_id")
+                       or (place_request or {}).get("selected_poi_id")) if isinstance(context, dict) else None
+    recommendation_query = original_request
+
+    def current_coordinate_start():
+        if not isinstance(coord_start, dict):
+            return None
+        try:
+            lng, lat = float(coord_start.get("lng")), float(coord_start.get("lat"))
+        except (TypeError, ValueError):
+            return None
+        if not (-180 <= lng <= 180 and -90 <= lat <= 90):
+            return None
+        return {"type": "coord", "name": coord_start.get("name") or "我的位置",
+                "lng": lng, "lat": lat}
+
+    def explicit_place_start(text):
+        name = agent_tools.recommendation_origin_from_text(text)
+        if not name:
+            return None
+        poi, alternatives = agent_tools.find_poi_ambiguous(name)
+        if poi and not alternatives:
+            return {"type": "poi", "name": poi["name"]}
+        if alternatives:
+            return {"ambiguous_name": name, "alternatives": alternatives[:5]}
+        return {"type": "poi", "name": name}
+
+    if selected_poi_id:
+        if (place_request and place_request.get("candidate_poi_ids")
+                and selected_poi_id not in place_request["candidate_poi_ids"]):
+            return {"response_kind": "chat", "message": "这个候选不属于当前列表，请重新搜索后选择。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
+        selected_poi = next((poi for poi in agent_tools.load_pois()
+                             if poi.get("id") == selected_poi_id), None)
+        if not selected_poi:
+            return {"response_kind": "chat", "message": "这个地点已不在当前主数据中，请重新搜索。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
+        start_ref = (place_request or {}).get("start") or explicit_place_start(query) or current_coordinate_start()
+        if isinstance(start_ref, dict) and start_ref.get("ambiguous_name"):
+            choices = [f"{poi.get('name')}（{poi.get('campus') or '校内'}）"
+                       for poi in start_ref["alternatives"]]
+            pending = _place_request_state(query, pending_slot="start", start=None, previous=place_request,
+                                           candidate_poi_ids=place_request.get("candidate_poi_ids", []))
+            return {"response_kind": "clarify", "message": "这个起点有多个匹配地点，请选一个。",
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": {"question": "这个起点有多个匹配地点，请选一个。", "options": choices},
+                    "place_request": pending, "suggestions": None, "turns": 0}
+        if not start_ref:
+            pending = _place_request_state(query, pending_slot="start", start=None, previous=place_request,
+                                           selected_poi_id=selected_poi_id,
+                                           candidate_poi_ids=place_request.get("candidate_poi_ids", [])
+                                           if place_request else [])
+            question = "你从哪里出发？可以点地图起点，或告诉我所在地点。"
+            return {"response_kind": "clarify", "message": question, "route": None,
+                    "route_kind": None, "candidates": None,
+                    "clarify": {"question": question, "options": ["地图上选起点", "告诉我所在地点"]},
+                    "place_request": pending, "suggestions": None, "turns": 0}
+        route_args = {"start": start_ref,
+                      "end": {"type": "poi", "poi_id": selected_poi_id,
+                              "name": selected_poi.get("name", "")},
+                      "mode": (place_request or {}).get("mode") or travel_mode or "walk"}
+        saved_constraints = (place_request or {}).get("constraints") or {}
+        route_constraints = {}
+        if saved_constraints.get("avoid_steps"):
+            route_constraints["avoid_steps"] = True
+        if saved_constraints.get("avoid_slope"):
+            route_constraints["slope"] = "avoid"
+        if route_constraints:
+            route_args["constraints"] = route_constraints
+        result, artifact = agent_tools.execute_tool("plan_route", route_args,
+                                                     {"query": query, "uid": uid})
+        route = (artifact or {}).get("route") if isinstance(artifact, dict) else None
+        if route:
+            route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
+            follow_up_requests = (place_request or {}).get("follow_up_requests") or []
+            suggestions = []
+            if follow_up_requests:
+                next_request = follow_up_requests[0]
+                follow_query = str(next_request.get("query") or "").strip()
+                if follow_query:
+                    suggestions.append({
+                        "label": "下一步：找餐饮" if any(
+                            value in (next_request.get("activities") or [])
+                            for value in ("meal", "canteen_meal", "restaurant_meal", "fast_food")
+                        ) else "继续下一步",
+                        "query": f"从{selected_poi.get('name', '当前地点')}出发找{follow_query}",
+                    })
+            return {"response_kind": "route", "message": _build_route_message(route),
+                    "route": route, "route_kind": "direct", "candidates": None,
+                    "clarify": None, "place_request": None,
+                    "suggestions": suggestions, "turns": 0}
+        return {"response_kind": "chat", "message": (result or {}).get("message") or "这条路线暂时无法生成。",
+                "route": None, "route_kind": None, "candidates": None,
+                "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
+
+    activity_sequence = agent_tools.resolve_activity_sequence(original_request)
+    sequence_followups = [
+        {"query": item["query"],
+         "activities": list(item["intent"].get("activities") or []),
+         "subcategories": list(item["intent"].get("subcategories") or [])}
+        for item in activity_sequence[1:]
+    ]
+    activity_intent = (activity_sequence[0]["intent"] if activity_sequence else
+                       agent_tools.resolve_activity_query(original_request))
+    if place_request and place_request.get("pending_slot") == "activity":
+        answer_intent = agent_tools.resolve_activity_query(query)
+        if not answer_intent:
+            original_activity = agent_tools.resolve_activity_query(
+                (place_request or {}).get("original_query") or original_request
+            )
+            options = (original_activity or {}).get("options") or [
+                "篮球", "羽毛球", "乒乓球", "足球", "其他球类",
+            ]
+            question = (f"校园地点库暂未标出明确支持「{query.strip()}」的场地。"
+                        "可以补充具体场馆名，或选择一个已收录的项目。")
+            return {"response_kind": "clarify", "message": question, "route": None,
+                    "route_kind": None, "candidates": None,
+                    "clarify": {"question": question,
+                                "options": options},
+                    "place_request": _place_request_state(
+                        query, pending_slot="activity", previous=place_request,
+                    ),
+                    "suggestions": None, "turns": 0}
+        if answer_intent.get("status") == "needs_clarification":
+            return {"response_kind": "clarify", "message": answer_intent["question"],
+                    "route": None, "route_kind": None, "candidates": None,
+                    "clarify": {"question": answer_intent["question"],
+                                "options": answer_intent["options"]},
+                    "place_request": _place_request_state(query, pending_slot="activity", previous=place_request),
+                    "suggestions": None, "turns": 0}
+        activity_intent = answer_intent
+        recommendation_query = f"{original_request} {query}"
+    elif (activity_intent and activity_intent.get("status") == "needs_clarification"
+          and not (place_request and place_request.get("pending_slot") in {"start", "selection"})):
+        start_ref = explicit_place_start(original_request)
+        if start_ref and start_ref.get("ambiguous_name"):
+            start_ref = None
+        start_ref = start_ref or current_coordinate_start()
+        constraints = {
+            "avoid_steps": bool(re.search(r"(?:不走|避开|不要走|绕开)(?:楼梯|台阶)", original_request)),
+            "avoid_slope": bool(re.search(r"避坡|少爬坡|不想爬坡|避开陡坡", original_request)),
+        }
+        pending = _place_request_state(original_request, activities=[], subcategories=[],
+                                       pending_slot="activity", start=start_ref,
+                                       constraints=constraints,
+                                       follow_up_requests=sequence_followups,
+                                       mode=travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk")
+        return {"response_kind": "clarify", "message": activity_intent["question"],
+                "route": None, "route_kind": None, "candidates": None,
+                "clarify": {"question": activity_intent["question"],
+                            "options": activity_intent["options"]},
+                "place_request": pending, "suggestions": None, "turns": 0}
+
     # 模糊的类别需求走确定性的候选检索，避免模型按熟悉度挑固定 POI。
     # 起点只取本轮坐标、用户本轮明确说出的地点，或正在回答的起点追问；不继承旧路线终点。
-    recommendation_query = original_request
-    recommendation_categories = agent_tools.infer_recommendation_subcategories(recommendation_query)
+    if place_request and place_request.get("pending_slot") == "activity":
+        recommendation_query = f"{original_request} {query}"
+    recommendation_categories = list((activity_intent or {}).get("subcategories") or
+                                     (place_request or {}).get("subcategories") or
+                                     agent_tools.infer_recommendation_subcategories(recommendation_query) or [])
+    recommendation_activities = list((activity_intent or {}).get("activities") or
+                                     (place_request or {}).get("activities") or [])
+    follow_up_requests = (place_request or {}).get("follow_up_requests") or sequence_followups
     recommendation_is_catalog = agent_tools.is_poi_catalog_query(recommendation_query)
     recommendation_has_target = agent_tools._query_has_explicit_poi_destination(recommendation_query)
     route_to_nearest = bool(
         agent_tools.query_requests_route(recommendation_query)
         and re.search(r"最近|离我最(?:近|方便)|距离最短", recommendation_query)
     )
-    if (recommendation_categories and not recommendation_is_catalog
+    if ((recommendation_categories or recommendation_activities)
             and not recommendation_has_target
             and (not agent_tools.query_requests_route(recommendation_query) or route_to_nearest)):
         start_ref = None
         explicit_origin = agent_tools.recommendation_origin_from_text(query)
         if explicit_origin:
             # 本轮文字明确给出的地点优先于页面附带的 GPS 或地图坐标。
-            start_ref = {"type": "poi", "name": explicit_origin}
+            resolved_origin = explicit_place_start(query)
+            if resolved_origin and not resolved_origin.get("ambiguous_name"):
+                start_ref = resolved_origin
+            elif resolved_origin and resolved_origin.get("alternatives"):
+                choices = [f"{item.get('name')}（{item.get('campus') or '校内'}）"
+                           for item in resolved_origin["alternatives"]]
+                pending = _place_request_state(
+                    recommendation_query, activities=recommendation_activities,
+                    subcategories=recommendation_categories, pending_slot="start",
+                    follow_up_requests=follow_up_requests, previous=place_request,
+                )
+                question = "这个起点有多个匹配地点，请选一个。"
+                return {"response_kind": "clarify", "message": question, "route": None,
+                        "route_kind": None, "candidates": None,
+                        "clarify": {"question": question, "options": choices},
+                        "place_request": pending, "suggestions": None, "turns": 0}
         elif original_request != query:
             # 起点追问的简短回答（如“工学部”）也是本轮明确位置，应优先采用。
             answered_origin, alternatives = agent_tools.find_poi_ambiguous(query.strip())
             if answered_origin and not alternatives:
                 start_ref = {"type": "poi", "name": answered_origin["name"]}
+        if start_ref is None and isinstance((place_request or {}).get("start"), dict):
+            start_ref = place_request["start"]
 
         if start_ref is None and isinstance(coord_start, dict):
             try:
@@ -561,21 +766,29 @@ def run_agent(query: str, context: dict = None, history: list = None,
             except (TypeError, ValueError):
                 start_ref = None
 
-        if start_ref is None:
+        if start_ref is None and not recommendation_is_catalog:
             question = "你从哪里出发？可以在地图上点起点，或告诉我所在的地点，我再按路网距离推荐。"
             options = ["地图上选起点", "告诉我所在地点"]
+            pending = _place_request_state(
+                recommendation_query, activities=recommendation_activities,
+                subcategories=recommendation_categories, pending_slot="start",
+                follow_up_requests=follow_up_requests, previous=place_request,
+            )
             return {"response_kind": "clarify", "message": question,
                     "route": None, "route_kind": None, "candidates": None,
                     "clarify": {"question": question, "options": options},
+                    "place_request": pending,
                     "suggestions": None, "turns": 0}
 
         recommendation_args = {
-            "start": start_ref,
             "subcategories": recommendation_categories,
-            "mode": travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk",
-            "max_distance_m": 10000,
-            "limit": 4,
+            "activities": recommendation_activities,
+            "mode": (place_request or {}).get("mode") or
+                    (travel_mode if travel_mode in {"walk", "bike", "drive"} else "walk"),
+            "limit": 20 if recommendation_is_catalog else 4,
         }
+        if start_ref and not recommendation_is_catalog:
+            recommendation_args.update({"start": start_ref, "max_distance_m": 10000})
         result, artifact = agent_tools.execute_tool(
             "search_poi_candidates", recommendation_args,
             {"query": recommendation_query, "uid": uid},
@@ -586,16 +799,42 @@ def run_agent(query: str, context: dict = None, history: list = None,
                     "route": None, "route_kind": None, "candidates": None,
                     "clarify": None, "suggestions": None, "turns": 0}
         if not candidates:
+            empty_message = ("校园地点主数据中暂未记录明确支持该用途的场所；这不等于现实中不存在。"
+                             if recommendation_activities else
+                             result.get("message") or "当前路网范围内没有找到合适的地点。")
             return {"response_kind": "chat",
-                    "message": result.get("message") or "当前路网范围内没有找到合适的地点。",
+                    "message": empty_message,
                     "route": None, "route_kind": None, "candidates": [],
-                    "clarify": None, "suggestions": None, "turns": 0}
+                    "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
+
+        for candidate in candidates:
+            candidate["place_id"] = candidate.get("poi_id")
+
+        if recommendation_is_catalog:
+            for candidate in candidates:
+                candidate["recommendation_start_name"] = ""
+            summary = f"校园地点主数据中找到 {len(candidates)} 个匹配地点，已按学部列出。开放和使用规则以现场或校方信息为准。"
+            pending = _place_request_state(
+                recommendation_query, activities=recommendation_activities,
+                subcategories=recommendation_categories, pending_slot="selection",
+                candidate_poi_ids=[item.get("poi_id") for item in candidates if item.get("poi_id")],
+                follow_up_requests=follow_up_requests,
+                previous=place_request,
+            )
+            return {"response_kind": "candidates", "message": summary,
+                    "route": None, "route_kind": None, "candidates": candidates,
+                    "clarify": None, "place_request": pending,
+                    "suggestions": None, "turns": 0}
 
         if route_to_nearest:
             route_request = str(recommendation_query) + " " + str(query)
+            selected_candidate = candidates[0]
+            selected_endpoint = {"type": "poi", "name": selected_candidate.get("name", "")}
+            if selected_candidate.get("poi_id"):
+                selected_endpoint["poi_id"] = selected_candidate["poi_id"]
             route_args = {
                 "start": start_ref,
-                "end": {"type": "poi", "name": candidates[0].get("name", "")},
+                "end": selected_endpoint,
                 "mode": recommendation_args["mode"],
             }
             if re.search(r"平坦优先|少爬坡|少走坡|避坡|不想爬坡", route_request):
@@ -614,19 +853,19 @@ def run_agent(query: str, context: dict = None, history: list = None,
                 route["timings_ms"] = normalize_timings(route.get("timings_ms"), agent=0.0)
                 return {"response_kind": "route", "message": _build_route_message(route),
                         "route": route, "route_kind": "direct", "candidates": None,
-                        "clarify": None, "suggestions": None, "turns": 0}
+                        "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
             if route_result.get("error"):
                 return {"response_kind": "chat",
                         "message": route_result.get("message") or "找到附近地点，但当前无法生成可靠路线。",
                         "route": None, "route_kind": None, "candidates": None,
-                        "clarify": None, "suggestions": None, "turns": 0}
+                        "clarify": None, "place_request": None, "suggestions": None, "turns": 0}
 
         first = candidates[0]
         start_name = result.get("start_name") or start_ref.get("name") or "你选定的起点"
         if start_ref.get("type") == "poi":
             for candidate in candidates:
                 candidate["recommendation_start_name"] = start_name
-        category = first.get("subcategory_label") or first.get("subcategory")
+        category = first.get("activity_labels") or first.get("subcategory_label") or first.get("subcategory")
         distance = first.get("distance_m")
         if distance is not None:
             summary = (f"从{start_name}出发，我按当前路网估算距离排了 {len(candidates)} 个选项。"
@@ -634,9 +873,20 @@ def run_agent(query: str, context: dict = None, history: list = None,
         else:
             summary = f"我按从{start_name}出发的路网距离排了 {len(candidates)} 个选项。"
         summary += "起点和地点到道路的接驳按直线估算，未核实实际通行；点选地点可继续规划路线。"
+        pending = _place_request_state(
+            recommendation_query, activities=recommendation_activities,
+            subcategories=recommendation_categories, pending_slot="selection", start=start_ref,
+            follow_up_requests=follow_up_requests,
+            constraints=(place_request or {}).get("constraints") or {
+                "avoid_steps": bool(re.search(r"(?:不走|避开|不要走|绕开)(?:楼梯|台阶)", recommendation_query)),
+                "avoid_slope": bool(re.search(r"避坡|少爬坡|不想爬坡|避开陡坡", recommendation_query)),
+            },
+            candidate_poi_ids=[item.get("poi_id") for item in candidates if item.get("poi_id")],
+            previous=place_request,
+        )
         return {"response_kind": "candidates", "message": summary,
                 "route": None, "route_kind": None, "candidates": candidates,
-                "clarify": None, "suggestions": None, "turns": 0}
+                "clarify": None, "place_request": pending, "suggestions": None, "turns": 0}
 
     if not config.DEEPSEEK_API_KEY:
         raise PlannerError("DEEPSEEK_API_KEY 未配置")
