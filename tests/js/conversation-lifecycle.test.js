@@ -68,6 +68,7 @@ function harness(storage = new Map()) {
         var realSubmitQueuedMessage = submitQueuedMessage;
         globalThis.app = { state: state, init: init, submit: handleNlSubmit, reset: handleReset,
             candidateRouteQuery: candidateRouteQuery,
+            buildRouteSummary: buildRouteSummary,
             globalKeydown: handleGlobalKeydown,
             load: loadContext, save: saveContext, request: realApiRequest, queued: submitQueuedMessage,
             removeMapPoint: removeMapPoint,
@@ -496,6 +497,22 @@ test('desktop tour feedback identifies the loop and omits generic filler', async
     assert.match(reply, /珞珈山/);
     assert.match(reply, /返回/);
     assert.doesNotMatch(reply, /路线特点：已为你规划好/);
+});
+test('route overview separates road-network length from estimated unverified endpoint connectors', () => {
+    const h = harness();
+    const summary = h.buildRouteSummary({
+        start: { name: '武汉大学信息学部图书馆' },
+        end: { name: '乒乓球馆' },
+        mode: 'walk', recommended_length_m: 237, duration_min: 3,
+        strategy: { name: 'shortest' },
+        endpoint_access: {
+            start: { snap_distance_m: 20.1 },
+            end: { snap_distance_m: 16.8 },
+        },
+    });
+
+    assert.match(summary, /路网段.*237/);
+    assert.match(summary, /接驳.*直线.*37.*未核实/);
 });
 test('desktop route details are compact and use collapsed disclosures for long lists', () => {
     const html = fs.readFileSync(require.resolve('../../static/index.html'), 'utf8');

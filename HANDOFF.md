@@ -12,9 +12,9 @@
 
 <!-- FACTS:BEGIN -->
 （以下为自动生成区，勿手改；更新：python scripts/docs/gen_facts.py）
-- 版本：main @ d7df4cb ｜ origin/main 同步 ｜ gitee/main 同步 ｜ 生成于 2026-10-09 02:55
+- 版本：main @ c64b00b ｜ origin/main 同步 ｜ gitee/main 同步 ｜ 生成于 2026-10-09 03:22
 - Agent 工具 14 ｜ POI 442（含校门 17） ｜ 路网 5,087 节点 / 14,622 有向边 ｜ 人工边覆盖 208
-- 前端 SW whu-walker-v86 ｜ Android 1.4.1 (versionCode 6) ｜ 数据库迁移 9（最新 009）
+- 前端 SW whu-walker-v87 ｜ Android 1.4.1 (versionCode 6) ｜ 数据库迁移 9（最新 009）
 <!-- FACTS:END -->
 
 - 最近提交集中在管理端影像删除失败后的恢复/重试、道路状态更新可靠性、刷新会话行为和地图交互修正。完整差异以提交记录为准。

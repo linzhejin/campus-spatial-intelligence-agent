@@ -3774,11 +3774,28 @@
         var strategyLabel = STRATEGY_LABELS[strategyName] || '综合推荐';
         var routeKind = (current && current.route_kind) || data.route_kind || 'direct';
         var tour = data.tour || (current && current.tour) || {};
+        var endpointAccess = data.endpoint_access || {};
+        var connectorMeters = (function sumConnectorDistances(value) {
+            if (!value || typeof value !== 'object') return 0;
+            if (Object.prototype.hasOwnProperty.call(value, 'snap_distance_m')) {
+                var connector = Number(value.snap_distance_m);
+                return Number.isFinite(connector) && connector > 0 ? connector : 0;
+            }
+            return Object.keys(value).reduce(function (sum, key) {
+                return sum + sumConnectorDistances(value[key]);
+            }, 0);
+        })(endpointAccess);
+        var hasConnectorEstimate = connectorMeters >= 1;
+        var distancePhrase = modeLabel + (hasConnectorEstimate ? '路网段约 ' : '约 ') + distanceText;
+        var connectorDisclosure = hasConnectorEstimate
+            ? '端点接驳另按直线估算约 ' + Math.round(connectorMeters) + ' 米，尚未核实实际通行。'
+            : '';
         var overview = routeKind === 'tour' && tour.loop !== false
-            ? '游览环线：从' + start + '出发，游览后返回' + start + '。' + modeLabel + '约 ' + distanceText
-            : '路线总览：' + start + ' → ' + end + '。' + modeLabel + '约 ' + distanceText;
+            ? '游览环线：从' + start + '出发，游览后返回' + start + '。' + distancePhrase
+            : '路线总览：' + start + ' → ' + end + '。' + distancePhrase;
         if (duration !== '—') overview += '，预计用时约 ' + duration;
         overview += '；采用' + strategyLabel + '策略。';
+        if (connectorDisclosure) overview += ' ' + connectorDisclosure;
 
         var facts = [];
         var stopCount = routeOverviewStopCount(routeKind, current, data);
