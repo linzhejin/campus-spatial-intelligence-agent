@@ -294,6 +294,145 @@ def test_specialized_video_evidence_is_merged_across_processing_segments(tmp_pat
     assert candidate["auto_publish"] is False
 
 
+def test_accident_trigger_adds_dense_video_analysis_without_increasing_flood_sampling(tmp_path, monkeypatch):
+    import config
+
+    class AccidentModel:
+        model_id = "fake-aider"
+        model_version = "fixture"
+        threshold = 0.85
+
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, _frame):
+            self.calls += 1
+            score = 0.6 if self.calls == 1 else 0.96 if self.calls <= 11 else 0.1
+            return {"traffic_accident_probability": score, "model_id": self.model_id}
+
+    class FloodModel:
+        model_id = "fake-flood"
+        min_area_ratio = 0.08
+
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, _frame, _region):
+            self.calls += 1
+            return None
+
+    source = tmp_path / "short.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 80
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 50)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_TRIGGER_THRESHOLD", 0.5, raising=False)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_WINDOW_SECONDS", 2.0, raising=False)
+    accident_model = AccidentModel()
+    flood_model = FloodModel()
+    region = {"id": "lane", "kind": "vehicle_lane", "polygon": [
+        [0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9],
+    ]}
+    road_surface = {"id": "road", "kind": "road_surface", "polygon": [
+        [0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9],
+    ]}
+
+    result = analyze_media(
+        source, "video", None, camera_stabilized=True, detector=FakeDetector(),
+        accident_model=accident_model, flood_segmenter=flood_model,
+        regions=[region, road_surface],
+    )
+
+    # Regular specialized cadence is 1 fps (8 calls for this 8 second clip).
+    # A trigger around t=0 adds accident-only calls at the detector's 5 fps cadence.
+    assert 8 < accident_model.calls < 40
+    assert flood_model.calls == 8
+    assert result["metrics"]["specialized_frames_analyzed"] == accident_model.calls
+    assert any(item["kind"] == "possible_accident" for item in result["candidates"])
+
+
+def test_dense_sampling_trigger_is_not_the_accident_decision_threshold(tmp_path, monkeypatch):
+    import config
+
+    class LowScoreAccidentModel:
+        model_id = "fake-aider"
+        model_version = "fixture"
+        threshold = 0.85
+
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, _frame):
+            self.calls += 1
+            return {"traffic_accident_probability": 0.6, "model_id": self.model_id}
+
+    source = tmp_path / "short.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 80
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 50)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_TRIGGER_THRESHOLD", 0.5, raising=False)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_WINDOW_SECONDS", 2.0, raising=False)
+    accident_model = LowScoreAccidentModel()
+
+    result = analyze_media(
+        source, "video", None, camera_stabilized=True, detector=FakeDetector(),
+        accident_model=accident_model,
+        regions=[{"id": "lane", "kind": "vehicle_lane", "polygon": [
+            [0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9],
+        ]}],
+    )
+
+    assert accident_model.calls > 8
+    assert not any(item["kind"] == "possible_accident" for item in result["candidates"])
+
+
+def test_accident_dense_window_is_saved_in_the_video_resume_checkpoint(tmp_path, monkeypatch):
+    import config
+
+    class LateTriggerAccidentModel:
+        model_id = "fake-aider"
+        model_version = "fixture"
+        threshold = 0.85
+
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, _frame):
+            self.calls += 1
+            score = 0.6 if self.calls == 10 else 0.1
+            return {"traffic_accident_probability": score, "model_id": self.model_id}
+
+    source = tmp_path / "checkpoint.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 1000
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 50)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_TRIGGER_THRESHOLD", 0.5, raising=False)
+    monkeypatch.setattr(config, "VISION_ACCIDENT_DENSE_WINDOW_SECONDS", 2.0, raising=False)
+    checkpoint = {}
+
+    def interrupt_after_segment(payload):
+        checkpoint.update(payload["checkpoint"])
+        raise RuntimeError("pause after durable segment")
+
+    with pytest.raises(RuntimeError, match="pause after durable segment"):
+        analyze_media(
+            source, "video", None, camera_stabilized=True, detector=FakeDetector(),
+            accident_model=LateTriggerAccidentModel(),
+            regions=[{"id": "lane", "kind": "vehicle_lane", "polygon": [
+                [0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9],
+            ]}],
+            progress_callback=interrupt_after_segment,
+        )
+
+    assert checkpoint["next_frame_index"] == 99
+    assert checkpoint["accident_dense_until_frame"] == 110
+
+
 def test_optional_accident_failure_is_isolated_and_stopped_for_rest_of_video(tmp_path, monkeypatch):
     import config
 

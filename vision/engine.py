@@ -565,6 +565,20 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             stride = max(1, round(fps / target_fps))
             sample_interval = stride / fps
             specialized_stride = max(stride, round(fps))
+            dense_trigger_threshold = float(getattr(
+                config, "VISION_ACCIDENT_DENSE_TRIGGER_THRESHOLD", 0.5,
+            ))
+            if (not math.isfinite(dense_trigger_threshold)
+                    or not 0.0 <= dense_trigger_threshold <= 1.0):
+                dense_trigger_threshold = 0.5
+            dense_window_seconds = float(getattr(
+                config, "VISION_ACCIDENT_DENSE_WINDOW_SECONDS", 2.0,
+            ))
+            if not math.isfinite(dense_window_seconds) or dense_window_seconds < 0:
+                dense_window_seconds = 2.0
+            accident_dense_until_frame = int(
+                (resume_state or {}).get("accident_dense_until_frame", -1)
+            )
             segment_limit = max(5, int(getattr(config, "VISION_SEGMENT_FRAMES", config.VISION_MAX_VIDEO_FRAMES)))
             frame_index = int((resume_state or {}).get("next_frame_index", 0))
             if frame_index:
@@ -586,6 +600,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                     # Discard stale checkpoints and reprocess from the beginning
                     # rather than assigning incorrect timestamps to earlier frames.
                     frame_index = 0
+                    accident_dense_until_frame = -1
                     completed_segments = []
                     if progress_callback:
                         progress_callback({
@@ -632,6 +647,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                 checkpoint = {
                     "next_frame_index": next_frame_index,
                     "segments": completed_segments,
+                    "accident_dense_until_frame": accident_dense_until_frame,
                 }
                 if progress_callback:
                     progress_callback({
@@ -670,16 +686,50 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                         )
                         frames.append(frame_detections)
                         frame_indices.append(frame_index)
-                        if (accident_model is not None or flood_segmenter is not None) and frame_index % specialized_stride == 0:
+                        regular_specialized_frame = frame_index % specialized_stride == 0
+                        accident_model_available = (
+                            accident_model is not None and "accident" not in optional_model_errors
+                        )
+                        flood_model_available = (
+                            flood_segmenter is not None and "flood" not in optional_model_errors
+                        )
+                        dense_accident_frame = (
+                            accident_model_available
+                            and frame_index <= accident_dense_until_frame
+                        )
+                        if (
+                            regular_specialized_frame
+                            and (accident_model_available or flood_model_available)
+                        ) or dense_accident_frame:
+                            was_in_dense_window = dense_accident_frame
                             observations, failures = _specialized_predictions(
                                 frame, frame_index / fps, regions,
-                                None if "accident" in optional_model_errors else accident_model,
-                                None if "flood" in optional_model_errors else flood_segmenter,
+                                accident_model if (
+                                    regular_specialized_frame or dense_accident_frame
+                                ) and accident_model_available else None,
+                                flood_segmenter if (
+                                    regular_specialized_frame and flood_model_available
+                                ) else None,
                             )
                             specialized_observations.extend(observations)
                             optional_model_errors.update({
                                 item["model"]: item["error_type"] for item in failures
                             })
+                            if regular_specialized_frame and not was_in_dense_window:
+                                accident_score = max((
+                                    float(item["traffic_accident_probability"])
+                                    for item in observations
+                                    if isinstance(item.get("traffic_accident_probability"), (int, float))
+                                    and not isinstance(item.get("traffic_accident_probability"), bool)
+                                    and 0.0 <= float(item["traffic_accident_probability"]) <= 1.0
+                                    and math.isfinite(float(item["traffic_accident_probability"]))
+                                ), default=0.0)
+                                if (accident_model_available
+                                        and accident_score >= dense_trigger_threshold):
+                                    accident_dense_until_frame = max(
+                                        accident_dense_until_frame,
+                                        frame_index + math.ceil(dense_window_seconds * fps),
+                                    )
                         if len(frames) > 1 and camera_stabilized:
                             transforms.append([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
                         elif len(frames) > 1:
