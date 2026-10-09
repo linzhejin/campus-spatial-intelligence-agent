@@ -194,10 +194,13 @@ Query 参数：`type`（类型）、`season`（spring/summer/autumn/winter）、
 
 图片继续通过 `POST /api/manager/vision-jobs` 上传，默认上限 24 MiB。视频使用分块续传，默认上限 1 GiB、每块 8 MiB；续传会话 24 小时未更新后过期。以下写接口需要管理员登录和 CSRF token。
 
-- `POST /api/manager/vision-uploads`：JSON 提交 `filename`、`size` 和可选 `camera_stabilized`；如需记录观察区域，可同时提交 `lng`、`lat`。返回 `upload_id`、`offset`、`chunk_size`。
+- `POST /api/manager/vision-uploads`：JSON 提交 `filename`、`size`、必填 `captured_at`（Unix 秒或带时区 ISO 时间）、可选 `lng`、`lat`、`camera_stabilized` 和归一化 `observation_regions`，返回 `upload_id`、`offset`、`chunk_size`。经纬度可缺省，但发布路况前仍须在地图上确认具体道路。
 - `GET /api/manager/vision-uploads/<upload_id>`：读取服务器确认的续传偏移 `offset`。
 - `PUT /api/manager/vision-uploads/<upload_id>/chunks`：请求体为当前视频二进制分块，使用 `Upload-Offset` 请求头声明起始字节。服务端只接受与已确认偏移连续的分块。
 - `POST /api/manager/vision-uploads/<upload_id>/complete`：校验文件头和完整长度后，将视频放入影像任务队列。
+- `POST /api/manager/vision-jobs/<job_id>/cancel` 与 `/retry`：取消任务，或从最后完成的视频分段重新排队。
+- `POST /api/manager/vision-jobs/<job_id>/candidates/<index>/review`：逐项确认或排除候选并保存审核依据。
+- 影像来源路况事件必须关联已确认候选、拍摄时间、管理员选定的道路、现场核实依据和未来结束时间；超出配置时效的影像不能发布为当前路况。
 
 ## 行为埋点
 

@@ -11,16 +11,19 @@ from storage import database
 
 def create_job(url: str | None, *, created_by: str, original_name: str,
                media_kind: str, media_path: str, sha256: str,
-               anchor_gcj: dict[str, float] | None, camera_stabilized: bool = False) -> dict:
+               anchor_gcj: dict[str, float] | None, camera_stabilized: bool = False,
+               captured_at=None, observation_regions: list[dict] | None = None) -> dict:
     job_id = str(uuid.uuid4())
     with database.connect(url) as conn:
         row = conn.execute(
             "INSERT INTO manager_vision_job(job_id, created_by, original_name, media_kind,"
-            " media_path, sha256, anchor_gcj, camera_stabilized, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'queued')"
+            " media_path, sha256, anchor_gcj, camera_stabilized, captured_at, observation_regions, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'queued')"
             " RETURNING job_id, status, created_at",
             (job_id, created_by, original_name, media_kind, media_path, sha256,
-             Jsonb(anchor_gcj) if anchor_gcj is not None else None, bool(camera_stabilized)),
+             Jsonb(anchor_gcj) if anchor_gcj is not None else None,
+             bool(camera_stabilized), captured_at,
+             Jsonb(observation_regions or [])),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])}
 
@@ -41,7 +44,8 @@ def claim_next_job(url: str | None, worker_id: str, lease_seconds: int = 90) -> 
             " UPDATE manager_vision_job j SET status='running', worker_id=%s,"
             " lease_until=now()+(%s * interval '1 second'), attempts=attempts+1, updated_at=now()"
             " FROM candidate c WHERE j.job_id=c.job_id"
-            " RETURNING j.job_id, j.media_kind, j.media_path, j.anchor_gcj, j.camera_stabilized, j.attempts",
+            " RETURNING j.job_id, j.media_kind, j.media_path, j.anchor_gcj, j.camera_stabilized,"
+            " j.observation_regions, j.captured_at, j.progress, j.checkpoint, j.attempts",
             (worker_id, lease_seconds),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
@@ -58,9 +62,53 @@ def heartbeat_job(url: str | None, job_id: str, worker_id: str, lease_seconds: i
     return row is not None
 
 
+def update_job_progress(url: str | None, job_id: str, worker_id: str, *,
+                        progress: dict, checkpoint: dict | None = None) -> dict | None:
+    """Persist a completed video segment checkpoint and report cancellation state."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET progress=%s, checkpoint=COALESCE(%s, checkpoint), updated_at=now()"
+            " WHERE job_id=%s AND worker_id=%s AND status='running' AND lease_until>now()"
+            " RETURNING cancel_requested",
+            (Jsonb(progress), Jsonb(checkpoint) if checkpoint is not None else None,
+             job_id, worker_id),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def request_cancel_job(url: str | None, job_id: str) -> dict | None:
+    """Cancel queued work immediately or ask a running worker to stop at its next checkpoint."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET"
+            " status=CASE WHEN status='queued' THEN 'cancelled' ELSE status END,"
+            " cancel_requested=CASE WHEN status='running' THEN true ELSE cancel_requested END,"
+            " progress=CASE WHEN status='queued' THEN %s ELSE progress END,"
+            " updated_at=now() WHERE job_id=%s AND status IN ('queued','running')"
+            " RETURNING job_id, status, cancel_requested, progress",
+            (Jsonb({"phase": "cancelled", "percent": 0}), job_id),
+        ).fetchone()
+    return {**row, "job_id": str(row["job_id"])} if row else None
+
+
+def retry_job(url: str | None, job_id: str) -> dict | None:
+    """Requeue failed/cancelled work; a failed video keeps its last complete segment checkpoint."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET status='queued', worker_id=NULL, lease_until=NULL, attempts=0,"
+            " cancel_requested=false, error=NULL, review_status=NULL, review_candidate_index=NULL,"
+            " review_note=NULL, reviewed_by=NULL, reviewed_at=NULL,"
+            " progress=%s, updated_at=now()"
+            " WHERE job_id=%s AND status IN ('failed','cancelled') AND review_status IS NULL"
+            " RETURNING job_id, status, progress",
+            (Jsonb({"phase": "queued", "percent": 0}), job_id),
+        ).fetchone()
+    return {**row, "job_id": str(row["job_id"])} if row else None
+
+
 def finish_job(url: str | None, job_id: str, worker_id: str, *, status: str,
                result: dict | None = None, error: dict | None = None) -> bool:
-    if status not in {"needs_review", "completed", "failed"}:
+    if status not in {"needs_review", "completed", "failed", "cancelled"}:
         raise ValueError("invalid vision job terminal status")
     with database.connect(url) as conn:
         row = conn.execute(
@@ -77,9 +125,9 @@ def get_job(url: str | None, job_id: str) -> dict | None:
     with database.connect(url) as conn:
         row = conn.execute(
             "SELECT job_id, created_by, original_name, media_kind, media_path, sha256, anchor_gcj, camera_stabilized,"
-            " status, attempts, result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
-            " created_at, updated_at FROM manager_vision_job"
-            " WHERE job_id=%s AND deleted_at IS NULL", (job_id,),
+            " captured_at, observation_regions, progress, checkpoint, candidate_reviews, cancel_requested, status, attempts, result, error,"
+            " review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
+            " created_at, updated_at FROM manager_vision_job WHERE job_id=%s AND deleted_at IS NULL", (job_id,),
         ).fetchone()
     return {**row, "job_id": str(row["job_id"])} if row else None
 
@@ -89,13 +137,41 @@ def list_jobs(url: str | None, limit: int = 50) -> list[dict[str, Any]]:
         raise ValueError("limit must be between 1 and 200")
     with database.connect(url) as conn:
         rows = conn.execute(
-            "SELECT job_id, created_by, original_name, media_kind, anchor_gcj, camera_stabilized, status, attempts,"
+            "SELECT job_id, created_by, original_name, media_kind, anchor_gcj, camera_stabilized,"
+            " captured_at, observation_regions, progress, candidate_reviews, cancel_requested, status, attempts,"
             " result, error, review_status, review_candidate_index, review_note, reviewed_by, reviewed_at,"
             " created_at, updated_at"
             " FROM manager_vision_job WHERE deleted_at IS NULL"
             " ORDER BY created_at DESC LIMIT %s", (limit,),
         ).fetchall()
     return [{**row, "job_id": str(row["job_id"])} for row in rows]
+
+
+def review_candidate(url: str | None, job_id: str, *, candidate_index: int,
+                     review_status: str, review_note: str, reviewed_by: str) -> dict | None:
+    """Record a one-time, independently auditable decision for one candidate."""
+    if review_status not in {"confirmed", "dismissed"}:
+        raise ValueError("review_status must be confirmed or dismissed")
+    if isinstance(candidate_index, bool) or not isinstance(candidate_index, int) or candidate_index < 0:
+        raise ValueError("candidate_index must be a non-negative integer")
+    review = Jsonb({
+        "status": review_status,
+        "note": review_note[:1000],
+        "reviewed_by": reviewed_by,
+    })
+    index_text = str(candidate_index)
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "UPDATE manager_vision_job SET candidate_reviews = candidate_reviews || "
+            "jsonb_build_object(%s::text, %s::jsonb), updated_at=now() "
+            "WHERE job_id=%s AND status='needs_review' AND review_status IS NULL "
+            "AND jsonb_typeof(result->'candidates')='array' "
+            "AND jsonb_array_length(result->'candidates') > %s "
+            "AND NOT (candidate_reviews ? %s) "
+            "RETURNING job_id, status, candidate_reviews",
+            (index_text, review, job_id, candidate_index, index_text),
+        ).fetchone()
+    return {**row, "job_id": str(row["job_id"])} if row else None
 
 
 def review_job(url: str | None, job_id: str, *, review_status: str,

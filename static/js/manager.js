@@ -2,7 +2,7 @@
   'use strict';
 
   var legacyDismissedVisionStorageKey = 'managerDismissedVisionJobs';
-  var state = { csrf: '', map: null, eventLayers: null, preview: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, sourceJobId: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxImageBytes: 24 * 1024 * 1024, maxVideoBytes: 1024 * 1024 * 1024, uploadChunkBytes: 8 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, sourceCandidateIndex: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxImageBytes: 24 * 1024 * 1024, maxVideoBytes: 1024 * 1024 * 1024, uploadChunkBytes: 8 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, observationRegions: [], currentRegionPoints: [], drawingRegion: false, mediaObjectUrl: null, poll: null };
   var pendingVisionUploadKey = 'whu-walker-pending-vision-video-v1';
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
@@ -73,29 +73,6 @@
     } finally {
       state.visionDeleteBusy.delete(jobId);
     }
-  }
-
-  function blockedModeInputs() {
-    return [byId('block-walk'), byId('block-bike'), byId('block-drive')];
-  }
-
-  function resetBlockedModes() {
-    blockedModeInputs().forEach(function (input) { input.checked = true; });
-  }
-
-  function selectedBlockedModes() {
-    return blockedModeInputs().filter(function (input) { return input.checked; })
-      .map(function (input) { return input.id.replace('block-', ''); });
-  }
-
-  function blockedModesQuery(modes) {
-    return (modes || selectedBlockedModes()).map(function (mode) {
-      return '&blocked_modes=' + encodeURIComponent(mode);
-    }).join('');
-  }
-
-  function sameModes(left, right) {
-    return left.length === right.length && left.every(function (mode, index) { return mode === right[index]; });
   }
 
   function isVideoFile(file) {
@@ -185,10 +162,143 @@
     byId('submit-vision').disabled = !canSubmitVision();
   }
 
+  function regionKindLabel(kind) {
+    return { vehicle_lane: '机动车道', pedestrian: '人行区域', parking: '停车区域', exclude: '忽略区域' }[kind] || '观察区域';
+  }
+
+  function drawObservationRegions() {
+    var canvas = byId('observation-canvas');
+    if (!canvas || !canvas.width || !canvas.height || !canvas.getContext) return;
+    var context = canvas.getContext('2d');
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    function drawPolygon(points, color, close) {
+      if (!points.length) return;
+      context.beginPath();
+      context.moveTo(points[0][0] * canvas.width, points[0][1] * canvas.height);
+      points.slice(1).forEach(function (point) { context.lineTo(point[0] * canvas.width, point[1] * canvas.height); });
+      if (close && points.length >= 3) context.closePath();
+      context.strokeStyle = color; context.lineWidth = Math.max(2, canvas.width / 400);
+      context.fillStyle = color.replace('1)', '0.16)');
+      if (close && points.length >= 3) context.fill();
+      context.stroke();
+      points.forEach(function (point) {
+        context.beginPath(); context.arc(point[0] * canvas.width, point[1] * canvas.height, Math.max(3, canvas.width / 250), 0, Math.PI * 2);
+        context.fillStyle = '#fff'; context.fill(); context.stroke();
+      });
+    }
+    state.observationRegions.forEach(function (region, index) {
+      var colors = ['rgba(73,146,111,1)', 'rgba(223,151,62,1)', 'rgba(87,133,180,1)', 'rgba(186,84,84,1)'];
+      drawPolygon(region.polygon, colors[index % colors.length], true);
+    });
+    if (state.currentRegionPoints.length) drawPolygon(state.currentRegionPoints, 'rgba(244,190,78,1)', false);
+  }
+
+  function setObservationCanvasSize() {
+    var canvas = byId('observation-canvas');
+    var image = byId('observation-image');
+    var video = byId('observation-video');
+    var width = video && !video.hidden && video.videoWidth ? video.videoWidth : image && image.naturalWidth;
+    var height = video && !video.hidden && video.videoHeight ? video.videoHeight : image && image.naturalHeight;
+    if (!canvas || !width || !height) return;
+    var preview = byId('observation-editor');
+    var stage = document.querySelector ? document.querySelector('.observation-preview') : null;
+    var scale = Math.min(1, 8192 / width, 8192 / height);
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    if (stage && stage.style) stage.style.aspectRatio = width + ' / ' + height;
+    if (preview) preview.hidden = false;
+    drawObservationRegions();
+  }
+
+  function showObservationMedia(file) {
+    var editor = byId('observation-editor');
+    if (!editor) return;
+    if (state.mediaObjectUrl && window.URL && window.URL.revokeObjectURL) window.URL.revokeObjectURL(state.mediaObjectUrl);
+    state.mediaObjectUrl = null;
+    editor.hidden = true;
+    var image = byId('observation-image');
+    var video = byId('observation-video');
+    var canvas = byId('observation-canvas');
+    if (image) { image.hidden = true; image.src = ''; }
+    if (video) {
+      if (video.pause) video.pause();
+      video.hidden = true; video.src = '';
+      if (video.load) video.load();
+    }
+    if (!file || !window.URL || !window.URL.createObjectURL) return;
+    state.mediaObjectUrl = window.URL.createObjectURL(file);
+    if (isVideoFile(file)) {
+      video.hidden = false; video.src = state.mediaObjectUrl;
+      video.addEventListener('loadedmetadata', setObservationCanvasSize, { once: true });
+      video.addEventListener('seeked', drawObservationRegions);
+    } else {
+      image.hidden = false; image.src = state.mediaObjectUrl;
+      image.addEventListener('load', setObservationCanvasSize, { once: true });
+    }
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
+    editor.hidden = false;
+  }
+
+  function renderObservationRegionList() {
+    var root = byId('observation-region-list');
+    if (!root) return;
+    root.replaceChildren();
+    if (!state.observationRegions.length) {
+      root.textContent = '尚未圈选区域';
+      return;
+    }
+    state.observationRegions.forEach(function (region, index) {
+      var chip = document.createElement('span'); chip.className = 'observation-region-chip';
+      chip.appendChild(document.createTextNode(regionKindLabel(region.kind) + ' ' + (index + 1)));
+      var remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×';
+      remove.setAttribute('aria-label', '移除' + regionKindLabel(region.kind));
+      remove.addEventListener('click', function () {
+        state.observationRegions.splice(index, 1); renderObservationRegionList(); drawObservationRegions();
+      });
+      chip.appendChild(remove); root.appendChild(chip);
+    });
+  }
+
+  function finishObservationRegion() {
+    if (state.currentRegionPoints.length < 3) {
+      message('vision-message', '一个观察区域至少需要 3 个顶点。'); return false;
+    }
+    state.observationRegions.push({
+      id: 'region-' + (state.observationRegions.length + 1),
+      kind: byId('observation-kind').value,
+      polygon: state.currentRegionPoints.slice(),
+    });
+    state.currentRegionPoints = []; state.drawingRegion = false;
+    renderObservationRegionList(); drawObservationRegions();
+    return true;
+  }
+
   function updatePublishState() {
     var hasFieldEvidence = !state.sourceJobId || byId('field-confirmation').value.trim().length >= 8;
+    var impactReady = !!byId('event-action').value && selectedEventModes().length > 0;
+    byId('event-cost-wrap').hidden = byId('event-action').value !== 'slowdown';
     byId('publish-event').disabled = !state.picked || !state.picked.confirmed || state.picking ||
-      !byId('event-type').value || !selectedBlockedModes().length || !hasFieldEvidence;
+      !byId('event-type').value || !impactReady || !hasFieldEvidence;
+  }
+
+  function selectedEventModes() {
+    var select = byId('event-modes');
+    if (!select || !select.options) return ['walk', 'bike', 'drive'];
+    return Array.from(select.selectedOptions || []).map(function (option) { return option.value; });
+  }
+
+  function conditionPreviewQuery(picked) {
+    var query = '?lng=' + encodeURIComponent(picked.lng) +
+      '&lat=' + encodeURIComponent(picked.lat) +
+      '&type=' + encodeURIComponent(byId('event-type').value);
+    var action = byId('event-action').value;
+    if (action) {
+      query += '&action=' + encodeURIComponent(action) +
+        '&modes=' + encodeURIComponent(selectedEventModes().join(','));
+      if (action === 'slowdown') query += '&cost_multiplier=' + encodeURIComponent(byId('event-cost').value || '1.5');
+    }
+    return query;
   }
 
   function clearPickedRoad() {
@@ -210,6 +320,7 @@
 
   function clearVisionSource() {
     state.sourceJobId = null;
+    state.sourceCandidateIndex = null;
     byId('vision-source-banner').hidden = true;
     byId('field-confirmation-wrap').hidden = true;
     byId('field-confirmation').required = false;
@@ -217,21 +328,27 @@
     updatePublishState();
   }
 
-  function prepareVisionEvent(job) {
-    if (job.review_status !== 'confirmed') return;
+  function prepareVisionEvent(job, candidateIndex) {
+    var candidateReview = (job.candidate_reviews || {})[String(candidateIndex)];
+    var legacyConfirmed = job.review_status === 'confirmed' &&
+      (job.review_candidate_index === candidateIndex ||
+        (job.review_candidate_index == null && (job.result.candidates || []).length === 1 && candidateIndex === 0));
+    if (!(candidateReview && candidateReview.status === 'confirmed') && !legacyConfirmed) return;
     clearPickedRoad();
     state.sourceJobId = job.job_id;
+    state.sourceCandidateIndex = candidateIndex;
     byId('vision-source-banner').hidden = false;
-    byId('vision-source-label').textContent = '已复核影像：' + (job.original_name || job.job_id) + '。请重新选择具体道路、事件类型，并填写现场核实依据。';
+    byId('vision-source-label').textContent = '已复核影像候选 ' + (candidateIndex + 1) + '：' + (job.original_name || job.job_id) + '。请重新选择具体道路、事件类型，并填写现场核实依据。';
     byId('field-confirmation-wrap').hidden = false;
     byId('field-confirmation').required = true;
     byId('event-type').value = '';
+    byId('event-action').value = '';
+    Array.from(byId('event-modes').options || []).forEach(function (option) { option.selected = false; });
     byId('event-name').value = '';
     byId('event-description').value = '';
     byId('start-time').value = '';
-    byId('end-time').value = '';
+    byId('end-time').value = localDateTimeValue(Date.now() / 1000 + 1800);
     byId('field-confirmation').value = '';
-    resetBlockedModes();
     if (job.anchor_gcj) state.map.setView([job.anchor_gcj.lat, job.anchor_gcj.lng], 17);
     setPicking(true, 'road');
     updatePublishState();
@@ -312,6 +429,7 @@
       attribution: '© <a href="https://ditu.amap.com/" target="_blank" rel="noopener">高德地图</a>',
     }).addTo(state.map);
     state.eventLayers = L.layerGroup().addTo(state.map);
+    state.visionLayers = L.layerGroup().addTo(state.map);
     state.map.on('click', handleMapClick);
   }
 
@@ -372,22 +490,20 @@
     if (!state.picked) return;
     var picked = state.picked;
     var type = byId('event-type').value;
-    var blockedModes = selectedBlockedModes();
     var requestId = ++state.impactPreviewRequestId;
-    var query = '?lng=' + encodeURIComponent(picked.lng) +
-      '&lat=' + encodeURIComponent(picked.lat) +
-      '&type=' + encodeURIComponent(type) + blockedModesQuery(blockedModes);
+    var query = conditionPreviewQuery(picked);
+    var action = byId('event-action').value;
     try {
       var data = await request('/api/road-conditions/snap' + query, 'GET');
       if (requestId !== state.impactPreviewRequestId || state.picked !== picked ||
-          byId('event-type').value !== type || !sameModes(blockedModes, selectedBlockedModes())) return;
+          byId('event-type').value !== type || byId('event-action').value !== action) return;
       picked.snap = data.snap;
       picked.impactPreview = data.impact_preview;
       renderImpactPreview(data.impact_preview);
       updatePublishState();
     } catch (error) {
       if (requestId !== state.impactPreviewRequestId || state.picked !== picked ||
-          byId('event-type').value !== type || !sameModes(blockedModes, selectedBlockedModes())) return;
+          byId('event-type').value !== type || byId('event-action').value !== action) return;
       renderImpactPreview({
         road_name: picked.snap && picked.snap.road_name,
         affected_length_m: picked.snap && picked.snap.chain_length_m,
@@ -400,22 +516,35 @@
 
   async function handleMapClick(event) {
     if (!state.picking) return;
+    if (state.pickPurpose === 'vision') {
+      state.anchor = { lng: event.latlng.lng, lat: event.latlng.lat };
+      if (state.anchorMarker) state.map.removeLayer(state.anchorMarker);
+      state.anchorMarker = L.circleMarker([state.anchor.lat, state.anchor.lng], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#52786e', fillOpacity: 1,
+      }).addTo(state.visionLayers);
+      byId('selected-anchor').textContent = '影像参考点 · ' + state.anchor.lat.toFixed(5) + ', ' + state.anchor.lng.toFixed(5);
+      byId('selected-anchor').classList.add('is-set');
+      updateVisionSubmitState();
+      message('vision-message', '参考点已标记。识别框仍是画面坐标，发布路况时还需重新核对道路。', true);
+      setPicking(false);
+      return;
+    }
     var pickRequestId = ++state.pickRequestId;
     var lng = event.latlng.lng;
     var lat = event.latlng.lat;
     message('form-message', '正在将点位匹配到校园路网…');
     var requestedEventType = byId('event-type').value;
-    var requestedBlockedModes = selectedBlockedModes();
+    var requestedAction = byId('event-action').value;
+    var requestedModes = selectedEventModes();
     try {
-      var snapData = await request('/api/road-conditions/snap?lng=' + encodeURIComponent(lng) +
-        '&lat=' + encodeURIComponent(lat) + '&type=' + encodeURIComponent(requestedEventType) +
-        blockedModesQuery(requestedBlockedModes), 'GET');
+      var snapData = await request('/api/road-conditions/snap' + conditionPreviewQuery({ lng: lng, lat: lat }), 'GET');
       if (pickRequestId !== state.pickRequestId || !state.picking || state.pickPurpose !== 'road') return;
       var snap = snapData.snap;
       if (!snap) throw new Error('这个位置没有匹配到校园道路，请放大后重选。');
       var currentEventType = byId('event-type').value;
       var previewMatchesCurrentType = currentEventType === requestedEventType &&
-        sameModes(requestedBlockedModes, selectedBlockedModes());
+        byId('event-action').value === requestedAction &&
+        selectedEventModes().join(',') === requestedModes.join(',');
       state.picked = { lng: lng, lat: lat, snap: snap, impactPreview: previewMatchesCurrentType ? snapData.impact_preview : null, confirmed: false };
       renderImpactPreview(previewMatchesCurrentType ? snapData.impact_preview : null);
       if (state.preview) state.map.removeLayer(state.preview);
@@ -558,6 +687,28 @@
     var pending = readPendingVisionUpload();
     if (!fileMatchesPending(file, pending) || !isVideoFile(file)) return;
     byId('camera-stabilized').checked = pending.camera_stabilized === true;
+    byId('captured-at').value = localDateTimeValue(Number(pending.captured_at));
+    state.observationRegions = Array.isArray(pending.observation_regions) ? pending.observation_regions : [];
+    renderObservationRegionList();
+    message('vision-message', '已找到这段视频的未完成上传；提交后会从已上传位置继续。', true);
+    if (pending.anchor && Number.isFinite(Number(pending.anchor.lng)) && Number.isFinite(Number(pending.anchor.lat))) {
+      state.anchor = { lng: Number(pending.anchor.lng), lat: Number(pending.anchor.lat) };
+      byId('selected-anchor').textContent = '已恢复影像参考点 · ' + state.anchor.lat.toFixed(5) + ', ' + state.anchor.lng.toFixed(5);
+      byId('selected-anchor').classList.add('is-set');
+    }
+  }
+
+  function localDateTimeValue(epochSeconds) {
+    var date = new Date(epochSeconds * 1000);
+    if (!Number.isFinite(date.getTime())) return '';
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  function captureTimeEpoch() {
+    var value = byId('captured-at').value;
+    if (!value) return null;
+    var timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp / 1000 : null;
   }
 
   function showVisionUploadProgress(offset, total) {
@@ -576,10 +727,15 @@
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  async function uploadVideoInChunks(file, cameraStabilized) {
+  async function uploadVideoInChunks(file, cameraStabilized, capturedAt, observationRegions) {
     var pending = readPendingVisionUpload();
     var matchingPending = fileMatchesPending(file, pending) &&
-      pending.camera_stabilized === cameraStabilized;
+      pending.camera_stabilized === cameraStabilized &&
+      Math.abs(Number(pending.captured_at) - Number(capturedAt)) < 1 &&
+      JSON.stringify(pending.observation_regions || []) === JSON.stringify(observationRegions || []) &&
+      ((!pending.anchor && !state.anchor) || (pending.anchor && state.anchor &&
+        Math.abs(Number(pending.anchor.lng) - state.anchor.lng) < 0.000001 &&
+        Math.abs(Number(pending.anchor.lat) - state.anchor.lat) < 0.000001));
     var uploadId = matchingPending ? pending.upload_id : null;
     var offset = 0;
     if (uploadId) {
@@ -598,15 +754,24 @@
       }
     }
     if (!uploadId) {
-      var started = await request('/api/manager/vision-uploads', 'POST', {
+      var uploadMetadata = {
         filename: file.name, size: file.size, camera_stabilized: cameraStabilized,
-      });
+        captured_at: capturedAt, observation_regions: observationRegions || [],
+      };
+      if (state.anchor) {
+        uploadMetadata.lng = state.anchor.lng;
+        uploadMetadata.lat = state.anchor.lat;
+      }
+      var started = await request('/api/manager/vision-uploads', 'POST', uploadMetadata);
       uploadId = started.upload_id;
       offset = started.offset || 0;
       pending = {
         upload_id: uploadId, filename: file.name, size: file.size,
         last_modified: Number(file.lastModified || 0),
+        anchor: state.anchor ? { lng: state.anchor.lng, lat: state.anchor.lat } : null,
         camera_stabilized: cameraStabilized,
+        captured_at: capturedAt,
+        observation_regions: observationRegions || [],
       };
       savePendingVisionUpload(pending);
       if (started.chunk_size) state.uploadChunkBytes = started.chunk_size;
@@ -671,6 +836,7 @@
   function candidateName(kind) {
     return {
       possible_congestion: '可能存在车辆排队/低速聚集',
+      possible_crowding: '人行区域人群聚集候选',
       possible_accident: '疑似事故类别目标',
       vehicle_cluster_review: '车辆密集观察',
     }[kind] || '影像候选';
@@ -681,7 +847,7 @@
       var video = document.createElement('video');
       video.controls = true; video.preload = 'metadata'; video.className = 'vision-preview'; video.src = job.media_url;
       card.appendChild(video);
-      return;
+      return video;
     }
     var imageInfo = result.media || {};
     var width = Number(imageInfo.width), height = Number(imageInfo.height);
@@ -724,6 +890,38 @@
       stage.appendChild(svg);
     }
     card.appendChild(stage);
+    return null;
+  }
+
+  function appendCandidateEvidence(candidate, mediaElement, mediaKind, target) {
+    var segments = candidate && candidate.evidence && Array.isArray(candidate.evidence.segments)
+      ? candidate.evidence.segments : [];
+    if (mediaKind !== 'video' || !mediaElement || !segments.length) return;
+    var details = document.createElement('details'); details.className = 'candidate-evidence';
+    var summary = document.createElement('summary');
+    summary.textContent = '查看证据时段（' + segments.length + ' 段）';
+    details.appendChild(summary);
+    var list = document.createElement('div'); list.className = 'candidate-evidence-list';
+    segments.forEach(function (segment, index) {
+      var start = Number(segment && segment.start_seconds);
+      var end = Number(segment && segment.end_seconds);
+      if (!Number.isFinite(start) || start < 0 || !Number.isFinite(end) || end < start) return;
+      var jump = document.createElement('button'); jump.type = 'button';
+      jump.className = 'outline-button candidate-evidence-jump';
+      jump.textContent = '片段 ' + (index + 1) + ' · ' + start.toFixed(1) + '–' + end.toFixed(1) + ' 秒';
+      jump.addEventListener('click', function () {
+        mediaElement.currentTime = start;
+        if (typeof mediaElement.play === 'function') {
+          var playback = mediaElement.play();
+          if (playback && typeof playback.catch === 'function') playback.catch(function () {});
+        }
+      });
+      list.appendChild(jump);
+    });
+    if (list.children.length) {
+      details.appendChild(list);
+      target.appendChild(details);
+    }
   }
 
   function appendVisionMetrics(card, result, mediaKind) {
@@ -755,7 +953,7 @@
     }
     var model = result.model || {};
     var version = document.createElement('small');
-    version.textContent = '模型 ' + String(model.id || '未记录') + ' · 版本 ' + String(model.version || '未记录') + ' · 识别框不是地面坐标；本版不支持事故识别。';
+    version.textContent = '模型 ' + String(model.id || '未记录') + ' · 版本 ' + String(model.version || '未记录') + ' · 识别框不是地面坐标；当前没有事故与积水识别模型。';
     summary.appendChild(version);
     card.appendChild(summary);
   }
@@ -768,13 +966,21 @@
     }
     feedback.textContent = '正在保存审核…';
     var body = { status: status, note: note };
-    if (status === 'confirmed') body.candidate_index = candidateIndex;
-    request('/api/manager/vision-jobs/' + encodeURIComponent(job.job_id) + '/review', 'POST', body)
+    request('/api/manager/vision-jobs/' + encodeURIComponent(job.job_id) + '/candidates/' + candidateIndex + '/review', 'POST', body)
       .then(function () {
-        delete state.reviewDrafts[job.job_id];
+        state.reviewDrafts[job.job_id] = '';
         return refreshVisionJobs(true);
       })
       .catch(function (error) { feedback.textContent = error.message || '审核保存失败。'; });
+  }
+
+  async function recoverVisionJob(job, action) {
+    var label = action === 'cancel' ? '取消该影像任务？' : '从最近完成的视频分段重新排队？';
+    if (!window.confirm(label)) return;
+    try {
+      await request('/api/manager/vision-jobs/' + encodeURIComponent(job.job_id) + '/' + action, 'POST', {});
+      await refreshVisionJobs(true);
+    } catch (error) { window.alert(error.message || '影像任务操作失败。'); }
   }
 
   function renderVisionJob(job) {
@@ -782,16 +988,40 @@
     var head = document.createElement('div'); head.className = 'vision-job-head';
     var title = document.createElement('div'); title.className = 'vision-job-title'; title.textContent = job.original_name || '巡查影像';
     var meta = document.createElement('div'); meta.className = 'vision-job-meta';
-    var when = job.created_at ? new Date(job.created_at).toLocaleString('zh-CN', { hour12: false }) : '';
-    meta.textContent = when + (job.anchor_gcj ? ' · 观察区域已标注' : '')
+    var captured = job.captured_at ? new Date(job.captured_at).toLocaleString('zh-CN', { hour12: false }) : '拍摄时间未记录';
+    meta.textContent = '拍摄 ' + captured + (job.anchor_gcj ? ' · 校园位置已标注' : '')
       + (job.media_kind === 'video' ? (job.camera_stabilized ? ' · 管理员声明固定/已稳像' : ' · 自动检查镜头运动') : '');
     title.appendChild(meta);
     var stateLabel = document.createElement('span'); stateLabel.className = 'vision-job-state ' + job.status;
     stateLabel.textContent = {
-      queued: '排队中', running: '分析中', needs_review: job.review_status ? '已复核' : '待复核',
-      completed: '完成', failed: '分析失败',
+      queued: '排队中', running: job.cancel_requested ? '等待取消' : '分析中', needs_review: job.review_status ? '已复核' : '待复核',
+      completed: '完成', failed: '分析失败', cancelled: '已取消',
     }[job.status] || job.status;
     head.append(title, stateLabel); card.appendChild(head);
+    if (job.status === 'running' || job.status === 'queued') {
+      var progressInfo = job.progress || {};
+      var progressLine = document.createElement('p'); progressLine.className = 'vision-job-meta';
+      var parts = [];
+      if (progressInfo.percent != null && Number.isFinite(Number(progressInfo.percent))) parts.push(Number(progressInfo.percent) + '%');
+      if (progressInfo.frames_analyzed != null) parts.push(Number(progressInfo.frames_analyzed) + ' / ' + Number(progressInfo.total_frames || 0) + ' 帧');
+      if (progressInfo.analyzed_through_seconds != null) parts.push('已分析到 ' + Number(progressInfo.analyzed_through_seconds).toFixed(1) + ' 秒');
+      progressLine.textContent = parts.length ? parts.join(' · ') : '等待视觉工作进程';
+      card.appendChild(progressLine);
+      if (progressInfo.percent != null && Number.isFinite(Number(progressInfo.percent))) {
+        var progressBar = document.createElement('progress'); progressBar.max = 100; progressBar.value = Number(progressInfo.percent);
+        progressBar.className = 'vision-job-progress'; card.appendChild(progressBar);
+      }
+      var cancelButton = document.createElement('button'); cancelButton.type = 'button'; cancelButton.className = 'outline-button';
+      cancelButton.textContent = job.cancel_requested ? '正在等待分段结束' : '取消分析';
+      cancelButton.disabled = !!job.cancel_requested;
+      cancelButton.addEventListener('click', function () { recoverVisionJob(job, 'cancel'); });
+      card.appendChild(cancelButton);
+    }
+    if (job.status === 'failed' || job.status === 'cancelled') {
+      var retryButton = document.createElement('button'); retryButton.type = 'button'; retryButton.className = 'outline-button';
+      retryButton.textContent = '从断点重试'; retryButton.addEventListener('click', function () { recoverVisionJob(job, 'retry'); });
+      card.appendChild(retryButton);
+    }
     if (job.status === 'failed' && job.error) {
       var failure = document.createElement('p'); failure.className = 'vision-job-meta';
       failure.textContent = job.error.message || '分析失败'; card.appendChild(failure);
@@ -806,7 +1036,7 @@
     }
     var result = job.result || {};
     if (job.result && (job.status === 'needs_review' || job.status === 'completed' || job.review_status)) {
-      appendVisionPreview(card, job, result);
+      var previewMedia = appendVisionPreview(card, job, result);
       appendVisionMetrics(card, result, job.media_kind);
       var reviewNote = null;
       var reviewFeedback = null;
@@ -826,21 +1056,37 @@
       }
       var candidates = document.createElement('div'); candidates.className = 'candidate-list';
       (result.candidates || []).forEach(function (item, index) {
+        var candidateReview = (job.candidate_reviews || {})[String(index)] || null;
+        var legacyReview = job.review_status && (job.review_candidate_index === index || ((result.candidates || []).length === 1 && job.review_candidate_index == null));
         var candidate = document.createElement('div'); candidate.className = 'candidate-card';
         var titleNode = document.createElement('strong');
         titleNode.textContent = candidateName(item.kind) + ' · 置信度 ' + Math.round((item.confidence || 0) * 100) + '%';
-        if (job.review_status === 'confirmed' && job.review_candidate_index === index) {
-          titleNode.textContent += ' · 已确认';
-        }
+        if (candidateReview) titleNode.textContent += candidateReview.status === 'confirmed' ? ' · 已确认' : ' · 已排除';
+        else if (legacyReview) titleNode.textContent += job.review_status === 'confirmed' ? ' · 已确认' : ' · 已排除';
         var why = document.createElement('p'); why.textContent = item.reason || '请结合原始影像复核。';
         candidate.append(titleNode, why);
-        if (job.status === 'needs_review' && !job.review_status) {
+        appendCandidateEvidence(item, previewMedia, job.media_kind, candidate);
+        if (candidateReview && candidateReview.note) {
+          var reviewText = document.createElement('p'); reviewText.textContent = '复核记录：' + candidateReview.note; candidate.appendChild(reviewText);
+        }
+        if (job.status === 'needs_review' && !job.review_status && !candidateReview && !legacyReview) {
           var actions = document.createElement('div'); actions.className = 'candidate-actions';
           var confirmButton = document.createElement('button'); confirmButton.type = 'button'; confirmButton.textContent = '确认此候选';
           confirmButton.addEventListener('click', function () {
             reviewJob(job, 'confirmed', index, reviewNote, reviewFeedback);
           });
-          actions.append(confirmButton); candidate.appendChild(actions);
+          var dismissCandidate = document.createElement('button'); dismissCandidate.type = 'button'; dismissCandidate.textContent = '排除此候选';
+          dismissCandidate.addEventListener('click', function () {
+            reviewJob(job, 'dismissed', index, reviewNote, reviewFeedback);
+          });
+          actions.append(confirmButton, dismissCandidate); candidate.appendChild(actions);
+        }
+        if ((candidateReview && candidateReview.status === 'confirmed') ||
+            (legacyReview && job.review_status === 'confirmed')) {
+          var transfer = document.createElement('button'); transfer.type = 'button';
+          transfer.className = 'outline-button transfer-button'; transfer.textContent = '将此候选转入道路事件';
+          transfer.addEventListener('click', function () { prepareVisionEvent(job, index); });
+          candidate.appendChild(transfer);
         }
         candidates.appendChild(candidate);
       });
@@ -931,6 +1177,10 @@
     var file = byId('media-file').files[0];
     if (!file) { message('vision-message', '请先选择一张图片或一段视频。'); return; }
     var video = isVideoFile(file);
+    var capturedAt = captureTimeEpoch();
+    if (capturedAt === null) {
+      message('vision-message', '请填写影像实际拍摄时间。'); return;
+    }
     var maxBytes = video ? state.maxVideoBytes : state.maxImageBytes;
     if (file.size > maxBytes) {
       message('vision-message', '文件超过当前上限：' + (video ? '视频 ' : '图片 ') + Math.round(maxBytes / (1024 * 1024)) + ' MB。'); return;
@@ -939,6 +1189,7 @@
       message('vision-message', '只支持 JPG、PNG、WebP 图片和 MP4、MOV、AVI、WebM 视频。'); return;
     }
     var cameraStabilized = video && byId('camera-stabilized').checked;
+    var observationRegions = state.observationRegions.slice();
     var button = byId('submit-vision');
     state.visionUploadBusy = true;
     updateVisionSubmitState();
@@ -946,14 +1197,23 @@
     try {
       var data;
       if (video) {
-        data = await uploadVideoInChunks(file, cameraStabilized);
+        data = await uploadVideoInChunks(file, cameraStabilized, capturedAt, observationRegions);
       } else {
         var form = new FormData(); form.append('media', file);
         form.append('camera_stabilized', String(cameraStabilized));
+        form.append('captured_at', new Date(capturedAt * 1000).toISOString());
+        form.append('observation_regions', JSON.stringify(observationRegions));
+        if (state.anchor) {
+          form.append('lng', String(state.anchor.lng));
+          form.append('lat', String(state.anchor.lat));
+        }
         data = await request('/api/manager/vision-jobs', 'POST', form);
       }
       message('vision-message', '影像任务已入队。分析服务独立运行，不会阻塞路线规划。', true);
       clearSelectedMedia(); refreshVisionJobs();
+      state.observationRegions = []; state.currentRegionPoints = []; state.drawingRegion = false;
+      renderObservationRegionList();
+      byId('observation-editor').hidden = true;
       var progress = byId('vision-upload-progress');
       if (progress) progress.hidden = true;
     } catch (error) {
@@ -964,7 +1224,7 @@
     }
     finally {
       state.visionUploadBusy = false;
-      button.innerHTML = '开始识别 <span>→</span>';
+      button.innerHTML = '提交分析任务 <span>→</span>';
       updateVisionSubmitState();
     }
   }
@@ -986,8 +1246,9 @@
     if (!state.picked) { message('form-message', '请先在地图上选取一条道路。'); return; }
     if (!state.picked.confirmed) { message('form-message', '请先核对并确认地图高亮的路段。'); return; }
     if (!byId('event-type').value) { message('form-message', '请选择现场确认的事件类型。'); return; }
-    var blockedModes = selectedBlockedModes();
-    if (!blockedModes.length) { message('form-message', '请至少选择一种需要禁止通行的方式。'); return; }
+    if (!byId('event-action').value || !selectedEventModes().length) {
+      message('form-message', '请选择路况影响方式及受影响的出行方式。'); return;
+    }
     var fieldConfirmation = byId('field-confirmation').value.trim();
     if (state.sourceJobId && fieldConfirmation.length < 8) {
       message('form-message', '请填写具体道路的现场核实依据（至少 8 字）。'); return;
@@ -998,15 +1259,18 @@
     var button = byId('publish-event'); button.disabled = true; button.textContent = '正在发布…';
     var body = {
       type: byId('event-type').value,
+      action: byId('event-action').value,
+      affected_modes: selectedEventModes(),
       name: byId('event-name').value.trim(),
       description: byId('event-description').value.trim(),
       lng: state.picked.lng, lat: state.picked.lat,
-      blocked_modes: blockedModes,
     };
-    if (start) body.start_time = start;
-    if (end) body.end_time = end;
+    if (body.action === 'slowdown') body.cost_multiplier = Number(byId('event-cost').value || 1.5);
+    if (start) body.start_time = new Date(start).toISOString();
+    if (end) body.end_time = new Date(end).toISOString();
     if (state.sourceJobId) {
       body.source_vision_job_id = state.sourceJobId;
+      body.source_vision_candidate_index = state.sourceCandidateIndex;
       body.field_confirmation = fieldConfirmation;
     }
     try {
@@ -1014,14 +1278,14 @@
       message('form-message', '事件已发布，路线规划会按该路段状态处理。', true);
       byId('event-name').value = ''; byId('event-description').value = '';
       byId('start-time').value = ''; byId('end-time').value = '';
-      resetBlockedModes();
+      Array.from(byId('event-modes').options || []).forEach(function (option) { option.selected = false; });
+      byId('event-action').value = '';
       clearPickedRoad(); clearVisionSource();
       refreshEvents();
     } catch (error) { message('form-message', error.message || '事件发布失败。'); }
     finally { button.innerHTML = '发布事件 <span>→</span>'; updatePublishState(); }
   }
 
-  resetBlockedModes();
   byId('login-form').addEventListener('submit', async function (event) {
     event.preventDefault();
     message('login-message', '正在验证…');
@@ -1044,17 +1308,53 @@
     message('form-message', '已清除所选路段。');
   });
   byId('event-type').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
-  blockedModeInputs().forEach(function (input) {
-    input.addEventListener('change', function () {
-      updatePublishState();
-      refreshImpactPreview();
-    });
-  });
+  byId('event-action').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
+  byId('event-modes').addEventListener('change', function () { updatePublishState(); return refreshImpactPreview(); });
+  byId('event-cost').addEventListener('input', function () { updatePublishState(); return refreshImpactPreview(); });
   byId('field-confirmation').addEventListener('input', updatePublishState);
   byId('clear-vision-source').addEventListener('click', clearVisionSource);
+  byId('pick-anchor').addEventListener('click', function () { setPicking(true, 'vision'); });
+  byId('start-region').addEventListener('click', function () {
+    if (!byId('observation-canvas').width) { message('vision-message', '请先选择可读取的图片或视频画面。'); return; }
+    state.currentRegionPoints = []; state.drawingRegion = true;
+    message('vision-message', '已开始圈选，至少点 3 个顶点后选择“完成区域”。', true);
+    drawObservationRegions();
+  });
+  byId('undo-region-point').addEventListener('click', function () {
+    state.currentRegionPoints.pop(); drawObservationRegions();
+  });
+  byId('finish-region').addEventListener('click', finishObservationRegion);
+  byId('clear-regions').addEventListener('click', function () {
+    state.observationRegions = []; state.currentRegionPoints = []; state.drawingRegion = false;
+    renderObservationRegionList(); drawObservationRegions();
+  });
+  byId('observation-canvas').addEventListener('click', function (event) {
+    if (!state.drawingRegion) return;
+    var bounds = this.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    state.currentRegionPoints.push([
+      Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
+      Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)),
+    ]);
+    drawObservationRegions();
+  });
   byId('media-file').addEventListener('change', function () {
     var file = byId('media-file').files[0];
     renderSelectedMedia(file);
+    state.observationRegions = []; state.currentRegionPoints = []; state.drawingRegion = false;
+    var pending = readPendingVisionUpload();
+    if (fileMatchesPending(file, pending) && pending.captured_at) {
+      byId('captured-at').value = localDateTimeValue(Number(pending.captured_at));
+    } else {
+      byId('captured-at').value = '';
+      if (!file) {
+        state.anchor = null;
+        byId('selected-anchor').textContent = '尚未标注影像区域';
+        byId('selected-anchor').classList.remove('is-set');
+      }
+    }
+    renderObservationRegionList();
+    showObservationMedia(file);
     byId('camera-stabilized').disabled = !isVideoFile(file);
     if (!isVideoFile(file)) byId('camera-stabilized').checked = false;
     restorePendingVisionSettings(file);

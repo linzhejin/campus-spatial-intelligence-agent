@@ -1,0 +1,49 @@
+{
+  "dataset": "VisDrone2019-DET-val",
+  "dataset_archive_sha256": "abeea063037e5d20398837deb11084e652402a34ddf4f207bdf541a6f2a35ef9",
+  "model": "visdrone-rtdetrv4-s",
+  "model_revision": "820fca3d962243f7d611dd35cf2a64d267635499",
+  "model_sha256": "32d61649fcfec792e18134d344c93c1b198f3c955b6a6d506235fd024ff7581c",
+  "model_manifest_sha256": "e2db3557c759964ed051ebfa4727e131f91bc6aa39a2b5a6a396b1f5d573c203",
+  "execution_provider": "CPUExecutionProvider",
+  "image_count_in_archive": 548,
+  "image_count_evaluated": 548,
+  "decode_failures": [],
+  "confidence_threshold": 0.369,
+  "iou_threshold": 0.5,
+  "groups": {
+    "pedestrian": {
+      "tp": 7117,
+      "fp": 3239,
+      "fn": 6852,
+      "ignored": 13,
+      "precision": 0.6872,
+      "recall": 0.5095,
+      "f1": 0.5852
+    },
+    "vehicle": {
+      "tp": 17269,
+      "fp": 7536,
+      "fn": 7521,
+      "ignored": 69,
+      "precision": 0.6962,
+      "recall": 0.6966,
+      "f1": 0.6964
+    }
+  },
+  "detections_by_class": {
+    "awning-tricycle": 552,
+    "bicycle": 1226,
+    "bus": 201,
+    "car": 14431,
+    "motor": 4962,
+    "pedestrian": 6344,
+    "people": 4025,
+    "tricycle": 839,
+    "truck": 725,
+    "van": 1938
+  },
+  "mean_inference_seconds_per_image": 0.819,
+  "elapsed_seconds": 455.43,
+  "interpretation": "Precision/recall at one confidence and IoU operating point on public VisDrone aerial images. This is not mAP, not an event-level congestion metric, and not Wuhan University campus accuracy."
+}

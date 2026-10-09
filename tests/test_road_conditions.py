@@ -277,6 +277,34 @@ class TestEffectMatrix:
         assert not G2.has_edge(1, 2, 0)
         assert 5 in nx.dijkstra_path(G2, 0, 3, weight="length")
 
+    def test_explicit_slowdown_only_penalizes_selected_modes_without_closing_road(self, G):
+        condition = _edge_condition(G, "event")
+        condition.update({"action": "slowdown", "affected_modes": ["drive"], "cost_multiplier": 1.8})
+        rc._save_conditions([condition])
+
+        walk_graph, walk_penalties, walk_closed, walk_applied = rc.apply_conditions_to_graph(
+            G, rc.list_conditions(), "walk", strict=True,
+        )
+        drive_graph, drive_penalties, drive_closed, drive_applied = rc.apply_conditions_to_graph(
+            G, rc.list_conditions(), "drive", strict=True,
+        )
+
+        assert walk_graph is G and not walk_penalties and not walk_closed and walk_applied == 0
+        assert drive_graph is G and not drive_closed and drive_applied == 1
+        assert drive_penalties[(1, 2, 0)] == 1.8
+
+    def test_notice_does_not_change_route_cost(self, G):
+        condition = _edge_condition(G, "event")
+        condition.update({"action": "notice", "affected_modes": ["walk", "bike", "drive"]})
+
+        updated_graph, penalties, closed, applied = rc.apply_conditions_to_graph(
+            G, [condition], "walk", strict=True,
+        )
+
+        assert updated_graph is G
+        assert penalties == {} and closed == set()
+        assert applied == 1
+
     @pytest.mark.parametrize("mode", ["walk", "bike"])
     def test_flooding_blocks_pedestrian(self, G, mode):
         _edge_condition(G, "flooding")
@@ -1039,6 +1067,7 @@ class TestRoadConditionAPI:
         job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
         job = {"job_id": job_id, "status": "needs_review", "review_status": "confirmed",
                "review_candidate_index": 0,
+               "captured_at": time.time(),
                "result": {"candidates": [{
                    "kind": "vehicle_cluster_review",
                    "review_required": True,
@@ -1056,6 +1085,7 @@ class TestRoadConditionAPI:
         assert rc.list_conditions() == []
 
         body["field_confirmation"] = "现场人员反馈该路段正在拥堵，已核实作用范围。"
+        body["end_time"] = time.time() + 1800
         published = client.post("/api/road-conditions", json=body, headers=headers)
         assert published.status_code == 201
         condition = published.get_json()["data"]["condition"]
@@ -1066,6 +1096,54 @@ class TestRoadConditionAPI:
         public_records = client.get("/api/road-conditions").get_json()["data"]["conditions"]
         assert len(public_records) == 1
         assert "source" not in public_records[0] and "audit" not in public_records[0]
+
+    def test_independently_confirmed_recent_candidate_can_publish_with_expiry(self, client, G, monkeypatch):
+        import time
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        candidate = {"kind": "possible_congestion", "review_required": True, "auto_publish": False}
+        job = {
+            "job_id": job_id, "status": "needs_review", "review_status": None,
+            "captured_at": time.time(),
+            "candidate_reviews": {"0": {"status": "dismissed"}, "1": {"status": "confirmed"}},
+            "result": {"candidates": [candidate, candidate]},
+        }
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: job)
+        gj = _mid_12_gcj(G)
+        body = {
+            "type": "event", "name": "现场复核的人流事件", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": job_id, "source_vision_candidate_index": 1,
+            "field_confirmation": "现场人员已核实该路段当前拥堵情况。",
+            "end_time": time.time() + 1800,
+        }
+        response = client.post("/api/road-conditions", json=body, headers={"X-Admin-Token": "test-token-xyz"})
+        assert response.status_code == 201
+        assert response.get_json()["data"]["condition"]["source"]["candidate_index"] == 1
+
+    def test_stale_drone_footage_cannot_be_published_as_current_road_condition(self, client, G, monkeypatch):
+        import time
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        candidate = {"kind": "possible_congestion", "review_required": True, "auto_publish": False}
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "job_id": job_id, "status": "needs_review", "captured_at": time.time() - 3600,
+            "candidate_reviews": {"0": {"status": "confirmed"}},
+            "result": {"candidates": [candidate]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "过期影像事件", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": job_id, "source_vision_candidate_index": 0,
+            "field_confirmation": "现场核实该路段情况并确认影响范围。",
+            "end_time": time.time() + 1800,
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+        assert response.status_code == 409
+        assert response.get_json()["error"] == "vision_source_stale"
+        assert rc.list_conditions() == []
 
     def test_dismissed_vision_cannot_publish_road_event(self, client, G, monkeypatch):
         from storage import database, vision_repository

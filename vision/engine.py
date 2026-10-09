@@ -158,6 +158,64 @@ class OnnxDetector:
         detections.sort(key=lambda item: item["confidence"], reverse=True)
         return detections[:MAX_PREVIEW_DETECTIONS]
 
+    def detect_regions(self, frame, regions: list[dict], *, tracking: bool = False) -> list[dict[str, Any]]:
+        """Run high-resolution inference on annotated road/people/parking crops."""
+        del tracking
+        height, width = frame.shape[:2]
+        crop_boxes = []
+        for region in regions or []:
+            if not isinstance(region, dict) or region.get("kind") not in {"vehicle_lane", "pedestrian", "parking"}:
+                continue
+            polygon = region.get("polygon")
+            if not isinstance(polygon, list) or len(polygon) < 3:
+                continue
+            try:
+                points = [(float(point[0]), float(point[1])) for point in polygon]
+            except (TypeError, ValueError, IndexError):
+                continue
+            if any(not 0 <= x <= 1 or not 0 <= y <= 1 for x, y in points):
+                continue
+            x1 = max(0, min(width - 1, int(min(x for x, _ in points) * width)))
+            y1 = max(0, min(height - 1, int(min(y for _, y in points) * height)))
+            x2 = max(x1 + 1, min(width, int(max(x for x, _ in points) * width + 0.999)))
+            y2 = max(y1 + 1, min(height, int(max(y for _, y in points) * height + 0.999)))
+            box = (x1, y1, x2, y2)
+            if box not in crop_boxes:
+                crop_boxes.append(box)
+        if not crop_boxes:
+            return self.detect(frame, tracking=False)
+
+        detections = []
+        for x1, y1, x2, y2 in crop_boxes:
+            crop = frame[y1:y2, x1:x2]
+            for item in self.detect(crop, tracking=False):
+                shifted = dict(item)
+                bx1, by1, bx2, by2 = map(float, item["box"])
+                shifted["box"] = [bx1 + x1, by1 + y1, bx2 + x1, by2 + y1]
+                detections.append(shifted)
+        detections.sort(key=lambda item: item["confidence"], reverse=True)
+        deduplicated = []
+        for item in detections:
+            x1, y1, x2, y2 = item["box"]
+            area = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+            duplicate = False
+            for kept in deduplicated:
+                if item["label"] != kept["label"]:
+                    continue
+                kx1, ky1, kx2, ky2 = kept["box"]
+                intersection = max(0.0, min(x2, kx2) - max(x1, kx1)) * max(
+                    0.0, min(y2, ky2) - max(y1, ky1)
+                )
+                union = area + max(0.0, kx2 - kx1) * max(0.0, ky2 - ky1) - intersection
+                if union > 0 and intersection / union >= 0.6:
+                    duplicate = True
+                    break
+            if not duplicate:
+                deduplicated.append(item)
+            if len(deduplicated) >= MAX_PREVIEW_DETECTIONS:
+                break
+        return deduplicated
+
 
 def _gray_for_motion(frame, cv2):
     height, width = frame.shape[:2]
@@ -198,10 +256,100 @@ def _estimate_camera_transform(previous_gray, current_gray, cv2, scale: float):
     return full_resolution_matrix.tolist()
 
 
+def _merge_segment_analyses(segments: list[dict]) -> dict:
+    """Combine bounded per-segment results without retaining all frame detections."""
+    total_frames = sum(item["metrics"].get("frames_analyzed", 0) for item in segments)
+    if total_frames <= 0:
+        raise ValueError("视频中没有可读取的画面")
+    weighted_keys = ("mean_vehicle_count", "mean_pedestrian_count", "mean_vehicle_occupied_area_ratio")
+    metrics = {key: 0.0 for key in weighted_keys}
+    peaks = {"peak_vehicle_count": 0, "peak_pedestrian_count": 0}
+    classes_mean: dict[str, float] = {}
+    classes_peak: dict[str, int] = {}
+    tracked = stationary = valid_transitions = transitions = 0
+    candidates_by_kind: dict[str, list[dict]] = {}
+    for segment in segments:
+        segment_metrics = segment["metrics"]
+        count = segment_metrics.get("frames_analyzed", 0)
+        for key in weighted_keys:
+            metrics[key] += segment_metrics.get(key, 0.0) * count
+        for key in peaks:
+            peaks[key] = max(peaks[key], int(segment_metrics.get(key, 0)))
+        for label, count_value in segment_metrics.get("mean_class_counts", {}).items():
+            classes_mean[label] = classes_mean.get(label, 0.0) + count_value * count
+        for label, count_value in segment_metrics.get("peak_class_counts", {}).items():
+            classes_peak[label] = max(classes_peak.get(label, 0), int(count_value))
+        tracked += int(segment_metrics.get("tracked_vehicle_count", 0))
+        stationary += int(segment_metrics.get("stationary_track_count", 0))
+        valid_transitions += int(segment_metrics.get("motion_compensation_valid_transitions", 0))
+        transitions += int(segment_metrics.get("motion_compensation_transition_count", 0))
+        for candidate in segment.get("candidates", []):
+            candidates_by_kind.setdefault(candidate["kind"], []).append({
+                "confidence": candidate.get("confidence", 0.0),
+                "reason": candidate.get("reason", ""),
+                "evidence": candidate.get("evidence", {}),
+                "start_seconds": segment["start_seconds"],
+                "end_seconds": segment["end_seconds"],
+            })
+    for key in weighted_keys:
+        metrics[key] = round(metrics[key] / total_frames, 4 if "ratio" in key else 2)
+    for label in classes_mean:
+        classes_mean[label] = round(classes_mean[label] / total_frames, 2)
+    ratio = valid_transitions / transitions if transitions else 0.0
+    candidates = []
+    for kind, evidence_segments in candidates_by_kind.items():
+        strongest = max(evidence_segments, key=lambda item: item["confidence"])
+        candidates.append({
+            "kind": kind,
+            "confidence": strongest["confidence"],
+            "reason": strongest["reason"],
+            "evidence": {
+                "occurrences": len(evidence_segments),
+                "segments": evidence_segments[:200],
+                "segments_truncated": len(evidence_segments) > 200,
+            },
+            "review_required": True,
+            "auto_publish": False,
+            "status": "pending_review",
+        })
+    stabilized = all(item.get("safety", {}).get("camera_stabilized_assumed") for item in segments)
+    motion_ready = stabilized or (transitions > 0 and ratio >= 0.8)
+    return {
+        "metrics": {
+            "frames_analyzed": total_frames,
+            **metrics,
+            **peaks,
+            "mean_class_counts": classes_mean,
+            "peak_class_counts": classes_peak,
+            "tracked_vehicle_count": tracked,
+            "stationary_track_count": stationary,
+            "stationary_track_ratio": round(stationary / tracked, 3) if tracked else 0.0,
+            "motion_compensation_valid_transitions": valid_transitions,
+            "motion_compensation_transition_count": transitions,
+            "motion_compensation_valid_ratio": round(ratio, 3),
+            "motion_assessment": (
+                "operator_declared_stabilized" if stabilized
+                else "camera_motion_compensated" if motion_ready
+                else "camera_motion_uncompensated"
+            ),
+            "analysis_segments": len(segments),
+        },
+        "candidates": candidates,
+        "safety": {
+            "requires_human_review": True,
+            "camera_motion_compensated": bool(motion_ready and not stabilized),
+            "camera_stabilized_assumed": stabilized,
+            "accident_recognition_supported": False,
+            "automatically_changes_routing": False,
+        },
+    }
+
+
 def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | None,
                   camera_stabilized: bool = False,
-                  *, detector=None) -> dict:
-    """Analyze a manager-uploaded item and return bounded, review-only evidence."""
+                  *, detector=None, regions: list[dict] | None = None,
+                  progress_callback=None, resume_state: dict | None = None) -> dict:
+    """Analyze all sampled frames in bounded chunks and retain resumable review evidence."""
     path = Path(media_path)
     if not path.is_file():
         raise FileNotFoundError("巡检影像文件已丢失")
@@ -218,8 +366,14 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
 
     frames: list[list[dict]] = []
     transforms: list[list[list[float]] | None] = [None]
+    frame_indices: list[int] = []
+    completed_segments = list((resume_state or {}).get("segments", []))
     width = height = 0
     sample_interval = 1.0
+    duration_seconds = None
+    fps = None
+    total_frames = None
+    image_detections = None
     if media_kind == "image":
         try:
             from PIL import Image
@@ -235,65 +389,142 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             raise ValueError("图片无法解码，请上传有效的 JPG、PNG 或 WebP 文件")
         height, width = frame.shape[:2]
         _validate_frame_dimensions(width, height)
-        frames.append(detector.detect(frame, tracking=False))
+        image_detections = (
+            detector.detect_regions(frame, regions) if regions and hasattr(detector, "detect_regions")
+            else detector.detect(frame, tracking=False)
+        )
+        analysis = analyze_observations(
+            [image_detections], frame_width=width,
+            frame_height=height, camera_stabilized=True, regions=regions,
+        )
+        completed_segments = [{"start_seconds": 0.0, "end_seconds": 0.0, **analysis}]
     elif media_kind == "video":
         capture = cv2.VideoCapture(str(path))
         if not capture.isOpened():
             raise ValueError("视频无法解码，请上传有效的视频文件")
         try:
-            _validate_frame_dimensions(
-                int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-            )
+            width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            _validate_frame_dimensions(width, height)
+            fps = capture.get(cv2.CAP_PROP_FPS)
+            fps = float(fps) if fps and fps > 0 else 1.0
+            total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0) or None
+            duration_seconds = total_frames / fps if total_frames else None
+            target_fps = max(0.1, float(getattr(config, "VISION_SAMPLE_FPS", 5)))
+            stride = max(1, round(fps / target_fps))
+            sample_interval = stride / fps
+            segment_limit = max(5, int(getattr(config, "VISION_SEGMENT_FRAMES", config.VISION_MAX_VIDEO_FRAMES)))
+            frame_index = int((resume_state or {}).get("next_frame_index", 0))
+            if frame_index and hasattr(capture, "set"):
+                capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            previous_gray = None
+            previous_scale = 1.0
+
+            def flush_segment(next_frame_index: int):
+                nonlocal frames, transforms, frame_indices
+                if not frames:
+                    return
+                segment_start = frame_indices[0] / fps
+                segment_end = frame_indices[-1] / fps
+                result = analyze_observations(
+                    frames, frame_width=width, frame_height=height,
+                    sample_interval_s=sample_interval,
+                    camera_stabilized=camera_stabilized,
+                    frame_transforms=transforms,
+                    regions=regions,
+                )
+                completed_segments.append({
+                    "start_seconds": round(segment_start, 3),
+                    "end_seconds": round(segment_end, 3),
+                    **result,
+                })
+                sampled_count = sum(
+                    item["metrics"].get("frames_analyzed", 0) for item in completed_segments
+                )
+                percent = min(99, round(next_frame_index / total_frames * 100)) if total_frames else None
+                checkpoint = {
+                    "next_frame_index": next_frame_index,
+                    "segments": completed_segments,
+                }
+                if progress_callback:
+                    progress_callback({
+                        "progress": {
+                            "phase": "analyzing",
+                            "percent": percent,
+                            "frames_analyzed": sampled_count,
+                            "total_frames": total_frames,
+                            "analyzed_through_seconds": round(segment_end, 3),
+                            "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
+                        },
+                        "checkpoint": checkpoint,
+                    })
+                frames = []
+                transforms = [None]
+                frame_indices = []
+
+            try:
+                while True:
+                    ok, frame = capture.read()
+                    if not ok:
+                        if total_frames and frame_index < total_frames - max(2, round(fps * 0.5)):
+                            raise ValueError("视频在预期结束时间前无法继续解码；未完成部分不会作为完整结果发布")
+                        break
+                    if frame_index % stride == 0:
+                        height, width = frame.shape[:2]
+                        _validate_frame_dimensions(width, height)
+                        frame_detections = (
+                            detector.detect_regions(frame, regions) if regions and hasattr(detector, "detect_regions")
+                            else detector.detect(frame, tracking=False)
+                        )
+                        frames.append(frame_detections)
+                        frame_indices.append(frame_index)
+                        if len(frames) > 1 and camera_stabilized:
+                            transforms.append([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+                        elif len(frames) > 1:
+                            gray, scale = _gray_for_motion(frame, cv2)
+                            transform = (
+                                _estimate_camera_transform(previous_gray, gray, cv2, scale)
+                                if previous_gray is not None and abs(scale - previous_scale) < 1e-6
+                                else None
+                            )
+                            transforms.append(transform)
+                            previous_gray, previous_scale = gray, scale
+                        elif not camera_stabilized:
+                            previous_gray, previous_scale = _gray_for_motion(frame, cv2)
+                        if len(frames) >= segment_limit:
+                            flush_segment(frame_index + 1)
+                        if time.monotonic() - started > config.VISION_MAX_ANALYSIS_SECONDS:
+                            raise TimeoutError("影像分析超过配置时限；任务会从最近完成的视频分段继续")
+                    frame_index += 1
+                flush_segment(frame_index)
+            finally:
+                capture.release()
+            if not completed_segments:
+                raise ValueError("视频中没有可读取的画面")
+            analysis = _merge_segment_analyses(completed_segments)
+            analyzed_frames = analysis["metrics"]["frames_analyzed"]
+            last_sampled = max((segment["end_seconds"] for segment in completed_segments), default=0.0)
+            observed_span = min(duration_seconds or last_sampled + sample_interval,
+                                last_sampled + sample_interval)
+            coverage_ratio = min(1.0, observed_span / duration_seconds) if duration_seconds else None
+            analysis["video_coverage"] = {
+                "complete": True,
+                "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
+                "analyzed_from_seconds": completed_segments[0]["start_seconds"],
+                "analyzed_through_seconds": round(last_sampled, 3),
+                "sampled_frames": analyzed_frames,
+                "coverage_ratio": round(coverage_ratio, 4) if coverage_ratio is not None else None,
+                "segment_count": len(completed_segments),
+                "sample_interval_seconds": round(sample_interval, 4),
+            }
         except Exception:
             capture.release()
             raise
-        fps = capture.get(cv2.CAP_PROP_FPS)
-        fps = fps if fps and fps > 0 else 1.0
-        stride = max(1, round(fps * sample_interval))
-        frame_index = 0
-        sampled = 0
-        previous_gray = None
-        previous_scale = 1.0
-        try:
-            while sampled < config.VISION_MAX_VIDEO_FRAMES:
-                ok, frame = capture.read()
-                if not ok:
-                    break
-                if frame_index % stride == 0:
-                    height, width = frame.shape[:2]
-                    _validate_frame_dimensions(width, height)
-                    frames.append(detector.detect(frame, tracking=False))
-                    if camera_stabilized:
-                        transforms.append([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-                    else:
-                        gray, scale = _gray_for_motion(frame, cv2)
-                        transform = (
-                            _estimate_camera_transform(previous_gray, gray, cv2, scale)
-                            if previous_gray is not None and abs(scale - previous_scale) < 1e-6
-                            else None
-                        )
-                        transforms.append(transform)
-                        previous_gray, previous_scale = gray, scale
-                    sampled += 1
-                    if time.monotonic() - started > config.VISION_MAX_ANALYSIS_SECONDS:
-                        raise TimeoutError("影像分析超过配置时限，请缩短视频后重试")
-                frame_index += 1
-        finally:
-            capture.release()
-        if not frames:
-            raise ValueError("视频中没有可读取的画面")
     else:
         raise ValueError("不支持的影像类型")
 
     if time.monotonic() - started > config.VISION_MAX_ANALYSIS_SECONDS:
-        raise TimeoutError("影像分析超过配置时限，请缩短视频后重试")
-    analysis = analyze_observations(
-        frames, frame_width=width, frame_height=height,
-        sample_interval_s=sample_interval,
-        camera_stabilized=camera_stabilized,
-        frame_transforms=transforms if media_kind == "video" else None,
-    )
+        raise TimeoutError("影像分析超过配置时限")
     model_info = {
         "id": getattr(detector, "model_id", "injected-detector"),
         "version": getattr(detector, "model_version", "unspecified"),
@@ -306,13 +537,17 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
     preview_detections = []
     if media_kind == "image":
         preview_detections = [
-            item for item in frames[0]
+            item for item in image_detections
             if item.get("label", "").strip().lower() in VEHICLE_LABELS | {"bicycle"}
         ][:MAX_PREVIEW_DETECTIONS]
     has_anchor = anchor_gcj is not None
     return {
         **analysis,
-        "media": {"kind": media_kind, "width": width, "height": height},
+        "media": {
+            "kind": media_kind, "width": width, "height": height,
+            "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
+            "source_fps": round(fps, 3) if fps else None,
+        },
         "model": model_info,
         "preview_detections": preview_detections,
         "anchor_gcj": anchor_gcj,

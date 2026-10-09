@@ -15,6 +15,57 @@ VEHICLE_LABELS = {
     "vehicle", "tricycle", "awning-tricycle",
 }
 INCIDENT_LABELS = {"accident", "crash", "collision", "vehicle_accident", "overturned_vehicle"}
+PEDESTRIAN_LABELS = {"pedestrian", "person", "people"}
+ROI_KINDS = {"vehicle_lane", "pedestrian", "parking", "exclude"}
+
+
+def _validated_regions(regions, frame_width: int, frame_height: int) -> list[dict]:
+    if regions is None:
+        return []
+    if not isinstance(regions, list) or len(regions) > 24:
+        raise ValueError("观察区域必须是最多 24 个多边形组成的列表")
+    normalized = []
+    for region in regions:
+        if not isinstance(region, dict) or region.get("kind") not in ROI_KINDS:
+            raise ValueError("观察区域类型无效")
+        polygon = region.get("polygon")
+        if not isinstance(polygon, list) or not 3 <= len(polygon) <= 128:
+            raise ValueError("观察区域至少需要 3 个、最多 128 个顶点")
+        points = []
+        for point in polygon:
+            if not isinstance(point, (list, tuple)) or len(point) != 2:
+                raise ValueError("观察区域坐标无效")
+            x, y = point
+            if (isinstance(x, bool) or isinstance(y, bool)
+                    or not isinstance(x, (int, float)) or not isinstance(y, (int, float))
+                    or not 0 <= x <= 1 or not 0 <= y <= 1):
+                raise ValueError("观察区域坐标必须是 0 到 1 之间的画面比例")
+            points.append([float(x) * frame_width, float(y) * frame_height])
+        normalized.append({
+            "id": str(region.get("id") or f"region-{len(normalized) + 1}")[:64],
+            "kind": region["kind"],
+            "polygon": points,
+        })
+    return normalized
+
+
+def _inside_polygon(x: float, y: float, polygon: list[list[float]]) -> bool:
+    inside = False
+    previous = polygon[-1]
+    for current in polygon:
+        x1, y1 = previous
+        x2, y2 = current
+        if (y1 > y) != (y2 > y):
+            crossing_x = (x2 - x1) * (y - y1) / (y2 - y1) + x1
+            if x < crossing_x:
+                inside = not inside
+        previous = current
+    return inside
+
+
+def _in_regions(item: dict, regions: list[dict]) -> bool:
+    x, y = _center(item["box"])
+    return any(_inside_polygon(x, y, region["polygon"]) for region in regions)
 
 
 def _valid_detection(item: Any) -> bool:
@@ -136,6 +187,7 @@ def analyze_observations(
     camera_stabilized: bool = False,
     frame_transforms: list[list[list[float]] | None] | None = None,
     accident_model_enabled: bool = False,
+    regions: list[dict] | None = None,
     min_vehicle_count: int = 6,
     stationary_ratio_threshold: float = 0.5,
 ) -> dict:
@@ -148,7 +200,18 @@ def analyze_observations(
     """
     if frame_width <= 0 or frame_height <= 0 or sample_interval_s <= 0:
         raise ValueError("valid frame dimensions and sample interval are required")
-    valid_frames = [[item for item in frame if _valid_detection(item)] for frame in frames]
+    regions = _validated_regions(regions, frame_width, frame_height)
+    vehicle_regions = [region for region in regions if region["kind"] == "vehicle_lane"]
+    pedestrian_regions = [region for region in regions if region["kind"] == "pedestrian"]
+    parking_regions = [region for region in regions if region["kind"] == "parking"]
+
+    def outside_exclusions(item):
+        return not any(_in_regions(item, [region]) for region in regions if region["kind"] == "exclude")
+
+    valid_frames = [
+        [item for item in frame if _valid_detection(item) and outside_exclusions(item)]
+        for frame in frames
+    ]
     transition_count = max(0, len(valid_frames) - 1)
     valid_transition_count = 0 if camera_stabilized else sum(
         1 for index in range(1, len(valid_frames))
@@ -167,15 +230,27 @@ def analyze_observations(
         max_distance=hypot(frame_width, frame_height) * 0.08,
     )
     vehicle_frames: list[list[dict]] = []
+    pedestrian_counts: list[int] = []
     track_positions: dict[str, list[tuple[float, float, int]]] = defaultdict(list)
     accident_detections: list[tuple[int, float, str]] = []
     coverage_values: list[float] = []
     class_counts: list[Counter] = []
 
     for frame_index, detections in enumerate(track_frames):
-        vehicles = [item for item in detections if item["label"].strip().lower() in VEHICLE_LABELS]
+        all_vehicles = [item for item in detections
+                        if item["label"].strip().lower() in VEHICLE_LABELS]
+        vehicles = (
+            [item for item in all_vehicles if _in_regions(item, vehicle_regions)]
+            if vehicle_regions else all_vehicles
+        )
+        if parking_regions:
+            vehicles = [item for item in vehicles if not _in_regions(item, parking_regions)]
         vehicle_frames.append(vehicles)
         class_counts.append(Counter(item["label"].strip().lower() for item in detections))
+        people = [item for item in detections if item["label"].strip().lower() in PEDESTRIAN_LABELS]
+        if pedestrian_regions:
+            people = [item for item in people if _in_regions(item, pedestrian_regions)]
+        pedestrian_counts.append(len(people))
         covered = 0.0
         for item in vehicles:
             x1, y1, x2, y2 = map(float, item["box"])
@@ -217,7 +292,8 @@ def analyze_observations(
     candidates = []
 
     # A single frame shows vehicle presence/density only, not speed or congestion.
-    if len(valid_frames) == 1 and vehicle_counts and vehicle_counts[0] >= min_vehicle_count:
+    if (vehicle_regions and len(valid_frames) == 1 and vehicle_counts
+            and vehicle_counts[0] >= min_vehicle_count):
         candidates.append(_candidate(
             "vehicle_cluster_review", min(0.9, vehicle_counts[0] / (min_vehicle_count * 2)),
             "单帧检测到多辆车辆；静态影像不能判断速度或拥堵，需视频或现场复核。",
@@ -225,6 +301,9 @@ def analyze_observations(
         ))
 
     if (
+        vehicle_regions
+        and camera_stabilized
+        and
         len(valid_frames) >= 5
         and motion_compensation_ready
         and avg_vehicle_count >= min_vehicle_count
@@ -241,6 +320,23 @@ def analyze_observations(
                 "stationary_track_ratio": round(stationary_ratio, 3),
                 "camera_motion_compensated": not camera_stabilized,
                 "valid_motion_transition_ratio": round(valid_transition_ratio, 3),
+            },
+        ))
+
+    if (
+        pedestrian_regions and camera_stabilized and len(pedestrian_counts) >= 3
+        and max(pedestrian_counts, default=0) >= 15
+        and sum(count > 0 for count in pedestrian_counts) >= 3
+    ):
+        candidates.append(_candidate(
+            "possible_crowding",
+            min(0.9, 0.55 + max(pedestrian_counts) / 100),
+            "行人观察区域内连续检测到较多人群；未标定有效面积，不能换算为每平方米人数，请结合原片和现场核实。",
+            {
+                "region_id": pedestrian_regions[0]["id"],
+                "peak_person_count": max(pedestrian_counts),
+                "mean_person_count": round(mean(pedestrian_counts), 2),
+                "frames_with_people": sum(count > 0 for count in pedestrian_counts),
             },
         ))
 
@@ -275,6 +371,8 @@ def analyze_observations(
             "frames_analyzed": len(valid_frames),
             "mean_vehicle_count": round(avg_vehicle_count, 2),
             "peak_vehicle_count": max(vehicle_counts, default=0),
+            "mean_pedestrian_count": round(mean(pedestrian_counts), 2) if pedestrian_counts else 0.0,
+            "peak_pedestrian_count": max(pedestrian_counts, default=0),
             "mean_vehicle_occupied_area_ratio": round(mean(coverage_values), 4) if coverage_values else 0.0,
             "mean_class_counts": mean_class_counts,
             "peak_class_counts": peak_class_counts,
@@ -297,6 +395,7 @@ def analyze_observations(
             "camera_motion_compensated": bool(motion_compensation_ready and not camera_stabilized),
             "camera_stabilized_assumed": bool(camera_stabilized),
             "accident_recognition_supported": False,
+            "pedestrian_region_required_for_crowding": True,
             "automatically_changes_routing": False,
         },
     }

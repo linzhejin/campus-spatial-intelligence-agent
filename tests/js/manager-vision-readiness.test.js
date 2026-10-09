@@ -234,9 +234,11 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261008b/);
-  assert.match(managerHtml, /manager\.js\?v=20261008b/);
-  assert.doesNotMatch(managerHtml, /id="pick-anchor"|id="selected-anchor"/);
+  assert.match(managerHtml, /manager\.css\?v=20261009b/);
+  assert.match(managerHtml, /manager\.js\?v=20261009b/);
+  assert.match(managerHtml, /id="pick-anchor"/);
+  assert.match(managerHtml, /id="start-region"/);
+  assert.match(managerHtml, /id="observation-region-list"/);
   assert.doesNotMatch(managerHtml, /id="restore-vision-results"/);
 });
 
@@ -301,6 +303,7 @@ test('manager refreshes vision readiness and updates submission availability whi
 
   elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   elements.get('media-file').listeners.change();
+  elements.get('captured-at').value = '2026-10-09T14:00';
   assert.equal(elements.get('submit-vision').disabled, true);
 
   harness.setInferenceReady(true);
@@ -331,6 +334,7 @@ test('readiness polling cannot re-enable or duplicate an in-flight media upload'
 
   elements.get('media-file').files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   elements.get('media-file').listeners.change();
+  elements.get('captured-at').value = '2026-10-09T14:00';
   assert.equal(elements.get('submit-vision').disabled, false);
 
   const upload = elements.get('vision-form').listeners.submit({ preventDefault() {} });
@@ -357,9 +361,12 @@ test('successful media upload clears the preview and preserves the queued confir
   harness.getElement('selected-media').hidden = true;
   input.files = [{ type: 'image/png', name: 'campus.png', size: 10 }];
   input.listeners.change();
+  harness.elements.get('captured-at').value = '2026-10-09T14:00';
   const upload = harness.elements.get('vision-form').listeners.submit({ preventDefault() {} });
   await flush();
-  assert.deepEqual(harness.formEntries.map(([name]) => name), ['media', 'camera_stabilized']);
+  assert.deepEqual(harness.formEntries.map(([name]) => name), [
+    'media', 'camera_stabilized', 'captured_at', 'observation_regions',
+  ]);
   harness.releaseVisionUploads();
   await upload;
 
@@ -394,6 +401,8 @@ test('a selected road can be explicitly cleared before publishing', async () => 
   clearButton.hidden = true;
   confirmButton.hidden = true;
   elements.get('event-type').value = 'closure';
+  elements.get('event-action').value = 'closure';
+  elements.get('event-modes').selectedOptions = [{ value: 'walk', selected: true }];
   elements.get('pick-road').listeners.click();
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
 
@@ -421,33 +430,43 @@ test('a selected road can be explicitly cleared before publishing', async () => 
   assert.equal(elements.get('impact-preview').hidden, true);
 });
 
-test('road event preview and publication use the manager selected blocked travel modes', async () => {
+test('road event preview and publication use an action and affected travel modes', async () => {
   const harness = managerHarness();
   await flush();
   const { elements, mapListeners, calls } = harness;
-  assert.deepEqual(['block-walk', 'block-bike', 'block-drive'].map((id) => elements.get(id).checked), [true, true, true]);
   elements.get('event-type').value = 'construction';
   elements.get('event-type').listeners.change();
+  elements.get('event-action').value = 'closure';
+  const modes = elements.get('event-modes');
+  modes.options = [
+    { value: 'walk', selected: false },
+    { value: 'bike', selected: false },
+    { value: 'drive', selected: false },
+  ];
+  modes.selectedOptions = [];
+  elements.get('event-action').listeners.change();
   elements.get('pick-road').listeners.click();
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
   elements.get('confirm-picked-road').listeners.click();
 
-  elements.get('block-walk').checked = false;
-  elements.get('block-bike').checked = false;
-  elements.get('block-drive').checked = false;
-  elements.get('block-drive').listeners.change();
-  assert.equal(elements.get('publish-event').disabled, true, 'at least one travel mode must be restricted');
+  modes.selectedOptions = [];
+  assert.equal(elements.get('publish-event').disabled, true, 'at least one affected travel mode is required');
 
-  elements.get('block-walk').checked = true;
-  await elements.get('block-walk').listeners.change();
+  modes.selectedOptions = [modes.options[0]];
+  modes.options[0].selected = true;
+  await modes.listeners.change();
   assert.equal(elements.get('publish-event').disabled, false);
   const preview = calls.filter((call) => call.url.startsWith('/api/road-conditions/snap')).at(-1);
-  assert.match(preview.url, /blocked_modes=walk/);
-  assert.doesNotMatch(preview.url, /blocked_modes=bike|blocked_modes=drive/);
+  assert.match(preview.url, /action=closure/);
+  assert.match(preview.url, /modes=walk/);
+  assert.doesNotMatch(preview.url, /modes=bike|modes=drive/);
 
   await elements.get('condition-form').listeners.submit({ preventDefault() {} });
   const posted = calls.find((call) => call.url === '/api/road-conditions' && call.options.method === 'POST');
-  assert.deepEqual(JSON.parse(posted.options.body).blocked_modes, ['walk']);
+  const body = JSON.parse(posted.options.body);
+  assert.equal(body.action, 'closure');
+  assert.deepEqual(body.affected_modes, ['walk']);
+  assert.equal(Object.hasOwn(body, 'blocked_modes'), false);
 });
 
 test('canceling route picking prevents a late snap response from selecting a road', async () => {
@@ -532,8 +551,7 @@ test('a pending preview safely settles after the selected road is cleared', asyn
   harness.deferImpactPreviews();
   elements.get('event-type').value = 'closure';
   const pending = elements.get('event-type').listeners.change();
-  const submit = elements.get('condition-form').listeners.submit({ preventDefault() {} });
-  await submit;
+  elements.get('clear-picked-road').listeners.click();
   harness.resolveImpactPreview('closure', '已清除路段');
 
   await assert.doesNotReject(pending);
@@ -553,6 +571,7 @@ test('videos are sent through resumable chunks without requiring a map anchor', 
     slice(start, end) { return { size: end - start, arrayBuffer() { return Promise.resolve(new ArrayBuffer(end - start)); } }; },
   }];
   elements.get('media-file').listeners.change();
+  elements.get('captured-at').value = '2026-10-09T14:00';
   await elements.get('vision-form').listeners.submit({ preventDefault() {} });
 
   assert.deepEqual(harness.getVideoChunkSizes(), [512, 512, 512, 512, 2]);
@@ -560,6 +579,23 @@ test('videos are sent through resumable chunks without requiring a map anchor', 
   const startRequest = calls.find((call) => call.url === '/api/manager/vision-uploads' && call.options.method === 'POST');
   assert.equal(JSON.parse(startRequest.options.body).lng, undefined);
   assert.equal(elements.get('vision-message').textContent.includes('已入队'), true);
+});
+
+test('images without an actual capture time are not submitted', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+  elements.get('media-file').files = [{ type: 'image/png', name: 'drone.png', size: 10 }];
+  elements.get('media-file').listeners.change();
+  elements.get('captured-at').value = '';
+  elements.get('pick-anchor').listeners.click();
+  mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
+  await elements.get('vision-form').listeners.submit({ preventDefault() {} });
+  assert.equal(harness.calls.some((call) => call.url === '/api/manager/vision-jobs'), false);
+  assert.match(elements.get('vision-message').textContent, /实际拍摄时间/);
 });
 
 test('completed image jobs show vehicle counts and safely render detector boxes', async () => {
@@ -591,7 +627,7 @@ test('completed image jobs show vehicle counts and safely render detector boxes'
   const summary = card.children.find((node) => node.className === 'vision-metrics');
   const summaryText = summary.children.map((node) => node.textContent).join(' ');
   assert.match(summaryText, /检出车辆 2/);
-  assert.match(summaryText, /本版不支持事故识别/);
+  assert.match(summaryText, /当前没有事故与积水识别模型/);
 });
 
 function descendants(node) {
@@ -667,7 +703,7 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   await flush();
   const { elements, mapListeners, calls } = harness;
   const card = elements.get('vision-jobs').children[0];
-  const transfer = descendants(card).find((node) => node.tagName === 'button' && node.textContent === '转入道路事件');
+  const transfer = descendants(card).find((node) => node.tagName === 'button' && node.textContent === '将此候选转入道路事件');
   assert.ok(transfer);
   transfer.listeners.click();
 
@@ -676,6 +712,8 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   assert.equal(elements.get('event-type').value, '');
   elements.get('event-type').value = 'event';
   elements.get('event-type').listeners.change();
+  elements.get('event-action').value = 'notice';
+  elements.get('event-action').listeners.change();
   await mapListeners.click({ latlng: { lng: 114.36, lat: 30.53 } });
   assert.equal(elements.get('publish-event').disabled, true);
 
@@ -688,6 +726,7 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   assert.ok(posted);
   const body = JSON.parse(posted.options.body);
   assert.equal(body.source_vision_job_id, 'a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e');
+  assert.equal(body.source_vision_candidate_index, 0);
   assert.equal(body.field_confirmation, '已联系现场负责人核实，该路段确有人流聚集。');
   assert.equal(elements.get('vision-source-banner').hidden, true);
 });
@@ -740,8 +779,10 @@ test('review of multiple visual candidates records the selected item and human n
   harness.setVisionJobs([{
     job_id: 'job-multi', status: 'needs_review', media_kind: 'video', original_name: '巡查视频.mp4',
     result: { candidates: [
-      { kind: 'possible_congestion', confidence: 0.72 },
-      { kind: 'possible_accident', confidence: 0.81 },
+      { kind: 'possible_congestion', confidence: 0.72,
+        evidence: { segments: [{ start_seconds: 12.5, end_seconds: 18.2 }] } },
+      { kind: 'possible_accident', confidence: 0.81,
+        evidence: { segments: [{ start_seconds: 43, end_seconds: 51.3 }] } },
     ] },
   }]);
   harness.intervalCallbacks[0]();
@@ -751,14 +792,19 @@ test('review of multiple visual candidates records the selected item and human n
   const confirms = descendants(card).filter((node) => node.tagName === 'button' && node.textContent === '确认此候选');
   assert.ok(note);
   assert.equal(confirms.length, 2);
+  const evidenceButtons = descendants(card).filter((node) => node.tagName === 'button' && node.className === 'outline-button candidate-evidence-jump');
+  assert.equal(evidenceButtons.length, 2);
+  evidenceButtons[1].listeners.click();
+  const video = descendants(card).find((node) => node.tagName === 'video');
+  assert.equal(video.currentTime, 43);
   confirms[1].listeners.click();
-  assert.equal(harness.calls.filter((call) => call.url.endsWith('/review')).length, 0);
+  assert.equal(harness.calls.filter((call) => call.url.includes('/candidates/1/review')).length, 0);
   note.value = '逐帧核对发现明确的事故迹象，需现场继续确认。';
   confirms[1].listeners.click();
   await flush();
-  const posted = harness.calls.find((call) => call.url.endsWith('/review'));
+  const posted = harness.calls.find((call) => call.url.includes('/candidates/1/review'));
   assert.ok(posted);
-  assert.equal(JSON.parse(posted.options.body).candidate_index, 1);
+  assert.equal(JSON.parse(posted.options.body).status, 'confirmed');
   assert.equal(JSON.parse(posted.options.body).note, note.value);
 });
 

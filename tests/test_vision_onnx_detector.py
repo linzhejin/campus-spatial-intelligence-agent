@@ -62,6 +62,21 @@ def test_onnx_detector_returns_empty_for_empty_valid_outputs():
     assert OnnxDetector("model.onnx", session=session).detect(np.zeros((100, 100, 3), dtype=np.uint8)) == []
 
 
+def test_onnx_detector_uses_annotated_crop_and_restores_full_frame_coordinates():
+    session = FakeSession()
+    detector = OnnxDetector("model.onnx", session=session, confidence_threshold=0.25)
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+    detections = detector.detect_regions(frame, [{
+        "id": "lane", "kind": "vehicle_lane",
+        "polygon": [[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75]],
+    }])
+
+    assert len(detections) == 1
+    assert detections[0]["box"] == pytest.approx([240, 120, 400, 280])
+    assert session.feed["images"].shape == (1, 3, 960, 960)
+
+
 def test_onnx_detector_rejects_model_with_unexpected_signature():
     session = FakeSession(input_shape=(1, 3, "height", "width"))
     with pytest.raises(VisionConfigurationError, match="静态方形输入"):

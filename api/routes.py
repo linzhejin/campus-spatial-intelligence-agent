@@ -24,6 +24,7 @@ import secrets
 import shutil
 import time
 import uuid
+from datetime import datetime, timezone
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -61,7 +62,7 @@ from spatial.amap_poi import navigation_wgs
 from spatial.road_conditions import (
     list_conditions, add_condition, remove_condition, update_condition,
     purge_revoked_conditions, snap_to_edge, CONDITION_LABELS, CONDITION_EFFECTS,
-    SNAP_MAX_DIST_M, TRAVEL_MODE_KEYS,
+    SNAP_MAX_DIST_M, TRAVEL_MODE_KEYS, TRAVEL_MODES, CONDITION_ACTIONS,
     RoadConditionsUnavailableError,
 )
 from spatial import weather as weather_mod
@@ -73,7 +74,7 @@ _ADMIN_MAX_SECONDS = 8 * 60 * 60
 _ADMIN_POLL_PATHS = {"/api/manager/vision-status", "/api/manager/vision-jobs"}
 _ADMIN_PASSIVE_ENDPOINTS = {"api.manager_vision_media"}
 _VISION_REVIEW_CANDIDATE_KINDS = {
-    "vehicle_cluster_review", "possible_congestion", "possible_accident",
+    "vehicle_cluster_review", "possible_congestion", "possible_crowding", "possible_accident",
 }
 _VISION_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 _VISION_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
@@ -87,6 +88,55 @@ def _valid_review_only_candidate(candidate) -> bool:
         and candidate.get("review_required") is True
         and candidate.get("auto_publish") is False
     )
+
+
+def _parse_vision_observation_regions(value) -> list[dict]:
+    """Validate normalized polygons supplied by the admin's media annotation UI."""
+    if value is None or value == "":
+        return []
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (TypeError, json.JSONDecodeError) as error:
+            raise ValueError("观察区域数据格式无效。") from error
+    if not isinstance(value, list) or len(value) > 24:
+        raise ValueError("最多可以标注 24 个观察区域。")
+    allowed_kinds = {"vehicle_lane", "pedestrian", "parking", "exclude"}
+    normalized = []
+    for index, region in enumerate(value):
+        if not isinstance(region, dict) or region.get("kind") not in allowed_kinds:
+            raise ValueError("观察区域类型无效。")
+        polygon = region.get("polygon")
+        if not isinstance(polygon, list) or not 3 <= len(polygon) <= 128:
+            raise ValueError("每个观察区域需要 3 到 128 个顶点。")
+        points = []
+        for point in polygon:
+            if not isinstance(point, (list, tuple)) or len(point) != 2:
+                raise ValueError("观察区域坐标无效。")
+            x, y = point
+            if (isinstance(x, bool) or isinstance(y, bool)
+                    or not isinstance(x, (int, float)) or not isinstance(y, (int, float))
+                    or not math.isfinite(x) or not math.isfinite(y)
+                    or not 0 <= x <= 1 or not 0 <= y <= 1):
+                raise ValueError("观察区域坐标必须是 0 到 1 之间的画面比例。")
+            points.append([float(x), float(y)])
+        normalized.append({
+            "id": str(region.get("id") or f"region-{index + 1}")[:64],
+            "kind": region["kind"], "polygon": points,
+        })
+    return normalized
+
+
+def _parse_vision_capture_time(value, *, required: bool) -> datetime:
+    """Accept an epoch or timezone-aware ISO timestamp; persist every observation in UTC."""
+    if value is None or value == "":
+        if required:
+            raise ValueError("请填写这段影像的实际拍摄时间。")
+        return datetime.now(timezone.utc)
+    timestamp = _parse_time_input(value)
+    if timestamp is None or not math.isfinite(float(timestamp)):
+        raise ValueError("影像拍摄时间无效。")
+    return datetime.fromtimestamp(float(timestamp), tz=timezone.utc)
 
 
 def _clear_admin_session():
@@ -1848,6 +1898,20 @@ def snap_road_condition():
     cond_type = (request.args.get("type") or "").strip()
     if cond_type and cond_type not in CONDITION_EFFECTS:
         return _err("invalid_type", f"未知路况类型: {cond_type}", 400)
+    action = (request.args.get("action") or "").strip() or None
+    affected_modes = [item for item in request.args.get("modes", "").split(",") if item]
+    try:
+        cost_multiplier = float(request.args.get("cost_multiplier", "1.5"))
+    except ValueError:
+        return _err("invalid_cost_multiplier", "缓行成本倍数必须是数字", 400)
+    if action is not None:
+        if action not in CONDITION_ACTIONS:
+            return _err("invalid_action", "路况影响动作只能是提示、缓行或禁止通行。", 400)
+        if (not affected_modes or len(affected_modes) != len(set(affected_modes))
+                or any(mode not in TRAVEL_MODES for mode in affected_modes)):
+            return _err("invalid_modes", "请选择有效且不重复的受影响出行方式。", 400)
+        if action == "slowdown" and not 1 <= cost_multiplier <= 5:
+            return _err("invalid_cost_multiplier", "缓行成本倍数必须在 1 到 5 之间", 400)
     try:
         lng = float(request.args.get("lng"))
         lat = float(request.args.get("lat"))
@@ -1870,30 +1934,57 @@ def snap_road_condition():
         blocked_modes = requested_modes if requested_modes else list(TRAVEL_MODE_KEYS)
         try:
             response["impact_preview"] = _build_road_condition_impact_preview(
-                G, snap, cond_type, blocked_modes,
+                G, snap, cond_type, action=action, affected_modes=affected_modes,
+                cost_multiplier=cost_multiplier, blocked_modes=blocked_modes,
             )
         except RoadConditionsUnavailableError:
             logger.exception("路况预览无法读取有效事件快照")
             return _err("road_conditions_unavailable", "当前路况数据不可用，无法生成可靠的发布影响预览", 503)
+        except ValueError as error:
+            return _err("invalid_impact_preview", str(error), 400)
     return _ok(response)
 
 
 def _build_road_condition_impact_preview(
-    G, snap: dict, cond_type: str, blocked_modes: list | None = None,
+    G, snap: dict, cond_type: str, *, action=None, affected_modes=None,
+    cost_multiplier=1.5, blocked_modes=None,
 ) -> dict:
     """Preview effects and a local before/after route sample; never publishes an event."""
     active_conditions = list_conditions(strict=True)
-    blocked_modes = list(TRAVEL_MODE_KEYS) if blocked_modes is None else blocked_modes
-    if (not isinstance(blocked_modes, list) or not blocked_modes
-            or len(blocked_modes) != len(set(blocked_modes))
-            or any(mode not in TRAVEL_MODE_KEYS for mode in blocked_modes)):
-        raise ValueError("至少选择一种禁行方式")
     effects = {}
-    for mode in TRAVEL_MODE_KEYS:
-        if mode in blocked_modes:
-            effects[mode] = {"status": "blocked", "label": "该方式在所选路段禁行"}
+    if action:
+        if action not in CONDITION_ACTIONS:
+            raise ValueError("路况影响动作无效")
+        selected_modes = set(affected_modes or TRAVEL_MODES)
+        if not selected_modes or selected_modes - TRAVEL_MODES:
+            raise ValueError("受影响的出行方式无效")
+        if action == "slowdown" and not 1 <= float(cost_multiplier) <= 5:
+            raise ValueError("缓行成本倍数必须在 1 到 5 之间")
+    else:
+        blocked_modes = list(TRAVEL_MODE_KEYS) if blocked_modes is None else blocked_modes
+        if (not isinstance(blocked_modes, list) or not blocked_modes
+                or len(blocked_modes) != len(set(blocked_modes))
+                or any(mode not in TRAVEL_MODE_KEYS for mode in blocked_modes)):
+            raise ValueError("至少选择一种禁行方式")
+        selected_modes = set(blocked_modes)
+    for mode in CONDITION_EFFECTS[cond_type]:
+        if action:
+            if mode not in selected_modes:
+                effects[mode] = {"status": "unaffected", "label": "不受该事件影响"}
+                continue
+            effect = "block" if action == "closure" else float(cost_multiplier) if action == "slowdown" else None
         else:
-            effects[mode] = {"status": "open", "label": "该方式现场确认可通行"}
+            effect = "block" if mode in selected_modes else None
+        if effect == "block":
+            effects[mode] = {"status": "blocked", "label": "该方式在所选路段禁行"}
+        elif effect is not None:
+            effects[mode] = {
+                "status": "cost_increased",
+                "cost_multiplier": float(effect),
+                "label": f"该路段规划成本 ×{float(effect):g}",
+            }
+        else:
+            effects[mode] = {"status": "notice_only", "label": "提示信息，不改变路线成本"}
 
     edge_record = {
         "u": int(snap["u"]),
@@ -1905,10 +1996,15 @@ def _build_road_condition_impact_preview(
         "snap": {"lng": float(snap["snap_lng_gcj"]), "lat": float(snap["snap_lat_gcj"])},
         "geometry_gcj": snap.get("geometry_gcj") or [],
     }
-    condition = {
-        "id": "preview-only", "type": cond_type,
-        "blocked_modes": list(blocked_modes), "edge": edge_record,
-    }
+    condition = {"id": "preview-only", "type": cond_type, "edge": edge_record}
+    if action:
+        condition.update({
+            "action": action,
+            "affected_modes": list(selected_modes),
+            "cost_multiplier": float(cost_multiplier),
+        })
+    else:
+        condition["blocked_modes"] = list(selected_modes)
     sample_routes = {}
     for mode in TRAVEL_MODES:
         common = {
@@ -1984,12 +2080,17 @@ def create_road_condition():
     name = (body.get("name") or "").strip()
     lng = body.get("lng")
     lat = body.get("lat")
+    action = body.get("action")
+    affected_modes = body.get("affected_modes")
+    cost_multiplier = body.get("cost_multiplier")
     blocked_modes = body.get("blocked_modes", list(TRAVEL_MODE_KEYS))
 
     if not cond_type or not name or lng is None or lat is None:
         return _err("missing_fields", "type, name, lng, lat 必填", 400)
     if cond_type not in CONDITION_EFFECTS:
         return _err("invalid_type", f"未知路况类型: {cond_type}", 400)
+    if action is not None and action not in CONDITION_ACTIONS:
+        return _err("invalid_action", "路况影响动作只能是提示、缓行或禁止通行。", 400)
 
     source = None
     source_job_id = body.get("source_vision_job_id")
@@ -2010,21 +2111,37 @@ def create_road_condition():
             return _err("vision_storage_unavailable", "影像任务暂时无法核对，请稍后重试。", 503)
         candidates = (source_job.get("result") or {}).get("candidates") if source_job else None
         if (not source_job or source_job.get("status") != "needs_review"
-                or source_job.get("review_status") != "confirmed"
                 or not isinstance(candidates, list) or not candidates):
-            return _err("vision_source_not_confirmed", "该影像任务未确认有效候选，不能作为事件来源。", 409)
-        candidate_index = source_job.get("review_candidate_index")
-        if candidate_index is None and len(candidates) == 1:
-            candidate_index = 0  # 单候选旧版审核可无歧义地回填来源
+            return _err("vision_source_not_confirmed", "该影像任务没有可用的待复核候选。", 409)
+        candidate_index = body.get("source_vision_candidate_index")
+        if candidate_index is None and source_job.get("review_status") == "confirmed":
+            candidate_index = source_job.get("review_candidate_index")
+            if candidate_index is None and len(candidates) == 1:
+                candidate_index = 0  # 兼容已完成的旧版单候选审核
         if (isinstance(candidate_index, bool) or not isinstance(candidate_index, int)
                 or not 0 <= candidate_index < len(candidates)):
-            return _err("vision_candidate_ambiguous", "影像审核未指明具体候选，请重新核实。", 409)
+            return _err("vision_candidate_ambiguous", "请明确选择已单独确认的影像候选。", 409)
         candidate = candidates[candidate_index]
         if not _valid_review_only_candidate(candidate):
             return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
+        candidate_review = (source_job.get("candidate_reviews") or {}).get(str(candidate_index))
+        legacy_confirmed = (
+            source_job.get("review_status") == "confirmed"
+            and source_job.get("review_candidate_index") == candidate_index
+        )
+        if not (candidate_review and candidate_review.get("status") == "confirmed") and not legacy_confirmed:
+            return _err("vision_source_not_confirmed", "该影像候选尚未单独确认，不能作为事件来源。", 409)
+        captured_at = source_job.get("captured_at")
+        if not captured_at:
+            return _err("vision_capture_time_missing", "影像缺少实际拍摄时间，不能作为当前路况来源。", 409)
+        captured_ts = captured_at.timestamp() if isinstance(captured_at, datetime) else float(captured_at)
+        age_seconds = time.time() - captured_ts
+        if age_seconds < -300 or age_seconds > config.VISION_MAX_EVENT_AGE_SECONDS:
+            return _err("vision_source_stale", "影像拍摄时间已超出当前路况有效窗口，请重新获取现场信息。", 409)
         source = {"kind": "vision_job", "job_id": source_job_id,
                   "candidate_index": candidate_index,
                   "candidate_kind": str(candidate.get("kind") or "unknown"),
+                  "captured_at": captured_ts,
                   "field_confirmation": field_confirmation}
 
     try:
@@ -2033,6 +2150,8 @@ def create_road_condition():
         end_ts = _parse_time_input(body.get("end_time"))
         if start_ts and end_ts and end_ts <= start_ts:
             return _err("invalid_time", "结束时间必须晚于开始时间", 400)
+        if source_job_id and (end_ts is None or end_ts <= time.time()):
+            return _err("vision_event_expiry_required", "影像来源事件必须设置一个未来的结束时间。", 400)
 
         G, err = _ensure_network()
         if err:
@@ -2056,6 +2175,9 @@ def create_road_condition():
             end_time=end_ts,
             created_by=identity if identity == "web" else "token",
             source=source,
+            action=action,
+            affected_modes=affected_modes,
+            cost_multiplier=cost_multiplier,
             blocked_modes=blocked_modes,
         )
         condition["type_label"] = CONDITION_LABELS.get(cond_type, cond_type)
@@ -2221,7 +2343,8 @@ def _cleanup_expired_vision_uploads(root: Path) -> None:
 
 
 def _public_vision_job(job: dict) -> dict:
-    visible = {key: value for key, value in job.items() if key not in {"media_path", "sha256"}}
+    visible = {key: value for key, value in job.items()
+               if key not in {"media_path", "sha256", "checkpoint"}}
     if visible.get("job_id"):
         visible["media_url"] = f"/api/manager/vision-jobs/{visible['job_id']}/media"
     return visible
@@ -2310,15 +2433,17 @@ def manager_vision_status():
         "max_video_bytes": config.VISION_MAX_VIDEO_BYTES,
         "upload_chunk_bytes": config.VISION_CHUNK_BYTES,
         "capabilities": {
-            "aerial_vehicle_detection": True,
-            "congestion_candidate_review": True,
+            "aerial_vehicle_detection": inference_ready,
+            "congestion_candidate_review": inference_ready,
+            "pedestrian_region_counts": inference_ready,
             "accident_recognition_supported": False,
+            "flood_segmentation_supported": False,
             "automatic_routing_updates": False,
         },
         "notice": (
-            "航拍车辆识别已就绪；拥堵只作待核实线索，当前不识别事故。"
+            "车辆与行人模型已就绪，可按圈选区域统计并生成待复核线索；事故、积水识别尚无可用模型，影像不会自动改变路线。"
             if inference_ready else
-            "任务上传与审核界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。当前版本不识别事故。"
+            "管理界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。事故、积水识别尚无可用模型。"
         ),
     })
 
@@ -2344,6 +2469,11 @@ def start_manager_vision_upload():
         return _err("media_too_large", f"视频不能超过 {round(config.VISION_MAX_VIDEO_BYTES / (1024 * 1024))} MB。", 413)
     if config.VISION_CHUNK_BYTES < 1:
         return _err("upload_unavailable", "视频分块大小配置无效。", 503)
+    try:
+        captured_at = _parse_vision_capture_time(body.get("captured_at"), required=True)
+        observation_regions = _parse_vision_observation_regions(body.get("observation_regions"))
+    except (TypeError, ValueError) as error:
+        return _err("invalid_observation_metadata", str(error), 400)
     anchor_gcj = None
     raw_lng, raw_lat = body.get("lng"), body.get("lat")
     if raw_lng is not None or raw_lat is not None:
@@ -2374,6 +2504,8 @@ def start_manager_vision_upload():
             "size": size, "offset": 0, "chunk_size": config.VISION_CHUNK_BYTES,
             "anchor_gcj": anchor_gcj,
             "camera_stabilized": body.get("camera_stabilized") is True,
+            "captured_at": captured_at.timestamp(),
+            "observation_regions": observation_regions,
             "created_by": _admin_identity() or "unknown", "created_at": now, "updated_at": now,
         }
         _write_vision_upload(session_dir, metadata)
@@ -2532,6 +2664,8 @@ def complete_manager_vision_upload(upload_id):
                     media_kind="video", media_path=stored_name, sha256=digest.hexdigest(),
                     anchor_gcj=metadata["anchor_gcj"],
                     camera_stabilized=metadata["camera_stabilized"],
+                    captured_at=datetime.fromtimestamp(float(metadata["captured_at"]), tz=timezone.utc),
+                    observation_regions=metadata.get("observation_regions") or [],
                 )
             except Exception:
                 os.replace(target, part_path)
@@ -2605,6 +2739,14 @@ def manager_vision_jobs():
     video_extensions = {".mp4", ".mov", ".avi", ".webm"}
     if extension not in image_extensions | video_extensions:
         return _err("unsupported_media", "只支持 JPG、PNG、WebP 图片和 MP4、MOV、AVI、WebM 视频。", 415)
+    is_video = extension in video_extensions
+    try:
+        captured_at = _parse_vision_capture_time(request.form.get("captured_at"), required=True)
+        observation_regions = _parse_vision_observation_regions(
+            request.form.get("observation_regions"),
+        )
+    except (TypeError, ValueError) as error:
+        return _err("invalid_observation_metadata", str(error), 400)
     raw_lng = request.form.get("lng", "").strip()
     raw_lat = request.form.get("lat", "").strip()
     anchor_gcj = None
@@ -2612,8 +2754,7 @@ def manager_vision_jobs():
         if not raw_lng or not raw_lat:
             return _err("invalid_anchor", "经纬度必须同时提供。", 400)
         try:
-            lng = float(raw_lng)
-            lat = float(raw_lat)
+            lng, lat = float(raw_lng), float(raw_lat)
         except (TypeError, ValueError):
             return _err("invalid_anchor", "影像区域坐标无效。", 400)
         bbox = config.WHU_BBOX
@@ -2671,6 +2812,8 @@ def manager_vision_jobs():
                 extension in video_extensions
                 and request.form.get("camera_stabilized", "false").strip().lower() == "true"
             ),
+            captured_at=captured_at,
+            observation_regions=observation_regions,
         )
         return _ok({"job": _public_vision_job(job)}, status=202)
     except OverflowError:
@@ -2720,6 +2863,46 @@ def manager_vision_job(job_id):
     if not job:
         return _err("job_not_found", "影像任务不存在。", 404)
     return _ok({"job": _public_vision_job(job)})
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>/cancel", methods=["POST"])
+def cancel_manager_vision_job(job_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        result = vision_repository.request_cancel_job(current_app.config.get("DATABASE_URL"), job_id)
+    except ValueError:
+        return _err("invalid_job_id", "影像任务标识无效。", 400)
+    except Exception:
+        logger.exception("取消影像任务失败")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
+    if not result:
+        return _err("job_not_cancellable", "任务已结束或不存在，无法取消。", 409)
+    return _ok({"job": result})
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>/retry", methods=["POST"])
+def retry_manager_vision_job(job_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        result = vision_repository.retry_job(current_app.config.get("DATABASE_URL"), job_id)
+    except ValueError:
+        return _err("invalid_job_id", "影像任务标识无效。", 400)
+    except Exception:
+        logger.exception("重新排队影像任务失败")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
+    if not result:
+        return _err("job_not_retryable", "只有失败或已取消的任务可以重新排队。", 409)
+    return _ok({"job": result})
 
 
 @api_bp.route("/manager/vision-jobs/<job_id>/media", methods=["GET"])
@@ -2802,6 +2985,42 @@ def review_manager_vision_job(job_id):
         return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     if not result:
         return _err("job_not_reviewable", "任务不存在，或当前状态不可审核。", 409)
+    return _ok({"job": result})
+
+
+@api_bp.route("/manager/vision-jobs/<job_id>/candidates/<int:candidate_index>/review", methods=["POST"])
+def review_manager_vision_candidate(job_id, candidate_index):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    body = request.get_json(silent=True) or {}
+    review_status = body.get("status")
+    if review_status not in {"confirmed", "dismissed"}:
+        return _err("invalid_review", "审核状态只能是确认或排除。", 400)
+    review_note = str(body.get("note") or "").strip()
+    if len(review_note) < 8 or len(review_note) > 1000:
+        return _err("review_note_required", "请填写影像复核依据（8 至 1000 字）。", 400)
+    try:
+        uuid.UUID(job_id)
+        from storage import database, vision_repository
+        database.initialize(current_app.config.get("DATABASE_URL"))
+        job = vision_repository.get_job(current_app.config.get("DATABASE_URL"), job_id)
+        candidates = (job.get("result") or {}).get("candidates") if job else None
+        if (not isinstance(candidates, list) or candidate_index >= len(candidates)
+                or not _valid_review_only_candidate(candidates[candidate_index])):
+            return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
+        result = vision_repository.review_candidate(
+            current_app.config.get("DATABASE_URL"), job_id,
+            candidate_index=candidate_index, review_status=review_status,
+            review_note=review_note, reviewed_by=_admin_identity() or "unknown",
+        )
+    except ValueError:
+        return _err("invalid_job_id", "影像任务标识无效。", 400)
+    except Exception:
+        logger.exception("独立复核影像候选失败")
+        return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
+    if not result:
+        return _err("candidate_already_reviewed", "候选已复核、任务已结束或索引无效，请刷新任务列表。", 409)
     return _ok({"job": result})
 
 

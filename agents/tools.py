@@ -2382,20 +2382,44 @@ def _tool_get_weather(args, ctx):
 
 def _tool_list_road_conditions(args, ctx):
     conds = list_conditions()
-    now = time.time()
     out = []
     for c in conds:
         road = (c.get("edge") or {}).get("road_name", "")
+        action = c.get("action")
+        source = c.get("source") or {}
+        audit = c.get("audit") or []
+        observation_time = source.get("captured_at") or c.get("created_at")
         out.append({
+            "id": c.get("id"),
             "name": c.get("name", ""),
             "type_label": CONDITION_LABELS.get(c.get("type"), c.get("type", "")),
+            "action": action or "legacy_rule",
+            "action_label": {"notice": "提示", "slowdown": "缓行", "closure": "禁止通行"}.get(
+                action, "按原有事件规则"
+            ),
+            "affected_modes": c.get("affected_modes") or [],
+            "cost_multiplier": c.get("cost_multiplier"),
             "road_name": road,
             "location": (road + "路段") if road else "",
             "description": (c.get("description") or "")[:100],
-            "end_time": c.get("end_time"),
+            "observation_time": observation_time,
+            "confirmed_time": c.get("created_at") or next((
+                item.get("at") for item in reversed(audit)
+                if item.get("action") in {"created", "confirmed"}
+            ), None),
+            "start_time": c.get("start_time"),
+            "end_time": c.get("end_time") or None,
+            "status": "confirmed_active",
+            "source_kind": (c.get("source") or {}).get("kind", "manager_record"),
+            "confirmation_note": source.get("field_confirmation") or "",
+            "route_effect": {
+                "action": action or "legacy_rule",
+                "affected_modes": c.get("affected_modes") or [],
+                "cost_multiplier": c.get("cost_multiplier"),
+            },
         })
     return {"conditions": out, "count": len(out),
-            "message": "当前没有生效中的封路/施工" if not out else ""}, None
+            "message": "当前没有生效的路况信息" if not out else ""}, None
 
 
 def _tool_ask_user(args, ctx):

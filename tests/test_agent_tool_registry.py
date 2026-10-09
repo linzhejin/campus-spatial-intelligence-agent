@@ -34,6 +34,22 @@ def test_non_routing_tool_executors_return_schema_shaped_results(monkeypatch):
     assert "没有生效" in result["message"]
     assert artifact is None
 
+    monkeypatch.setattr(tools, "list_conditions", lambda: [{
+        "id": "vision-1", "type": "event", "name": "入口缓行", "created_at": 200,
+        "start_time": 100, "end_time": 300, "description": "已复核",
+        "source": {"kind": "vision_job", "captured_at": 90, "field_confirmation": "现场确认"},
+        "action": "slowdown", "affected_modes": ["walk"], "cost_multiplier": 1.5,
+        "edge": {"road_name": "科技路"},
+    }])
+    result, _ = tools.execute_tool("list_road_conditions", {})
+    condition = result["conditions"][0]
+    assert condition["observation_time"] == 90
+    assert condition["confirmed_time"] == 200
+    assert condition["route_effect"] == {
+        "action": "slowdown", "affected_modes": ["walk"], "cost_multiplier": 1.5,
+    }
+    assert condition["confirmation_note"] == "现场确认"
+
     result, artifact = tools.execute_tool("ask_user", {"question": "从哪里出发？"})
     assert artifact["clarify"]["question"] == "从哪里出发？"
 

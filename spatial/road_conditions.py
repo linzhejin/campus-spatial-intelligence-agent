@@ -60,6 +60,8 @@ CONDITION_LABELS = {
     "flooding": "积水",
     "accident": "事故",
 }
+CONDITION_ACTIONS = {"notice", "slowdown", "closure"}
+TRAVEL_MODES = {"walk", "bike", "drive"}
 
 # 管理员点击点离最近路段超过该距离（米）则拒绝吸附
 SNAP_MAX_DIST_M = 30.0
@@ -181,6 +183,18 @@ def _validate_condition_record(condition: dict) -> None:
         blocked_modes = condition.get("blocked_modes")
         if not _valid_blocked_modes(blocked_modes):
             raise ValueError("路况事件必须明确至少一种禁行方式")
+    if "action" in condition:
+        if condition.get("action") not in CONDITION_ACTIONS:
+            raise ValueError("路况影响动作无效")
+        modes = condition.get("affected_modes")
+        if (not isinstance(modes, list) or not modes
+                or len(modes) != len(set(modes))
+                or any(mode not in TRAVEL_MODES for mode in modes)):
+            raise ValueError("受影响的出行方式无效")
+        if condition["action"] == "slowdown":
+            factor = condition.get("cost_multiplier")
+            if not _finite_number(factor) or not 1.0 <= float(factor) <= 5.0:
+                raise ValueError("缓行成本倍数必须在 1 到 5 之间")
     start = condition.get("start_time", 0) or 0
     end = condition.get("end_time", 0) or 0
     if not _finite_number(start) or not _finite_number(end):
@@ -293,7 +307,7 @@ def list_conditions(include_inactive: bool = False, *, strict: bool = False) -> 
         end = c.get("end_time", 0) or 0
         if start and now < start:
             continue  # 尚未开始（如预录的樱花节管制）
-        if end and now > end:
+        if end and now >= end:
             continue  # 已过期
         active.append(c)
     return active
@@ -321,6 +335,9 @@ def add_condition(
     created_by: str = "web",
     source: Optional[dict] = None,
     blocked_modes: Optional[list] = None,
+    action: Optional[str] = None,
+    affected_modes: Optional[list[str]] = None,
+    cost_multiplier: Optional[float] = None,
 ) -> dict:
     """
     添加一个绑定到具体路段的路况事件。
@@ -339,10 +356,22 @@ def add_condition(
     """
     if cond_type not in CONDITION_EFFECTS:
         raise ValueError(f"未知路况类型: {cond_type}")
-    if blocked_modes is None:
-        blocked_modes = list(TRAVEL_MODE_KEYS)
-    if not _valid_blocked_modes(blocked_modes):
-        raise ValueError("路况事件必须明确至少一种禁行方式")
+    if action is not None:
+        if action not in CONDITION_ACTIONS:
+            raise ValueError("路况影响动作无效")
+        if (not isinstance(affected_modes, list) or not affected_modes
+                or len(affected_modes) != len(set(affected_modes))
+                or any(mode not in TRAVEL_MODE_KEYS for mode in affected_modes)):
+            raise ValueError("受影响的出行方式无效")
+        if action == "slowdown" and (
+                not _finite_number(cost_multiplier)
+                or not 1.0 <= float(cost_multiplier) <= 5.0):
+            raise ValueError("缓行成本倍数必须在 1 到 5 之间")
+    else:
+        if blocked_modes is None:
+            blocked_modes = list(TRAVEL_MODE_KEYS)
+        if not _valid_blocked_modes(blocked_modes):
+            raise ValueError("路况事件必须明确至少一种禁行方式")
     if not edge or edge.get("u") is None or edge.get("v") is None:
         raise ValueError("缺少绑定路段信息 edge（u/v）")
 
@@ -350,7 +379,11 @@ def add_condition(
     condition = {
         "id": str(uuid.uuid4())[:8],
         "type": cond_type,
-        "blocked_modes": list(blocked_modes),
+        **({
+            "action": action,
+            "affected_modes": list(affected_modes),
+            "cost_multiplier": float(cost_multiplier) if action == "slowdown" else None,
+        } if action else {"blocked_modes": list(blocked_modes)}),
         "name": name,
         "description": description or "",
         "edge": {
@@ -380,6 +413,11 @@ def add_condition(
     }
     if source:
         condition["source"] = deepcopy(source)
+    if action is not None:
+        condition["action"] = action
+        condition["affected_modes"] = list(affected_modes or [])
+        if cost_multiplier is not None:
+            condition["cost_multiplier"] = float(cost_multiplier)
     with _condition_write_lock():
         conditions = _load_conditions(strict=True)
         conditions.append(condition)
@@ -416,7 +454,10 @@ def update_condition(cond_id: str, changes: dict, *, actor: str = "web",
         if target is None or target.get("revoked_at"):
             return None
         applied = {}
-        for field in ("name", "description", "start_time", "end_time"):
+        for field in (
+            "name", "description", "start_time", "end_time", "action",
+            "affected_modes", "cost_multiplier",
+        ):
             if field in changes and changes[field] is not None:
                 target[field] = changes[field]
                 applied[field] = changes[field]
@@ -930,17 +971,33 @@ def apply_conditions_to_graph(
                 if not isinstance(cond, dict):
                     raise ValueError("路况事件格式无效")
                 _validate_condition_record(cond)
-            blocked_modes = cond.get("blocked_modes")
-            if blocked_modes is None or not _valid_blocked_modes(blocked_modes):
-                if strict and blocked_modes is not None:
-                    raise ValueError("路况事件禁行方式无效")
-                blocked_modes = TRAVEL_MODE_KEYS
-            if mode not in blocked_modes:
-                continue
-            effect = "block"
+            if "action" in cond:
+                action = cond["action"]
+                affected_modes = cond["affected_modes"]
+                if mode not in affected_modes:
+                    continue
+                effect = (
+                    "block" if action == "closure"
+                    else float(cond["cost_multiplier"]) if action == "slowdown"
+                    else None
+                )
+            else:
+                action = None
+                blocked_modes = cond.get("blocked_modes")
+                if blocked_modes is None or not _valid_blocked_modes(blocked_modes):
+                    if strict and blocked_modes is not None:
+                        raise ValueError("路况事件禁行方式无效")
+                    blocked_modes = TRAVEL_MODE_KEYS
+                if mode not in blocked_modes:
+                    continue
+                effect = "block"
         except (AttributeError, TypeError, ValueError) as exc:
             if strict:
                 raise RoadConditionBindingError("路况事件格式无效，无法安全应用") from exc
+            continue
+        if effect is None and action != "notice":
+            if strict and action is None:
+                raise RoadConditionBindingError("路况事件没有当前出行方式的通行规则")
             continue
         try:
             keys = _resolve_edge_keys(G, cond, strict=strict)
@@ -959,7 +1016,15 @@ def apply_conditions_to_graph(
                 raise RoadConditionBindingError("生效中的路况事件无法匹配当前路网，已停止路线规划")
             continue
         applied += 1
-        closed.update(keys)
+        if effect is None:  # notice: report it without changing route costs
+            continue
+        if effect == "block":
+            closed.update(keys)
+        else:
+            factor = float(effect)
+            for key in keys:
+                if factor > penalties.get(key, 1.0):
+                    penalties[key] = factor
 
     G_modified = G
     if closed:
