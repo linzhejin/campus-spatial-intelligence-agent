@@ -12,9 +12,9 @@
 
 <!-- FACTS:BEGIN -->
 （以下为自动生成区，勿手改；更新：python scripts/docs/gen_facts.py）
-- 版本：main @ 5e8e0f9 ｜ origin/main 同步 ｜ gitee/main 同步 ｜ 生成于 2026-10-09 05:01
+- 版本：codex/aerial-vision-release @ 3607c13 ｜ origin/main 落后 1 ｜ gitee/main 落后 1 ｜ 生成于 2026-10-09 21:20
 - Agent 工具 14 ｜ POI 443（含校门 17） ｜ 路网 5,087 节点 / 14,622 有向边 ｜ 人工边覆盖 208
-- 前端 SW whu-walker-v87 ｜ Android 1.4.1 (versionCode 6) ｜ 数据库迁移 9（最新 009）
+- 前端 SW whu-walker-v87 ｜ Android 1.4.1 (versionCode 6) ｜ 数据库迁移 11（最新 011）
 <!-- FACTS:END -->
 
 - 最近提交集中在管理端影像删除失败后的恢复/重试、道路状态更新可靠性、刷新会话行为和地图交互修正。完整差异以提交记录为准。

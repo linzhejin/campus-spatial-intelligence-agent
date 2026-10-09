@@ -34,7 +34,10 @@ def test_manager_vision_upload_accepts_media_without_location(monkeypatch, tmp_p
 
     response = client.post(
         "/api/manager/vision-jobs",
-        data={"media": (io.BytesIO(b"\x89PNG\r\n\x1a\nvalid"), "campus.png", "image/png")},
+        data={
+            "media": (io.BytesIO(b"\x89PNG\r\n\x1a\nvalid"), "campus.png", "image/png"),
+            "captured_at": "2026-10-09T14:00:00+08:00",
+        },
         headers={"X-CSRF-Token": csrf},
     )
 
