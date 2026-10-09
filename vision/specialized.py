@@ -134,7 +134,8 @@ class OnnxFloodSegmenter:
     FLOODED_ROAD_CLASS = 3
 
     def __init__(self, model_path: str, *, session=None, model_version: str | None = None,
-                 min_area_ratio: float | None = None):
+                 min_area_ratio: float | None = None,
+                 flood_probability_threshold: float | None = None):
         self.session, self.input_name, self.output_name, self.input_size = _onnx_contract(
             model_path, session, expected_classes=len(FLOODNET_CLASSES),
             expected_output_rank=4, class_axis=1,
@@ -146,8 +147,21 @@ class OnnxFloodSegmenter:
         ))
         if not math.isfinite(self.min_area_ratio) or not 0 < self.min_area_ratio <= 1:
             raise ValueError("VISION_FLOOD_MIN_AREA_RATIO 必须大于 0 且不超过 1")
+        raw_threshold = (os.getenv("VISION_FLOOD_CLASS_PROBABILITY_THRESHOLD")
+                         if flood_probability_threshold is None else flood_probability_threshold)
+        if raw_threshold in (None, ""):
+            self.flood_probability_threshold = None
+        else:
+            try:
+                threshold = float(raw_threshold)
+            except (TypeError, ValueError) as error:
+                raise ValueError("积水类别概率阈值必须是 0 到 1 之间的数") from error
+            if not math.isfinite(threshold) or not 0 <= threshold <= 1:
+                raise ValueError("积水类别概率阈值必须是 0 到 1 之间的数")
+            self.flood_probability_threshold = threshold
 
-    def predict(self, frame, region: dict, *, include_mask: bool = False) -> dict | None:
+    def predict(self, frame, region: dict, *, include_mask: bool = False,
+                include_probabilities: bool = False) -> dict | None:
         import cv2
         import numpy as np
 
@@ -181,6 +195,7 @@ class OnnxFloodSegmenter:
             tile_size=(tile_width, tile_height), overlap=tile_overlap,
         )
         best_confidence = np.full((y2 - y1, x2 - x1), -1.0, dtype=np.float32)
+        best_flood_probability = np.zeros((y2 - y1, x2 - x1), dtype=np.float32)
         labels = np.zeros((y2 - y1, x2 - x1), dtype=np.uint8)
         for tile_x, tile_y in windows:
             tile_x2 = min(x2 - x1, tile_x + tile_width)
@@ -207,14 +222,23 @@ class OnnxFloodSegmenter:
                 ])
             maxima = tile_logits.max(axis=0)
             exponentials = np.exp(tile_logits - maxima[None, :, :])
-            confidence = 1.0 / exponentials.sum(axis=0)
+            denominator = exponentials.sum(axis=0)
+            confidence = 1.0 / denominator
+            flood_probability = exponentials[self.FLOODED_ROAD_CLASS] / denominator
             predicted = tile_logits.argmax(axis=0).astype(np.uint8)
             target_confidence = best_confidence[tile_y:tile_y2, tile_x:tile_x2]
             better = confidence > target_confidence
             target_confidence[better] = confidence[better]
             target_labels = labels[tile_y:tile_y2, tile_x:tile_x2]
             target_labels[better] = predicted[better]
-        flooded_mask = ((labels == self.FLOODED_ROAD_CLASS) & (region_mask != 0)).astype(np.uint8)
+            target_flood_probability = best_flood_probability[tile_y:tile_y2, tile_x:tile_x2]
+            target_flood_probability[better] = flood_probability[better]
+        classified_flood = (
+            labels == self.FLOODED_ROAD_CLASS
+            if self.flood_probability_threshold is None
+            else best_flood_probability >= self.flood_probability_threshold
+        )
+        flooded_mask = (classified_flood & (region_mask != 0)).astype(np.uint8)
         ratio = float(flooded_mask.sum()) / roi_pixels
         contours, _ = cv2.findContours(flooded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         outlines = []
@@ -240,9 +264,14 @@ class OnnxFloodSegmenter:
             "water_depth_estimated": False,
             "analysis_tile_count": len(windows),
             "analysis_overlap_pixels": tile_overlap,
+            "flood_probability_threshold": self.flood_probability_threshold,
         }
         if include_mask:
             full_mask = np.zeros((height, width), dtype=np.uint8)
             full_mask[y1:y2, x1:x2] = flooded_mask
             prediction["flooded_road_mask"] = full_mask
+        if include_probabilities:
+            full_probability = np.zeros((height, width), dtype=np.float32)
+            full_probability[y1:y2, x1:x2] = best_flood_probability
+            prediction["flooded_road_probability"] = full_probability
         return prediction

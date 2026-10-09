@@ -2,7 +2,8 @@
 """Evaluate local AIDER/FloodNet-compatible ONNX weights on a held-out manifest.
 
 The evaluator never creates a random image-level split. The manifest must list
-disjoint independent flight/scene groups and only test-split samples.
+disjoint train/validation/test groups and only test-split samples. Whether
+those groups represent independent flights/scenes depends on the manifest.
 """
 from __future__ import annotations
 
@@ -135,8 +136,12 @@ def _align_rgb_to_mask_grid(frame, truth_labels):
     return aligned, "image_resized_to_mask_grid"
 
 
-def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: float):
-    segmenter = OnnxFloodSegmenter(str(model_path), min_area_ratio=min_area_ratio)
+def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: float,
+                    flood_probability_threshold: float | None = None):
+    segmenter = OnnxFloodSegmenter(
+        str(model_path), min_area_ratio=min_area_ratio,
+        flood_probability_threshold=flood_probability_threshold,
+    )
     tp = fp = fn = 0
     group_counts = {}
     sample_iou = []
@@ -182,6 +187,7 @@ def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: floa
 
     return {
         **overall,
+        "flood_probability_threshold": segmenter.flood_probability_threshold,
         "sample_count": len(manifest["samples"]),
         "image_mask_grid_alignment": alignment_counts,
         "mean_per_image_iou": round(
@@ -204,11 +210,15 @@ def main() -> int:
                         help="AIDER traffic_incident probability threshold")
     parser.add_argument("--flood-min-area", type=float, default=0.08,
                         help="Flooded-road minimum image-region fraction")
+    parser.add_argument("--flood-class-threshold", type=float,
+                        help="optional flooded-road class probability threshold")
     parser.add_argument("--output", type=Path, help="optional JSON report path")
     args = parser.parse_args()
     if not args.manifest.is_file() or not args.dataset_root.is_dir() or not args.model.is_file():
         parser.error("manifest, dataset root, and model must exist")
-    if not 0 < args.threshold <= 1 or not 0 < args.flood_min_area <= 1:
+    if (not 0 < args.threshold <= 1 or not 0 < args.flood_min_area <= 1
+            or (args.flood_class_threshold is not None
+                and not 0 <= args.flood_class_threshold <= 1)):
         parser.error("thresholds must be greater than zero and at most one")
     try:
         manifest_bytes = args.manifest.read_bytes()
@@ -220,7 +230,8 @@ def main() -> int:
         metrics = (
             _evaluate_classification(manifest, args.dataset_root, model_path, args.threshold)
             if args.task == "accident_classification" else
-            _evaluate_flood(manifest, args.dataset_root, model_path, args.flood_min_area)
+            _evaluate_flood(manifest, args.dataset_root, model_path, args.flood_min_area,
+                            args.flood_class_threshold)
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError, RuntimeError) as error:
         parser.error(str(error))
@@ -229,7 +240,7 @@ def main() -> int:
         "dataset": manifest["dataset"],
         "split": "test",
         "split_unit": manifest["split_unit"],
-        "independent_test_groups": len(manifest["split_groups"]["test"]),
+        "test_group_count": len(manifest["split_groups"]["test"]),
         "sample_count": len(manifest["samples"]),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "model_sha256": _sha256(model_path),
@@ -238,7 +249,8 @@ def main() -> int:
         "elapsed_seconds": round(time.monotonic() - started, 2),
         "limitations": [
             "此脚本评测本地提供的权重，不训练模型。",
-            "测试集必须按航次、事故或独立场景分组；不得将相邻视频帧随机分入不同集合。",
+            "bootstrap 按清单声明的分组重采样；若分组单位是图像 ID，结果不代表独立航次或事故事件。",
+            "正式验收应按航次、事故或独立场景划分，不能将相邻视频帧随机分入不同集合。",
             "公开数据结果不能替代武汉大学航拍样本的外域验证。",
         ],
     }

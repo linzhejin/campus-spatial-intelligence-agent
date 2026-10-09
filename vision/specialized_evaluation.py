@@ -64,6 +64,54 @@ def summarize_binary_counts(*, tp: int, fp: int, fn: int) -> dict:
     }
 
 
+def select_probability_threshold_from_histograms(*, positive_bins, negative_bins,
+                                                  bin_edges) -> dict:
+    """Choose a flooded-road probability threshold by validation-pixel IoU.
+
+    Histograms avoid retaining full-resolution probability maps for every
+    validation image. Bin index ``i`` represents scores in
+    ``[bin_edges[i], bin_edges[i + 1])`` (the last bin includes 1.0).
+    """
+    positive = list(positive_bins)
+    negative = list(negative_bins)
+    edges = list(bin_edges)
+    if not positive or len(positive) != len(negative) or len(edges) != len(positive) + 1:
+        raise ValueError("positive and negative histograms must have the same length as bin intervals")
+    for counts in (positive, negative):
+        if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts):
+            raise ValueError("histogram counts must be non-negative integers")
+    if sum(positive) <= 0:
+        raise ValueError("validation histogram must contain positive validation pixels")
+    if (any(isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(float(value)) or not 0 <= float(value) <= 1 for value in edges)
+            or edges[0] != 0 or edges[-1] != 1
+            or any(left >= right for left, right in zip(edges, edges[1:]))):
+        raise ValueError("bin edges must strictly increase from 0 to 1")
+
+    positive_total = sum(positive)
+    best = None
+    for index, threshold in enumerate(edges[:-1]):
+        tp = sum(positive[index:])
+        fp = sum(negative[index:])
+        fn = positive_total - tp
+        union = tp + fp + fn
+        iou = tp / union if union else 0.0
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / positive_total
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        candidate = {
+            "threshold": round(float(threshold), 8), "tp": tp, "fp": fp, "fn": fn,
+            "iou": round(iou, 6), "precision": round(precision, 6),
+            "recall": round(recall, 6), "f1": round(f1, 6),
+        }
+        if best is None or (candidate["iou"], candidate["precision"], candidate["recall"],
+                            candidate["threshold"]) > (
+                best["iou"], best["precision"], best["recall"], best["threshold"]):
+            best = candidate
+    return {**best, "positive_pixels": positive_total,
+            "negative_pixels": sum(negative), "bin_count": len(positive)}
+
+
 def summarize_binary_classification(actual_positive, predicted_positive) -> dict:
     actual_positive, predicted_positive = list(actual_positive), list(predicted_positive)
     if not actual_positive or len(actual_positive) != len(predicted_positive):
@@ -79,12 +127,14 @@ def summarize_binary_classification(actual_positive, predicted_positive) -> dict
             "specificity": round(specificity, 6), **_prf(tp, fp, fn)}
 
 
-def validate_split_manifest(manifest, *, task: str) -> dict:
-    """Validate a held-out manifest with explicit disjoint flight/scene groups."""
+def validate_split_manifest(manifest, *, task: str, split: str = "test") -> dict:
+    """Validate a held-out manifest against its declared disjoint split groups."""
     if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
         raise ValueError("manifest schema_version must be 1")
     if task not in {"accident_classification", "flooded_road_segmentation"}:
         raise ValueError("unsupported evaluation task")
+    if split not in {"train", "validation", "test"}:
+        raise ValueError("split must be train, validation, or test")
     if manifest.get("task") != task:
         raise ValueError("manifest task does not match the requested evaluation task")
     if not str(manifest.get("dataset") or "").strip():
@@ -95,16 +145,16 @@ def validate_split_manifest(manifest, *, task: str) -> dict:
     if not isinstance(groups, dict):
         raise ValueError("manifest split_groups is required")
     normalized_groups = {}
-    for split in ("train", "validation", "test"):
-        values = groups.get(split)
+    for split_name in ("train", "validation", "test"):
+        values = groups.get(split_name)
         if not isinstance(values, list):
-            raise ValueError(f"split_groups.{split} must be a list")
+            raise ValueError(f"split_groups.{split_name} must be a list")
         normalized = [str(value).strip() for value in values]
         if any(not value for value in normalized) or len(normalized) != len(set(normalized)):
-            raise ValueError(f"split_groups.{split} contains an empty or duplicate group")
-        normalized_groups[split] = normalized
+            raise ValueError(f"split_groups.{split_name} contains an empty or duplicate group")
+        normalized_groups[split_name] = normalized
     if not normalized_groups["test"]:
-        raise ValueError("test split must contain at least one independent group")
+        raise ValueError("test split must contain at least one declared group")
     all_groups = [group for values in normalized_groups.values() for group in values]
     if len(all_groups) != len(set(all_groups)):
         raise ValueError("train, validation, and test groups must not overlap")
@@ -123,8 +173,8 @@ def validate_split_manifest(manifest, *, task: str) -> dict:
         if image in seen_images:
             raise ValueError("manifest contains a duplicate image path")
         seen_images.add(image)
-        if group_id not in normalized_groups["test"]:
-            raise ValueError(f"sample {index} does not belong to the declared test split")
+        if group_id not in normalized_groups[split]:
+            raise ValueError(f"sample {index} does not belong to the declared {split} split")
         if task == "accident_classification":
             if sample.get("label") not in allowed_classes:
                 raise ValueError(f"sample {index} has an unknown AIDER class")
@@ -151,7 +201,7 @@ def validate_split_manifest(manifest, *, task: str) -> dict:
 
 def cluster_bootstrap_interval(group_values: dict[str, object], statistic, *,
                                repetitions: int = 1000, seed: int = 20261010):
-    """Return percentile intervals by resampling independent scenes, not frames."""
+    """Return percentile intervals by resampling the manifest's declared groups."""
     import random
 
     if len(group_values) < 2:
@@ -172,7 +222,7 @@ def cluster_bootstrap_interval(group_values: dict[str, object], statistic, *,
     return {
         "lower_95": round(samples[int(0.025 * (len(samples) - 1))], 6),
         "upper_95": round(samples[int(0.975 * (len(samples) - 1))], 6),
-        "independent_groups": len(groups),
+        "resampling_group_count": len(groups),
         "bootstrap_repetitions": repetitions,
         "seed": seed,
     }

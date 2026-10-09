@@ -79,6 +79,35 @@ def test_flood_segmenter_measures_flooded_road_only_inside_marked_roi():
     assert session.feed["images"].mean() > 1.0  # The model receives marked road tiles, not the whole scene.
 
 
+def test_flood_segmenter_calibrated_probability_threshold_returns_score_map():
+    logits = np.full((1, 10, 8, 8), -8.0, dtype=np.float32)
+    logits[:, 0, :, :] = 0.0
+    logits[0, 3, 1, 1] = 3.0
+    logits[0, 3, 2, 2] = 1.0
+    session = FakeSession(logits, input_shape=(1, 3, 8, 8))
+    segmenter = OnnxFloodSegmenter(
+        "flood.onnx", session=session, flood_probability_threshold=0.9,
+    )
+    frame = np.zeros((8, 8, 3), dtype=np.uint8)
+    region = {"kind": "road_surface", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}
+
+    prediction = segmenter.predict(frame, region, include_mask=True, include_probabilities=True)
+
+    assert prediction["flooded_road_mask"].sum() == 1
+    assert prediction["flooded_road_mask"][1, 1] == 1
+    assert prediction["flooded_road_mask"][2, 2] == 0
+    assert prediction["flooded_road_probability"].shape == (8, 8)
+    assert prediction["flooded_road_probability"][1, 1] > 0.9
+    assert prediction["flooded_road_probability"][2, 2] < 0.9
+
+
+def test_flood_segmenter_rejects_invalid_probability_threshold():
+    with pytest.raises(ValueError):
+        OnnxFloodSegmenter("flood.onnx", session=FakeSession(
+            np.zeros((1, 10, 8, 8), dtype=np.float32), input_shape=(1, 3, 8, 8),
+        ), flood_probability_threshold=1.1)
+
+
 def test_specialized_candidates_require_persistent_evidence_and_never_auto_publish():
     sparse = [
         {"time_seconds": 1.0, "traffic_accident_probability": 0.91,

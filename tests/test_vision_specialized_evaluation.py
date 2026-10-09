@@ -4,9 +4,11 @@ import numpy as np
 from scripts.vision.evaluate_specialized import _align_rgb_to_mask_grid
 
 from vision.specialized_evaluation import (
+    cluster_bootstrap_interval,
     summarize_binary_classification,
     summarize_binary_counts,
     summarize_classification,
+    select_probability_threshold_from_histograms,
     validate_split_manifest,
 )
 
@@ -86,6 +88,15 @@ def test_binary_segmentation_summary_reports_iou_precision_recall_and_empty_unio
     assert summarize_binary_counts(tp=0, fp=0, fn=0)["iou"] is None
 
 
+def test_bootstrap_report_names_resampling_groups_without_claiming_scene_independence():
+    report = cluster_bootstrap_interval(
+        {"image-1": 1, "image-2": 0}, lambda values: sum(values) / len(values),
+    )
+
+    assert report["resampling_group_count"] == 2
+    assert "independent_groups" not in report
+
+
 def test_incident_operating_point_uses_explicit_probability_threshold():
     report = summarize_binary_classification(
         [True, True, False, False], [True, False, True, False],
@@ -94,3 +105,44 @@ def test_incident_operating_point_uses_explicit_probability_threshold():
         "tp": 1, "fp": 1, "fn": 1, "tn": 1,
         "specificity": 0.5, "precision": 0.5, "recall": 0.5, "f1": 0.5,
     }
+
+
+def test_probability_threshold_selection_uses_validation_histogram_and_iou():
+    report = select_probability_threshold_from_histograms(
+        positive_bins=[0, 4, 1], negative_bins=[5, 0, 0],
+        bin_edges=[0.0, 0.33, 0.67, 1.0],
+    )
+
+    assert report["threshold"] == pytest.approx(0.33)
+    assert report["tp"] == 5
+    assert report["fp"] == 0
+    assert report["fn"] == 0
+    assert report["iou"] == 1.0
+
+
+def test_probability_threshold_selection_rejects_empty_or_invalid_histograms():
+    with pytest.raises(ValueError, match="positive validation pixels"):
+        select_probability_threshold_from_histograms(
+            positive_bins=[0, 0], negative_bins=[1, 1], bin_edges=[0.0, 0.5, 1.0],
+        )
+    with pytest.raises(ValueError, match="same length"):
+        select_probability_threshold_from_histograms(
+            positive_bins=[1], negative_bins=[1, 0], bin_edges=[0.0, 1.0],
+        )
+
+
+def test_manifest_validator_can_validate_only_validation_samples_for_calibration():
+    manifest = {
+        "schema_version": 1, "task": "flooded_road_segmentation", "dataset": "FloodNet",
+        "split_unit": "labeled_image_id",
+        "split_groups": {"train": ["train-1"], "validation": ["val-1"], "test": ["test-1"]},
+        "samples": [{"image": "val/image.jpg", "mask": "val/mask.png", "group_id": "val-1",
+                     "road_surface_polygon": [[0, 0], [1, 0], [1, 1]],
+                     "flooded_road_class_id": 3}],
+    }
+
+    validated = validate_split_manifest(
+        manifest, task="flooded_road_segmentation", split="validation",
+    )
+
+    assert validated["samples"] == manifest["samples"]
