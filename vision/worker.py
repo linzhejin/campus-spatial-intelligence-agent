@@ -97,6 +97,20 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             progress_callback=save_progress,
             resume_state=job.get("checkpoint"),
         )
+        finalizing = vision_repository.update_job_progress(
+            database_url, job_id, worker_id,
+            progress={"phase": "finalizing", "percent": 99,
+                      "frames_analyzed": result.get("video_coverage", {}).get("sampled_frames", 1)},
+        )
+        if finalizing is None:
+            lease_lost.set()
+            return {"job_id": job_id, "status": "lease_lost"}
+        if finalizing["cancel_requested"]:
+            final_status = vision_repository.finish_job(
+                database_url, job_id, worker_id, status="cancelled",
+                error={"code": "vision_job_cancelled", "message": "管理员已取消影像分析；已完成分段可用于重试。"},
+            )
+            return {"job_id": job_id, "status": final_status or "lease_lost"}
         if job["media_kind"] == "video" and result.get("candidates"):
             try:
                 clip_summary = attach_evidence_clips(
@@ -118,16 +132,11 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
                         evidence["clip_status"] = "unavailable"
         if lease_lost.is_set():
             return {"job_id": job_id, "status": "lease_lost"}
-        vision_repository.update_job_progress(
-            database_url, job_id, worker_id,
-            progress={"phase": "complete", "percent": 100,
-                      "frames_analyzed": result.get("video_coverage", {}).get("sampled_frames", 1)},
-        )
         status = "needs_review" if result.get("candidates") else "completed"
-        committed = vision_repository.finish_job(
+        final_status = vision_repository.finish_job(
             database_url, job_id, worker_id, status=status, result=result,
         )
-        return {"job_id": job_id, "status": status if committed else "lease_lost"}
+        return {"job_id": job_id, "status": final_status or "lease_lost"}
     except VisionJobCancelled:
         if lease_lost.is_set():
             return {"job_id": job_id, "status": "lease_lost"}
@@ -135,21 +144,21 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             database_url, job_id, worker_id,
             progress={"phase": "cancelled", "percent": 0},
         )
-        committed = vision_repository.finish_job(
+        final_status = vision_repository.finish_job(
             database_url, job_id, worker_id, status="cancelled",
             error={"code": "vision_job_cancelled", "message": "管理员已取消影像分析；已完成分段可用于重试。"},
         )
-        return {"job_id": job_id, "status": "cancelled" if committed else "lease_lost"}
+        return {"job_id": job_id, "status": final_status or "lease_lost"}
     except Exception as error:
         logger.exception("Vision job failed (%s)", job_id)
         if lease_lost.is_set():
             return {"job_id": job_id, "status": "lease_lost"}
         message = str(error)[:500] or "影像分析失败，请检查文件后重试。"
-        committed = vision_repository.finish_job(
+        final_status = vision_repository.finish_job(
             database_url, job_id, worker_id, status="failed",
             error={"code": "vision_analysis_failed", "message": message},
         )
-        return {"job_id": job_id, "status": "failed" if committed else "lease_lost"}
+        return {"job_id": job_id, "status": final_status or "lease_lost"}
     finally:
         stop_heartbeat.set()
         heartbeat.join(timeout=2)

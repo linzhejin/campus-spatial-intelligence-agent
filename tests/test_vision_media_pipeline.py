@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from vision.engine import analyze_media, _compact_specialized_observations
+from vision.engine import analyze_media, _compact_specialized_observations, _merge_segment_analyses
 from vision.worker import load_optional_models
 
 
@@ -133,10 +133,56 @@ def test_video_checkpoint_keeps_only_the_strongest_flood_outline_per_road():
     assert compacted[2]["outline_polygons"] == observations[2]["outline_polygons"]
     assert len(compacted) == len(observations)
 
+
+def test_segment_merge_keeps_candidates_for_distinct_observation_regions_separate():
+    segment = {
+        "start_seconds": 0.0,
+        "end_seconds": 5.0,
+        "metrics": {"frames_analyzed": 5},
+        "candidates": [
+            {"kind": "possible_congestion", "confidence": 0.8, "reason": "queue",
+             "evidence": {"summary": {"region_id": "north-lane"}}},
+            {"kind": "possible_congestion", "confidence": 0.7, "reason": "queue",
+             "evidence": {"summary": {"region_id": "south-lane"}}},
+        ],
+    }
+
+    result = _merge_segment_analyses([segment])
+
+    assert len(result["candidates"]) == 2
+    assert {
+        item["evidence"]["summary"]["region_id"] for item in result["candidates"]
+    } == {"north-lane", "south-lane"}
+
+
+def test_segment_merge_splits_same_region_events_when_an_intervening_segment_has_no_candidate():
+    def segment(start, end, candidate=True):
+        return {
+            "start_seconds": start,
+            "end_seconds": end,
+            "metrics": {"frames_analyzed": 5},
+            "candidates": ([{
+                "kind": "possible_crowding", "confidence": 0.8, "reason": "crowd",
+                "evidence": {"region_id": "plaza", "summary": {"region_id": "plaza"}},
+            }] if candidate else []),
+        }
+
+    result = _merge_segment_analyses([
+        segment(0.0, 4.0), segment(5.0, 9.0), segment(10.0, 14.0, candidate=False),
+        segment(15.0, 19.0),
+    ])
+
+    candidates = result["candidates"]
+    assert len(candidates) == 2
+    assert [item["evidence"]["occurrences"] for item in candidates] == [2, 1]
+    assert [item["evidence"]["segments"][0]["start_seconds"] for item in candidates] == [0.0, 15.0]
+
 class FakeCapture:
-    def __init__(self, total_frames, fps=10):
+    def __init__(self, total_frames, fps=10, *, seek_supported=True, decodable_frames=None):
         self.total_frames = total_frames
         self.fps = fps
+        self.seek_supported = seek_supported
+        self.decodable_frames = total_frames if decodable_frames is None else decodable_frames
         self.index = 0
         self.released = False
 
@@ -149,16 +195,19 @@ class FakeCapture:
             FakeCV2.CAP_PROP_FRAME_HEIGHT: 80,
             FakeCV2.CAP_PROP_FPS: self.fps,
             FakeCV2.CAP_PROP_FRAME_COUNT: self.total_frames,
+            FakeCV2.CAP_PROP_POS_FRAMES: self.index,
         }.get(prop, 0)
 
     def set(self, prop, value):
         if prop == FakeCV2.CAP_PROP_POS_FRAMES:
+            if not self.seek_supported:
+                return False
             self.index = int(value)
             return True
         return False
 
     def read(self):
-        if self.index >= self.total_frames:
+        if self.index >= self.decodable_frames:
             return False, None
         self.index += 1
         return True, np.zeros((80, 100, 3), dtype=np.uint8)
@@ -173,12 +222,17 @@ class FakeCV2:
     CAP_PROP_FRAME_HEIGHT = 4
     CAP_PROP_FPS = 5
     CAP_PROP_FRAME_COUNT = 7
+    _seek_supported = True
+    _decodable_frames = None
     IMREAD_COLOR = 1
     _total_frames = 1900
 
     @classmethod
     def VideoCapture(cls, _path):
-        return FakeCapture(cls._total_frames)
+        return FakeCapture(
+            cls._total_frames, seek_supported=cls._seek_supported,
+            decodable_frames=cls._decodable_frames,
+        )
 
 
 def test_video_pipeline_samples_entire_clip_in_segments_not_just_first_180_seconds(tmp_path, monkeypatch):
@@ -318,3 +372,49 @@ def test_interrupted_video_resumes_after_last_completed_segment(tmp_path, monkey
     assert checkpoint["next_frame_index"] == 99
     assert result["video_coverage"]["sampled_frames"] == 500
     assert calls_before_resume == 450
+
+
+def test_resume_restarts_from_zero_and_replaces_checkpoint_when_decoder_cannot_seek(tmp_path, monkeypatch):
+    import config
+
+    source = tmp_path / "no-seek.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 100
+    monkeypatch.setattr(FakeCV2, "_seek_supported", False)
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 20)
+    checkpoint = {
+        "next_frame_index": 50,
+        "segments": [{"start_seconds": 0.0, "end_seconds": 4.8,
+                      "metrics": {"frames_analyzed": 25}, "candidates": []}],
+    }
+    progress = []
+    detector = FakeDetector()
+
+    result = analyze_media(
+        source, "video", None, camera_stabilized=True, detector=detector,
+        resume_state=checkpoint, progress_callback=progress.append,
+    )
+
+    assert result["video_coverage"]["sampled_frames"] == 50
+    assert result["video_coverage"]["segment_count"] == 3
+    assert detector.calls == 50
+    assert progress[0]["checkpoint"] == {"next_frame_index": 0, "segments": []}
+
+
+def test_video_with_missing_declared_tail_frames_is_not_reported_as_complete(tmp_path, monkeypatch):
+    import config
+
+    source = tmp_path / "truncated.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 100
+    monkeypatch.setattr(FakeCV2, "_decodable_frames", 98)
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 20)
+
+    with pytest.raises(ValueError, match="声明帧数"):
+        analyze_media(
+            source, "video", None, camera_stabilized=True, detector=FakeDetector(),
+        )

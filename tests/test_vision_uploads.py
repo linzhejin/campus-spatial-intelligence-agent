@@ -278,3 +278,35 @@ def test_retry_resets_attempt_budget_and_keeps_video_checkpoint(monkeypatch):
     statement = " ".join(statements[0].split())
     assert "attempts=0" in statement
     assert "checkpoint" not in statement
+
+
+def test_finishing_job_atomically_honors_a_late_cancel_request(monkeypatch):
+    statements = []
+
+    class Cursor:
+        def fetchone(self):
+            return {"status": "cancelled"}
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, statement, _parameters):
+            statements.append(statement)
+            return Cursor()
+
+    from storage import database, vision_repository
+    monkeypatch.setattr(database, "connect", lambda *_args: Connection())
+
+    status = vision_repository.finish_job(
+        None, "job", "worker", status="needs_review",
+        result={"candidates": [{"kind": "possible_congestion"}]},
+    )
+
+    statement = " ".join(statements[0].split())
+    assert "CASE WHEN cancel_requested THEN 'cancelled' ELSE %s END" in statement
+    assert "CASE WHEN cancel_requested THEN NULL ELSE %s END" in statement
+    assert status == "cancelled"

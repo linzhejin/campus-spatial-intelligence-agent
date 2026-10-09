@@ -107,18 +107,27 @@ def retry_job(url: str | None, job_id: str) -> dict | None:
 
 
 def finish_job(url: str | None, job_id: str, worker_id: str, *, status: str,
-               result: dict | None = None, error: dict | None = None) -> bool:
+               result: dict | None = None, error: dict | None = None) -> str | None:
     if status not in {"needs_review", "completed", "failed", "cancelled"}:
         raise ValueError("invalid vision job terminal status")
     with database.connect(url) as conn:
         row = conn.execute(
-            "UPDATE manager_vision_job SET status=%s, result=%s, error=%s, lease_until=NULL,"
-            " updated_at=now() WHERE job_id=%s AND worker_id=%s AND status='running'"
-            " AND deleted_at IS NULL AND lease_until>now() RETURNING job_id",
+            "UPDATE manager_vision_job SET"
+            " status=CASE WHEN cancel_requested THEN 'cancelled' ELSE %s END,"
+            " result=CASE WHEN cancel_requested THEN NULL ELSE %s END,"
+            " error=CASE WHEN cancel_requested THEN %s ELSE %s END,"
+            " progress=CASE WHEN cancel_requested OR %s='cancelled' THEN %s"
+            " WHEN %s IN ('needs_review','completed') THEN %s ELSE progress END,"
+            " lease_until=NULL, updated_at=now()"
+            " WHERE job_id=%s AND worker_id=%s AND status='running'"
+            " AND deleted_at IS NULL AND lease_until>now() RETURNING status",
             (status, Jsonb(result) if result is not None else None,
-             Jsonb(error) if error is not None else None, job_id, worker_id),
+             Jsonb({"code": "vision_job_cancelled", "message": "管理员已取消影像分析；已完成分段可用于重试。"}),
+             Jsonb(error) if error is not None else None,
+             status, Jsonb({"phase": "cancelled", "percent": 0}),
+             status, Jsonb({"phase": "complete", "percent": 100}), job_id, worker_id),
         ).fetchone()
-    return row is not None
+    return str(row["status"]) if row else None
 
 
 def get_job(url: str | None, job_id: str) -> dict | None:

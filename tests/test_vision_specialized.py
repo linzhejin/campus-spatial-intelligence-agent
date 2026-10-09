@@ -147,3 +147,30 @@ def test_persistence_cannot_be_fabricated_by_switching_to_a_different_road_regio
     ]
 
     assert build_specialized_candidates(observations, sample_interval_s=1.0) == []
+
+
+def test_specialized_candidates_split_separate_incidents_in_the_same_observation_region():
+    observations = [
+        {"time_seconds": 1.0, "region_id": "east-road",
+         "traffic_accident_probability": 0.95, "flooded_road_area_ratio": 0.3,
+         "outline_polygons": [[[0.1, 0.1], [0.2, 0.1], [0.2, 0.2]]]},
+        {"time_seconds": 2.0, "region_id": "east-road",
+         "traffic_accident_probability": 0.93, "flooded_road_area_ratio": 0.28,
+         "outline_polygons": [[[0.1, 0.1], [0.2, 0.1], [0.2, 0.2]]]},
+        {"time_seconds": 20.0, "region_id": "east-road",
+         "traffic_accident_probability": 0.96, "flooded_road_area_ratio": 0.4,
+         "outline_polygons": [[[0.5, 0.5], [0.6, 0.5], [0.6, 0.6]]]},
+        {"time_seconds": 21.0, "region_id": "east-road",
+         "traffic_accident_probability": 0.94, "flooded_road_area_ratio": 0.35,
+         "outline_polygons": [[[0.5, 0.5], [0.6, 0.5], [0.6, 0.6]]]},
+    ]
+
+    candidates = build_specialized_candidates(observations, sample_interval_s=1.0)
+    accidents = [item for item in candidates if item["kind"] == "possible_accident"]
+    flooding = [item for item in candidates if item["kind"] == "possible_flooding"]
+
+    assert len(accidents) == 2
+    assert len(flooding) == 2
+    assert [item["evidence"]["segments"][0]["start_seconds"] for item in accidents] == [1.0, 20.0]
+    assert [item["evidence"]["summary"]["supporting_frames"] for item in flooding] == [2, 2]
+    assert all(item["review_required"] and not item["auto_publish"] for item in candidates)

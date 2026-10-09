@@ -119,13 +119,18 @@ def _candidate(kind: str, confidence: float, reason: str, evidence: dict) -> dic
     }
 
 
-def _has_adjacent_support(records: list[dict], sample_interval_s: float) -> bool:
+def _cluster_temporal_records(records: list[dict], sample_interval_s: float) -> list[list[dict]]:
+    """Group nearby observations so distinct incidents in one ROI stay separate."""
     ordered = sorted(records, key=lambda item: item["time_seconds"])
     max_gap = max(1.5, sample_interval_s * 2.1)
-    return any(
-        ordered[index + 1]["time_seconds"] - ordered[index]["time_seconds"] <= max_gap
-        for index in range(len(ordered) - 1)
-    )
+    clusters: list[list[dict]] = []
+    for record in ordered:
+        if (not clusters
+                or record["time_seconds"] - clusters[-1][-1]["time_seconds"] > max_gap):
+            clusters.append([record])
+        else:
+            clusters[-1].append(record)
+    return clusters
 
 
 def build_specialized_candidates(
@@ -177,30 +182,31 @@ def build_specialized_candidates(
             if current is None or item["confidence"] > current["confidence"]:
                 selected_by_time[item["time_seconds"]] = item
         selected = sorted(selected_by_time.values(), key=lambda item: item["time_seconds"])
-        accident_supported = (
-            len(selected) >= 2 and _has_adjacent_support(selected, sample_interval_s)
-            or single_image and max((item["confidence"] for item in selected), default=0) >= 0.95
-        )
-        if not accident_supported:
-            continue
-        candidates.append(_candidate(
-            "possible_accident",
-            mean(item["confidence"] for item in selected),
-            "事故场景分类模型在连续画面中给出事故类别线索；模型只判断画面类别，无法定位事故车辆，须查看原片并人工确认。",
-            {
-                "segments": [{
-                    "start_seconds": item["time_seconds"],
-                    "end_seconds": item["time_seconds"] + sample_interval_s,
-                    "confidence": round(item["confidence"], 4),
-                } for item in selected[:200]],
-                "summary": {
-                    "peak_traffic_accident_probability": round(max(item["confidence"] for item in selected), 4),
-                    "supporting_frames": len(selected),
-                    "region_id": region_id,
-                    "spatial_precision": "scene_classification_only",
+        for event in _cluster_temporal_records(selected, sample_interval_s):
+            accident_supported = (
+                len(event) >= 2
+                or single_image and max((item["confidence"] for item in event), default=0) >= 0.95
+            )
+            if not accident_supported:
+                continue
+            candidates.append(_candidate(
+                "possible_accident",
+                mean(item["confidence"] for item in event),
+                "事故场景分类模型在连续画面中给出事故类别线索；模型只判断画面类别，无法定位事故车辆，须查看原片并人工确认。",
+                {
+                    "segments": [{
+                        "start_seconds": item["time_seconds"],
+                        "end_seconds": item["time_seconds"] + sample_interval_s,
+                        "confidence": round(item["confidence"], 4),
+                    } for item in event[:200]],
+                    "summary": {
+                        "peak_traffic_accident_probability": round(max(item["confidence"] for item in event), 4),
+                        "supporting_frames": len(event),
+                        "region_id": region_id,
+                        "spatial_precision": "scene_classification_only",
+                    },
                 },
-            },
-        ))
+            ))
 
     flood_regions: dict[str, list[dict]] = defaultdict(list)
     for item in flood_records:
@@ -212,33 +218,34 @@ def build_specialized_candidates(
             if current is None or item["area_ratio"] > current["area_ratio"]:
                 selected_by_time[item["time_seconds"]] = item
         selected = sorted(selected_by_time.values(), key=lambda item: item["time_seconds"])
-        flood_supported = (
-            len(selected) >= 2 and _has_adjacent_support(selected, sample_interval_s)
-            or single_image and max((item["area_ratio"] for item in selected), default=0) >= 0.25
-        )
-        if not flood_supported:
-            continue
-        strongest = max(selected, key=lambda item: item["area_ratio"])
-        candidates.append(_candidate(
-            "possible_flooding",
-            min(0.99, 0.6 + strongest["area_ratio"] / 2),
-            "积水分割模型在已圈定路面区域内检出疑似淹水像素；面积比例按画面区域计算，不代表实际水深或地面范围，须人工核对。",
-            {
-                "segments": [{
-                    "start_seconds": item["time_seconds"],
-                    "end_seconds": item["time_seconds"] + sample_interval_s,
-                    "confidence": round(item["area_ratio"], 4),
-                } for item in selected[:200]],
-                "summary": {
-                    "region_id": region_id,
-                    "max_flooded_road_area_ratio": round(strongest["area_ratio"], 4),
-                    "outline_time_seconds": round(strongest["time_seconds"], 3),
-                    "supporting_frames": len(selected),
-                    "outline_polygons": strongest["outline_polygons"][:8],
-                    "water_depth_estimated": False,
+        for event in _cluster_temporal_records(selected, sample_interval_s):
+            flood_supported = (
+                len(event) >= 2
+                or single_image and max((item["area_ratio"] for item in event), default=0) >= 0.25
+            )
+            if not flood_supported:
+                continue
+            strongest = max(event, key=lambda item: item["area_ratio"])
+            candidates.append(_candidate(
+                "possible_flooding",
+                min(0.99, 0.6 + strongest["area_ratio"] / 2),
+                "积水分割模型在已圈定路面区域内检出疑似淹水像素；面积比例按画面区域计算，不代表实际水深或地面范围，须人工核对。",
+                {
+                    "segments": [{
+                        "start_seconds": item["time_seconds"],
+                        "end_seconds": item["time_seconds"] + sample_interval_s,
+                        "confidence": round(item["area_ratio"], 4),
+                    } for item in event[:200]],
+                    "summary": {
+                        "region_id": region_id,
+                        "max_flooded_road_area_ratio": round(strongest["area_ratio"], 4),
+                        "outline_time_seconds": round(strongest["time_seconds"], 3),
+                        "supporting_frames": len(event),
+                        "outline_polygons": strongest["outline_polygons"][:8],
+                        "water_depth_estimated": False,
+                    },
                 },
-            },
-        ))
+            ))
     return candidates
 
 

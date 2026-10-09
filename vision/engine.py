@@ -288,10 +288,10 @@ def _merge_segment_analyses(segments: list[dict], *, accident_threshold: float =
     classes_mean: dict[str, float] = {}
     classes_peak: dict[str, int] = {}
     tracked = stationary = valid_transitions = transitions = 0
-    candidates_by_kind: dict[str, list[dict]] = {}
+    candidate_events: dict[tuple[str, str | None], list[list[dict]]] = {}
     specialized_observations: list[dict] = []
     specialized_frame_times: set[float] = set()
-    for segment in segments:
+    for segment_index, segment in enumerate(segments):
         segment_metrics = segment["metrics"]
         count = segment_metrics.get("frames_analyzed", 0)
         for key in weighted_keys:
@@ -307,13 +307,26 @@ def _merge_segment_analyses(segments: list[dict], *, accident_threshold: float =
         valid_transitions += int(segment_metrics.get("motion_compensation_valid_transitions", 0))
         transitions += int(segment_metrics.get("motion_compensation_transition_count", 0))
         for candidate in segment.get("candidates", []):
-            candidates_by_kind.setdefault(candidate["kind"], []).append({
+            evidence = candidate.get("evidence", {})
+            summary = evidence.get("summary", {}) if isinstance(evidence, dict) else {}
+            region_id = summary.get("region_id") if isinstance(summary, dict) else None
+            if region_id is None and isinstance(evidence, dict):
+                region_id = evidence.get("region_id")
+            region_id = str(region_id) if region_id is not None else None
+            key = (candidate["kind"], region_id)
+            groups = candidate_events.setdefault(key, [])
+            occurrence = {
                 "confidence": candidate.get("confidence", 0.0),
                 "reason": candidate.get("reason", ""),
-                "evidence": candidate.get("evidence", {}),
+                "evidence": evidence,
                 "start_seconds": segment["start_seconds"],
                 "end_seconds": segment["end_seconds"],
-            })
+                "segment_index": segment_index,
+            }
+            if groups and groups[-1][-1]["segment_index"] == segment_index - 1:
+                groups[-1].append(occurrence)
+            else:
+                groups.append([occurrence])
         observations = segment.get("specialized_observations", [])
         if isinstance(observations, list):
             specialized_observations.extend(
@@ -331,22 +344,30 @@ def _merge_segment_analyses(segments: list[dict], *, accident_threshold: float =
         classes_mean[label] = round(classes_mean[label] / total_frames, 2)
     ratio = valid_transitions / transitions if transitions else 0.0
     candidates = []
-    for kind, evidence_segments in candidates_by_kind.items():
-        strongest = max(evidence_segments, key=lambda item: item["confidence"])
-        candidates.append({
-            "kind": kind,
-            "confidence": strongest["confidence"],
-            "reason": strongest["reason"],
-            "evidence": {
-                "occurrences": len(evidence_segments),
-                "segments": evidence_segments[:200],
-                "segments_truncated": len(evidence_segments) > 200,
-                "summary": strongest.get("evidence", {}).get("summary", {}),
-            },
-            "review_required": True,
-            "auto_publish": False,
-            "status": "pending_review",
-        })
+    for (kind, region_id), event_groups in candidate_events.items():
+        for evidence_segments in event_groups:
+            strongest = max(evidence_segments, key=lambda item: item["confidence"])
+            summary = strongest.get("evidence", {}).get("summary", {})
+            summary = dict(summary) if isinstance(summary, dict) else {}
+            if region_id is not None:
+                summary.setdefault("region_id", region_id)
+            candidates.append({
+                "kind": kind,
+                "confidence": strongest["confidence"],
+                "reason": strongest["reason"],
+                "evidence": {
+                    "occurrences": len(evidence_segments),
+                    "segments": [
+                        {key: value for key, value in item.items() if key != "segment_index"}
+                        for item in evidence_segments[:200]
+                    ],
+                    "segments_truncated": len(evidence_segments) > 200,
+                    "summary": summary,
+                },
+                "review_required": True,
+                "auto_publish": False,
+                "status": "pending_review",
+            })
     candidates.extend(build_specialized_candidates(
         specialized_observations, sample_interval_s=1.0,
         accident_threshold=accident_threshold,
@@ -546,8 +567,34 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             specialized_stride = max(stride, round(fps))
             segment_limit = max(5, int(getattr(config, "VISION_SEGMENT_FRAMES", config.VISION_MAX_VIDEO_FRAMES)))
             frame_index = int((resume_state or {}).get("next_frame_index", 0))
-            if frame_index and hasattr(capture, "set"):
-                capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            if frame_index:
+                seeked = (
+                    hasattr(capture, "set")
+                    and capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                )
+                reported_position = (
+                    capture.get(cv2.CAP_PROP_POS_FRAMES)
+                    if hasattr(capture, "get") else None
+                )
+                seek_position_valid = (
+                    isinstance(reported_position, (int, float))
+                    and math.isfinite(float(reported_position))
+                    and abs(float(reported_position) - frame_index) <= 0.5
+                )
+                if not seeked or not seek_position_valid:
+                    # Some codecs report success but do not honor random access.
+                    # Discard stale checkpoints and reprocess from the beginning
+                    # rather than assigning incorrect timestamps to earlier frames.
+                    frame_index = 0
+                    completed_segments = []
+                    if progress_callback:
+                        progress_callback({
+                            "progress": {"phase": "analyzing", "percent": 0,
+                                         "frames_analyzed": 0, "total_frames": total_frames,
+                                         "analyzed_through_seconds": 0.0,
+                                         "duration_seconds": round(duration_seconds, 3) if duration_seconds else None},
+                            "checkpoint": {"next_frame_index": 0, "segments": []},
+                        })
             previous_gray = None
             previous_scale = 1.0
 
@@ -607,8 +654,11 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                 while True:
                     ok, frame = capture.read()
                     if not ok:
-                        if total_frames and frame_index < total_frames - max(2, round(fps * 0.5)):
-                            raise ValueError("视频在预期结束时间前无法继续解码；未完成部分不会作为完整结果发布")
+                        if total_frames and frame_index < total_frames:
+                            raise ValueError(
+                                f"视频实际可解码帧数（{frame_index}）少于文件声明帧数（{total_frames}）；"
+                                "未分析的尾部不会作为完整结果发布，请检查视频后重新上传。"
+                            )
                         break
                     if frame_index % stride == 0:
                         height, width = frame.shape[:2]

@@ -340,7 +340,7 @@ def test_video_worker_attaches_generated_clips_to_the_job_result(monkeypatch, tm
     monkeypatch.setattr(vision_repository, "claim_next_job", lambda *_args, **_kwargs: job)
     monkeypatch.setattr(vision_repository, "update_job_progress", lambda *_args, **_kwargs: {"cancel_requested": False})
     monkeypatch.setattr(vision_repository, "finish_job", lambda _db, _job, _worker, *, status, result=None, error=None:
-                        finished.update(status=status, result=result, error=error) or True)
+                        finished.update(status=status, result=result, error=error) or status)
     monkeypatch.setattr(worker, "analyze_media", lambda *_args, **_kwargs: {
         "candidates": [{"kind": "possible_congestion", "evidence": {"segments": []}}],
         "video_coverage": {"sampled_frames": 1},
@@ -353,3 +353,37 @@ def test_video_worker_attaches_generated_clips_to_the_job_result(monkeypatch, tm
 
     assert outcome["status"] == "needs_review"
     assert finished["result"]["evidence_clip_summary"]["clips_created"] == 1
+
+
+def test_worker_honors_cancellation_requested_after_analysis_before_finalizing(monkeypatch, tmp_path):
+    from vision import worker
+    from storage import vision_repository
+
+    job_id = "12345678-1234-4234-8234-123456789abc"
+    (tmp_path / "source.png").write_bytes(b"source")
+    job = {
+        "job_id": job_id, "media_kind": "image", "media_path": "source.png",
+        "anchor_gcj": None, "camera_stabilized": False, "observation_regions": [],
+        "checkpoint": None,
+    }
+    finished = {}
+    monkeypatch.setattr(worker.config, "VISION_UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(vision_repository, "claim_next_job", lambda *_args, **_kwargs: job)
+    monkeypatch.setattr(vision_repository, "update_job_progress", lambda *_args, **_kwargs: {
+        "cancel_requested": True,
+    })
+    monkeypatch.setattr(
+        vision_repository, "finish_job",
+        lambda _db, _job, _worker, *, status, result=None, error=None:
+            finished.update(status=status, result=result, error=error) or status,
+    )
+    monkeypatch.setattr(worker, "analyze_media", lambda *_args, **_kwargs: {
+        "candidates": [{"kind": "vehicle_cluster_review"}],
+        "metrics": {"frames_analyzed": 1},
+    })
+
+    outcome = worker.process_next_job("db", "worker", lease_seconds=90)
+
+    assert outcome["status"] == "cancelled"
+    assert finished["status"] == "cancelled"
+    assert finished["result"] is None
