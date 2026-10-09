@@ -44,6 +44,7 @@ def main() -> int:
     counts = {split: sum(row["split"] == split for row in manifest["samples"])
               for split in ("train", "validation", "test")}
     print(json.dumps({"manifest": str(args.output), "samples": len(manifest["samples"]),
+                      "license_status": manifest["license_status"],
                       "split_counts": counts, "class_split_counts": manifest["class_split_counts"],
                       "sha256_groups": {split: len(manifest["split_groups"][split])
                                         for split in manifest["split_groups"]},

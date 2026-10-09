@@ -27,9 +27,23 @@ def test_aider_manifest_is_deterministic_stratified_and_test_only_compatible(tmp
     assert first == second
     assert first["class_order"] == list(AIDER_CLASSES)
     assert first["split_unit"] == "exact_image_hash_cluster"
+    assert first["license_status"] == "unresolved_conflicting_notices"
+    assert "CC-BY-4.0" in first["license"]
+    assert "IEEE" in first["license"]
     assert all({row["label"] for row in first["samples"] if row["split"] == split} == set(AIDER_CLASSES)
                for split in ("train", "validation", "test"))
     assert validate_aider_training_manifest(first) == first
+
+
+def test_legacy_aider_manifest_normalizes_conflicting_license_notice(tmp_path):
+    _dataset(tmp_path)
+    manifest = build_aider_manifest(tmp_path)
+    manifest.pop("license_status")
+    manifest["license"] = "CC-BY-4.0 (Zenodo metadata); third-party IEEE rights note applies"
+
+    normalized = validate_aider_training_manifest(manifest)
+
+    assert normalized["license_status"] == "unresolved_conflicting_notices"
 
 
 def test_identical_image_bytes_never_cross_aider_splits(tmp_path):

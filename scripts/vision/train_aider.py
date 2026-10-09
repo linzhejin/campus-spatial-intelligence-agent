@@ -312,7 +312,8 @@ def main() -> int:
                                   encoding="utf-8")
     report = {
         "task": manifest["task"], "dataset": manifest["dataset"],
-        "source": manifest["source"], "license": manifest["license"],
+        "source": manifest["source"], "license_status": manifest["license_status"],
+        "license": manifest["license"],
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
         "split_protocol": manifest["split_protocol"], "split_unit": manifest["split_unit"],
         "split_sample_counts": {split: sum(row["split"] == split for row in manifest["samples"])
@@ -370,6 +371,7 @@ def main() -> int:
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"report": str(report_path), "model": str(onnx_path),
                       "test_manifest": str(test_manifest_path),
+                      "license_status": report["license_status"],
                       "threshold": threshold, "held_out_test_metrics": test_metrics,
                       "image_level_operating_point_meets_targets": report["image_level_operating_point_meets_targets"],
                       "route_event_activation_eligible": report["route_event_activation_eligible"],

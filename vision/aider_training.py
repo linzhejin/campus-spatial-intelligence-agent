@@ -164,7 +164,10 @@ def build_aider_manifest(dataset_root: str | Path, *, seed: int = 20261010,
         "task": "accident_classification",
         "dataset": "AIDER aerial image scene classification",
         "source": _ZENODO_RECORD,
-        "license": "CC-BY-4.0 (Zenodo metadata); third-party IEEE rights note applies",
+        "license_status": "unresolved_conflicting_notices",
+        "license": ("Zenodo metadata lists CC-BY-4.0, while the record notes © 2020 IEEE, personal use only, "
+                    "and requires IEEE permission for other uses; do not redistribute images or derived weights "
+                    "until rights are clarified"),
         "split_protocol": ("TakuNet proportional counts with fixed seed and exact-hash grouping"
                            if expected_split_counts is not None
                            else "stratified 60/20/20 image-level split with fixed seed and exact-hash grouping"),
@@ -180,7 +183,7 @@ def build_aider_manifest(dataset_root: str | Path, *, seed: int = 20261010,
             "Near-duplicate images are not clustered; evaluation cannot establish cross-flight or campus generalization.",
             f"{len(excluded_conflicts)} exact-image group(s) carrying conflicting class labels were excluded from all splits.",
             "AIDER traffic_incident is a scene-level cue and does not localize a vehicle or prove a campus road incident.",
-            "Zenodo metadata identifies CC-BY-4.0 while also including a third-party IEEE copyright notice; do not redistribute source images or derived weights pending rights review.",
+            "The Zenodo record lists CC-BY-4.0 metadata but also states © 2020 IEEE, personal use only, with IEEE permission required for other uses; treat redistribution and derived-weight rights as unresolved.",
         ],
     }
     return validate_aider_training_manifest(manifest)
@@ -195,6 +198,16 @@ def validate_aider_training_manifest(manifest: dict) -> dict:
         raise ValueError("AIDER training manifest class_order must match model output order")
     if manifest.get("split_unit") != "exact_image_hash_cluster":
         raise ValueError("AIDER split unit must state exact-image-hash clustering")
+    license_note = manifest.get("license")
+    if not isinstance(license_note, str) or "CC-BY-4.0" not in license_note or "IEEE" not in license_note:
+        raise ValueError("AIDER license note must retain both the Zenodo metadata and IEEE notice")
+    license_status = manifest.get("license_status")
+    if license_status is None:
+        # Normalize pre-status manifests only when their original notice already
+        # records both sides of the rights conflict.
+        license_status = "unresolved_conflicting_notices"
+    if license_status != "unresolved_conflicting_notices":
+        raise ValueError("AIDER license status must preserve the unresolved rights conflict")
     groups = manifest.get("split_groups")
     if not isinstance(groups, dict):
         raise ValueError("AIDER split_groups is required")
@@ -250,6 +263,7 @@ def validate_aider_training_manifest(manifest: dict) -> dict:
                for split in _SPLITS):
             raise ValueError(f"AIDER class {label} must appear in every split")
     result = dict(manifest)
+    result["license_status"] = license_status
     result["split_groups"] = normalized
     return result
 
