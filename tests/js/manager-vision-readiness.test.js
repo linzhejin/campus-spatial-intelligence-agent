@@ -238,7 +238,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
   assert.match(managerHtml, /manager\.css\?v=20261009e/);
-  assert.match(managerHtml, /manager\.js\?v=20261009e/);
+  assert.match(managerHtml, /manager\.js\?v=20261010a/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
@@ -715,7 +715,9 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
     job_id: 'a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e',
     status: 'needs_review', review_status: 'confirmed', media_kind: 'image',
     original_name: '巡查影像.png', anchor_gcj: { lng: 114.36, lat: 30.53 },
-    result: { candidates: [{ kind: 'vehicle_cluster_review', confidence: 0.8 }] },
+    observation_regions: [{ id: 'lane-east', kind: 'vehicle_lane', polygon: [[0.1, 0.2], [0.8, 0.2], [0.8, 0.6]] }],
+    result: { candidates: [{ kind: 'vehicle_cluster_review', confidence: 0.8,
+      evidence: { summary: { region_id: 'lane-east' } } }] },
   }]);
   harness.intervalCallbacks[0]();
   await flush();
@@ -726,6 +728,7 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   transfer.listeners.click();
 
   assert.equal(elements.get('vision-source-banner').hidden, false);
+  assert.match(elements.get('vision-source-label').textContent, /观察区域：lane-east（机动车道）/);
   assert.equal(elements.get('publish-event').disabled, true);
   assert.equal(elements.get('event-type').value, '');
   elements.get('event-type').value = 'event';
@@ -754,7 +757,8 @@ test('road event deletion removes its record from the manager list after refresh
   await flush();
   harness.setRoadEvents([{
     id: 'event-1', name: '已撤销事件', type: 'event', status: 'revoked',
-    source: { kind: 'vision_job', job_id: 'a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e', field_confirmation: '现场核查' },
+    source: { kind: 'vision_job', job_id: 'a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e',
+      region_id: 'lane-east', associated_edge: { road_name: '樱园西路' }, field_confirmation: '现场核查' },
     audit: [{ action: 'revoked', actor: 'web', at: 1791000000 }],
     edge: { road_name: '测试路', geometry_gcj: [[114.36, 30.53], [114.361, 30.53]] },
   }]);
@@ -764,6 +768,7 @@ test('road event deletion removes its record from the manager list after refresh
   const text = descendants(row).map((node) => node.textContent || '').join(' ');
   assert.match(text, /已撤销/);
   assert.match(text, /影像来源/);
+  assert.match(text, /lane-east → 樱园西路/);
   const remove = descendants(row).find((node) => node.tagName === 'button' && node.textContent === '永久删除');
   assert.ok(remove);
   remove.listeners.click();
@@ -834,7 +839,7 @@ test('flood candidates show their limits and expose per-candidate review', async
     result: { candidates: [{
       kind: 'possible_flooding', confidence: 0.82,
       reason: '圈选路面内出现疑似淹水像素。',
-      evidence: { summary: { max_flooded_road_area_ratio: 0.27, outline_polygons: [] } },
+      evidence: { summary: { region_id: 'road-surface-east', max_flooded_road_area_ratio: 0.27, outline_polygons: [] } },
     }] },
   }]);
   harness.intervalCallbacks[0]();
@@ -845,6 +850,7 @@ test('flood candidates show their limits and expose per-candidate review', async
   assert.match(cardText, /疑似道路积水/);
   assert.match(cardText, /27%/);
   assert.match(cardText, /不是水深或实际淹水面积/);
+  assert.match(cardText, /观察区域：road-surface-east/);
   assert.equal(descendants(card).filter((node) => node.tagName === 'button' && node.textContent === '确认此候选').length, 1);
 });
 

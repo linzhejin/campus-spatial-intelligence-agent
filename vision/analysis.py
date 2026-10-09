@@ -28,6 +28,7 @@ def _validated_regions(regions, frame_width: int, frame_height: int) -> list[dic
     if not isinstance(regions, list) or len(regions) > 24:
         raise ValueError("观察区域必须是最多 24 个多边形组成的列表")
     normalized = []
+    seen_ids = set()
     for region in regions:
         if not isinstance(region, dict) or region.get("kind") not in ROI_KINDS:
             raise ValueError("观察区域类型无效")
@@ -44,8 +45,12 @@ def _validated_regions(regions, frame_width: int, frame_height: int) -> list[dic
                     or not 0 <= x <= 1 or not 0 <= y <= 1):
                 raise ValueError("观察区域坐标必须是 0 到 1 之间的画面比例")
             points.append([float(x) * frame_width, float(y) * frame_height])
+        region_id = str(region.get("id") or f"region-{len(normalized) + 1}")[:64]
+        if not region_id or region_id in seen_ids:
+            raise ValueError("观察区域标识必须非空且唯一")
+        seen_ids.add(region_id)
         normalized.append({
-            "id": str(region.get("id") or f"region-{len(normalized) + 1}")[:64],
+            "id": region_id,
             "kind": region["kind"],
             "polygon": points,
         })
@@ -292,7 +297,11 @@ def analyze_observations(
     vehicle_frames: list[list[dict]] = []
     pedestrian_counts: list[int] = []
     track_positions: dict[str, list[tuple[float, float, int]]] = defaultdict(list)
-    accident_detections: list[tuple[int, float, str]] = []
+    vehicle_counts_by_region = {region["id"]: [] for region in vehicle_regions}
+    vehicle_area_by_region = {region["id"]: [] for region in vehicle_regions}
+    track_positions_by_region = {region["id"]: defaultdict(list) for region in vehicle_regions}
+    pedestrian_counts_by_region = {region["id"]: [] for region in pedestrian_regions}
+    accident_detections: list[tuple[int, float, str, str]] = []
     coverage_values: list[float] = []
     class_counts: list[Counter] = []
 
@@ -311,11 +320,37 @@ def analyze_observations(
         if parking_regions:
             vehicles = [item for item in vehicles if not _in_regions(item, parking_regions)]
         vehicle_frames.append(vehicles)
+        for region in vehicle_regions:
+            region_vehicles = [item for item in all_vehicles if _in_regions(item, [region])]
+            if parking_regions:
+                region_vehicles = [item for item in region_vehicles
+                                   if not _in_regions(item, parking_regions)]
+            region_id = region["id"]
+            vehicle_counts_by_region[region_id].append(len(region_vehicles))
+            region_covered = 0.0
+            for item in region_vehicles:
+                x1, y1, x2, y2 = map(float, item["box"])
+                region_covered += max(0.0, x2 - x1) * max(0.0, y2 - y1)
+                track_id = item.get("track_id")
+                if track_id is not None:
+                    cx, cy = _center(item["box"])
+                    track_positions_by_region[region_id][str(track_id)].append(
+                        (cx, cy, frame_index)
+                    )
+            vehicle_area_by_region[region_id].append(
+                min(1.0, region_covered / (frame_width * frame_height))
+            )
         class_counts.append(Counter(item["label"].strip().lower() for item in counted_detections))
         people = [item for item in counted_detections if item["label"].strip().lower() in PEDESTRIAN_LABELS]
         if pedestrian_regions:
             people = [item for item in people if _in_regions(item, pedestrian_regions)]
         pedestrian_counts.append(len(people))
+        for region in pedestrian_regions:
+            pedestrian_counts_by_region[region["id"]].append(
+                sum(1 for item in counted_detections
+                    if item["label"].strip().lower() in PEDESTRIAN_LABELS
+                    and _in_regions(item, [region]))
+            )
         covered = 0.0
         for item in vehicles:
             x1, y1, x2, y2 = map(float, item["box"])
@@ -329,98 +364,126 @@ def analyze_observations(
             for item in detections:
                 label = item["label"].strip().lower().replace(" ", "_")
                 if label in INCIDENT_LABELS:
-                    accident_detections.append((frame_index, float(item["confidence"]), label))
+                    for region in vehicle_regions:
+                        if _in_regions(item, [region]):
+                            accident_detections.append((
+                                frame_index, float(item["confidence"]), label, region["id"],
+                            ))
 
     vehicle_counts = [len(items) for items in vehicle_frames]
     diagonal = hypot(frame_width, frame_height)
-    track_speeds = []
-    for positions in track_positions.values():
-        positions.sort(key=lambda value: value[2])
-        residuals = []
-        for left, right in zip(positions, positions[1:]):
-            if right[2] != left[2] + 1:
-                continue
-            matrix = (
-                [[1, 0, 0], [0, 1, 0], [0, 0, 1]] if camera_stabilized
-                else frame_transforms[right[2]] if frame_transforms and right[2] < len(frame_transforms)
-                else None
-            )
-            predicted = _transform_point(matrix, (left[0], left[1]))
-            if predicted is not None:
-                residuals.append(hypot(right[0] - predicted[0], right[1] - predicted[1]))
-        if len(residuals) >= 2:
-            track_speeds.append(mean(residuals) / diagonal / sample_interval_s)
+    def speeds_for_tracks(track_groups):
+        speeds = []
+        for positions in track_groups.values():
+            positions.sort(key=lambda value: value[2])
+            residuals = []
+            for left, right in zip(positions, positions[1:]):
+                if right[2] != left[2] + 1:
+                    continue
+                matrix = (
+                    [[1, 0, 0], [0, 1, 0], [0, 0, 1]] if camera_stabilized
+                    else frame_transforms[right[2]]
+                    if frame_transforms and right[2] < len(frame_transforms)
+                    else None
+                )
+                predicted = _transform_point(matrix, (left[0], left[1]))
+                if predicted is not None:
+                    residuals.append(hypot(right[0] - predicted[0], right[1] - predicted[1]))
+            if len(residuals) >= 2:
+                speeds.append(mean(residuals) / diagonal / sample_interval_s)
+        return speeds
+
+    track_speeds = speeds_for_tracks(track_positions)
+    speeds_by_region = {
+        region_id: speeds_for_tracks(positions)
+        for region_id, positions in track_positions_by_region.items()
+    }
 
     stationary_count = sum(speed <= 0.0025 for speed in track_speeds)
     stationary_ratio = stationary_count / len(track_speeds) if track_speeds else 0.0
     avg_vehicle_count = mean(vehicle_counts) if vehicle_counts else 0.0
     candidates = []
 
-    # A single frame shows vehicle presence/density only, not speed or congestion.
-    if (vehicle_regions and len(valid_frames) == 1 and vehicle_counts
-            and vehicle_counts[0] >= min_vehicle_count):
-        candidates.append(_candidate(
-            "vehicle_cluster_review", min(0.9, vehicle_counts[0] / (min_vehicle_count * 2)),
-            "单帧检测到多辆车辆；静态影像不能判断速度或拥堵，需视频或现场复核。",
-            {"vehicle_count": vehicle_counts[0], "occupied_area_ratio": round(coverage_values[0], 4)},
-        ))
+    # Keep every candidate attached to the exact image ROI that produced it.
+    # A single frame can show a vehicle cluster, but cannot establish congestion.
+    for region in vehicle_regions:
+        region_id = region["id"]
+        counts = vehicle_counts_by_region[region_id]
+        if len(valid_frames) == 1 and counts and counts[0] >= min_vehicle_count:
+            candidates.append(_candidate(
+                "vehicle_cluster_review", min(0.9, counts[0] / (min_vehicle_count * 2)),
+                "单帧检测到多辆车辆；静态影像不能判断速度或拥堵，需查看原片并现场复核。",
+                {"summary": {
+                    "region_id": region_id,
+                    "vehicle_count": counts[0],
+                    "occupied_area_ratio": round(vehicle_area_by_region[region_id][0], 4),
+                }},
+            ))
 
-    if (
-        vehicle_regions
-        and camera_stabilized
-        and
-        len(valid_frames) >= 5
-        and motion_compensation_ready
-        and avg_vehicle_count >= min_vehicle_count
-        and len(track_speeds) >= 3
-        and stationary_ratio >= stationary_ratio_threshold
-    ):
-        candidates.append(_candidate(
-            "possible_congestion", min(0.95, 0.5 + stationary_ratio / 2),
-            "多帧车辆在相机运动校正后仍呈低位移；请核实观察区域、道路位置和现场通行情况。",
-            {
-                "mean_vehicle_count": round(avg_vehicle_count, 2),
-                "stationary_track_count": stationary_count,
-                "tracked_vehicle_count": len(track_speeds),
-                "stationary_track_ratio": round(stationary_ratio, 3),
-                "camera_motion_compensated": not camera_stabilized,
-                "valid_motion_transition_ratio": round(valid_transition_ratio, 3),
-            },
-        ))
+        region_speeds = speeds_by_region[region_id]
+        region_stationary_count = sum(speed <= 0.0025 for speed in region_speeds)
+        region_stationary_ratio = (
+            region_stationary_count / len(region_speeds) if region_speeds else 0.0
+        )
+        if (
+            camera_stabilized and len(valid_frames) >= 5 and motion_compensation_ready
+            and mean(counts) >= min_vehicle_count and len(region_speeds) >= 3
+            and region_stationary_ratio >= stationary_ratio_threshold
+        ):
+            candidates.append(_candidate(
+                "possible_congestion", min(0.95, 0.5 + region_stationary_ratio / 2),
+                "多帧车辆在相机运动校正后仍呈低位移；请核实观察区域、道路位置和现场通行情况。",
+                {"summary": {
+                    "region_id": region_id,
+                    "mean_vehicle_count": round(mean(counts), 2),
+                    "stationary_track_count": region_stationary_count,
+                    "tracked_vehicle_count": len(region_speeds),
+                    "stationary_track_ratio": round(region_stationary_ratio, 3),
+                    "camera_motion_compensated": bool(camera_stabilized or motion_compensation_ready),
+                    "camera_stabilization_basis": "operator_declared" if camera_stabilized else "estimated_transforms",
+                    "valid_motion_transition_ratio": round(valid_transition_ratio, 3),
+                }},
+            ))
 
-    if (
-        pedestrian_regions and camera_stabilized and len(pedestrian_counts) >= 3
-        and max(pedestrian_counts, default=0) >= 15
-        and sum(count > 0 for count in pedestrian_counts) >= 3
-    ):
-        candidates.append(_candidate(
-            "possible_crowding",
-            min(0.9, 0.55 + max(pedestrian_counts) / 100),
-            "行人观察区域内连续检测到较多人群；未标定有效面积，不能换算为每平方米人数，请结合原片和现场核实。",
-            {
-                "region_id": pedestrian_regions[0]["id"],
-                "peak_person_count": max(pedestrian_counts),
-                "mean_person_count": round(mean(pedestrian_counts), 2),
-                "frames_with_people": sum(count > 0 for count in pedestrian_counts),
-            },
-        ))
+    for region in pedestrian_regions:
+        counts = pedestrian_counts_by_region[region["id"]]
+        if (camera_stabilized and len(counts) >= 3 and max(counts, default=0) >= 15
+                and sum(count > 0 for count in counts) >= 3):
+            candidates.append(_candidate(
+                "possible_crowding",
+                min(0.9, 0.55 + max(counts) / 100),
+                "行人观察区域内连续检测到较多人群；未标定有效面积，不能换算为每平方米人数，请结合原片和现场核实。",
+                {"region_id": region["id"],
+                 "peak_person_count": max(counts),
+                 "mean_person_count": round(mean(counts), 2),
+                 "frames_with_people": sum(count > 0 for count in counts)},
+            ))
 
     if accident_detections:
-        by_label: dict[str, list[tuple[int, float, str]]] = defaultdict(list)
+        by_region: dict[str, list[tuple[int, float, str, str]]] = defaultdict(list)
         for detection in accident_detections:
-            by_label[detection[2]].append(detection)
-        strongest = max(
-            (max(items, key=lambda value: value[1]) for items in by_label.values()),
-            key=lambda value: value[1],
-        )
-        repeated = len({item[0] for item in by_label[strongest[2]]}) >= 2
-        threshold = 0.6 if len(valid_frames) > 1 and repeated else 0.85
-        if strongest[1] >= threshold:
-            candidates.append(_candidate(
-                "possible_accident", strongest[1],
-                "专用事故模型给出事故类别候选；需管理员查看原始影像并核实位置后确认。",
-                {"detector_label": strongest[2], "frames_with_detection": len({item[0] for item in by_label[strongest[2]]})},
-            ))
+            by_region[detection[3]].append(detection)
+        for region_id, region_detections in by_region.items():
+            by_label: dict[str, list[tuple[int, float, str, str]]] = defaultdict(list)
+            for detection in region_detections:
+                by_label[detection[2]].append(detection)
+            strongest = max(
+                (max(items, key=lambda value: value[1]) for items in by_label.values()),
+                key=lambda value: value[1],
+            )
+            repeated = len({item[0] for item in by_label[strongest[2]]}) >= 2
+            threshold = 0.6 if len(valid_frames) > 1 and repeated else 0.85
+            if strongest[1] >= threshold:
+                candidates.append(_candidate(
+                    "possible_accident", strongest[1],
+                    "专用事故模型给出事故类别候选；需管理员查看原始影像并核实位置后确认。",
+                    {"summary": {
+                        "region_id": region_id,
+                        "detector_label": strongest[2],
+                        "frames_with_detection": len({item[0] for item in by_label[strongest[2]]}),
+                        "spatial_precision": "marked_vehicle_lane_only",
+                    }},
+                ))
 
     all_classes = set().union(*(counts.keys() for counts in class_counts)) if class_counts else set()
     mean_class_counts = {

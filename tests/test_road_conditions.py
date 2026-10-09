@@ -1126,6 +1126,79 @@ class TestRoadConditionAPI:
         assert response.get_json()["data"]["condition"]["source"]["candidate_index"] == 1
         assert response.get_json()["data"]["condition"]["source"]["candidate_kind"] == candidate_kind
 
+    @pytest.mark.parametrize(("candidate_kind", "region_id", "region_kind", "evidence"), [
+        ("possible_flooding", "surface-east", "road_surface",
+         {"summary": {"region_id": "surface-east", "water_depth_estimated": False}}),
+        ("possible_crowding", "walkway-east", "pedestrian",
+         {"region_id": "walkway-east", "peak_person_count": 18}),
+    ])
+    def test_vision_road_event_keeps_observation_region_provenance(
+        self, client, G, monkeypatch, candidate_kind, region_id, region_kind, evidence,
+    ):
+        """The manually selected road must remain traceable to the analyzed ROI."""
+        import time
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        polygon = [[0.1, 0.2], [0.8, 0.2], [0.8, 0.6], [0.1, 0.6]]
+        candidate = {
+            "kind": candidate_kind, "review_required": True, "auto_publish": False,
+            "evidence": evidence,
+        }
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "job_id": job_id, "status": "needs_review", "captured_at": time.time(),
+            "candidate_reviews": {"0": {"status": "confirmed"}},
+            "observation_regions": [{"id": region_id, "kind": region_kind, "polygon": polygon}],
+            "result": {"candidates": [candidate]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "复核的道路积水", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": job_id, "source_vision_candidate_index": 0,
+            "field_confirmation": "现场人员已核实该道路有积水并确认影响范围。",
+            "end_time": time.time() + 1800,
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+
+        assert response.status_code == 201
+        source = response.get_json()["data"]["condition"]["source"]
+        edge = response.get_json()["data"]["condition"]["edge"]
+        assert source["region_id"] == region_id
+        assert source["region_kind"] == region_kind
+        assert source["region_polygon"] == polygon
+        assert source["road_association"] == "manager_selected_edge"
+        assert source["associated_edge"] == {
+            "u": edge["u"], "v": edge["v"], "key": edge["key"],
+            "road_name": edge["road_name"],
+        }
+
+    def test_vision_candidate_with_unknown_region_cannot_publish(self, client, G, monkeypatch):
+        import time
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: {
+            "job_id": job_id, "status": "needs_review", "captured_at": time.time(),
+            "candidate_reviews": {"0": {"status": "confirmed"}},
+            "observation_regions": [{"id": "surface-east", "kind": "road_surface",
+                                     "polygon": [[0.1, 0.2], [0.8, 0.2], [0.8, 0.6]]}],
+            "result": {"candidates": [{
+                "kind": "possible_flooding", "review_required": True, "auto_publish": False,
+                "evidence": {"summary": {"region_id": "not-in-job"}},
+            }]},
+        })
+        gj = _mid_12_gcj(G)
+        response = client.post("/api/road-conditions", json={
+            "type": "event", "name": "来源区域不匹配", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": job_id, "source_vision_candidate_index": 0,
+            "field_confirmation": "现场人员已核实该道路有积水并确认影响范围。",
+            "end_time": time.time() + 1800,
+        }, headers={"X-Admin-Token": "test-token-xyz"})
+
+        assert response.status_code == 409
+        assert response.get_json()["error"] == "vision_region_mismatch"
+
     def test_stale_drone_footage_cannot_be_published_as_current_road_condition(self, client, G, monkeypatch):
         import time
         from storage import database, vision_repository

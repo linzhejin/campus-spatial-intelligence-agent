@@ -1,4 +1,7 @@
 import pytest
+import numpy as np
+
+from scripts.vision.evaluate_specialized import _align_rgb_to_mask_grid
 
 from vision.specialized_evaluation import (
     summarize_binary_classification,
@@ -6,6 +9,18 @@ from vision.specialized_evaluation import (
     summarize_classification,
     validate_split_manifest,
 )
+
+
+def test_floodnet_evaluation_resizes_rgb_to_mask_grid_and_keeps_label_ids():
+    frame = np.zeros((4, 8, 3), dtype=np.uint8)
+    labels = np.full((6, 8), 3, dtype=np.uint8)
+    original_labels = labels.copy()
+
+    aligned, alignment = _align_rgb_to_mask_grid(frame, labels)
+
+    assert aligned.shape == (6, 8, 3)
+    assert alignment == "image_resized_to_mask_grid"
+    assert np.array_equal(labels, original_labels)
 
 
 def test_split_manifest_requires_scene_disjoint_groups_and_test_samples():

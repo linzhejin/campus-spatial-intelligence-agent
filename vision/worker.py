@@ -166,7 +166,7 @@ def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
     status_detail = ""
     try:
         missing = [
-            name for name in ("onnxruntime", "numpy", "cv2", "PIL")
+            name for name in ("onnxruntime", "numpy", "cv2", "PIL", "scipy")
             if importlib.util.find_spec(name) is None
         ]
         if missing:

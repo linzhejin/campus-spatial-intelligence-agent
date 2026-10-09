@@ -12,6 +12,7 @@ class FakeSession:
         self.output = output
         self.input_shape = input_shape
         self.feed = None
+        self.calls = 0
 
     def get_inputs(self):
         return [SimpleNamespace(name="images", shape=self.input_shape)]
@@ -21,6 +22,7 @@ class FakeSession:
 
     def run(self, _names, feed):
         self.feed = feed
+        self.calls += 1
         return [self.output]
 
 
@@ -55,7 +57,7 @@ def test_aider_classifier_accepts_dynamic_batch_and_preserves_probability_output
 
 def test_flood_segmenter_measures_flooded_road_only_inside_marked_roi():
     labels = np.full((1, 10, 8, 8), -4.0, dtype=np.float32)
-    labels[:, 3, 2:6, 2:6] = 4.0  # Flooded road class.
+    labels[:, 3, :, :] = 4.0  # Flooded road class.
     session = FakeSession(labels, input_shape=(1, 3, 8, 8))
     segmenter = OnnxFloodSegmenter("flood.onnx", session=session)
     frame = np.zeros((80, 80, 3), dtype=np.uint8)
@@ -68,11 +70,13 @@ def test_flood_segmenter_measures_flooded_road_only_inside_marked_roi():
     prediction = segmenter.predict(frame, region, include_mask=True)
 
     assert prediction["region_id"] == "east-road"
-    assert prediction["flooded_road_area_ratio"] == pytest.approx(0.25)
+    assert prediction["flooded_road_area_ratio"] == pytest.approx(1.0)
     assert prediction["outline_polygons"]
     assert prediction["flooded_road_mask"].shape == (80, 80)
     assert prediction["flooded_road_mask"][:20].sum() == 0
-    assert session.feed["images"].mean() > 1.0  # The model receives the marked crop, not the whole scene.
+    assert prediction["flooded_road_mask"].sum() == 1600
+    assert session.calls > 1  # The 40x40 road region is analyzed as overlapping 8x8 tiles.
+    assert session.feed["images"].mean() > 1.0  # The model receives marked road tiles, not the whole scene.
 
 
 def test_specialized_candidates_require_persistent_evidence_and_never_auto_publish():

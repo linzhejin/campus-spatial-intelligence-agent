@@ -145,6 +145,14 @@ def test_video_upload_requires_capture_time_and_normalized_roi(monkeypatch, tmp_
     valid = client.post("/api/manager/vision-uploads", json=payload, headers=headers)
     assert valid.status_code == 201
 
+    payload["observation_regions"] = [
+        {"id": "same", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1]]},
+        {"id": "same", "kind": "road_surface", "polygon": [[0, 0], [1, 0], [1, 1]]},
+    ]
+    duplicate_id = client.post("/api/manager/vision-uploads", json=payload, headers=headers)
+    assert duplicate_id.status_code == 400
+    assert duplicate_id.get_json()["error"] == "invalid_observation_metadata"
+
 
 def test_image_upload_requires_actual_capture_time(monkeypatch, tmp_path):
     from io import BytesIO

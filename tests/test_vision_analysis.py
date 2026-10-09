@@ -70,12 +70,27 @@ def test_accident_candidate_requires_explicit_detector_class_and_human_review():
     frame = [{"label": "accident", "confidence": 0.91, "track_id": None, "box": [10, 10, 80, 80]}]
     unsupported = analyze_observations([frame], frame_width=640, frame_height=480)
     assert all(item["kind"] != "possible_accident" for item in unsupported["candidates"])
+    roi = [{"id": "lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
     result = analyze_observations(
-        [frame], frame_width=640, frame_height=480, accident_model_enabled=True,
+        [frame], frame_width=640, frame_height=480, accident_model_enabled=True, regions=roi,
     )
     candidate = next(item for item in result["candidates"] if item["kind"] == "possible_accident")
     assert candidate["review_required"] is True
     assert candidate["auto_publish"] is False
+    assert candidate["evidence"]["summary"]["region_id"] == "lane"
+
+
+def test_accident_label_outside_annotated_vehicle_region_is_not_a_candidate():
+    frame = [{"label": "accident", "confidence": 0.99, "track_id": None, "box": [500, 400, 600, 450]}]
+    roi = [{"id": "lane", "kind": "vehicle_lane",
+            "polygon": [[0, 0], [0.4, 0], [0.4, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        [frame], frame_width=640, frame_height=480,
+        accident_model_enabled=True, regions=roi,
+    )
+
+    assert all(item["kind"] != "possible_accident" for item in result["candidates"])
 
 
 def test_vehicle_cluster_is_a_review_observation_not_a_road_condition():
@@ -85,6 +100,8 @@ def test_vehicle_cluster_is_a_review_observation_not_a_road_condition():
     )
     assert any(item["kind"] == "vehicle_cluster_review" for item in result["candidates"])
     assert all(item["auto_publish"] is False for item in result["candidates"])
+    cluster = next(item for item in result["candidates"] if item["kind"] == "vehicle_cluster_review")
+    assert cluster["evidence"]["summary"]["region_id"] == "lane"
 
 
 def test_crowd_candidate_requires_pedestrian_roi_and_sustained_video_evidence():
@@ -105,6 +122,38 @@ def test_crowd_candidate_requires_pedestrian_roi_and_sustained_video_evidence():
     assert candidate["evidence"]["region_id"] == "plaza"
     assert candidate["evidence"]["peak_person_count"] == 16
     assert "persons_per_square_meter" not in candidate["evidence"]
+
+
+def test_crowd_candidate_identifies_the_roi_that_contains_the_people():
+    pedestrians = [
+        {"label": "pedestrian", "confidence": 0.9, "track_id": None,
+         "box": [20 + index * 14, 80, 32 + index * 14, 120]}
+        for index in range(16)
+    ]
+    regions = [
+        {"id": "empty-plaza", "kind": "pedestrian", "polygon": [[0.72, 0], [1, 0], [1, 1], [0.72, 1]]},
+        {"id": "crowded-walkway", "kind": "pedestrian", "polygon": [[0, 0], [0.55, 0], [0.55, 1], [0, 1]]},
+    ]
+
+    result = analyze_observations(
+        [pedestrians] * 4, frame_width=640, frame_height=480,
+        camera_stabilized=True, regions=regions,
+    )
+
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_crowding")
+    assert candidate["evidence"]["region_id"] == "crowded-walkway"
+
+
+def test_congestion_candidate_is_bound_to_its_vehicle_lane_roi():
+    frames = [frame_of_stopped_vehicles(offset=0) for _ in range(6)]
+    roi = [{"id": "east-lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480, camera_stabilized=True, regions=roi,
+    )
+
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_congestion")
+    assert candidate["evidence"]["summary"]["region_id"] == "east-lane"
 
 
 def test_pedestrians_outside_observed_region_are_not_counted_as_crowding():

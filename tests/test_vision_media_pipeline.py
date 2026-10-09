@@ -57,7 +57,10 @@ def test_single_image_pipeline_returns_vehicle_boxes_without_claiming_accident_o
     assert result["model"] == {
         "id": "test-detector", "version": "fixture-v1", "confidence_threshold": 0.4,
         "tracking": {
-            "algorithm": "bytetrack_style_two_stage_iou",
+            "algorithm": "bytetrack",
+            "implementation": "FoundationVision/ByteTrack@d1bf019",
+            "camera_motion_compensation": "homography_projected_to_segment_anchor",
+            "low_confidence_tracking": True,
             "high_confidence_threshold": 0.4,
             "low_confidence_threshold": 0.1,
         },

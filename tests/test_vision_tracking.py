@@ -1,4 +1,4 @@
-from vision.tracking import assign_track_ids
+from vision.tracking import TRACKER_IMPLEMENTATION, assign_track_ids
 from vision.analysis import analyze_observations
 
 
@@ -7,6 +7,10 @@ def detection(confidence=0.9, label="car", box=(10, 10, 60, 40)):
 
 
 IDENTITY = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+
+
+def test_tracker_reports_the_pinned_upstream_bytetrack_port():
+    assert TRACKER_IMPLEMENTATION == "FoundationVision/ByteTrack@d1bf019"
 
 
 def test_second_stage_low_confidence_detection_keeps_an_active_track():
@@ -56,6 +60,17 @@ def test_tracker_does_not_reuse_tracks_after_the_configured_gap():
     )
 
     assert tracked[0][0]["track_id"] != tracked[3][0]["track_id"]
+
+
+def test_tracker_compensates_camera_translation_before_associating_objects():
+    shifted_camera = [[1.0, 0.0, 80.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    tracked = assign_track_ids(
+        [[detection(box=(10, 10, 60, 40))], [detection(box=(90, 10, 140, 40))]],
+        frame_transforms=[None, shifted_camera], camera_stabilized=False,
+        high_threshold=0.5, low_threshold=0.1,
+    )
+
+    assert tracked[0][0]["track_id"] == tracked[1][0]["track_id"]
 
 
 def test_unmatched_low_confidence_detections_do_not_inflate_counts_but_matched_ones_do():

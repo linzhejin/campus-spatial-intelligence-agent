@@ -337,8 +337,14 @@
     clearPickedRoad();
     state.sourceJobId = job.job_id;
     state.sourceCandidateIndex = candidateIndex;
+    var candidate = (job.result.candidates || [])[candidateIndex] || {};
+    var summary = candidate.evidence && candidate.evidence.summary || {};
+    var regionId = typeof summary.region_id === 'string' ? summary.region_id : '';
+    var region = (job.observation_regions || []).find(function (item) { return item && item.id === regionId; });
+    var regionKinds = { vehicle_lane: '机动车道', pedestrian: '人行区域', road_surface: '路面', parking: '停车区', exclude: '排除区域' };
+    var regionNote = region ? '观察区域：' + (region.name || region.id) + '（' + (regionKinds[region.kind] || '已标注区域') + '）。' : '';
     byId('vision-source-banner').hidden = false;
-    byId('vision-source-label').textContent = '已复核影像候选 ' + (candidateIndex + 1) + '：' + (job.original_name || job.job_id) + '。请重新选择具体道路、事件类型，并填写现场核实依据。';
+    byId('vision-source-label').textContent = '已复核影像候选 ' + (candidateIndex + 1) + '：' + (job.original_name || job.job_id) + '。' + regionNote + '请在地图上选择实际受影响道路、事件类型，并填写现场核实依据。';
     byId('field-confirmation-wrap').hidden = false;
     byId('field-confirmation').required = true;
     byId('event-type').value = '';
@@ -606,7 +612,10 @@
     name.append(title, description);
     if (item.source && item.source.kind === 'vision_job') {
       var source = document.createElement('div'); source.className = 'event-sub';
-      source.textContent = '影像来源 ' + String(item.source.job_id || '').slice(0, 8) + ' · ' + (item.source.field_confirmation || '未记录核实依据');
+      var regionText = item.source.region_id ? ' · 观察区域 ' + item.source.region_id : '';
+      var associatedRoad = item.source.associated_edge && item.source.associated_edge.road_name;
+      var roadLinkText = associatedRoad ? ' → ' + associatedRoad : '';
+      source.textContent = '影像来源 ' + String(item.source.job_id || '').slice(0, 8) + regionText + roadLinkText + ' · ' + (item.source.field_confirmation || '未记录核实依据');
       name.appendChild(source);
     }
     if (item.audit && item.audit.length) {
@@ -982,15 +991,16 @@
   function appendCandidateSummary(candidate, mediaKind, target) {
     var evidence = candidate && candidate.evidence || {};
     var summary = evidence.summary || {};
-    var line = '';
+    var regionId = summary.region_id || evidence.region_id;
+    var line = typeof regionId === 'string' && regionId ? '观察区域：' + regionId + '。' : '';
     if (candidate.kind === 'possible_accident') {
       var accidentScore = Number(summary.peak_traffic_accident_probability);
-      line = '模型在 ' + Number(summary.supporting_frames || 0) + ' 帧中给出事故场景线索' +
+      line += '模型在 ' + Number(summary.supporting_frames || 0) + ' 帧中给出事故场景线索' +
         (Number.isFinite(accidentScore) ? '，最高分 ' + Math.round(accidentScore * 100) + '%' : '') +
         '；此模型不能定位事故车辆。';
     } else if (candidate.kind === 'possible_flooding') {
       var ratio = Number(summary.max_flooded_road_area_ratio);
-      line = '圈选路面中疑似淹水像素约占 ' + (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
+      line += '圈选路面中疑似淹水像素约占 ' + (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
         '；这是画面比例，不是水深或实际淹水面积。' +
         (mediaKind === 'image' && summary.outline_polygons && summary.outline_polygons.length ? ' 原图已叠加疑似轮廓。' : '');
     }

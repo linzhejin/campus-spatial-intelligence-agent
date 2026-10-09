@@ -121,11 +121,26 @@ def _polygon_mask(frame_shape, polygon):
     return mask.astype(bool)
 
 
+def _align_rgb_to_mask_grid(frame, truth_labels):
+    """Match RGB input to the official categorical mask grid without altering labels."""
+    if frame is None or truth_labels is None or truth_labels.ndim != 2:
+        raise ValueError("image must be RGB/BGR and ground truth must be a 2D class mask")
+    if frame.shape[:2] == truth_labels.shape:
+        return frame, "already_aligned"
+    aligned = cv2.resize(
+        frame,
+        (int(truth_labels.shape[1]), int(truth_labels.shape[0])),
+        interpolation=cv2.INTER_LINEAR,
+    )
+    return aligned, "image_resized_to_mask_grid"
+
+
 def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: float):
     segmenter = OnnxFloodSegmenter(str(model_path), min_area_ratio=min_area_ratio)
     tp = fp = fn = 0
     group_counts = {}
     sample_iou = []
+    alignment_counts = {"already_aligned": 0, "image_resized_to_mask_grid": 0}
     for sample in manifest["samples"]:
         image_path = _dataset_path(root, sample["image"])
         mask_path = _dataset_path(root, sample["mask"])
@@ -135,8 +150,8 @@ def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: floa
             raise ValueError(f"cannot decode test image: {sample['image']}")
         if truth_labels is None or truth_labels.ndim != 2:
             raise ValueError(f"ground truth must be a grayscale class-index mask: {sample['mask']}")
-        if truth_labels.shape != frame.shape[:2]:
-            raise ValueError(f"image and mask dimensions differ: {sample['image']}")
+        frame, alignment = _align_rgb_to_mask_grid(frame, truth_labels)
+        alignment_counts[alignment] += 1
         region = {
             "id": sample["group_id"], "kind": "road_surface",
             "polygon": sample["road_surface_polygon"],
@@ -168,6 +183,7 @@ def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: floa
     return {
         **overall,
         "sample_count": len(manifest["samples"]),
+        "image_mask_grid_alignment": alignment_counts,
         "mean_per_image_iou": round(
             sum(value for value in sample_iou if value is not None)
             / max(1, sum(value is not None for value in sample_iou)), 6,

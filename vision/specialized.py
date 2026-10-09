@@ -5,6 +5,8 @@ import math
 import os
 from pathlib import Path
 
+from vision.tiling import tile_windows
+
 
 AIDER_CLASSES = (
     # TakuNet's AIDER loader follows ImageFolder's sorted directory order.
@@ -172,18 +174,46 @@ class OnnxFloodSegmenter:
         roi_pixels = int(region_mask.sum())
         if not roi_pixels:
             return None
-        try:
-            raw = self.session.run([self.output_name], _image_tensor(crop, self.input_name, self.input_size))
-        except Exception as error:
-            raise RuntimeError(f"积水分割模型推理失败：{error}") from error
-        logits = np.asarray(raw[0])
-        if (logits.ndim != 4 or logits.shape[0] != 1
-                or logits.shape[1] != len(FLOODNET_CLASSES)):
-            raise ValueError("积水分割模型必须返回 FloodNet 的 10 类语义分割结果")
-        if not np.isfinite(logits).all():
-            raise ValueError("积水分割模型返回非有限结果")
-        labels = logits[0].argmax(axis=0).astype(np.uint8)
-        labels = cv2.resize(labels, (x2 - x1, y2 - y1), interpolation=cv2.INTER_NEAREST)
+        tile_width, tile_height = self.input_size
+        tile_overlap = max(1, min(128, min(tile_width, tile_height) // 8))
+        windows = tile_windows(
+            width=x2 - x1, height=y2 - y1,
+            tile_size=(tile_width, tile_height), overlap=tile_overlap,
+        )
+        best_confidence = np.full((y2 - y1, x2 - x1), -1.0, dtype=np.float32)
+        labels = np.zeros((y2 - y1, x2 - x1), dtype=np.uint8)
+        for tile_x, tile_y in windows:
+            tile_x2 = min(x2 - x1, tile_x + tile_width)
+            tile_y2 = min(y2 - y1, tile_y + tile_height)
+            tile = crop[tile_y:tile_y2, tile_x:tile_x2]
+            try:
+                raw = self.session.run(
+                    [self.output_name], _image_tensor(tile, self.input_name, self.input_size),
+                )
+            except Exception as error:
+                raise RuntimeError(f"积水分割模型推理失败：{error}") from error
+            logits = np.asarray(raw[0], dtype=np.float32)
+            if (logits.ndim != 4 or logits.shape[0] != 1
+                    or logits.shape[1] != len(FLOODNET_CLASSES)):
+                raise ValueError("积水分割模型必须返回 FloodNet 的 10 类语义分割结果")
+            if not np.isfinite(logits).all():
+                raise ValueError("积水分割模型返回非有限结果")
+            tile_logits = logits[0]
+            if tile_logits.shape[-2:] != (tile_y2 - tile_y, tile_x2 - tile_x):
+                tile_logits = np.stack([
+                    cv2.resize(channel, (tile_x2 - tile_x, tile_y2 - tile_y),
+                               interpolation=cv2.INTER_LINEAR)
+                    for channel in tile_logits
+                ])
+            maxima = tile_logits.max(axis=0)
+            exponentials = np.exp(tile_logits - maxima[None, :, :])
+            confidence = 1.0 / exponentials.sum(axis=0)
+            predicted = tile_logits.argmax(axis=0).astype(np.uint8)
+            target_confidence = best_confidence[tile_y:tile_y2, tile_x:tile_x2]
+            better = confidence > target_confidence
+            target_confidence[better] = confidence[better]
+            target_labels = labels[tile_y:tile_y2, tile_x:tile_x2]
+            target_labels[better] = predicted[better]
         flooded_mask = ((labels == self.FLOODED_ROAD_CLASS) & (region_mask != 0)).astype(np.uint8)
         ratio = float(flooded_mask.sum()) / roi_pixels
         contours, _ = cv2.findContours(flooded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -208,6 +238,8 @@ class OnnxFloodSegmenter:
             "class_label": "flooded_road",
             "area_measurement": "fraction_of_marked_image_region",
             "water_depth_estimated": False,
+            "analysis_tile_count": len(windows),
+            "analysis_overlap_pixels": tile_overlap,
         }
         if include_mask:
             full_mask = np.zeros((height, width), dtype=np.uint8)

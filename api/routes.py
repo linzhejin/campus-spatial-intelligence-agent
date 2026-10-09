@@ -104,6 +104,7 @@ def _parse_vision_observation_regions(value) -> list[dict]:
         raise ValueError("最多可以标注 24 个观察区域。")
     allowed_kinds = {"vehicle_lane", "pedestrian", "road_surface", "parking", "exclude"}
     normalized = []
+    seen_ids = set()
     for index, region in enumerate(value):
         if not isinstance(region, dict) or region.get("kind") not in allowed_kinds:
             raise ValueError("观察区域类型无效。")
@@ -121,8 +122,12 @@ def _parse_vision_observation_regions(value) -> list[dict]:
                     or not 0 <= x <= 1 or not 0 <= y <= 1):
                 raise ValueError("观察区域坐标必须是 0 到 1 之间的画面比例。")
             points.append([float(x), float(y)])
+        region_id = str(region.get("id") or f"region-{index + 1}")[:64]
+        if not region_id or region_id in seen_ids:
+            raise ValueError("观察区域标识必须非空且唯一。")
+        seen_ids.add(region_id)
         normalized.append({
-            "id": str(region.get("id") or f"region-{index + 1}")[:64],
+            "id": region_id,
             "kind": region["kind"], "polygon": points,
         })
     return normalized
@@ -2132,6 +2137,37 @@ def create_road_condition():
         )
         if not (candidate_review and candidate_review.get("status") == "confirmed") and not legacy_confirmed:
             return _err("vision_source_not_confirmed", "该影像候选尚未单独确认，不能作为事件来源。", 409)
+        evidence = candidate.get("evidence") if isinstance(candidate.get("evidence"), dict) else {}
+        candidate_summary = evidence.get("summary") if isinstance(evidence.get("summary"), dict) else {}
+        region_id = candidate_summary.get("region_id") or evidence.get("region_id")
+        observation_region = None
+        if region_id is not None:
+            if not isinstance(region_id, str) or not region_id or len(region_id) > 64:
+                return _err("vision_region_mismatch", "影像候选的观察区域标识无效，请重新分析。", 409)
+            regions = source_job.get("observation_regions")
+            matches = [region for region in regions if isinstance(region, dict)
+                       and region.get("id") == region_id] if isinstance(regions, list) else []
+            if len(matches) != 1:
+                return _err("vision_region_mismatch", "影像候选对应的观察区域已不存在或存在歧义，请重新分析。", 409)
+            observation_region = matches[0]
+            region_kind = observation_region.get("kind")
+            allowed_region_kinds = {
+                "possible_flooding": {"road_surface"},
+                "possible_accident": {"vehicle_lane", "road_surface"},
+                "possible_congestion": {"vehicle_lane"},
+                "possible_crowding": {"pedestrian"},
+                "vehicle_cluster_review": {"vehicle_lane"},
+            }.get(candidate.get("kind"), set())
+            polygon = observation_region.get("polygon")
+            if (region_kind not in allowed_region_kinds or not isinstance(polygon, list)
+                    or not 3 <= len(polygon) <= 128):
+                return _err("vision_region_mismatch", "影像候选与观察区域类型不匹配，请重新分析。", 409)
+            for point in polygon:
+                if (not isinstance(point, (list, tuple)) or len(point) != 2
+                        or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                               or not math.isfinite(float(value)) or not 0 <= float(value) <= 1
+                               for value in point)):
+                    return _err("vision_region_mismatch", "影像观察区域坐标无效，请重新分析。", 409)
         captured_at = source_job.get("captured_at")
         if not captured_at:
             return _err("vision_capture_time_missing", "影像缺少实际拍摄时间，不能作为当前路况来源。", 409)
@@ -2144,6 +2180,13 @@ def create_road_condition():
                   "candidate_kind": str(candidate.get("kind") or "unknown"),
                   "captured_at": captured_ts,
                   "field_confirmation": field_confirmation}
+        if observation_region is not None:
+            source.update({
+                "region_id": region_id,
+                "region_kind": observation_region["kind"],
+                "region_polygon": observation_region["polygon"],
+                "road_association": "manager_selected_edge",
+            })
 
     try:
         lng_f, lat_f = float(lng), float(lat)
@@ -2165,6 +2208,13 @@ def create_road_condition():
                 f"点击位置离最近道路超过 {int(SNAP_MAX_DIST_M)} 米，请放大地图点在道路上",
                 400,
             )
+
+        if source is not None and observation_region is not None:
+            source["associated_edge"] = {
+                "u": int(snap["u"]), "v": int(snap["v"]),
+                "key": int(snap.get("key", 0)),
+                "road_name": str(snap.get("road_name") or ""),
+            }
 
         condition = add_condition(
             cond_type=cond_type,
