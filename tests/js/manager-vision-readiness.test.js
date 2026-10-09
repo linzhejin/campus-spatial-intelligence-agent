@@ -238,7 +238,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
   assert.match(managerHtml, /manager\.css\?v=20261009e/);
-  assert.match(managerHtml, /manager\.js\?v=20261010a/);
+  assert.match(managerHtml, /manager\.js\?v=20261010b/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
@@ -652,7 +652,7 @@ function descendants(node) {
   return [node, ...(node.children || []).flatMap(descendants)];
 }
 
-test('completed jobs without candidates explain the terminal state and can be retried or permanently deleted', async () => {
+test('completed jobs without candidates allow manual visual road registration and can be retried or deleted', async () => {
   const harness = managerHarness();
   await flush();
   harness.setVisionJobs([{
@@ -666,12 +666,20 @@ test('completed jobs without candidates explain the terminal state and can be re
   const card = root.children[0];
   const nodes = descendants(card);
   const terminalText = nodes.map((node) => node.textContent || '').join(' ');
+  const manual = nodes.find((node) => node.tagName === 'button' && node.textContent === '依据原片手工登记路况');
   const retry = nodes.find((node) => node.tagName === 'button' && node.textContent === '重新选择影像');
   const clear = nodes.find((node) => node.tagName === 'button' && node.textContent === '删除影像记录');
   assert.match(terminalText, /分析已结束/);
   assert.match(terminalText, /未生成可复核的路况候选/);
+  assert.ok(manual);
   assert.ok(retry);
   assert.ok(clear);
+
+  manual.listeners.click();
+  assert.equal(harness.elements.get('vision-source-banner').hidden, false);
+  assert.match(harness.elements.get('vision-source-label').textContent, /人工登记/);
+  assert.equal(harness.elements.get('field-confirmation-wrap').hidden, false);
+  assert.equal(harness.elements.get('field-confirmation').required, true);
 
   retry.listeners.click();
   assert.equal(harness.elements.get('vision-upload-card').scrollCount, 1);
@@ -750,6 +758,38 @@ test('confirmed visual evidence transfers to an explicitly verified road event',
   assert.equal(body.source_vision_candidate_index, 0);
   assert.equal(body.field_confirmation, '已联系现场负责人核实，该路段确有人流聚集。');
   assert.equal(elements.get('vision-source-banner').hidden, true);
+});
+
+test('candidate review shows congestion duration and image-space crowd evidence', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'review-evidence', status: 'needs_review', media_kind: 'video', original_name: '校园巡查.mp4',
+    result: { candidates: [
+      { kind: 'possible_congestion', confidence: 0.8, reason: '持续低位移', evidence: { summary: {
+        region_id: 'lane-east', observed_duration_seconds: 18, mean_vehicle_count: 7.2,
+        stationary_track_ratio: 0.75,
+      } } },
+      { kind: 'possible_crowding', confidence: 0.8, reason: '行人较多', evidence: {
+        region_id: 'walkway-east', peak_person_count: 24,
+        peak_people_with_nearby_peer_count: 18,
+        observed_duration_seconds: 6,
+        movement_assessment: 'mostly_moving_in_image',
+      } },
+    ] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const renderedText = descendants(harness.elements.get('vision-jobs'))
+    .map((node) => node.textContent || '').join(' ');
+  assert.match(renderedText, /连续观察 18\.0 秒/);
+  assert.match(renderedText, /低位移车辆轨迹占 75%/);
+  assert.match(renderedText, /峰值 24 人/);
+  assert.match(renderedText, /连续观察 6\.0 秒/);
+  assert.match(renderedText, /有邻近同伴的检测数 18 人/);
+  assert.match(renderedText, /多数轨迹有画面位移/);
+  assert.match(renderedText, /不代表地面密度或实际速度/);
 });
 
 test('road event deletion removes its record from the manager list after refresh', async () => {

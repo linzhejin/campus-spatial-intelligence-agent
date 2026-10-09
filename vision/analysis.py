@@ -91,6 +91,24 @@ def _center(box):
     return ((float(box[0]) + float(box[2])) / 2, (float(box[1]) + float(box[3])) / 2)
 
 
+def _count_people_with_nearby_peers(people: list[dict]) -> int:
+    """Count detections with a neighbor within two mean person-box heights."""
+    centers = []
+    for person in people:
+        x1, y1, x2, y2 = map(float, person["box"])
+        centers.append((_center(person["box"]), max(0.0, y2 - y1)))
+    grouped_count = 0
+    for index, (center, height) in enumerate(centers):
+        if any(
+            hypot(center[0] - other_center[0], center[1] - other_center[1])
+            <= height + other_height
+            for other_index, (other_center, other_height) in enumerate(centers)
+            if other_index != index
+        ):
+            grouped_count += 1
+    return grouped_count
+
+
 def _transform_point(matrix, point):
     if matrix is None:
         return None
@@ -258,6 +276,8 @@ def analyze_observations(
     regions: list[dict] | None = None,
     min_vehicle_count: int = 6,
     stationary_ratio_threshold: float = 0.5,
+    min_congestion_duration_s: float = 15.0,
+    min_crowding_duration_s: float = 5.0,
     tracking_high_threshold: float = 0.369,
     tracking_low_threshold: float = 0.1,
 ) -> dict:
@@ -270,6 +290,16 @@ def analyze_observations(
     """
     if frame_width <= 0 or frame_height <= 0 or sample_interval_s <= 0:
         raise ValueError("valid frame dimensions and sample interval are required")
+    if (isinstance(min_congestion_duration_s, bool)
+            or not isinstance(min_congestion_duration_s, (int, float))
+            or not math.isfinite(float(min_congestion_duration_s))
+            or min_congestion_duration_s <= 0):
+        raise ValueError("minimum congestion observation duration must be finite and positive")
+    if (isinstance(min_crowding_duration_s, bool)
+            or not isinstance(min_crowding_duration_s, (int, float))
+            or not math.isfinite(float(min_crowding_duration_s))
+            or min_crowding_duration_s <= 0):
+        raise ValueError("minimum crowd observation duration must be finite and positive")
     regions = _validated_regions(regions, frame_width, frame_height)
     vehicle_regions = [region for region in regions if region["kind"] == "vehicle_lane"]
     pedestrian_regions = [region for region in regions if region["kind"] == "pedestrian"]
@@ -308,6 +338,10 @@ def analyze_observations(
     vehicle_area_by_region = {region["id"]: [] for region in vehicle_regions}
     track_positions_by_region = {region["id"]: defaultdict(list) for region in vehicle_regions}
     pedestrian_counts_by_region = {region["id"]: [] for region in pedestrian_regions}
+    pedestrian_track_positions_by_region = {
+        region["id"]: defaultdict(list) for region in pedestrian_regions
+    }
+    nearby_peer_counts_by_region = {region["id"]: [] for region in pedestrian_regions}
     accident_detections: list[tuple[int, float, str, str]] = []
     coverage_values: list[float] = []
     class_counts: list[Counter] = []
@@ -353,11 +387,22 @@ def analyze_observations(
             people = [item for item in people if _in_regions(item, pedestrian_regions)]
         pedestrian_counts.append(len(people))
         for region in pedestrian_regions:
-            pedestrian_counts_by_region[region["id"]].append(
-                sum(1 for item in counted_detections
-                    if item["label"].strip().lower() in PEDESTRIAN_LABELS
-                    and _in_regions(item, [region]))
+            region_people = [
+                item for item in counted_detections
+                if item["label"].strip().lower() in PEDESTRIAN_LABELS
+                and _in_regions(item, [region])
+            ]
+            pedestrian_counts_by_region[region["id"]].append(len(region_people))
+            nearby_peer_counts_by_region[region["id"]].append(
+                _count_people_with_nearby_peers(region_people)
             )
+            for item in region_people:
+                track_id = item.get("track_id")
+                if track_id is not None:
+                    cx, cy = _center(item["box"])
+                    pedestrian_track_positions_by_region[region["id"]][str(track_id)].append(
+                        (cx, cy, frame_index)
+                    )
         covered = 0.0
         for item in vehicles:
             x1, y1, x2, y2 = map(float, item["box"])
@@ -405,11 +450,16 @@ def analyze_observations(
         region_id: speeds_for_tracks(positions)
         for region_id, positions in track_positions_by_region.items()
     }
+    pedestrian_speeds_by_region = {
+        region_id: speeds_for_tracks(positions)
+        for region_id, positions in pedestrian_track_positions_by_region.items()
+    }
 
     stationary_count = sum(speed <= 0.0025 for speed in track_speeds)
     stationary_ratio = stationary_count / len(track_speeds) if track_speeds else 0.0
     avg_vehicle_count = mean(vehicle_counts) if vehicle_counts else 0.0
     candidates = []
+    observed_duration_s = max(0.0, (len(valid_frames) - 1) * sample_interval_s)
 
     # Keep every candidate attached to the exact image ROI that produced it.
     # A single frame can show a vehicle cluster, but cannot establish congestion.
@@ -433,7 +483,8 @@ def analyze_observations(
             region_stationary_count / len(region_speeds) if region_speeds else 0.0
         )
         if (
-            camera_stabilized and len(valid_frames) >= 5 and motion_compensation_ready
+            camera_stabilized and observed_duration_s >= min_congestion_duration_s
+            and motion_compensation_ready
             and mean(counts) >= min_vehicle_count and len(region_speeds) >= 3
             and region_stationary_ratio >= stationary_ratio_threshold
         ):
@@ -446,6 +497,8 @@ def analyze_observations(
                     "stationary_track_count": region_stationary_count,
                     "tracked_vehicle_count": len(region_speeds),
                     "stationary_track_ratio": round(region_stationary_ratio, 3),
+                    "observed_duration_seconds": round(observed_duration_s, 3),
+                    "minimum_duration_seconds": float(min_congestion_duration_s),
                     "camera_motion_compensated": bool(camera_stabilized or motion_compensation_ready),
                     "camera_stabilization_basis": "operator_declared" if camera_stabilized else "estimated_transforms",
                     "valid_motion_transition_ratio": round(valid_transition_ratio, 3),
@@ -454,7 +507,21 @@ def analyze_observations(
 
     for region in pedestrian_regions:
         counts = pedestrian_counts_by_region[region["id"]]
-        if (camera_stabilized and len(counts) >= 3 and max(counts, default=0) >= 15
+        peer_counts = nearby_peer_counts_by_region[region["id"]]
+        pedestrian_speeds = pedestrian_speeds_by_region[region["id"]]
+        moving_people = sum(speed > 0.003 for speed in pedestrian_speeds)
+        low_motion_people = len(pedestrian_speeds) - moving_people
+        if not camera_stabilized:
+            movement_assessment = "camera_motion_uncompensated"
+        elif not pedestrian_speeds:
+            movement_assessment = "insufficient_track_data"
+        elif moving_people > low_motion_people:
+            movement_assessment = "mostly_moving_in_image"
+        else:
+            movement_assessment = "mostly_stationary_in_image"
+        peak_peer_count = max(peer_counts, default=0)
+        if (camera_stabilized and observed_duration_s >= min_crowding_duration_s
+                and len(counts) >= 3 and max(counts, default=0) >= 15
                 and sum(count > 0 for count in counts) >= 3):
             candidates.append(_candidate(
                 "possible_crowding",
@@ -463,7 +530,24 @@ def analyze_observations(
                 {"region_id": region["id"],
                  "peak_person_count": max(counts),
                  "mean_person_count": round(mean(counts), 2),
-                 "frames_with_people": sum(count > 0 for count in counts)},
+                 "frames_with_people": sum(count > 0 for count in counts),
+                 "observed_duration_seconds": round(observed_duration_s, 3),
+                 "minimum_duration_seconds": float(min_crowding_duration_s),
+                 "peak_people_with_nearby_peer_count": peak_peer_count,
+                 "aggregation_assessment": (
+                     "image_space_neighbors_detected" if peak_peer_count else
+                     "no_image_space_cluster_detected"
+                 ),
+                 "aggregation_basis": (
+                     "画面内相邻行人中心距离不超过两倍平均检测框高度；"
+                     "受透视影响，不代表地面距离或人数密度。"
+                 ),
+                 "movement_assessment": movement_assessment,
+                 "moving_person_track_count": moving_people,
+                 "low_motion_person_track_count": low_motion_people,
+                 "movement_basis": (
+                     "稳定画面中的行人轨迹像素位移；不是地面速度。"
+                 )},
             ))
 
     if accident_detections:
@@ -504,6 +588,9 @@ def analyze_observations(
     return {
         "metrics": {
             "frames_analyzed": len(valid_frames),
+            "observed_duration_seconds": round(observed_duration_s, 3),
+            "minimum_congestion_duration_seconds": float(min_congestion_duration_s),
+            "minimum_crowding_duration_seconds": float(min_crowding_duration_s),
             "mean_vehicle_count": round(avg_vehicle_count, 2),
             "peak_vehicle_count": max(vehicle_counts, default=0),
             "mean_pedestrian_count": round(mean(pedestrian_counts), 2) if pedestrian_counts else 0.0,

@@ -1097,6 +1097,40 @@ class TestRoadConditionAPI:
         assert len(public_records) == 1
         assert "source" not in public_records[0] and "audit" not in public_records[0]
 
+    def test_completed_vision_job_without_candidates_can_be_registered_manually(self, client, G, monkeypatch):
+        from storage import database, vision_repository
+
+        job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
+        job = {
+            "job_id": job_id, "status": "completed", "captured_at": time.time(),
+            "result": {"candidates": []}, "observation_regions": [],
+        }
+        monkeypatch.setattr(database, "initialize", lambda *_args: None)
+        monkeypatch.setattr(vision_repository, "get_job", lambda *_args: job)
+        gj = _mid_12_gcj(G)
+        body = {
+            "type": "event", "action": "notice", "affected_modes": ["walk"],
+            "name": "人工登记的影像路况", "lng": gj[0], "lat": gj[1],
+            "source_vision_job_id": job_id, "source_vision_candidate_index": None,
+            "field_confirmation": "管理员查看完整影像后现场核实该人行路段通行受影响。",
+            "end_time": time.time() + 1800,
+        }
+
+        response = client.post(
+            "/api/road-conditions", json=body,
+            headers={"X-Admin-Token": "test-token-xyz"},
+        )
+
+        assert response.status_code == 201
+        source = response.get_json()["data"]["condition"]["source"]
+        assert source["job_id"] == job_id
+        assert source["candidate_index"] is None
+        assert source["candidate_kind"] == "manual_visual_event"
+        assert source["manual_registration"] is True
+        assert source["field_confirmation"] == body["field_confirmation"]
+        assert source["road_association"] == "manager_selected_edge"
+        assert source["associated_edge"]["road_name"] == "自强大道"
+
     @pytest.mark.parametrize("candidate_kind", ["possible_congestion", "possible_flooding"])
     def test_independently_confirmed_recent_candidate_can_publish_with_expiry(
         self, client, G, monkeypatch, candidate_kind,

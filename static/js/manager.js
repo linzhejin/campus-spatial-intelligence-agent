@@ -363,6 +363,32 @@
     }
   }
 
+  function prepareManualVisionEvent(job) {
+    clearPickedRoad();
+    clearVisionSource();
+    state.sourceJobId = job.job_id;
+    state.sourceCandidateIndex = null;
+    byId('vision-source-banner').hidden = false;
+    byId('vision-source-label').textContent = '人工登记来源：' + (job.original_name || job.job_id) +
+      '。模型没有生成路况候选；请先查看原片，再选择受影响道路并填写现场核实依据。';
+    byId('field-confirmation-wrap').hidden = false;
+    byId('field-confirmation').required = true;
+    byId('event-type').value = '';
+    byId('event-action').value = '';
+    Array.from(byId('event-modes').options || []).forEach(function (option) { option.selected = false; });
+    byId('event-name').value = '';
+    byId('event-description').value = '';
+    byId('start-time').value = '';
+    byId('end-time').value = localDateTimeValue(Date.now() / 1000 + 1800);
+    byId('field-confirmation').value = '';
+    if (job.anchor_gcj) state.map.setView([job.anchor_gcj.lat, job.anchor_gcj.lng], 17);
+    setPicking(true, 'road');
+    updatePublishState();
+    if (byId('road-workspace') && byId('road-workspace').scrollIntoView) {
+      byId('road-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   async function request(path, method, body, extraHeaders) {
     var headers = {};
     if (state.csrf && method !== 'GET') headers['X-CSRF-Token'] = state.csrf;
@@ -1003,6 +1029,28 @@
       line += '圈选路面中疑似淹水像素约占 ' + (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
         '；这是画面比例，不是水深或实际淹水面积。' +
         (mediaKind === 'image' && summary.outline_polygons && summary.outline_polygons.length ? ' 原图已叠加疑似轮廓。' : '');
+    } else if (candidate.kind === 'possible_congestion') {
+      var observedSeconds = Number(summary.observed_duration_seconds);
+      var meanVehicles = Number(summary.mean_vehicle_count);
+      var stationaryRatio = Number(summary.stationary_track_ratio);
+      line += '稳定画面连续观察 ' + (Number.isFinite(observedSeconds) ? observedSeconds.toFixed(1) : '未知') +
+        ' 秒；车道平均检出 ' + (Number.isFinite(meanVehicles) ? meanVehicles.toFixed(1) : '未知') +
+        ' 辆，低位移车辆轨迹占 ' + (Number.isFinite(stationaryRatio) ? Math.round(stationaryRatio * 100) + '%' : '未知') +
+        '。这只是拥堵候选，仍需排除信号灯停车并核对现场。';
+    } else if (candidate.kind === 'possible_crowding') {
+      var peakPeople = Number(evidence.peak_person_count);
+      var groupedPeople = Number(evidence.peak_people_with_nearby_peer_count);
+      var observedCrowdSeconds = Number(evidence.observed_duration_seconds);
+      var movement = {
+        mostly_moving_in_image: '多数轨迹有画面位移',
+        mostly_stationary_in_image: '多数轨迹在画面内变化较少',
+        camera_motion_uncompensated: '镜头运动未校正',
+        insufficient_track_data: '轨迹不足，无法判断移动情况',
+      }[evidence.movement_assessment] || '移动情况未知';
+      line += '稳定画面连续观察 ' + (Number.isFinite(observedCrowdSeconds) ? observedCrowdSeconds.toFixed(1) : '未知') +
+        ' 秒；区域内峰值 ' + (Number.isFinite(peakPeople) ? peakPeople : '未知') +
+        ' 人；画面内有邻近同伴的检测数 ' + (Number.isFinite(groupedPeople) ? groupedPeople : '未知') +
+        ' 人；' + movement + '。画面邻近关系和位移不代表地面密度或实际速度。';
     }
     if (!line) return;
     var note = document.createElement('small'); note.className = 'candidate-evidence-caption';
@@ -1219,8 +1267,13 @@
         var terminal = document.createElement('div'); terminal.className = 'vision-terminal';
         var terminalTitle = document.createElement('strong'); terminalTitle.textContent = '分析已结束';
         var terminalCopy = document.createElement('p');
-        terminalCopy.textContent = '未生成可复核的路况候选。车辆数量只代表画面检测结果，不能单独判断拥堵。';
+        terminalCopy.textContent = '模型未生成可复核的路况候选。若查看原片后发现遗漏，可由管理员手工登记；车辆数量不能单独证明拥堵。';
         terminal.append(terminalTitle, terminalCopy); card.appendChild(terminal);
+        var manual = document.createElement('button'); manual.type = 'button';
+        manual.className = 'outline-button transfer-button';
+        manual.textContent = '依据原片手工登记路况';
+        manual.addEventListener('click', function () { prepareManualVisionEvent(job); });
+        card.appendChild(manual);
         appendVisionRecoveryActions(card, job);
       }
     }

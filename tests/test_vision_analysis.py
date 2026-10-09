@@ -10,13 +10,27 @@ def frame_of_stopped_vehicles(count=8, offset=0):
 
 
 def test_stabilized_video_with_many_stopped_tracked_vehicles_proposes_congestion():
-    frames = [frame_of_stopped_vehicles(offset=0) for _ in range(6)]
+    frames = [frame_of_stopped_vehicles(offset=0) for _ in range(16)]
     roi = [{"id": "lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
     result = analyze_observations(
         frames, frame_width=640, frame_height=480, camera_stabilized=True, regions=roi,
     )
-    assert result["metrics"]["frames_analyzed"] == 6
-    assert any(item["kind"] == "possible_congestion" and item["review_required"] for item in result["candidates"])
+    assert result["metrics"]["frames_analyzed"] == 16
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_congestion")
+    assert candidate["review_required"] is True
+    assert candidate["evidence"]["summary"]["observed_duration_seconds"] == 15.0
+
+
+def test_short_red_light_like_stop_at_dense_sampling_does_not_propose_congestion():
+    frames = [frame_of_stopped_vehicles() for _ in range(6)]
+    roi = [{"id": "lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480, sample_interval_s=0.2,
+        camera_stabilized=True, regions=roi,
+    )
+
+    assert all(item["kind"] != "possible_congestion" for item in result["candidates"])
 
 
 def test_single_image_vehicle_count_never_claims_traffic_congestion():
@@ -112,7 +126,7 @@ def test_crowd_candidate_requires_pedestrian_roi_and_sustained_video_evidence():
     ]
     roi = [{"id": "plaza", "kind": "pedestrian", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
     result = analyze_observations(
-        [pedestrians] * 4, frame_width=640, frame_height=480,
+        [pedestrians] * 6, frame_width=640, frame_height=480,
         camera_stabilized=True, regions=roi,
     )
 
@@ -122,6 +136,25 @@ def test_crowd_candidate_requires_pedestrian_roi_and_sustained_video_evidence():
     assert candidate["evidence"]["region_id"] == "plaza"
     assert candidate["evidence"]["peak_person_count"] == 16
     assert "persons_per_square_meter" not in candidate["evidence"]
+    assert candidate["evidence"]["peak_people_with_nearby_peer_count"] == 16
+    assert candidate["evidence"]["movement_assessment"] == "mostly_stationary_in_image"
+    assert candidate["evidence"]["observed_duration_seconds"] == 5.0
+
+
+def test_brief_pedestrian_cluster_at_dense_sampling_does_not_propose_crowding():
+    pedestrians = [
+        {"label": "pedestrian", "confidence": 0.9, "track_id": None,
+         "box": [20 + index * 18, 80, 32 + index * 18, 120]}
+        for index in range(16)
+    ]
+    roi = [{"id": "plaza", "kind": "pedestrian", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        [pedestrians] * 3, frame_width=640, frame_height=480, sample_interval_s=0.2,
+        camera_stabilized=True, regions=roi,
+    )
+
+    assert all(item["kind"] != "possible_crowding" for item in result["candidates"])
 
 
 def test_crowd_candidate_identifies_the_roi_that_contains_the_people():
@@ -136,7 +169,7 @@ def test_crowd_candidate_identifies_the_roi_that_contains_the_people():
     ]
 
     result = analyze_observations(
-        [pedestrians] * 4, frame_width=640, frame_height=480,
+        [pedestrians] * 6, frame_width=640, frame_height=480,
         camera_stabilized=True, regions=regions,
     )
 
@@ -145,7 +178,7 @@ def test_crowd_candidate_identifies_the_roi_that_contains_the_people():
 
 
 def test_congestion_candidate_is_bound_to_its_vehicle_lane_roi():
-    frames = [frame_of_stopped_vehicles(offset=0) for _ in range(6)]
+    frames = [frame_of_stopped_vehicles(offset=0) for _ in range(16)]
     roi = [{"id": "east-lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
 
     result = analyze_observations(
@@ -170,6 +203,47 @@ def test_pedestrians_outside_observed_region_are_not_counted_as_crowding():
 
     assert result["metrics"]["peak_pedestrian_count"] == 0
     assert all(item["kind"] != "possible_crowding" for item in result["candidates"])
+
+
+def test_crowd_candidate_reports_no_image_space_cluster_when_people_are_spread_out():
+    pedestrians = [
+        {"label": "pedestrian", "confidence": 0.9, "track_id": None,
+         "box": [40 + (index % 5) * 110, 40 + (index // 5) * 130,
+                 50 + (index % 5) * 110, 60 + (index // 5) * 130]}
+        for index in range(15)
+    ]
+    roi = [{"id": "plaza", "kind": "pedestrian", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        [pedestrians] * 6, frame_width=640, frame_height=480,
+        camera_stabilized=True, regions=roi,
+    )
+
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_crowding")
+    assert candidate["evidence"]["peak_people_with_nearby_peer_count"] == 0
+    assert candidate["evidence"]["aggregation_assessment"] == "no_image_space_cluster_detected"
+
+
+def test_crowd_candidate_reports_observed_image_space_movement():
+    frames = [
+        [
+            {"label": "pedestrian", "confidence": 0.9, "track_id": None,
+             "box": [20 + index * 22 + frame_index * 4, 80,
+                     32 + index * 22 + frame_index * 4, 120]}
+            for index in range(16)
+        ]
+        for frame_index in range(6)
+    ]
+    roi = [{"id": "walkway", "kind": "pedestrian", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480,
+        camera_stabilized=True, regions=roi,
+    )
+
+    candidate = next(item for item in result["candidates"] if item["kind"] == "possible_crowding")
+    assert candidate["evidence"]["movement_assessment"] == "mostly_moving_in_image"
+    assert candidate["evidence"]["moving_person_track_count"] > 0
 
 
 def test_vehicle_detections_inside_marked_parking_region_are_excluded_from_road_counts():

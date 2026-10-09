@@ -2116,58 +2116,65 @@ def create_road_condition():
             logger.exception("影像来源验证暂时不可用")
             return _err("vision_storage_unavailable", "影像任务暂时无法核对，请稍后重试。", 503)
         candidates = (source_job.get("result") or {}).get("candidates") if source_job else None
-        if (not source_job or source_job.get("status") != "needs_review"
-                or not isinstance(candidates, list) or not candidates):
+        if not source_job or not isinstance(candidates, list):
             return _err("vision_source_not_confirmed", "该影像任务没有可用的待复核候选。", 409)
         candidate_index = body.get("source_vision_candidate_index")
-        if candidate_index is None and source_job.get("review_status") == "confirmed":
-            candidate_index = source_job.get("review_candidate_index")
-            if candidate_index is None and len(candidates) == 1:
-                candidate_index = 0  # 兼容已完成的旧版单候选审核
-        if (isinstance(candidate_index, bool) or not isinstance(candidate_index, int)
-                or not 0 <= candidate_index < len(candidates)):
-            return _err("vision_candidate_ambiguous", "请明确选择已单独确认的影像候选。", 409)
-        candidate = candidates[candidate_index]
-        if not _valid_review_only_candidate(candidate):
-            return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
-        candidate_review = (source_job.get("candidate_reviews") or {}).get(str(candidate_index))
-        legacy_confirmed = (
-            source_job.get("review_status") == "confirmed"
-            and source_job.get("review_candidate_index") == candidate_index
-        )
-        if not (candidate_review and candidate_review.get("status") == "confirmed") and not legacy_confirmed:
-            return _err("vision_source_not_confirmed", "该影像候选尚未单独确认，不能作为事件来源。", 409)
-        evidence = candidate.get("evidence") if isinstance(candidate.get("evidence"), dict) else {}
-        candidate_summary = evidence.get("summary") if isinstance(evidence.get("summary"), dict) else {}
-        region_id = candidate_summary.get("region_id") or evidence.get("region_id")
+        manual_registration = not candidates and source_job.get("status") == "completed"
+        candidate = None
         observation_region = None
-        if region_id is not None:
-            if not isinstance(region_id, str) or not region_id or len(region_id) > 64:
-                return _err("vision_region_mismatch", "影像候选的观察区域标识无效，请重新分析。", 409)
-            regions = source_job.get("observation_regions")
-            matches = [region for region in regions if isinstance(region, dict)
-                       and region.get("id") == region_id] if isinstance(regions, list) else []
-            if len(matches) != 1:
-                return _err("vision_region_mismatch", "影像候选对应的观察区域已不存在或存在歧义，请重新分析。", 409)
-            observation_region = matches[0]
-            region_kind = observation_region.get("kind")
-            allowed_region_kinds = {
-                "possible_flooding": {"road_surface"},
-                "possible_accident": {"vehicle_lane", "road_surface"},
-                "possible_congestion": {"vehicle_lane"},
-                "possible_crowding": {"pedestrian"},
-                "vehicle_cluster_review": {"vehicle_lane"},
-            }.get(candidate.get("kind"), set())
-            polygon = observation_region.get("polygon")
-            if (region_kind not in allowed_region_kinds or not isinstance(polygon, list)
-                    or not 3 <= len(polygon) <= 128):
-                return _err("vision_region_mismatch", "影像候选与观察区域类型不匹配，请重新分析。", 409)
-            for point in polygon:
-                if (not isinstance(point, (list, tuple)) or len(point) != 2
-                        or any(isinstance(value, bool) or not isinstance(value, (int, float))
-                               or not math.isfinite(float(value)) or not 0 <= float(value) <= 1
-                               for value in point)):
-                    return _err("vision_region_mismatch", "影像观察区域坐标无效，请重新分析。", 409)
+        if manual_registration:
+            if candidate_index is not None:
+                return _err("vision_candidate_invalid", "没有模型候选的影像不能指定候选编号。", 409)
+        else:
+            if source_job.get("status") != "needs_review" or not candidates:
+                return _err("vision_source_not_confirmed", "该影像任务没有可用的待复核候选。", 409)
+            if candidate_index is None and source_job.get("review_status") == "confirmed":
+                candidate_index = source_job.get("review_candidate_index")
+                if candidate_index is None and len(candidates) == 1:
+                    candidate_index = 0  # 兼容已完成的旧版单候选审核
+            if (isinstance(candidate_index, bool) or not isinstance(candidate_index, int)
+                    or not 0 <= candidate_index < len(candidates)):
+                return _err("vision_candidate_ambiguous", "请明确选择已单独确认的影像候选。", 409)
+            candidate = candidates[candidate_index]
+            if not _valid_review_only_candidate(candidate):
+                return _err("vision_candidate_invalid", "影像候选记录无效。", 409)
+            candidate_review = (source_job.get("candidate_reviews") or {}).get(str(candidate_index))
+            legacy_confirmed = (
+                source_job.get("review_status") == "confirmed"
+                and source_job.get("review_candidate_index") == candidate_index
+            )
+            if not (candidate_review and candidate_review.get("status") == "confirmed") and not legacy_confirmed:
+                return _err("vision_source_not_confirmed", "该影像候选尚未单独确认，不能作为事件来源。", 409)
+            evidence = candidate.get("evidence") if isinstance(candidate.get("evidence"), dict) else {}
+            candidate_summary = evidence.get("summary") if isinstance(evidence.get("summary"), dict) else {}
+            region_id = candidate_summary.get("region_id") or evidence.get("region_id")
+            if region_id is not None:
+                if not isinstance(region_id, str) or not region_id or len(region_id) > 64:
+                    return _err("vision_region_mismatch", "影像候选的观察区域标识无效，请重新分析。", 409)
+                regions = source_job.get("observation_regions")
+                matches = [region for region in regions if isinstance(region, dict)
+                           and region.get("id") == region_id] if isinstance(regions, list) else []
+                if len(matches) != 1:
+                    return _err("vision_region_mismatch", "影像候选对应的观察区域已不存在或存在歧义，请重新分析。", 409)
+                observation_region = matches[0]
+                region_kind = observation_region.get("kind")
+                allowed_region_kinds = {
+                    "possible_flooding": {"road_surface"},
+                    "possible_accident": {"vehicle_lane", "road_surface"},
+                    "possible_congestion": {"vehicle_lane"},
+                    "possible_crowding": {"pedestrian"},
+                    "vehicle_cluster_review": {"vehicle_lane"},
+                }.get(candidate.get("kind"), set())
+                polygon = observation_region.get("polygon")
+                if (region_kind not in allowed_region_kinds or not isinstance(polygon, list)
+                        or not 3 <= len(polygon) <= 128):
+                    return _err("vision_region_mismatch", "影像候选与观察区域类型不匹配，请重新分析。", 409)
+                for point in polygon:
+                    if (not isinstance(point, (list, tuple)) or len(point) != 2
+                            or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                                   or not math.isfinite(float(value)) or not 0 <= float(value) <= 1
+                                   for value in point)):
+                        return _err("vision_region_mismatch", "影像观察区域坐标无效，请重新分析。", 409)
         captured_at = source_job.get("captured_at")
         if not captured_at:
             return _err("vision_capture_time_missing", "影像缺少实际拍摄时间，不能作为当前路况来源。", 409)
@@ -2177,15 +2184,20 @@ def create_road_condition():
             return _err("vision_source_stale", "影像拍摄时间已超出当前路况有效窗口，请重新获取现场信息。", 409)
         source = {"kind": "vision_job", "job_id": source_job_id,
                   "candidate_index": candidate_index,
-                  "candidate_kind": str(candidate.get("kind") or "unknown"),
+                  "candidate_kind": (
+                      "manual_visual_event" if manual_registration
+                      else str(candidate.get("kind") or "unknown")
+                  ),
                   "captured_at": captured_ts,
-                  "field_confirmation": field_confirmation}
+                  "field_confirmation": field_confirmation,
+                  "road_association": "manager_selected_edge"}
+        if manual_registration:
+            source["manual_registration"] = True
         if observation_region is not None:
             source.update({
                 "region_id": region_id,
                 "region_kind": observation_region["kind"],
                 "region_polygon": observation_region["polygon"],
-                "road_association": "manager_selected_edge",
             })
 
     try:
@@ -2209,7 +2221,7 @@ def create_road_condition():
                 400,
             )
 
-        if source is not None and observation_region is not None:
+        if source is not None:
             source["associated_edge"] = {
                 "u": int(snap["u"]), "v": int(snap["v"]),
                 "key": int(snap.get("key", 0)),
