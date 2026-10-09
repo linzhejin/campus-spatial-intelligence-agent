@@ -5,6 +5,7 @@ import logging
 import os
 import signal
 import importlib.util
+import json
 import threading
 import time
 import uuid
@@ -14,17 +15,50 @@ import config
 from dotenv import load_dotenv
 from storage import database
 from storage import vision_repository
+from vision.evidence import attach_evidence_clips
 from vision.engine import OnnxDetector, analyze_media
+from vision.specialized import OnnxAiderClassifier, OnnxFloodSegmenter
 
 logger = logging.getLogger(__name__)
 _STOP = threading.Event()
+
+
+def load_optional_models(*, accident_path=None, accident_revision=None,
+                         accident_threshold=None, flood_path=None,
+                         flood_revision=None, flood_min_area_ratio=None,
+                         accident_loader=OnnxAiderClassifier,
+                         flood_loader=OnnxFloodSegmenter):
+    """Load specialized models independently; their failure must not disable traffic vision."""
+    accident_model = flood_segmenter = None
+    capabilities = {
+        "accident_recognition_supported": False,
+        "flood_segmentation_supported": False,
+    }
+    if accident_path:
+        try:
+            accident_model = accident_loader(
+                accident_path, model_version=accident_revision, threshold=accident_threshold,
+            )
+            capabilities["accident_recognition_supported"] = True
+        except Exception:
+            logger.exception("Optional accident scene model could not be loaded; capability disabled")
+    if flood_path:
+        try:
+            flood_segmenter = flood_loader(
+                flood_path, model_version=flood_revision, min_area_ratio=flood_min_area_ratio,
+            )
+            capabilities["flood_segmentation_supported"] = True
+        except Exception:
+            logger.exception("Optional road-flood segmentation model could not be loaded; capability disabled")
+    return accident_model, flood_segmenter, capabilities
 
 
 class VisionJobCancelled(RuntimeError):
     """A manager cancelled a running job after its last saved segment."""
 
 
-def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90, *, detector=None):
+def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90, *,
+                     detector=None, accident_model=None, flood_segmenter=None):
     job = vision_repository.claim_next_job(database_url, worker_id, lease_seconds)
     if not job:
         return None
@@ -57,10 +91,31 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
         result = analyze_media(
             path, job["media_kind"], job["anchor_gcj"],
             camera_stabilized=job["camera_stabilized"], detector=detector,
+            accident_model=accident_model,
+            flood_segmenter=flood_segmenter,
             regions=job.get("observation_regions") or [],
             progress_callback=save_progress,
             resume_state=job.get("checkpoint"),
         )
+        if job["media_kind"] == "video" and result.get("candidates"):
+            try:
+                clip_summary = attach_evidence_clips(
+                    path, result["candidates"], config.VISION_UPLOAD_DIR, job_id,
+                )
+                result["evidence_clip_summary"] = clip_summary
+            except Exception:
+                # The original video and its time-coded evidence remain reviewable.
+                # A codec issue must not turn an otherwise completed analysis into
+                # a failed job.
+                logger.exception("Evidence clip generation failed (%s)", job_id)
+                result["evidence_clip_summary"] = {
+                    "clips_created": 0, "clips_failed": 0, "clips_skipped": 0,
+                }
+                for candidate in result["candidates"]:
+                    evidence = candidate.get("evidence") if isinstance(candidate, dict) else None
+                    if isinstance(evidence, dict):
+                        evidence.setdefault("clips", [])
+                        evidence["clip_status"] = "unavailable"
         if lease_lost.is_set():
             return {"job_id": job_id, "status": "lease_lost"}
         vision_repository.update_job_progress(
@@ -105,6 +160,8 @@ def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
     database.initialize(database_url)
     worker_id = f"whu-vision-{uuid.uuid4()}"
     detector = None
+    accident_model = None
+    flood_segmenter = None
     ready = False
     status_detail = ""
     try:
@@ -119,6 +176,15 @@ def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
             model_id=getattr(config, "VISION_MODEL_ID", "visdrone-rtdetrv4-s"),
             model_version=getattr(config, "VISION_MODEL_REVISION", "unspecified"),
         )
+        accident_model, flood_segmenter, optional_capabilities = load_optional_models(
+            accident_path=config.VISION_ACCIDENT_MODEL_PATH,
+            accident_revision=config.VISION_ACCIDENT_REVISION,
+            accident_threshold=config.VISION_ACCIDENT_THRESHOLD,
+            flood_path=config.VISION_FLOOD_MODEL_PATH,
+            flood_revision=config.VISION_FLOOD_REVISION,
+            flood_min_area_ratio=config.VISION_FLOOD_MIN_AREA_RATIO,
+        )
+        status_detail = json.dumps(optional_capabilities, separators=(",", ":"))
         ready = True
     except Exception as error:
         status_detail = f"{type(error).__name__}: {error}"[:500]
@@ -146,7 +212,10 @@ def run_forever(database_url=None, idle_seconds=1.0, heartbeat_seconds=10.0):
                 _STOP.wait(idle_seconds)
                 continue
             try:
-                if process_next_job(database_url, worker_id, detector=detector) is None:
+                if process_next_job(
+                    database_url, worker_id, detector=detector,
+                    accident_model=accident_model, flood_segmenter=flood_segmenter,
+                ) is None:
                     _STOP.wait(idle_seconds)
             except Exception:
                 logger.exception("Vision worker loop failed; retrying")

@@ -106,6 +106,29 @@ def test_video_upload_requires_admin_csrf_and_enforces_declared_size(monkeypatch
     assert denied.status_code == 401
 
 
+def test_manager_vision_status_distinguishes_unconfigured_missing_and_failed_optional_models(
+    monkeypatch, tmp_path,
+):
+    import api.routes as routes
+
+    client, _csrf = manager_client(monkeypatch, tmp_path)
+    missing_model = tmp_path / "missing-aider.onnx"
+    failed_model = tmp_path / "bad-flood.onnx"
+    failed_model.write_bytes(b"not-an-onnx-model")
+    monkeypatch.setattr(routes.config, "VISION_ACCIDENT_MODEL_PATH", str(missing_model))
+    monkeypatch.setattr(routes.config, "VISION_FLOOD_MODEL_PATH", str(failed_model))
+    monkeypatch.setattr(routes, "_vision_worker_capabilities", lambda *_args: {
+        "accident_recognition_supported": False,
+        "flood_segmentation_supported": False,
+    })
+
+    response = client.get("/api/manager/vision-status")
+
+    assert response.status_code == 200
+    status = response.get_json()["data"]["optional_model_status"]
+    assert status == {"accident": "file_missing", "flood": "load_failed"}
+
+
 def test_video_upload_requires_capture_time_and_normalized_roi(monkeypatch, tmp_path):
     import time
 
@@ -193,6 +216,33 @@ def test_manager_can_cancel_retry_and_review_candidates_independently(monkeypatc
     retried = client.post(f"/api/manager/vision-jobs/{job_id}/retry", json={}, headers=headers)
     assert retried.status_code == 200
     assert retried.get_json()["data"]["job"]["status"] == "queued"
+
+
+def test_flood_candidate_is_reviewable_but_still_requires_road_event_confirmation(monkeypatch, tmp_path):
+    from storage import database, vision_repository
+
+    client, csrf = manager_client(monkeypatch, tmp_path)
+    monkeypatch.setattr(database, "initialize", lambda *_args: None)
+    job_id = str(uuid.uuid4())
+    candidate = {"kind": "possible_flooding", "review_required": True, "auto_publish": False}
+    job = {"job_id": job_id, "status": "needs_review", "captured_at": time.time(),
+           "result": {"candidates": [candidate]}}
+    monkeypatch.setattr(vision_repository, "get_job", lambda *_args: job)
+    reviewed = []
+    monkeypatch.setattr(vision_repository, "review_candidate", lambda *_args, **kwargs: (
+        reviewed.append(kwargs) or {"job_id": job_id, "candidate_reviews": {"0": {
+            "status": kwargs["review_status"], "note": kwargs["review_note"],
+        }}}
+    ))
+
+    response = client.post(
+        f"/api/manager/vision-jobs/{job_id}/candidates/0/review",
+        json={"status": "confirmed", "note": "查看原片后确认存在积水候选，继续选择具体道路。"},
+        headers={"X-CSRF-Token": csrf},
+    )
+
+    assert response.status_code == 200
+    assert reviewed[0]["review_status"] == "confirmed"
 
 
 def test_retry_resets_attempt_budget_and_keeps_video_checkpoint(monkeypatch):

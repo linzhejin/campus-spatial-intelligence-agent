@@ -298,3 +298,14 @@ def has_ready_worker(url: str | None, max_age_seconds: int = 30,
             parameters,
         ).fetchone()
     return bool(row and row["ready"])
+
+
+def ready_worker_status(url: str | None, max_age_seconds: int = 30) -> dict[str, Any] | None:
+    """Return the newest fresh worker health details for manager capability reporting."""
+    with database.connect(url) as conn:
+        return conn.execute(
+            "SELECT worker_id, status_detail, heartbeat_at FROM manager_vision_worker"
+            " WHERE ready=true AND heartbeat_at > now() - (%s * interval '1 second')"
+            " ORDER BY heartbeat_at DESC LIMIT 1",
+            (max(1, int(max_age_seconds)),),
+        ).fetchone()

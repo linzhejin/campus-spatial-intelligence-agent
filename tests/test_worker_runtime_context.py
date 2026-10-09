@@ -444,3 +444,28 @@ def test_vision_worker_heartbeat_uses_freshness_and_worker_identity(monkeypatch)
     assert statements[0][1] == ("worker-a", True, "loaded")
     assert "heartbeat_at > now()" in statements[1][0]
     assert statements[1][1] == (12, "worker-a")
+
+
+def test_ready_worker_status_returns_optional_model_capabilities(monkeypatch):
+    from contextlib import contextmanager
+    from storage import vision_repository
+
+    class Connection:
+        def execute(self, statement, parameters):
+            assert "status_detail" in statement
+            assert parameters == (30,)
+            return self
+
+        def fetchone(self):
+            return {"worker_id": "vision-a", "status_detail": '{"flood_segmentation_supported":true}'}
+
+    @contextmanager
+    def connect(_url):
+        yield Connection()
+
+    monkeypatch.setattr(vision_repository.database, "connect", connect)
+
+    status = vision_repository.ready_worker_status("postgres://test")
+
+    assert status["worker_id"] == "vision-a"
+    assert status["status_detail"] == '{"flood_segmentation_supported":true}'

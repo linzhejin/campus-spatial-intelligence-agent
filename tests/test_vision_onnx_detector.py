@@ -62,6 +62,22 @@ def test_onnx_detector_returns_empty_for_empty_valid_outputs():
     assert OnnxDetector("model.onnx", session=session).detect(np.zeros((100, 100, 3), dtype=np.uint8)) == []
 
 
+def test_onnx_detector_exposes_low_confidence_detections_only_for_tracking():
+    session = FakeSession(outputs=[
+        np.asarray([[3, 3, 3]]),
+        np.asarray([[[100, 100, 180, 180], [200, 100, 280, 180], [300, 100, 380, 180]]], dtype=np.float32),
+        np.asarray([[0.8, 0.2, 0.05]], dtype=np.float32),
+    ])
+    detector = OnnxDetector(
+        "model.onnx", session=session, confidence_threshold=0.4,
+        tracking_low_confidence_threshold=0.1,
+    )
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+    assert [item["confidence"] for item in detector.detect(frame)] == [0.8]
+    assert [item["confidence"] for item in detector.detect(frame, tracking=True)] == [0.8, 0.2]
+
+
 def test_onnx_detector_uses_annotated_crop_and_restores_full_frame_coordinates():
     session = FakeSession()
     detector = OnnxDetector("model.onnx", session=session, confidence_threshold=0.25)

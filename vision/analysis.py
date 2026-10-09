@@ -5,9 +5,12 @@ Outputs are review candidates, never road closures or routing updates.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import math
 from math import hypot
 from statistics import mean
 from typing import Any
+
+from vision.tracking import assign_track_ids
 
 
 VEHICLE_LABELS = {
@@ -16,7 +19,7 @@ VEHICLE_LABELS = {
 }
 INCIDENT_LABELS = {"accident", "crash", "collision", "vehicle_accident", "overturned_vehicle"}
 PEDESTRIAN_LABELS = {"pedestrian", "person", "people"}
-ROI_KINDS = {"vehicle_lane", "pedestrian", "parking", "exclude"}
+ROI_KINDS = {"vehicle_lane", "pedestrian", "road_surface", "parking", "exclude"}
 
 
 def _validated_regions(regions, frame_width: int, frame_height: int) -> list[dict]:
@@ -111,74 +114,127 @@ def _candidate(kind: str, confidence: float, reason: str, evidence: dict) -> dic
     }
 
 
-def _assign_track_ids(frames, transforms, *, camera_stabilized: bool, max_distance: float):
-    """Link adjacent-frame detections using the estimated background transform."""
-    copied = [[dict(item) for item in frame] for frame in frames]
-    existing = [
-        int(item["track_id"])
-        for frame in copied for item in frame
-        if isinstance(item.get("track_id"), (int, float))
-    ]
-    next_id = max(existing, default=-1) + 1
-    if not copied:
-        return copied
-    for item in copied[0]:
-        if item.get("track_id") is None:
-            item["track_id"] = next_id
-            next_id += 1
+def _has_adjacent_support(records: list[dict], sample_interval_s: float) -> bool:
+    ordered = sorted(records, key=lambda item: item["time_seconds"])
+    max_gap = max(1.5, sample_interval_s * 2.1)
+    return any(
+        ordered[index + 1]["time_seconds"] - ordered[index]["time_seconds"] <= max_gap
+        for index in range(len(ordered) - 1)
+    )
 
-    for frame_index in range(1, len(copied)):
-        matrix = None
-        if camera_stabilized:
-            matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        elif transforms and frame_index < len(transforms):
-            matrix = transforms[frame_index]
-        if matrix is None:
-            for item in copied[frame_index]:
-                if item.get("track_id") is None:
-                    item["track_id"] = next_id
-                    next_id += 1
+
+def build_specialized_candidates(
+    observations: list[dict], *, sample_interval_s: float,
+    single_image: bool = False,
+    accident_threshold: float = 0.85,
+    flood_area_threshold: float = 0.08,
+) -> list[dict]:
+    """Convert optional scene/segmentation outputs into review-only candidates.
+
+    Accident predictions are scene-level AIDER scores and never imply a crash
+    coordinate. Flood predictions are restricted to a marked road-surface ROI;
+    ratios are image-region fractions, not physical area or water depth.
+    """
+    if sample_interval_s <= 0:
+        raise ValueError("sample_interval_s must be positive")
+    candidates = []
+    accident_records = []
+    flood_records = []
+    for observation in observations or []:
+        if not isinstance(observation, dict):
             continue
+        when = observation.get("time_seconds")
+        if isinstance(when, bool) or not isinstance(when, (int, float)) or not math.isfinite(float(when)):
+            continue
+        probability = observation.get("traffic_accident_probability")
+        if (isinstance(probability, (int, float)) and not isinstance(probability, bool)
+                and math.isfinite(float(probability)) and accident_threshold <= probability <= 1):
+            accident_records.append({
+                "time_seconds": float(when), "confidence": float(probability),
+                "region_id": str(observation.get("region_id") or "road"),
+            })
+        ratio = observation.get("flooded_road_area_ratio")
+        if (isinstance(ratio, (int, float)) and not isinstance(ratio, bool)
+                and math.isfinite(float(ratio)) and flood_area_threshold <= ratio <= 1):
+            flood_records.append({
+                "time_seconds": float(when), "area_ratio": float(ratio),
+                "region_id": str(observation.get("region_id") or "road-surface"),
+                "outline_polygons": observation.get("outline_polygons") or [],
+            })
 
-        previous = [
-            item for item in copied[frame_index - 1]
-            if item.get("track_id") is not None
-            and item.get("label", "").strip().lower() in VEHICLE_LABELS
-        ]
-        current = [
-            (index, item) for index, item in enumerate(copied[frame_index])
-            if item.get("label", "").strip().lower() in VEHICLE_LABELS
-        ]
-        possible = []
-        for before in previous:
-            predicted = _transform_point(matrix, _center(before["box"]))
-            if predicted is None:
-                continue
-            for index, after in current:
-                if after.get("track_id") is not None:
-                    continue
-                if before["label"].strip().lower() != after["label"].strip().lower():
-                    continue
-                observed = _center(after["box"])
-                distance = hypot(predicted[0] - observed[0], predicted[1] - observed[1])
-                if distance <= max_distance:
-                    possible.append((distance, int(before["track_id"]), index, after))
-        used_tracks, used_detections = set(), set()
-        for _distance, track_id, index, item in sorted(possible, key=lambda candidate: candidate[0]):
-            if track_id in used_tracks or index in used_detections:
-                continue
-            item["track_id"] = track_id
-            used_tracks.add(track_id)
-            used_detections.add(index)
-        for _index, item in current:
-            if item.get("track_id") is None:
-                item["track_id"] = next_id
-                next_id += 1
-        for item in copied[frame_index]:
-            if item.get("track_id") is None:
-                item["track_id"] = next_id
-                next_id += 1
-    return copied
+    accident_regions: dict[str, list[dict]] = defaultdict(list)
+    for item in accident_records:
+        accident_regions[item["region_id"]].append(item)
+    for region_id, region_records in accident_regions.items():
+        selected_by_time = {}
+        for item in region_records:
+            current = selected_by_time.get(item["time_seconds"])
+            if current is None or item["confidence"] > current["confidence"]:
+                selected_by_time[item["time_seconds"]] = item
+        selected = sorted(selected_by_time.values(), key=lambda item: item["time_seconds"])
+        accident_supported = (
+            len(selected) >= 2 and _has_adjacent_support(selected, sample_interval_s)
+            or single_image and max((item["confidence"] for item in selected), default=0) >= 0.95
+        )
+        if not accident_supported:
+            continue
+        candidates.append(_candidate(
+            "possible_accident",
+            mean(item["confidence"] for item in selected),
+            "事故场景分类模型在连续画面中给出事故类别线索；模型只判断画面类别，无法定位事故车辆，须查看原片并人工确认。",
+            {
+                "segments": [{
+                    "start_seconds": item["time_seconds"],
+                    "end_seconds": item["time_seconds"] + sample_interval_s,
+                    "confidence": round(item["confidence"], 4),
+                } for item in selected[:200]],
+                "summary": {
+                    "peak_traffic_accident_probability": round(max(item["confidence"] for item in selected), 4),
+                    "supporting_frames": len(selected),
+                    "region_id": region_id,
+                    "spatial_precision": "scene_classification_only",
+                },
+            },
+        ))
+
+    flood_regions: dict[str, list[dict]] = defaultdict(list)
+    for item in flood_records:
+        flood_regions[item["region_id"]].append(item)
+    for region_id, region_records in flood_regions.items():
+        selected_by_time = {}
+        for item in region_records:
+            current = selected_by_time.get(item["time_seconds"])
+            if current is None or item["area_ratio"] > current["area_ratio"]:
+                selected_by_time[item["time_seconds"]] = item
+        selected = sorted(selected_by_time.values(), key=lambda item: item["time_seconds"])
+        flood_supported = (
+            len(selected) >= 2 and _has_adjacent_support(selected, sample_interval_s)
+            or single_image and max((item["area_ratio"] for item in selected), default=0) >= 0.25
+        )
+        if not flood_supported:
+            continue
+        strongest = max(selected, key=lambda item: item["area_ratio"])
+        candidates.append(_candidate(
+            "possible_flooding",
+            min(0.99, 0.6 + strongest["area_ratio"] / 2),
+            "积水分割模型在已圈定路面区域内检出疑似淹水像素；面积比例按画面区域计算，不代表实际水深或地面范围，须人工核对。",
+            {
+                "segments": [{
+                    "start_seconds": item["time_seconds"],
+                    "end_seconds": item["time_seconds"] + sample_interval_s,
+                    "confidence": round(item["area_ratio"], 4),
+                } for item in selected[:200]],
+                "summary": {
+                    "region_id": region_id,
+                    "max_flooded_road_area_ratio": round(strongest["area_ratio"], 4),
+                    "outline_time_seconds": round(strongest["time_seconds"], 3),
+                    "supporting_frames": len(selected),
+                    "outline_polygons": strongest["outline_polygons"][:8],
+                    "water_depth_estimated": False,
+                },
+            },
+        ))
+    return candidates
 
 
 def analyze_observations(
@@ -190,6 +246,8 @@ def analyze_observations(
     regions: list[dict] | None = None,
     min_vehicle_count: int = 6,
     stationary_ratio_threshold: float = 0.5,
+    tracking_high_threshold: float = 0.369,
+    tracking_low_threshold: float = 0.1,
 ) -> dict:
     """Summarize detections and compensate vehicle motion for verified camera motion.
 
@@ -225,9 +283,11 @@ def analyze_observations(
         camera_stabilized
         or (transition_count > 0 and valid_transition_ratio >= 0.8)
     )
-    track_frames = _assign_track_ids(
-        valid_frames, frame_transforms, camera_stabilized=camera_stabilized,
-        max_distance=hypot(frame_width, frame_height) * 0.08,
+    track_frames = assign_track_ids(
+        valid_frames, frame_transforms=frame_transforms,
+        camera_stabilized=camera_stabilized,
+        high_threshold=tracking_high_threshold,
+        low_threshold=tracking_low_threshold,
     )
     vehicle_frames: list[list[dict]] = []
     pedestrian_counts: list[int] = []
@@ -237,7 +297,12 @@ def analyze_observations(
     class_counts: list[Counter] = []
 
     for frame_index, detections in enumerate(track_frames):
-        all_vehicles = [item for item in detections
+        counted_detections = [
+            item for item in detections
+            if float(item.get("confidence", 0)) >= tracking_high_threshold
+            or item.get("track_id") is not None
+        ]
+        all_vehicles = [item for item in counted_detections
                         if item["label"].strip().lower() in VEHICLE_LABELS]
         vehicles = (
             [item for item in all_vehicles if _in_regions(item, vehicle_regions)]
@@ -246,8 +311,8 @@ def analyze_observations(
         if parking_regions:
             vehicles = [item for item in vehicles if not _in_regions(item, parking_regions)]
         vehicle_frames.append(vehicles)
-        class_counts.append(Counter(item["label"].strip().lower() for item in detections))
-        people = [item for item in detections if item["label"].strip().lower() in PEDESTRIAN_LABELS]
+        class_counts.append(Counter(item["label"].strip().lower() for item in counted_detections))
+        people = [item for item in counted_detections if item["label"].strip().lower() in PEDESTRIAN_LABELS]
         if pedestrian_regions:
             people = [item for item in people if _in_regions(item, pedestrian_regions)]
         pedestrian_counts.append(len(people))

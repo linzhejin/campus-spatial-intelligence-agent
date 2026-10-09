@@ -1097,12 +1097,15 @@ class TestRoadConditionAPI:
         assert len(public_records) == 1
         assert "source" not in public_records[0] and "audit" not in public_records[0]
 
-    def test_independently_confirmed_recent_candidate_can_publish_with_expiry(self, client, G, monkeypatch):
+    @pytest.mark.parametrize("candidate_kind", ["possible_congestion", "possible_flooding"])
+    def test_independently_confirmed_recent_candidate_can_publish_with_expiry(
+        self, client, G, monkeypatch, candidate_kind,
+    ):
         import time
         from storage import database, vision_repository
 
         job_id = "a6f6c6b1-d237-43fa-8ea2-b01ae48a3e8e"
-        candidate = {"kind": "possible_congestion", "review_required": True, "auto_publish": False}
+        candidate = {"kind": candidate_kind, "review_required": True, "auto_publish": False}
         job = {
             "job_id": job_id, "status": "needs_review", "review_status": None,
             "captured_at": time.time(),
@@ -1121,6 +1124,7 @@ class TestRoadConditionAPI:
         response = client.post("/api/road-conditions", json=body, headers={"X-Admin-Token": "test-token-xyz"})
         assert response.status_code == 201
         assert response.get_json()["data"]["condition"]["source"]["candidate_index"] == 1
+        assert response.get_json()["data"]["condition"]["source"]["candidate_kind"] == candidate_kind
 
     def test_stale_drone_footage_cannot_be_published_as_current_road_condition(self, client, G, monkeypatch):
         import time

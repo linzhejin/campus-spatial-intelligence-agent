@@ -30,6 +30,7 @@ function managerHarness(sessionSeed = []) {
   let roadEvents = [];
   const calls = [];
   let inferenceReady = false;
+  let optionalModelStatus = { accident: 'not_configured', flood: 'not_configured' };
   let visionStatusFailure = false;
   let sessionExpired = false;
   let deferImpactPreviews = false;
@@ -186,6 +187,7 @@ function managerHarness(sessionSeed = []) {
       else if (url.startsWith('/api/manager/vision-status')) data = {
         inference_ready: inferenceReady, max_media_bytes: 1024, max_image_bytes: 1024,
         max_video_bytes: 4096, upload_chunk_bytes: 512, notice: inferenceReady ? '已就绪' : '尚未就绪',
+        optional_model_status: optionalModelStatus,
       };
       else if (url.startsWith('/api/manager/vision-jobs')) data = { jobs: visionJobs };
       else if (url.startsWith('/api/road-conditions')) data = { conditions: roadEvents };
@@ -197,6 +199,7 @@ function managerHarness(sessionSeed = []) {
     elements, intervalCallbacks, mapListeners, mapLayers, removedMapLayers, requested, calls, document,
     createdObjectUrls, revokedObjectUrls, formEntries, sessionValues, getElement: element,
     setInferenceReady: (value) => { inferenceReady = value; },
+    setOptionalModelStatus: (value) => { optionalModelStatus = value; },
     setVisionJobs: (items) => { visionJobs = items; },
     setRoadEvents: (items) => { roadEvents = items; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
@@ -234,8 +237,9 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261009b/);
-  assert.match(managerHtml, /manager\.js\?v=20261009b/);
+  assert.match(managerHtml, /manager\.css\?v=20261009e/);
+  assert.match(managerHtml, /manager\.js\?v=20261009e/);
+  assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
   assert.match(managerHtml, /id="observation-region-list"/);
@@ -469,6 +473,19 @@ test('road event preview and publication use an action and affected travel modes
   assert.equal(Object.hasOwn(body, 'blocked_modes'), false);
 });
 
+test('manager reports optional model load failures accurately instead of claiming models are configured', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setInferenceReady(true);
+  harness.setOptionalModelStatus({ accident: 'load_failed', flood: 'file_missing' });
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const status = harness.elements.get('vision-status').textContent;
+  assert.match(status, /事故模型权重未能加载/);
+  assert.match(status, /积水模型权重文件缺失/);
+});
+
 test('canceling route picking prevents a late snap response from selecting a road', async () => {
   const harness = managerHarness();
   await flush();
@@ -627,7 +644,8 @@ test('completed image jobs show vehicle counts and safely render detector boxes'
   const summary = card.children.find((node) => node.className === 'vision-metrics');
   const summaryText = summary.children.map((node) => node.textContent).join(' ');
   assert.match(summaryText, /检出车辆 2/);
-  assert.match(summaryText, /当前没有事故与积水识别模型/);
+  assert.match(summaryText, /事故场景模型 未启用/);
+  assert.match(summaryText, /路面积水分割模型 未启用/);
 });
 
 function descendants(node) {
@@ -806,6 +824,55 @@ test('review of multiple visual candidates records the selected item and human n
   assert.ok(posted);
   assert.equal(JSON.parse(posted.options.body).status, 'confirmed');
   assert.equal(JSON.parse(posted.options.body).note, note.value);
+});
+
+test('flood candidates show their limits and expose per-candidate review', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'job-flood', status: 'needs_review', media_kind: 'image', original_name: '雨后道路.png',
+    result: { candidates: [{
+      kind: 'possible_flooding', confidence: 0.82,
+      reason: '圈选路面内出现疑似淹水像素。',
+      evidence: { summary: { max_flooded_road_area_ratio: 0.27, outline_polygons: [] } },
+    }] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const card = harness.elements.get('vision-jobs').children[0];
+  const cardText = descendants(card).map((node) => node.textContent || '').join(' ');
+  assert.match(cardText, /疑似道路积水/);
+  assert.match(cardText, /27%/);
+  assert.match(cardText, /不是水深或实际淹水面积/);
+  assert.equal(descendants(card).filter((node) => node.tagName === 'button' && node.textContent === '确认此候选').length, 1);
+});
+
+test('video candidate cards play their bounded manager-only evidence clip', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: '12345678-1234-4234-8234-123456789abc', status: 'needs_review', media_kind: 'video',
+    original_name: '巡查视频.mp4',
+    media_url: '/private/original',
+    result: { candidates: [{
+      kind: 'possible_congestion', confidence: 0.74,
+      evidence: {
+        segments: [{ start_seconds: 12, end_seconds: 18 }],
+        clips: [{ media_url: '/api/manager/vision-jobs/12345678-1234-4234-8234-123456789abc/media?clip=0:0', start_seconds: 10, end_seconds: 20 }],
+      },
+    }] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const card = harness.elements.get('vision-jobs').children[0];
+  const videos = descendants(card).filter((node) => node.tagName === 'video');
+  const evidenceVideo = videos.find((node) => node.src.endsWith('?clip=0:0'));
+  assert.ok(evidenceVideo);
+  assert.equal(evidenceVideo.controls, true);
+  assert.equal(evidenceVideo.preload, 'metadata');
+  assert.match(descendants(card).map((node) => node.textContent || '').join(' '), /证据片段/);
 });
 
 test('periodic updates preserve an unfinished vision review note and its focus', async () => {

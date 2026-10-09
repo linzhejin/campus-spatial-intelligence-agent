@@ -2,18 +2,23 @@
 from __future__ import annotations
 
 import os
+import logging
+import math
 import time
 from pathlib import Path
 from typing import Any
 
 import config
-from vision.analysis import VEHICLE_LABELS, analyze_observations
+from vision.analysis import (
+    VEHICLE_LABELS, analyze_observations, build_specialized_candidates,
+)
 
 
 VISDRONE_CLASSES = (
     "pedestrian", "people", "bicycle", "car", "van", "truck",
     "tricycle", "awning-tricycle", "bus", "motor", "others",
 )
+logger = logging.getLogger(__name__)
 MAX_PREVIEW_DETECTIONS = 250
 
 
@@ -35,6 +40,7 @@ class OnnxDetector:
 
     def __init__(self, model_path: str, *, session=None,
                  confidence_threshold: float | None = None,
+                 tracking_low_confidence_threshold: float | None = None,
                  model_id: str | None = None, model_version: str | None = None):
         if session is None and (not model_path or not Path(model_path).is_file()):
             raise VisionConfigurationError("VISION_MODEL_PATH 未配置或 ONNX 权重文件不存在")
@@ -67,6 +73,17 @@ class OnnxDetector:
         )
         if not 0.0 <= self.confidence_threshold <= 1.0:
             raise VisionConfigurationError("VISION_CONFIDENCE_THRESHOLD 必须介于 0 和 1 之间")
+        self.tracking_low_confidence_threshold = (
+            float(tracking_low_confidence_threshold)
+            if tracking_low_confidence_threshold is not None
+            else float(getattr(config, "VISION_TRACKING_MIN_CONFIDENCE", os.getenv(
+                "VISION_TRACKING_MIN_CONFIDENCE", "0.1",
+            )))
+        )
+        if not 0.0 <= self.tracking_low_confidence_threshold <= self.confidence_threshold:
+            raise VisionConfigurationError(
+                "VISION_TRACKING_MIN_CONFIDENCE 必须介于 0 和 VISION_CONFIDENCE_THRESHOLD 之间"
+            )
 
         try:
             inputs = {item.name: item for item in session.get_inputs()}
@@ -98,7 +115,6 @@ class OnnxDetector:
 
     def detect(self, frame, *, tracking: bool = False) -> list[dict[str, Any]]:
         """Return original-frame pixel boxes and normalized VisDrone labels."""
-        del tracking  # Track association is performed after optional camera-motion compensation.
         import cv2
         import numpy as np
 
@@ -138,7 +154,10 @@ class OnnxDetector:
                 continue
             class_index = int(class_id)
             confidence = float(confidence)
-            if class_index < 0 or class_index >= len(VISDRONE_CLASSES) or confidence < self.confidence_threshold:
+            minimum_confidence = (
+                self.tracking_low_confidence_threshold if tracking else self.confidence_threshold
+            )
+            if class_index < 0 or class_index >= len(VISDRONE_CLASSES) or confidence < minimum_confidence:
                 continue
             if not np.isfinite(box).all():
                 continue
@@ -156,15 +175,16 @@ class OnnxDetector:
                 "track_id": None,
             })
         detections.sort(key=lambda item: item["confidence"], reverse=True)
-        return detections[:MAX_PREVIEW_DETECTIONS]
+        return detections
 
     def detect_regions(self, frame, regions: list[dict], *, tracking: bool = False) -> list[dict[str, Any]]:
         """Run high-resolution inference on annotated road/people/parking crops."""
-        del tracking
         height, width = frame.shape[:2]
         crop_boxes = []
         for region in regions or []:
-            if not isinstance(region, dict) or region.get("kind") not in {"vehicle_lane", "pedestrian", "parking"}:
+            if not isinstance(region, dict) or region.get("kind") not in {
+                "vehicle_lane", "pedestrian", "road_surface", "parking",
+            }:
                 continue
             polygon = region.get("polygon")
             if not isinstance(polygon, list) or len(polygon) < 3:
@@ -183,12 +203,12 @@ class OnnxDetector:
             if box not in crop_boxes:
                 crop_boxes.append(box)
         if not crop_boxes:
-            return self.detect(frame, tracking=False)
+            return self.detect(frame, tracking=tracking)
 
         detections = []
         for x1, y1, x2, y2 in crop_boxes:
             crop = frame[y1:y2, x1:x2]
-            for item in self.detect(crop, tracking=False):
+            for item in self.detect(crop, tracking=tracking):
                 shifted = dict(item)
                 bx1, by1, bx2, by2 = map(float, item["box"])
                 shifted["box"] = [bx1 + x1, by1 + y1, bx2 + x1, by2 + y1]
@@ -212,8 +232,6 @@ class OnnxDetector:
                     break
             if not duplicate:
                 deduplicated.append(item)
-            if len(deduplicated) >= MAX_PREVIEW_DETECTIONS:
-                break
         return deduplicated
 
 
@@ -256,7 +274,10 @@ def _estimate_camera_transform(previous_gray, current_gray, cv2, scale: float):
     return full_resolution_matrix.tolist()
 
 
-def _merge_segment_analyses(segments: list[dict]) -> dict:
+def _merge_segment_analyses(segments: list[dict], *, accident_threshold: float = 0.85,
+                            flood_area_threshold: float = 0.08,
+                            accident_model_enabled: bool = False,
+                            flood_model_enabled: bool = False) -> dict:
     """Combine bounded per-segment results without retaining all frame detections."""
     total_frames = sum(item["metrics"].get("frames_analyzed", 0) for item in segments)
     if total_frames <= 0:
@@ -268,6 +289,8 @@ def _merge_segment_analyses(segments: list[dict]) -> dict:
     classes_peak: dict[str, int] = {}
     tracked = stationary = valid_transitions = transitions = 0
     candidates_by_kind: dict[str, list[dict]] = {}
+    specialized_observations: list[dict] = []
+    specialized_frame_times: set[float] = set()
     for segment in segments:
         segment_metrics = segment["metrics"]
         count = segment_metrics.get("frames_analyzed", 0)
@@ -291,6 +314,17 @@ def _merge_segment_analyses(segments: list[dict]) -> dict:
                 "start_seconds": segment["start_seconds"],
                 "end_seconds": segment["end_seconds"],
             })
+        observations = segment.get("specialized_observations", [])
+        if isinstance(observations, list):
+            specialized_observations.extend(
+                item for item in observations if isinstance(item, dict)
+            )
+            specialized_frame_times.update(
+                float(item["time_seconds"]) for item in observations
+                if isinstance(item, dict)
+                and isinstance(item.get("time_seconds"), (int, float))
+                and not isinstance(item.get("time_seconds"), bool)
+            )
     for key in weighted_keys:
         metrics[key] = round(metrics[key] / total_frames, 4 if "ratio" in key else 2)
     for label in classes_mean:
@@ -307,11 +341,17 @@ def _merge_segment_analyses(segments: list[dict]) -> dict:
                 "occurrences": len(evidence_segments),
                 "segments": evidence_segments[:200],
                 "segments_truncated": len(evidence_segments) > 200,
+                "summary": strongest.get("evidence", {}).get("summary", {}),
             },
             "review_required": True,
             "auto_publish": False,
             "status": "pending_review",
         })
+    candidates.extend(build_specialized_candidates(
+        specialized_observations, sample_interval_s=1.0,
+        accident_threshold=accident_threshold,
+        flood_area_threshold=flood_area_threshold,
+    ))
     stabilized = all(item.get("safety", {}).get("camera_stabilized_assumed") for item in segments)
     motion_ready = stabilized or (transitions > 0 and ratio >= 0.8)
     return {
@@ -333,21 +373,92 @@ def _merge_segment_analyses(segments: list[dict]) -> dict:
                 else "camera_motion_uncompensated"
             ),
             "analysis_segments": len(segments),
+            "specialized_frames_analyzed": len(specialized_frame_times),
         },
         "candidates": candidates,
         "safety": {
             "requires_human_review": True,
             "camera_motion_compensated": bool(motion_ready and not stabilized),
             "camera_stabilized_assumed": stabilized,
-            "accident_recognition_supported": False,
+            "accident_recognition_supported": accident_model_enabled,
+            "flood_segmentation_supported": flood_model_enabled,
             "automatically_changes_routing": False,
         },
     }
 
 
+def _region_crop(frame, region: dict):
+    height, width = frame.shape[:2]
+    points = region.get("polygon") or []
+    xs = [float(point[0]) for point in points]
+    ys = [float(point[1]) for point in points]
+    x1 = max(0, min(width - 1, int(min(xs) * width)))
+    y1 = max(0, min(height - 1, int(min(ys) * height)))
+    x2 = max(x1 + 1, min(width, int(max(xs) * width + 0.999)))
+    y2 = max(y1 + 1, min(height, int(max(ys) * height + 0.999)))
+    return frame[y1:y2, x1:x2]
+
+
+def _specialized_predictions(frame, time_seconds, regions, accident_model, flood_segmenter):
+    if accident_model is None and flood_segmenter is None:
+        return [], []
+    observations = []
+    failures = []
+    road_regions = [region for region in regions or []
+                    if isinstance(region, dict) and region.get("kind") in {"vehicle_lane", "road_surface"}]
+    if accident_model is not None and road_regions:
+        region = next((item for item in road_regions if item.get("kind") == "vehicle_lane"), road_regions[0])
+        try:
+            prediction = accident_model.predict(_region_crop(frame, region))
+            observations.append({
+                "time_seconds": float(time_seconds),
+                "traffic_accident_probability": prediction["traffic_accident_probability"],
+                "accident_model_id": prediction["model_id"],
+                "region_id": str(region.get("id") or "road"),
+            })
+        except Exception as error:
+            logger.exception("Optional accident model inference failed")
+            failures.append({"model": "accident", "error_type": type(error).__name__})
+    if flood_segmenter is not None:
+        for region in regions or []:
+            if not isinstance(region, dict) or region.get("kind") != "road_surface":
+                continue
+            try:
+                prediction = flood_segmenter.predict(frame, region)
+                if prediction is not None:
+                    observations.append({"time_seconds": float(time_seconds), **prediction})
+            except Exception as error:
+                logger.exception("Optional flood segmentation inference failed")
+                failures.append({"model": "flood", "error_type": type(error).__name__})
+    return observations, failures
+
+
+def _compact_specialized_observations(observations: list[dict]) -> list[dict]:
+    """Keep temporal scores but only one largest flood outline per road/segment."""
+    strongest_outline = {}
+    for index, item in enumerate(observations):
+        ratio = item.get("flooded_road_area_ratio")
+        outlines = item.get("outline_polygons")
+        if (not isinstance(ratio, (int, float)) or isinstance(ratio, bool)
+                or not math.isfinite(float(ratio)) or not outlines):
+            continue
+        key = str(item.get("region_id") or "road-surface")
+        if key not in strongest_outline or ratio > strongest_outline[key][0]:
+            strongest_outline[key] = (float(ratio), index)
+    keep_indices = {value[1] for value in strongest_outline.values()}
+    compacted = []
+    for index, item in enumerate(observations):
+        copied = dict(item)
+        if "flooded_road_area_ratio" in copied and index not in keep_indices:
+            copied["outline_polygons"] = []
+        compacted.append(copied)
+    return compacted
+
+
 def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | None,
                   camera_stabilized: bool = False,
-                  *, detector=None, regions: list[dict] | None = None,
+                  *, detector=None, accident_model=None, flood_segmenter=None,
+                  regions: list[dict] | None = None,
                   progress_callback=None, resume_state: dict | None = None) -> dict:
     """Analyze all sampled frames in bounded chunks and retain resumable review evidence."""
     path = Path(media_path)
@@ -358,6 +469,9 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
         model_id=getattr(config, "VISION_MODEL_ID", "visdrone-rtdetrv4-s"),
         model_version=getattr(config, "VISION_MODEL_REVISION", "unspecified"),
     )
+    requested_accident_model = accident_model
+    requested_flood_segmenter = flood_segmenter
+    optional_model_errors: dict[str, str] = {}
     started = time.monotonic()
     try:
         import cv2
@@ -374,6 +488,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
     fps = None
     total_frames = None
     image_detections = None
+    specialized_observations: list[dict] = []
     if media_kind == "image":
         try:
             from PIL import Image
@@ -397,6 +512,21 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             [image_detections], frame_width=width,
             frame_height=height, camera_stabilized=True, regions=regions,
         )
+        specialized_observations, failures = _specialized_predictions(
+            frame, 0.0, regions, accident_model, flood_segmenter,
+        )
+        optional_model_errors.update({item["model"]: item["error_type"] for item in failures})
+        analysis["candidates"].extend(build_specialized_candidates(
+            specialized_observations, sample_interval_s=1.0, single_image=True,
+            accident_threshold=getattr(accident_model, "threshold", 0.85),
+            flood_area_threshold=getattr(flood_segmenter, "min_area_ratio", 0.08),
+        ))
+        analysis["safety"]["accident_recognition_supported"] = (
+            accident_model is not None and "accident" not in optional_model_errors
+        )
+        analysis["safety"]["flood_segmentation_supported"] = (
+            flood_segmenter is not None and "flood" not in optional_model_errors
+        )
         completed_segments = [{"start_seconds": 0.0, "end_seconds": 0.0, **analysis}]
     elif media_kind == "video":
         capture = cv2.VideoCapture(str(path))
@@ -413,6 +543,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             target_fps = max(0.1, float(getattr(config, "VISION_SAMPLE_FPS", 5)))
             stride = max(1, round(fps / target_fps))
             sample_interval = stride / fps
+            specialized_stride = max(stride, round(fps))
             segment_limit = max(5, int(getattr(config, "VISION_SEGMENT_FRAMES", config.VISION_MAX_VIDEO_FRAMES)))
             frame_index = int((resume_state or {}).get("next_frame_index", 0))
             if frame_index and hasattr(capture, "set"):
@@ -421,7 +552,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             previous_scale = 1.0
 
             def flush_segment(next_frame_index: int):
-                nonlocal frames, transforms, frame_indices
+                nonlocal frames, transforms, frame_indices, specialized_observations
                 if not frames:
                     return
                 segment_start = frame_indices[0] / fps
@@ -432,10 +563,19 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                     camera_stabilized=camera_stabilized,
                     frame_transforms=transforms,
                     regions=regions,
+                    tracking_high_threshold=getattr(detector, "confidence_threshold", 0.369),
+                    tracking_low_threshold=getattr(detector, "tracking_low_confidence_threshold", 0.1),
                 )
+                result["safety"]["accident_recognition_supported"] = accident_model is not None
+                result["safety"]["flood_segmentation_supported"] = flood_segmenter is not None
+                result["metrics"]["specialized_frames_analyzed"] = len({
+                    item["time_seconds"] for item in specialized_observations
+                })
+                segment_observations = _compact_specialized_observations(specialized_observations)
                 completed_segments.append({
                     "start_seconds": round(segment_start, 3),
                     "end_seconds": round(segment_end, 3),
+                    "specialized_observations": segment_observations,
                     **result,
                 })
                 sampled_count = sum(
@@ -461,6 +601,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                 frames = []
                 transforms = [None]
                 frame_indices = []
+                specialized_observations = []
 
             try:
                 while True:
@@ -473,11 +614,22 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                         height, width = frame.shape[:2]
                         _validate_frame_dimensions(width, height)
                         frame_detections = (
-                            detector.detect_regions(frame, regions) if regions and hasattr(detector, "detect_regions")
-                            else detector.detect(frame, tracking=False)
+                            detector.detect_regions(frame, regions, tracking=True)
+                            if regions and hasattr(detector, "detect_regions")
+                            else detector.detect(frame, tracking=True)
                         )
                         frames.append(frame_detections)
                         frame_indices.append(frame_index)
+                        if (accident_model is not None or flood_segmenter is not None) and frame_index % specialized_stride == 0:
+                            observations, failures = _specialized_predictions(
+                                frame, frame_index / fps, regions,
+                                None if "accident" in optional_model_errors else accident_model,
+                                None if "flood" in optional_model_errors else flood_segmenter,
+                            )
+                            specialized_observations.extend(observations)
+                            optional_model_errors.update({
+                                item["model"]: item["error_type"] for item in failures
+                            })
                         if len(frames) > 1 and camera_stabilized:
                             transforms.append([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
                         elif len(frames) > 1:
@@ -501,7 +653,19 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                 capture.release()
             if not completed_segments:
                 raise ValueError("视频中没有可读取的画面")
-            analysis = _merge_segment_analyses(completed_segments)
+            analysis = _merge_segment_analyses(
+                completed_segments,
+                accident_threshold=getattr(accident_model, "threshold", 0.85),
+                flood_area_threshold=getattr(flood_segmenter, "min_area_ratio", 0.08),
+                accident_model_enabled=accident_model is not None,
+                flood_model_enabled=flood_segmenter is not None,
+            )
+            analysis["safety"]["accident_recognition_supported"] = (
+                accident_model is not None and "accident" not in optional_model_errors
+            )
+            analysis["safety"]["flood_segmentation_supported"] = (
+                flood_segmenter is not None and "flood" not in optional_model_errors
+            )
             analyzed_frames = analysis["metrics"]["frames_analyzed"]
             last_sampled = max((segment["end_seconds"] for segment in completed_segments), default=0.0)
             observed_span = min(duration_seconds or last_sampled + sample_interval,
@@ -529,10 +693,30 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
         "id": getattr(detector, "model_id", "injected-detector"),
         "version": getattr(detector, "model_version", "unspecified"),
         "confidence_threshold": getattr(detector, "confidence_threshold", None),
+        "tracking": {
+            "algorithm": "bytetrack_style_two_stage_iou",
+            "high_confidence_threshold": getattr(detector, "confidence_threshold", 0.369),
+            "low_confidence_threshold": getattr(detector, "tracking_low_confidence_threshold", 0.1),
+        },
         "classes": list(VISDRONE_CLASSES),
         "dataset_source": "VisDrone2019-DET (AISKYEYE team, Tianjin University)",
         "dataset_license": "CC BY-NC-SA 3.0; non-commercial academic research use",
         "weights_distributed_by_application": False,
+        "accident_model": ({
+            "id": getattr(requested_accident_model, "model_id", "unknown"),
+            "version": getattr(requested_accident_model, "model_version", "unverified"),
+            "classes": ["collapsed_building", "fire", "flooded_areas", "normal", "traffic_incident"],
+            "spatial_precision": "scene_classification_only",
+            "runtime_status": "inference_failed" if "accident" in optional_model_errors else "loaded",
+        } if requested_accident_model is not None else None),
+        "flood_model": ({
+            "id": getattr(requested_flood_segmenter, "model_id", "unknown"),
+            "version": getattr(requested_flood_segmenter, "model_version", "unverified"),
+            "classes": ["flooded_road"],
+            "roi_kind": "road_surface",
+            "physical_area_or_depth": False,
+            "runtime_status": "inference_failed" if "flood" in optional_model_errors else "loaded",
+        } if requested_flood_segmenter is not None else None),
     }
     preview_detections = []
     if media_kind == "image":
@@ -549,6 +733,10 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             "source_fps": round(fps, 3) if fps else None,
         },
         "model": model_info,
+        "optional_model_errors": [
+            {"model": model, "error_type": error_type}
+            for model, error_type in sorted(optional_model_errors.items())
+        ],
         "preview_detections": preview_detections,
         "anchor_gcj": anchor_gcj,
         "location_precision": "operator_selected_area_only" if has_anchor else "not_provided",

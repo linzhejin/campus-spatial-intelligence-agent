@@ -2,7 +2,7 @@
   'use strict';
 
   var legacyDismissedVisionStorageKey = 'managerDismissedVisionJobs';
-  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, sourceCandidateIndex: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxImageBytes: 24 * 1024 * 1024, maxVideoBytes: 1024 * 1024 * 1024, uploadChunkBytes: 8 * 1024 * 1024, inferenceReady: false, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, observationRegions: [], currentRegionPoints: [], drawingRegion: false, mediaObjectUrl: null, poll: null };
+  var state = { csrf: '', map: null, eventLayers: null, visionLayers: null, preview: null, anchorMarker: null, pickFeedbackLayers: [], pickRequestId: 0, picked: null, anchor: null, sourceJobId: null, sourceCandidateIndex: null, reviewDrafts: {}, legacyDismissedVisionJobs: loadLegacyDismissedVisionJobs(), deletedVisionJobs: new Set(), visionDeleteBusy: new Set(), legacyDeleteBusy: false, picking: false, pickPurpose: null, maxImageBytes: 24 * 1024 * 1024, maxVideoBytes: 1024 * 1024 * 1024, uploadChunkBytes: 8 * 1024 * 1024, inferenceReady: false, visionCapabilities: {}, visionStatusBusy: false, visionUploadBusy: false, mediaPreviewUrl: '', mediaInvalidReason: '', impactPreviewRequestId: 0, observationRegions: [], currentRegionPoints: [], drawingRegion: false, mediaObjectUrl: null, poll: null };
   var pendingVisionUploadKey = 'whu-walker-pending-vision-video-v1';
   var byId = function (id) { return document.getElementById(id); };
   var message = function (id, text, good) {
@@ -163,7 +163,7 @@
   }
 
   function regionKindLabel(kind) {
-    return { vehicle_lane: '机动车道', pedestrian: '人行区域', parking: '停车区域', exclude: '忽略区域' }[kind] || '观察区域';
+    return { vehicle_lane: '机动车道', pedestrian: '人行区域', road_surface: '路面积水检查', parking: '停车区域', exclude: '忽略区域' }[kind] || '观察区域';
   }
 
   function drawObservationRegions() {
@@ -816,7 +816,17 @@
     state.visionStatusBusy = true;
     try {
       var data = await request('/api/manager/vision-status', 'GET');
-      byId('vision-status').textContent = data.notice + ' 图片不超过 ' + Math.round((data.max_image_bytes || data.max_media_bytes || state.maxImageBytes) / (1024 * 1024)) + ' MB；视频不超过 ' + Math.round((data.max_video_bytes || state.maxVideoBytes) / (1024 * 1024)) + ' MB，支持分块续传。';
+      state.visionCapabilities = data.capabilities || {};
+      var optionalModels = data.optional_model_status || {};
+      function modelLabel(status) {
+        return {
+          ready: '已启用', not_configured: '未配置', file_missing: '权重文件缺失',
+          worker_not_ready: '视觉进程未就绪', load_failed: '权重未能加载',
+        }[status] || '状态未知';
+      }
+      var modelState = '事故模型' + modelLabel(optionalModels.accident) +
+        ' · 积水模型' + modelLabel(optionalModels.flood);
+      byId('vision-status').textContent = data.notice + ' ' + modelState + '。图片不超过 ' + Math.round((data.max_image_bytes || data.max_media_bytes || state.maxImageBytes) / (1024 * 1024)) + ' MB；视频不超过 ' + Math.round((data.max_video_bytes || state.maxVideoBytes) / (1024 * 1024)) + ' MB，支持分块续传。';
       state.maxImageBytes = data.max_image_bytes || data.max_media_bytes || state.maxImageBytes;
       state.maxVideoBytes = data.max_video_bytes || state.maxVideoBytes;
       state.uploadChunkBytes = data.upload_chunk_bytes || state.uploadChunkBytes;
@@ -837,7 +847,8 @@
     return {
       possible_congestion: '可能存在车辆排队/低速聚集',
       possible_crowding: '人行区域人群聚集候选',
-      possible_accident: '疑似事故类别目标',
+      possible_accident: '疑似事故场景（位置待复核）',
+      possible_flooding: '疑似道路积水',
       vehicle_cluster_review: '车辆密集观察',
     }[kind] || '影像候选';
   }
@@ -889,17 +900,46 @@
       });
       stage.appendChild(svg);
     }
+    var floodCandidates = Array.isArray(result.candidates) ? result.candidates.filter(function (item) {
+      return item && item.kind === 'possible_flooding';
+    }) : [];
+    floodCandidates.forEach(function (item) {
+      var outlines = item.evidence && item.evidence.summary && item.evidence.summary.outline_polygons;
+      if (!Array.isArray(outlines) || !outlines.length || width <= 0 || height <= 0) return;
+      var overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      overlay.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+      overlay.setAttribute('preserveAspectRatio', 'none');
+      overlay.setAttribute('aria-label', '疑似积水像素轮廓，仅供管理员复核');
+      outlines.slice(0, 8).forEach(function (polygon) {
+        if (!Array.isArray(polygon) || polygon.length < 3) return;
+        var points = polygon.map(function (point) {
+          if (!Array.isArray(point) || point.length !== 2) return null;
+          var x = Number(point[0]), y = Number(point[1]);
+          if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1) return null;
+          return (x * width) + ',' + (y * height);
+        });
+        if (points.some(function (point) { return point === null; })) return;
+        var shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        shape.setAttribute('points', points.join(' '));
+        shape.setAttribute('class', 'flood-mask-outline');
+        overlay.appendChild(shape);
+      });
+      if (overlay.childNodes && overlay.childNodes.length) stage.appendChild(overlay);
+    });
     card.appendChild(stage);
     return null;
   }
 
   function appendCandidateEvidence(candidate, mediaElement, mediaKind, target) {
-    var segments = candidate && candidate.evidence && Array.isArray(candidate.evidence.segments)
-      ? candidate.evidence.segments : [];
-    if (mediaKind !== 'video' || !mediaElement || !segments.length) return;
+    var evidence = candidate && candidate.evidence || {};
+    var segments = Array.isArray(evidence.segments) ? evidence.segments : [];
+    var clips = Array.isArray(evidence.clips) ? evidence.clips.slice(0, 3) : [];
+    if (mediaKind !== 'video' || (!mediaElement && !clips.length) || (!segments.length && !clips.length)) return;
     var details = document.createElement('details'); details.className = 'candidate-evidence';
     var summary = document.createElement('summary');
-    summary.textContent = '查看证据时段（' + segments.length + ' 段）';
+    summary.textContent = clips.length
+      ? '查看证据（' + segments.length + ' 个时段 · ' + clips.length + ' 段可播放片段）'
+      : '查看证据时段（' + segments.length + ' 段）';
     details.appendChild(summary);
     var list = document.createElement('div'); list.className = 'candidate-evidence-list';
     segments.forEach(function (segment, index) {
@@ -918,10 +958,46 @@
       });
       list.appendChild(jump);
     });
+    clips.forEach(function (clip, index) {
+      var url = String(clip && clip.media_url || '');
+      if (!/^\/api\/manager\/vision-jobs\/[a-f0-9-]+\/media\?clip=\d{1,4}:\d{1,2}$/i.test(url)) return;
+      var start = Number(clip.start_seconds), end = Number(clip.end_seconds);
+      var video = document.createElement('video');
+      video.controls = true; video.preload = 'metadata'; video.playsInline = true;
+      video.className = 'candidate-evidence-clip'; video.src = url;
+      video.setAttribute('aria-label', '识别证据片段 ' + (index + 1));
+      list.appendChild(video);
+      var caption = document.createElement('small'); caption.className = 'candidate-evidence-caption';
+      caption.textContent = Number.isFinite(start) && Number.isFinite(end) && end >= start
+        ? '证据片段 ' + (index + 1) + ' · 原片 ' + start.toFixed(1) + '–' + end.toFixed(1) + ' 秒'
+        : '证据片段 ' + (index + 1);
+      list.appendChild(caption);
+    });
     if (list.children.length) {
       details.appendChild(list);
       target.appendChild(details);
     }
+  }
+
+  function appendCandidateSummary(candidate, mediaKind, target) {
+    var evidence = candidate && candidate.evidence || {};
+    var summary = evidence.summary || {};
+    var line = '';
+    if (candidate.kind === 'possible_accident') {
+      var accidentScore = Number(summary.peak_traffic_accident_probability);
+      line = '模型在 ' + Number(summary.supporting_frames || 0) + ' 帧中给出事故场景线索' +
+        (Number.isFinite(accidentScore) ? '，最高分 ' + Math.round(accidentScore * 100) + '%' : '') +
+        '；此模型不能定位事故车辆。';
+    } else if (candidate.kind === 'possible_flooding') {
+      var ratio = Number(summary.max_flooded_road_area_ratio);
+      line = '圈选路面中疑似淹水像素约占 ' + (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
+        '；这是画面比例，不是水深或实际淹水面积。' +
+        (mediaKind === 'image' && summary.outline_polygons && summary.outline_polygons.length ? ' 原图已叠加疑似轮廓。' : '');
+    }
+    if (!line) return;
+    var note = document.createElement('small'); note.className = 'candidate-evidence-caption';
+    note.textContent = line;
+    target.appendChild(note);
   }
 
   function appendVisionMetrics(card, result, mediaKind) {
@@ -952,8 +1028,21 @@
       summary.appendChild(list);
     }
     var model = result.model || {};
+    var safety = result.safety || {};
+    var accident = model.accident_model;
+    var flood = model.flood_model;
+    var optionalErrors = Array.isArray(result.optional_model_errors) ? result.optional_model_errors : [];
+    function optionalModelLabel(name, record, enabled) {
+      if (optionalErrors.some(function (item) { return item && item.model === name; }) ||
+          record && record.runtime_status === 'inference_failed') return '推理失败';
+      if (!enabled) return '未启用';
+      return String(record && record.version || '已加载');
+    }
     var version = document.createElement('small');
-    version.textContent = '模型 ' + String(model.id || '未记录') + ' · 版本 ' + String(model.version || '未记录') + ' · 识别框不是地面坐标；当前没有事故与积水识别模型。';
+    version.textContent = '人车模型 ' + String(model.id || '未记录') + ' · ' + String(model.version || '未记录') +
+      '；事故场景模型 ' + optionalModelLabel('accident', accident, safety.accident_recognition_supported) +
+      '；路面积水分割模型 ' + optionalModelLabel('flood', flood, safety.flood_segmentation_supported) +
+      '。识别框不是地面坐标，事故分类不能定位事故车辆。';
     summary.appendChild(version);
     card.appendChild(summary);
   }
@@ -1065,6 +1154,7 @@
         else if (legacyReview) titleNode.textContent += job.review_status === 'confirmed' ? ' · 已确认' : ' · 已排除';
         var why = document.createElement('p'); why.textContent = item.reason || '请结合原始影像复核。';
         candidate.append(titleNode, why);
+        appendCandidateSummary(item, job.media_kind, candidate);
         appendCandidateEvidence(item, previewMedia, job.media_kind, candidate);
         if (candidateReview && candidateReview.note) {
           var reviewText = document.createElement('p'); reviewText.textContent = '复核记录：' + candidateReview.note; candidate.appendChild(reviewText);

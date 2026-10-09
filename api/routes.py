@@ -75,6 +75,7 @@ _ADMIN_POLL_PATHS = {"/api/manager/vision-status", "/api/manager/vision-jobs"}
 _ADMIN_PASSIVE_ENDPOINTS = {"api.manager_vision_media"}
 _VISION_REVIEW_CANDIDATE_KINDS = {
     "vehicle_cluster_review", "possible_congestion", "possible_crowding", "possible_accident",
+    "possible_flooding",
 }
 _VISION_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 _VISION_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
@@ -101,7 +102,7 @@ def _parse_vision_observation_regions(value) -> list[dict]:
             raise ValueError("观察区域数据格式无效。") from error
     if not isinstance(value, list) or len(value) > 24:
         raise ValueError("最多可以标注 24 个观察区域。")
-    allowed_kinds = {"vehicle_lane", "pedestrian", "parking", "exclude"}
+    allowed_kinds = {"vehicle_lane", "pedestrian", "road_surface", "parking", "exclude"}
     normalized = []
     for index, region in enumerate(value):
         if not isinstance(region, dict) or region.get("kind") not in allowed_kinds:
@@ -2347,6 +2348,25 @@ def _public_vision_job(job: dict) -> dict:
                if key not in {"media_path", "sha256", "checkpoint"}}
     if visible.get("job_id"):
         visible["media_url"] = f"/api/manager/vision-jobs/{visible['job_id']}/media"
+        result = visible.get("result")
+        if isinstance(result, dict):
+            result = json.loads(json.dumps(result))
+            visible["result"] = result
+            candidates = result.get("candidates")
+            if isinstance(candidates, list):
+                for candidate_index, candidate in enumerate(candidates):
+                    evidence = candidate.get("evidence") if isinstance(candidate, dict) else None
+                    clips = evidence.get("clips") if isinstance(evidence, dict) else None
+                    if not isinstance(clips, list):
+                        continue
+                    for clip_index, clip in enumerate(clips):
+                        expected = f"{visible['job_id']}-evidence-c{candidate_index}-s{clip_index}.webm"
+                        if isinstance(clip, dict) and clip.get("filename") == expected:
+                            clip["media_url"] = (
+                                f"/api/manager/vision-jobs/{visible['job_id']}/media"
+                                f"?clip={candidate_index}:{clip_index}"
+                            )
+                            clip.pop("filename", None)
     return visible
 
 
@@ -2378,6 +2398,9 @@ def _purge_tombstoned_vision_jobs(database_url, jobs: list[dict]) -> int:
             continue
         try:
             media_path.unlink(missing_ok=True)
+            for clip_path in upload_dir.glob(f"{job_id}-evidence-c*-s*.webm"):
+                if clip_path.parent == upload_dir and not clip_path.is_symlink():
+                    clip_path.unlink(missing_ok=True)
         except OSError:
             logger.exception("删除影像文件失败，记录保持隐藏并等待重试: job_id=%s", job_id)
             pending_count += 1
@@ -2414,6 +2437,42 @@ def _vision_inference_readiness(database_url=None) -> tuple[bool, bool, bool, bo
     return weights_ready and dependencies_ready and worker_ready, weights_ready, dependencies_ready, worker_ready
 
 
+def _vision_worker_capabilities(database_url=None) -> dict:
+    from storage import database, vision_repository
+
+    try:
+        database.initialize(database_url)
+        worker = vision_repository.ready_worker_status(database_url)
+        detail = json.loads(worker["status_detail"]) if worker and worker.get("status_detail") else {}
+        return detail if isinstance(detail, dict) else {}
+    except Exception:
+        logger.info("Optional vision capability status is unavailable", exc_info=True)
+        return {}
+
+
+def _vision_optional_model_ready(path_key: str, capability_key: str,
+                                 inference_ready: bool, worker_capabilities: dict) -> bool:
+    model_path = getattr(config, path_key, "")
+    return bool(
+        inference_ready and model_path and Path(model_path).is_file()
+        and worker_capabilities.get(capability_key) is True
+    )
+
+
+def _vision_optional_model_status(path_key: str, capability_key: str,
+                                  inference_ready: bool, worker_capabilities: dict) -> str:
+    model_path = getattr(config, path_key, "")
+    if not model_path:
+        return "not_configured"
+    if not Path(model_path).is_file():
+        return "file_missing"
+    if not inference_ready:
+        return "worker_not_ready"
+    if worker_capabilities.get(capability_key) is True:
+        return "ready"
+    return "load_failed"
+
+
 @api_bp.route("/manager/vision-status", methods=["GET"])
 def manager_vision_status():
     auth_error = _require_admin()
@@ -2422,6 +2481,7 @@ def manager_vision_status():
     inference_ready, weights_ready, dependencies_ready, worker_ready = _vision_inference_readiness(
         current_app.config.get("DATABASE_URL"),
     )
+    worker_capabilities = _vision_worker_capabilities(current_app.config.get("DATABASE_URL")) if worker_ready else {}
     return _ok({
         "upload_enabled": inference_ready,
         "inference_ready": inference_ready,
@@ -2436,14 +2496,30 @@ def manager_vision_status():
             "aerial_vehicle_detection": inference_ready,
             "congestion_candidate_review": inference_ready,
             "pedestrian_region_counts": inference_ready,
-            "accident_recognition_supported": False,
-            "flood_segmentation_supported": False,
+            "accident_recognition_supported": _vision_optional_model_ready(
+                "VISION_ACCIDENT_MODEL_PATH", "accident_recognition_supported",
+                inference_ready, worker_capabilities,
+            ),
+            "flood_segmentation_supported": _vision_optional_model_ready(
+                "VISION_FLOOD_MODEL_PATH", "flood_segmentation_supported",
+                inference_ready, worker_capabilities,
+            ),
             "automatic_routing_updates": False,
         },
+        "optional_model_status": {
+            "accident": _vision_optional_model_status(
+                "VISION_ACCIDENT_MODEL_PATH", "accident_recognition_supported",
+                inference_ready, worker_capabilities,
+            ),
+            "flood": _vision_optional_model_status(
+                "VISION_FLOOD_MODEL_PATH", "flood_segmentation_supported",
+                inference_ready, worker_capabilities,
+            ),
+        },
         "notice": (
-            "车辆与行人模型已就绪，可按圈选区域统计并生成待复核线索；事故、积水识别尚无可用模型，影像不会自动改变路线。"
+            "车辆与行人模型已就绪；圈选机动车道、人行区域或路面可限定分析范围，结果只作为待复核线索。"
             if inference_ready else
-            "管理界面已就绪；视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。事故、积水识别尚无可用模型。"
+            "管理界面已就绪；基础视觉模型、依赖或后台工作进程尚未就绪，当前不会接收影像任务。"
         ),
     })
 
@@ -2922,8 +2998,35 @@ def manager_vision_media(job_id):
         return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
     if not job:
         return _err("job_not_found", "影像任务不存在。", 404)
-    path = Path(config.VISION_UPLOAD_DIR).resolve() / job["media_path"]
-    if path.parent != Path(config.VISION_UPLOAD_DIR).resolve() or not path.is_file():
+    root = Path(config.VISION_UPLOAD_DIR).resolve()
+    clip_query = request.args.get("clip")
+    if clip_query is not None:
+        match = re.fullmatch(r"(\d{1,4}):(\d{1,2})", clip_query)
+        if not match:
+            return _err("media_not_found", "影像证据片段不存在。", 404)
+        candidate_index, clip_index = map(int, match.groups())
+        candidates = (job.get("result") or {}).get("candidates")
+        try:
+            clips = candidates[candidate_index]["evidence"]["clips"]
+            clip = clips[clip_index]
+        except (IndexError, KeyError, TypeError):
+            return _err("media_not_found", "影像证据片段不存在。", 404)
+        expected_name = (
+            f"{str(uuid.UUID(job_id))}-evidence-c{candidate_index}-s{clip_index}.webm"
+        )
+        if not isinstance(clip, dict) or clip.get("filename") != expected_name:
+            return _err("media_not_found", "影像证据片段不存在。", 404)
+        path = (root / expected_name).resolve()
+        if path.parent != root or path.is_symlink() or not path.is_file():
+            return _err("media_not_found", "影像证据片段不存在。", 404)
+        return send_file(path, mimetype="video/webm", as_attachment=False,
+                         download_name=f"vision-evidence-{candidate_index}-{clip_index}.webm")
+
+    stored_name = str(job.get("media_path") or "")
+    if not stored_name or Path(stored_name).name != stored_name:
+        return _err("media_not_found", "影像文件不存在。", 404)
+    path = root / stored_name
+    if path.parent != root or path.is_symlink() or not path.is_file():
         return _err("media_not_found", "影像文件不存在。", 404)
     return send_file(path, mimetype=mimetypes.guess_type(job["original_name"])[0],
                      as_attachment=False, download_name=job["original_name"])
