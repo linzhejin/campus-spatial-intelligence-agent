@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#173b35">
   <title>珞珈智行 · 校园运行管理台</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/css/manager.css?v=20261009e">
+  <link rel="stylesheet" href="/css/manager.css?v=20261010a">
   <script src="/js/config.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/js/manager.js?v=20261010b" defer></script>
+  <script src="/js/manager.js?v=20261010c" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -176,6 +176,23 @@
                   <button id="clear-regions" type="button" class="quiet-button">清空区域</button>
                 </div>
                 <div id="observation-region-list" class="observation-region-list" aria-live="polite">尚未圈选区域</div>
+                <div class="vision-scene-tools">
+                  <label>保存为常用观察场景
+                    <input id="vision-scene-name" type="text" maxlength="100" placeholder="例如：工学部东门固定机位">
+                  </label>
+                  <div class="observation-tools">
+                    <button id="save-vision-scene" type="button" class="outline-button">保存当前场景</button>
+                    <button id="refresh-vision-scenes" type="button" class="quiet-button">刷新场景</button>
+                  </div>
+                  <label>复用已保存场景
+                    <select id="vision-scene-select"><option value="">选择观察场景</option></select>
+                  </label>
+                  <div class="observation-tools">
+                    <button id="load-vision-scene" type="button" class="outline-button">检查画面并载入</button>
+                    <button id="delete-vision-scene" type="button" class="quiet-button">删除场景</button>
+                  </div>
+                  <small>场景保存画面指纹、观察区域和道路绑定。视频按首帧比对；指纹只排除明显视角变化，载入后仍请核对圈选区域和道路。</small>
+                </div>
               <small id="observation-region-note" class="stabilization-note">视频中的圈选区域会随无人机移动；镜头改变后请重新圈选。积水分析只在“路面”区域内计算画面占比，不估水深。</small>
               </div>
               <label class="stabilization-option"><input id="camera-stabilized" type="checkbox"> 视频来自固定机位或已完成稳像（可选）</label>

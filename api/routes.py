@@ -66,6 +66,7 @@ from spatial.road_conditions import (
     RoadConditionsUnavailableError,
 )
 from spatial import weather as weather_mod
+from storage import vision_scene_repository
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,137 @@ _VISION_REVIEW_CANDIDATE_KINDS = {
 _VISION_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 _VISION_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
 _VISION_UPLOAD_TTL_SECONDS = 24 * 60 * 60
+_VISION_SCENE_MAX_SIGNATURE_DISTANCE = 8
+_VISION_SCENE_LINKED_REGION_KINDS = {"vehicle_lane", "pedestrian", "road_surface"}
+
+
+class _VisionSceneError(ValueError):
+    def __init__(self, code: str, message: str, status: int = 409):
+        super().__init__(message)
+        self.code = code
+        self.status = status
+
+
+def _valid_scene_anchor(value) -> dict[str, float]:
+    if not isinstance(value, dict):
+        raise ValueError("请先标注影像所在的校园区域。")
+    try:
+        lng, lat = float(value.get("lng")), float(value.get("lat"))
+    except (TypeError, ValueError):
+        raise ValueError("影像区域坐标无效。") from None
+    bbox = config.WHU_BBOX
+    if not (math.isfinite(lng) and math.isfinite(lat)
+            and bbox["west"] - .01 <= lng <= bbox["east"] + .01
+            and bbox["south"] - .01 <= lat <= bbox["north"] + .01):
+        raise ValueError("观察点需要落在武汉大学校园范围附近。")
+    return {"lng": lng, "lat": lat, "crs": "GCJ02"}
+
+
+def _scene_public(scene: dict) -> dict:
+    return {key: value for key, value in scene.items() if key != "created_by"}
+
+
+def _parse_scene_regions(value) -> list[dict]:
+    regions = _parse_vision_observation_regions(value)
+    try:
+        source_regions = json.loads(value) if isinstance(value, str) else value
+    except (TypeError, json.JSONDecodeError):
+        source_regions = []
+    source_by_id = {
+        str(item.get("id")): item for item in source_regions
+        if isinstance(item, dict)
+    } if isinstance(source_regions, list) else {}
+    for region in regions:
+        source = source_by_id.get(region["id"], {})
+        if isinstance(source.get("road_link"), dict):
+            region["road_link"] = source["road_link"]
+        if region["kind"] not in _VISION_SCENE_LINKED_REGION_KINDS:
+            continue
+        point = source.get("road_point_gcj")
+        if not isinstance(point, dict):
+            raise _VisionSceneError(
+                "vision_scene_road_link_required",
+                "机动车道、人行区域和路面分析区都要绑定对应道路。", 400,
+            )
+        try:
+            lng, lat = float(point.get("lng")), float(point.get("lat"))
+        except (TypeError, ValueError):
+            raise _VisionSceneError("vision_scene_road_link_required", "观察区域道路点位无效。", 400) from None
+        if not (math.isfinite(lng) and math.isfinite(lat)):
+            raise _VisionSceneError("vision_scene_road_link_required", "观察区域道路点位无效。", 400)
+        region["road_point_gcj"] = {"lng": lng, "lat": lat}
+    return regions
+
+
+def _resolve_vision_scene(scene_id: str, media_path: Path, media_kind: str, *,
+                          anchor_override=None, camera_stabilized_override=None,
+                          observation_regions_override=None) -> dict:
+    """Load a reusable scene, verify its view signature and re-check each road link."""
+    try:
+        from storage import database
+        from vision.scene_signature import media_signature, signature_hamming_distance
+
+        database_url = current_app.config.get("DATABASE_URL")
+        database.initialize(database_url)
+        scene = vision_scene_repository.get_scene(database_url, scene_id)
+        if not scene:
+            raise _VisionSceneError("vision_scene_not_found", "观察场景不存在，请重新选择场景。", 404)
+        actual_signature = media_signature(media_path, media_kind)
+        distance = signature_hamming_distance(scene["frame_signature"], actual_signature)
+        if distance > _VISION_SCENE_MAX_SIGNATURE_DISTANCE:
+            raise _VisionSceneError(
+                "vision_scene_view_mismatch",
+                f"当前画面与“{scene['name']}”差异较大（指纹差异 {distance}/64），请重新圈选区域或换用匹配机位。",
+            )
+        anchor_gcj = _valid_scene_anchor(anchor_override if anchor_override is not None else scene.get("anchor_gcj"))
+        camera_stabilized = (
+            bool(camera_stabilized_override) if camera_stabilized_override is not None
+            else bool(scene.get("camera_stabilized"))
+        )
+        regions = _parse_scene_regions(
+            observation_regions_override if observation_regions_override is not None
+            else scene.get("observation_regions"),
+        )
+        if not regions:
+            raise _VisionSceneError("vision_scene_regions_required", "观察场景没有可用区域，请重新圈选。", 400)
+        needs_graph = any(region["kind"] in _VISION_SCENE_LINKED_REGION_KINDS for region in regions)
+        graph = _ensure_network()[0] if needs_graph else None
+        for region in regions:
+            if region["kind"] not in _VISION_SCENE_LINKED_REGION_KINDS:
+                continue
+            expected = region.get("road_link") or {}
+            point = region["road_point_gcj"]
+            bbox = config.WHU_BBOX
+            if not (bbox["west"] - .01 <= point["lng"] <= bbox["east"] + .01
+                    and bbox["south"] - .01 <= point["lat"] <= bbox["north"] + .01):
+                raise _VisionSceneError("vision_scene_road_link_required", "观察区域道路点位不在校园范围附近。", 400)
+            current = snap_to_edge(graph, point["lng"], point["lat"])
+            if not current:
+                raise _VisionSceneError("vision_scene_road_stale", "场景绑定的道路已无法匹配，请重新绑定后再用。")
+            expected_edges = expected.get("edges")
+            if not expected_edges or json.dumps(expected_edges, sort_keys=True) != json.dumps(current.get("edges"), sort_keys=True):
+                raise _VisionSceneError("vision_scene_road_stale", "路网已变化，场景中的道路绑定已过期，请重新绑定。")
+            region["road_link"] = {
+                "edges": current.get("edges"), "road_name": current.get("road_name"),
+                "geometry_gcj": current.get("geometry_gcj"),
+                "snap_lng_gcj": current.get("snap_lng_gcj"),
+                "snap_lat_gcj": current.get("snap_lat_gcj"),
+                "dist_m": current.get("dist_m"),
+                "chain_length_m": current.get("chain_length_m"),
+            }
+        return {
+            "scene_id": str(scene["scene_id"]), "anchor_gcj": anchor_gcj,
+            "camera_stabilized": camera_stabilized,
+            "observation_regions": regions,
+            "signature_distance": distance,
+        }
+    except _VisionSceneError:
+        raise
+    except (ValueError, RuntimeError):
+        raise
+    except Exception as error:
+        logger.exception("读取或核对无人机观察场景失败")
+        raise _VisionSceneError("vision_scene_unavailable", "观察场景暂时无法核对，请稍后重试。", 503) from error
 
 
 def _valid_review_only_candidate(candidate) -> bool:
@@ -2521,6 +2653,121 @@ def _vision_optional_model_ready(path_key: str, capability_key: str,
     )
 
 
+@api_bp.route("/manager/vision-scenes", methods=["GET", "POST"])
+def manager_vision_scenes():
+    if request.method == "GET":
+        auth_error = _require_admin()
+        if auth_error:
+            return auth_error
+        try:
+            from storage import database
+            database_url = current_app.config.get("DATABASE_URL")
+            database.initialize(database_url)
+            scenes = vision_scene_repository.list_scenes(database_url)
+            return _ok({"scenes": [_scene_public(scene) for scene in scenes]})
+        except Exception:
+            logger.exception("读取无人机观察场景失败")
+            return _err("vision_scene_unavailable", "观察场景暂时无法读取。", 503)
+
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name") or "").strip()
+    if not 1 <= len(name) <= 100:
+        return _err("invalid_scene_name", "场景名称需要为 1 到 100 个字符。", 400)
+    update_scene_id = str(body.get("scene_id") or "").strip() or None
+    if update_scene_id:
+        try:
+            uuid.UUID(update_scene_id)
+        except (ValueError, TypeError):
+            return _err("vision_scene_not_found", "观察场景不存在，请刷新场景列表。", 404)
+    try:
+        from storage import database
+        from vision.scene_signature import normalize_signature
+        anchor_gcj = _valid_scene_anchor(body.get("anchor_gcj"))
+        signature = normalize_signature(body.get("frame_signature"))
+        regions = _parse_scene_regions(body.get("observation_regions"))
+    except _VisionSceneError as error:
+        return _err(error.code, str(error), error.status)
+    except (TypeError, ValueError) as error:
+        return _err("invalid_observation_metadata", str(error), 400)
+    linked_regions = [region for region in regions
+                      if region["kind"] in _VISION_SCENE_LINKED_REGION_KINDS]
+    if not regions:
+        return _err("vision_scene_regions_required", "请先圈选至少一个观察区域。", 400)
+    database_url = current_app.config.get("DATABASE_URL")
+    try:
+        database.initialize(database_url)
+        existing = vision_scene_repository.list_scenes(database_url)
+        if update_scene_id and not any(str(item.get("scene_id")) == update_scene_id for item in existing):
+            return _err("vision_scene_not_found", "观察场景已删除，请刷新列表后重新保存。", 404)
+        if any(str(item.get("scene_id")) != update_scene_id
+               and str(item.get("name", "")).casefold() == name.casefold() for item in existing):
+            return _err("vision_scene_name_conflict", "已有同名观察场景，请换一个名称或先删除旧场景。", 409)
+        if linked_regions:
+            graph, _ = _ensure_network()
+            for region in linked_regions:
+                point = region["road_point_gcj"]
+                bbox = config.WHU_BBOX
+                if not (bbox["west"] - .01 <= point["lng"] <= bbox["east"] + .01
+                        and bbox["south"] - .01 <= point["lat"] <= bbox["north"] + .01):
+                    return _err("vision_scene_road_link_required", "道路绑定点需要落在校园道路范围附近。", 400)
+                snap = snap_to_edge(graph, point["lng"], point["lat"])
+                if not snap or float(snap.get("dist_m", float("inf"))) > SNAP_MAX_DIST_M:
+                    return _err("vision_scene_road_link_required", "观察区域绑定点没有匹配到足够近的校园道路，请在地图上重新选路。", 400)
+                region["road_link"] = {
+                    "edges": snap.get("edges"), "road_name": snap.get("road_name"),
+                    "geometry_gcj": snap.get("geometry_gcj"),
+                    "snap_lng_gcj": snap.get("snap_lng_gcj"),
+                    "snap_lat_gcj": snap.get("snap_lat_gcj"),
+                    "dist_m": snap.get("dist_m"),
+                    "chain_length_m": snap.get("chain_length_m"),
+                }
+        if update_scene_id:
+            scene = vision_scene_repository.update_scene(
+                database_url, update_scene_id, name=name, anchor_gcj=anchor_gcj,
+                camera_stabilized=body.get("camera_stabilized") is True,
+                frame_signature=signature, observation_regions=regions,
+            )
+            if not scene:
+                return _err("vision_scene_not_found", "观察场景已删除，请刷新列表后重新保存。", 404)
+        else:
+            scene = vision_scene_repository.create_scene(
+                database_url, name=name, created_by=_admin_identity() or "unknown",
+                anchor_gcj=anchor_gcj, camera_stabilized=body.get("camera_stabilized") is True,
+                frame_signature=signature, observation_regions=regions,
+            )
+        return _ok({"scene": _scene_public(scene)}, status=200 if update_scene_id else 201)
+    except Exception as error:
+        from psycopg.errors import UniqueViolation
+        if isinstance(error, UniqueViolation):
+            return _err("vision_scene_name_conflict", "已有同名观察场景，请刷新列表或换一个名称。", 409)
+        logger.exception("保存无人机观察场景失败")
+        return _err("vision_scene_unavailable", "观察场景保存失败，请稍后重试。", 503)
+
+
+@api_bp.route("/manager/vision-scenes/<scene_id>", methods=["DELETE"])
+def delete_manager_vision_scene(scene_id):
+    auth_error = _require_admin()
+    if auth_error:
+        return auth_error
+    try:
+        uuid.UUID(scene_id)
+    except (ValueError, TypeError, AttributeError):
+        return _err("vision_scene_not_found", "观察场景不存在。", 404)
+    try:
+        from storage import database
+        database_url = current_app.config.get("DATABASE_URL")
+        database.initialize(database_url)
+        if not vision_scene_repository.delete_scene(database_url, scene_id):
+            return _err("vision_scene_not_found", "观察场景不存在。", 404)
+        return _ok({"deleted": True})
+    except Exception:
+        logger.exception("删除无人机观察场景失败")
+        return _err("vision_scene_unavailable", "观察场景删除失败，请稍后重试。", 503)
+
+
 def _vision_optional_model_status(path_key: str, capability_key: str,
                                   inference_ready: bool, worker_capabilities: dict) -> str:
     model_path = getattr(config, path_key, "")
@@ -2609,7 +2856,19 @@ def start_manager_vision_upload():
         return _err("upload_unavailable", "视频分块大小配置无效。", 503)
     try:
         captured_at = _parse_vision_capture_time(body.get("captured_at"), required=True)
-        observation_regions = _parse_vision_observation_regions(body.get("observation_regions"))
+        scene_id = str(body.get("scene_id") or "").strip() or None
+        if scene_id:
+            uuid.UUID(scene_id)
+            from storage import database
+            database.initialize(current_app.config.get("DATABASE_URL"))
+            if not vision_scene_repository.get_scene(current_app.config.get("DATABASE_URL"), scene_id):
+                return _err("vision_scene_not_found", "观察场景不存在，请刷新场景列表。", 404)
+            observation_regions = (
+                _parse_scene_regions(body.get("observation_regions"))
+                if "observation_regions" in body else None
+            )
+        else:
+            observation_regions = _parse_vision_observation_regions(body.get("observation_regions"))
     except (TypeError, ValueError) as error:
         return _err("invalid_observation_metadata", str(error), 400)
     anchor_gcj = None
@@ -2644,6 +2903,7 @@ def start_manager_vision_upload():
             "camera_stabilized": body.get("camera_stabilized") is True,
             "captured_at": captured_at.timestamp(),
             "observation_regions": observation_regions,
+            "scene_id": scene_id,
             "created_by": _admin_identity() or "unknown", "created_at": now, "updated_at": now,
         }
         _write_vision_upload(session_dir, metadata)
@@ -2796,14 +3056,25 @@ def complete_manager_vision_upload(upload_id):
             try:
                 from storage import database, vision_repository
                 database.initialize(current_app.config.get("DATABASE_URL"))
+                scene_values = {}
+                if metadata.get("scene_id"):
+                    scene_values = _resolve_vision_scene(
+                        metadata["scene_id"], target, "video",
+                        anchor_override=metadata.get("anchor_gcj"),
+                        camera_stabilized_override=metadata.get("camera_stabilized"),
+                        observation_regions_override=metadata.get("observation_regions"),
+                    )
                 completed_job = vision_repository.create_job(
                     current_app.config.get("DATABASE_URL"),
                     created_by=metadata["created_by"], original_name=metadata["filename"],
                     media_kind="video", media_path=stored_name, sha256=digest.hexdigest(),
-                    anchor_gcj=metadata["anchor_gcj"],
-                    camera_stabilized=metadata["camera_stabilized"],
+                    anchor_gcj=scene_values.get("anchor_gcj", metadata["anchor_gcj"]),
+                    camera_stabilized=scene_values.get("camera_stabilized", metadata["camera_stabilized"]),
                     captured_at=datetime.fromtimestamp(float(metadata["captured_at"]), tz=timezone.utc),
-                    observation_regions=metadata.get("observation_regions") or [],
+                    observation_regions=scene_values.get(
+                        "observation_regions", metadata.get("observation_regions") or [],
+                    ),
+                    observation_scene_id=scene_values.get("scene_id"),
                 )
             except Exception:
                 os.replace(target, part_path)
@@ -2819,6 +3090,11 @@ def complete_manager_vision_upload(upload_id):
                 # response even if the small resumable-session marker cannot be updated.
                 logger.exception("影像任务已入队，但无法保存上传完成标记")
         return _ok({"job": _public_vision_job(completed_job)}, status=202)
+    except _VisionSceneError as error:
+        logger.info("视频未通过观察场景复用校验: %s", error.code)
+        return _err(error.code, str(error), error.status)
+    except ValueError as error:
+        return _err("invalid_media", str(error), 400)
     except RuntimeError:
         logger.exception("影像任务存储不可用")
         return _err("vision_storage_unavailable", "影像任务暂时不可用，请稍后重试。", 503)
@@ -2880,9 +3156,21 @@ def manager_vision_jobs():
     is_video = extension in video_extensions
     try:
         captured_at = _parse_vision_capture_time(request.form.get("captured_at"), required=True)
-        observation_regions = _parse_vision_observation_regions(
-            request.form.get("observation_regions"),
-        )
+        scene_id = request.form.get("scene_id", "").strip() or None
+        if scene_id:
+            uuid.UUID(scene_id)
+            from storage import database
+            database.initialize(current_app.config.get("DATABASE_URL"))
+            if not vision_scene_repository.get_scene(current_app.config.get("DATABASE_URL"), scene_id):
+                return _err("vision_scene_not_found", "观察场景不存在，请刷新场景列表。", 404)
+            observation_regions = (
+                _parse_scene_regions(request.form.get("observation_regions"))
+                if "observation_regions" in request.form else None
+            )
+        else:
+            observation_regions = _parse_vision_observation_regions(
+                request.form.get("observation_regions"),
+            )
     except (TypeError, ValueError) as error:
         return _err("invalid_observation_metadata", str(error), 400)
     raw_lng = request.form.get("lng", "").strip()
@@ -2938,6 +3226,18 @@ def manager_vision_jobs():
             raise ValueError("文件内容与扩展名不匹配，或影像文件已损坏。")
         from storage import database, vision_repository
         database.initialize(current_app.config.get("DATABASE_URL"))
+        scene_values = {}
+        if scene_id:
+            media_kind = "video" if is_video else "image"
+            scene_values = _resolve_vision_scene(
+                scene_id, target, media_kind,
+                anchor_override=anchor_gcj,
+                camera_stabilized_override=(
+                    extension in video_extensions
+                    and request.form.get("camera_stabilized", "false").strip().lower() == "true"
+                ),
+                observation_regions_override=observation_regions,
+            )
         job = vision_repository.create_job(
             current_app.config.get("DATABASE_URL"),
             created_by=_admin_identity() or "unknown",
@@ -2945,15 +3245,19 @@ def manager_vision_jobs():
             media_kind="image" if extension in image_extensions else "video",
             media_path=stored_name,
             sha256=digest.hexdigest(),
-            anchor_gcj=anchor_gcj,
-            camera_stabilized=(
+            anchor_gcj=scene_values.get("anchor_gcj", anchor_gcj),
+            camera_stabilized=scene_values.get("camera_stabilized", (
                 extension in video_extensions
                 and request.form.get("camera_stabilized", "false").strip().lower() == "true"
-            ),
+            )),
             captured_at=captured_at,
-            observation_regions=observation_regions,
+            observation_regions=scene_values.get("observation_regions", observation_regions),
+            observation_scene_id=scene_values.get("scene_id"),
         )
         return _ok({"job": _public_vision_job(job)}, status=202)
+    except _VisionSceneError as error:
+        target.unlink(missing_ok=True)
+        return _err(error.code, str(error), error.status)
     except OverflowError:
         target.unlink(missing_ok=True)
         return _err("media_too_large", f"文件超过 {round(config.VISION_MAX_MEDIA_BYTES / (1024 * 1024))} MB。", 413)

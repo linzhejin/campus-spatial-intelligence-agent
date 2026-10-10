@@ -27,6 +27,7 @@ function managerHarness(sessionSeed = []) {
   let videoChunkResponseDrops = true;
   const videoChunkSizes = [];
   let visionJobs = [];
+  let visionScenes = [];
   let roadEvents = [];
   const calls = [];
   let inferenceReady = false;
@@ -59,6 +60,7 @@ function managerHarness(sessionSeed = []) {
       replaceChildren(...children) { this.children = children; },
       click() { this.clickCount += 1; },
       scrollIntoView() { this.scrollCount += 1; },
+      getBoundingClientRect() { return { left: 0, top: 0, width: 100, height: 100 }; },
     };
     Object.defineProperty(node, 'textContent', {
       get: () => textContent,
@@ -106,6 +108,10 @@ function managerHarness(sessionSeed = []) {
   const document = { hidden: false, activeElement: null, getElementById: element, createElement: (tag) => {
       const node = element('created-' + tag + '-' + createdNodeCount++);
       node.tagName = tag;
+      node.getContext = () => ({
+        clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {}, stroke() {}, arc() {},
+        drawImage() {}, getImageData() { return { data: new Uint8ClampedArray(9 * 8 * 4).fill(100) }; },
+      });
       return node;
     }, createElementNS: (_namespace, tag) => {
       const node = element('created-' + tag + '-' + createdNodeCount++);
@@ -157,6 +163,17 @@ function managerHarness(sessionSeed = []) {
         visionPostCount += 1;
         return new Promise((resolve) => uploadResolvers.push(resolve));
       }
+      if (url === '/api/manager/vision-scenes' && options.method === 'POST') {
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : {};
+        const scene = { ...body, scene_id: body.scene_id || 'scene-created' };
+        visionScenes = visionScenes.filter((item) => item.scene_id !== scene.scene_id).concat(scene);
+        return { ok: true, json: async () => ({ data: { scene } }) };
+      }
+      if (url.startsWith('/api/manager/vision-scenes/') && options.method === 'DELETE') {
+        const sceneId = decodeURIComponent(url.split('/').pop());
+        visionScenes = visionScenes.filter((item) => item.scene_id !== sceneId);
+        return { ok: true, json: async () => ({ data: { deleted: true } }) };
+      }
       if (url.startsWith('/api/manager/vision-jobs/') && options.method === 'DELETE') {
         const jobId = decodeURIComponent(url.split('/')[4] || '');
         visionJobs = visionJobs.filter((job) => job.job_id !== jobId);
@@ -173,6 +190,7 @@ function managerHarness(sessionSeed = []) {
       }
       let data = {};
       if (url === '/api/admin/status') data = { is_admin: true, csrf_token: 'csrf' };
+      else if (url === '/api/manager/vision-scenes') data = { scenes: visionScenes };
       else if (url.startsWith('/api/road-conditions/snap')) data = {
         snap: { u: 1, v: 2, key: 0, road_name: '测试路', dist_m: 2,
           chain_length_m: 100, snap_lng_gcj: 114.36002, snap_lat_gcj: 30.53,
@@ -201,6 +219,7 @@ function managerHarness(sessionSeed = []) {
     setInferenceReady: (value) => { inferenceReady = value; },
     setOptionalModelStatus: (value) => { optionalModelStatus = value; },
     setVisionJobs: (items) => { visionJobs = items; },
+    setVisionScenes: (items) => { visionScenes = items; },
     setRoadEvents: (items) => { roadEvents = items; },
     setVisionStatusFailure: (value) => { visionStatusFailure = value; },
     setSessionExpired: (value) => { sessionExpired = value; },
@@ -237,13 +256,122 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerHtml, /id="selected-media"[^>]*aria-live="polite"/);
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
-  assert.match(managerHtml, /manager\.css\?v=20261009e/);
-  assert.match(managerHtml, /manager\.js\?v=20261010b/);
+  assert.match(managerHtml, /manager\.css\?v=20261010a/);
+  assert.match(managerHtml, /manager\.js\?v=20261010c/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
   assert.match(managerHtml, /id="observation-region-list"/);
+  assert.match(managerHtml, /id="vision-scene-select"/);
+  assert.match(managerHtml, /id="save-vision-scene"/);
+  assert.match(managerHtml, /id="load-vision-scene"/);
   assert.doesNotMatch(managerHtml, /id="restore-vision-results"/);
+});
+
+test('saved observation scene loads only after frame check and lets manager rebind its road', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  harness.setVisionScenes([{
+    scene_id: 'scene-1', name: '工学部东门机位', frame_signature: '0000000000000000',
+    anchor_gcj: { lng: 114.36, lat: 30.54 }, camera_stabilized: true,
+    observation_regions: [{
+      id: 'lane-1', kind: 'vehicle_lane', polygon: [[0, 0], [1, 0], [1, 1]],
+      road_point_gcj: { lng: 114.36, lat: 30.54 },
+      road_link: { road_name: '旧道路名', edges: [[1, 2, 0]] },
+    }],
+  }]);
+  elements.get('media-file').files = [{ type: 'image/png', name: 'drone.png', size: 50 }];
+  elements.get('media-file').listeners.change();
+  elements.get('observation-image').hidden = false;
+  elements.get('observation-image').naturalWidth = 100;
+  elements.get('vision-scene-select').value = 'scene-1';
+  await elements.get('refresh-vision-scenes').listeners.click();
+  await elements.get('load-vision-scene').listeners.click();
+
+  assert.match(elements.get('vision-message').textContent, /画面初筛匹配/);
+  const regionRoot = elements.get('observation-region-list');
+  assert.match(descendants(regionRoot).map((node) => node.textContent).join(' '), /旧道路名/);
+  const bind = descendants(regionRoot).find((node) => node.className === 'region-bind-road');
+  bind.listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.3601, lat: 30.5401 } });
+  assert.match(elements.get('vision-message').textContent, /绑定道路：测试路/);
+  assert.ok(harness.calls.some((call) => call.url.includes('/api/road-conditions/snap?lng=114.3601')));
+  harness.getElement('vision-scene-name').value = '工学部东门机位';
+  await elements.get('save-vision-scene').listeners.click();
+  const updateCall = harness.calls.filter((call) => call.url === '/api/manager/vision-scenes' && call.options.method === 'POST').pop();
+  assert.equal(JSON.parse(updateCall.options.body).scene_id, 'scene-1');
+  assert.equal(JSON.parse(updateCall.options.body).observation_regions[0].road_link.road_name, '测试路');
+  const clear = descendants(regionRoot).find((node) => node.className === 'region-clear-road');
+  assert.ok(clear, 'bound road should offer a clear action');
+  clear.listeners.click();
+  assert.doesNotMatch(descendants(regionRoot).map((node) => node.textContent).join(' '), /测试路/);
+  const rebind = descendants(regionRoot).find((node) => node.className === 'region-bind-road');
+  rebind.listeners.click();
+  await mapListeners.click({ latlng: { lng: 114.3601, lat: 30.5401 } });
+  await elements.get('save-vision-scene').listeners.click();
+  const reboundCall = harness.calls.filter((call) => call.url === '/api/manager/vision-scenes' && call.options.method === 'POST').pop();
+  assert.equal(JSON.parse(reboundCall.options.body).observation_regions[0].road_link.road_name, '测试路');
+  harness.setInferenceReady(true);
+  harness.intervalCallbacks[0]();
+  await flush();
+  elements.get('captured-at').value = '2026-10-10T10:00';
+  const submitting = elements.get('vision-form').listeners.submit({ preventDefault() {} });
+  await flush();
+  assert.ok(harness.formEntries.some(([name, value]) => name === 'scene_id' && value === 'scene-1'));
+  harness.releaseVisionUploads();
+  await submitting;
+});
+
+test('a changed camera view is rejected before saved observation regions are loaded', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements } = harness;
+  harness.setVisionScenes([{
+    scene_id: 'scene-different-view', name: '另一机位', frame_signature: 'ffffffffffffffff',
+    anchor_gcj: { lng: 114.36, lat: 30.54 }, camera_stabilized: false,
+    observation_regions: [{ id: 'lane', kind: 'vehicle_lane', polygon: [[0, 0], [1, 0], [1, 1]] }],
+  }]);
+  elements.get('media-file').files = [{ type: 'image/png', name: 'other.png', size: 20 }];
+  elements.get('media-file').listeners.change();
+  elements.get('observation-image').hidden = false;
+  elements.get('observation-image').naturalWidth = 10;
+  elements.get('vision-scene-select').value = 'scene-different-view';
+  await elements.get('refresh-vision-scenes').listeners.click();
+  await elements.get('load-vision-scene').listeners.click();
+  assert.match(elements.get('vision-message').textContent, /差异较大/);
+  assert.equal(elements.get('observation-region-list').textContent, '尚未圈选区域');
+});
+
+test('manager can save a named scene with the current frame signature and road-linked region', async () => {
+  const harness = managerHarness();
+  await flush();
+  const { elements, mapListeners } = harness;
+  elements.get('media-file').files = [{ type: 'image/png', name: 'fixed-camera.png', size: 20 }];
+  elements.get('media-file').listeners.change();
+  elements.get('observation-image').hidden = false;
+  elements.get('observation-image').naturalWidth = 100;
+  elements.get('pick-anchor').listeners.click();
+  mapListeners.click({ latlng: { lng: 114.36, lat: 30.54 } });
+  const canvas = elements.get('observation-canvas');
+  canvas.width = 100; canvas.height = 100;
+  harness.getElement('observation-kind').value = 'exclude';
+  elements.get('start-region').listeners.click();
+  canvas.listeners.click.call(canvas, { clientX: 10, clientY: 10 });
+  canvas.listeners.click.call(canvas, { clientX: 80, clientY: 10 });
+  canvas.listeners.click.call(canvas, { clientX: 80, clientY: 80 });
+  elements.get('finish-region').listeners.click();
+  harness.getElement('vision-scene-name').value = '工学部固定机位';
+  await elements.get('save-vision-scene').listeners.click();
+
+  const save = harness.calls.find((call) => call.url === '/api/manager/vision-scenes' && call.options.method === 'POST');
+  assert.ok(save);
+  const body = JSON.parse(save.options.body);
+  assert.equal(body.frame_signature, '0000000000000000');
+  assert.equal(body.anchor_gcj.lng, 114.36);
+  assert.equal(body.observation_regions.length, 1);
+  assert.equal(body.observation_regions[0].kind, 'exclude');
+  assert.match(elements.get('vision-message').textContent, /场景已保存/);
 });
 
 test('selecting an image immediately enables recognition without a map point', async () => {
