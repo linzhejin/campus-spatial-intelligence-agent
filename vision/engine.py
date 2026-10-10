@@ -927,7 +927,8 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
         "flood_model": ({
             "id": getattr(requested_flood_segmenter, "model_id", "unknown"),
             "version": getattr(requested_flood_segmenter, "model_version", "unverified"),
-            "classes": ["flooded_road"],
+            "classes": getattr(requested_flood_segmenter, "classes", ["flooded_road"]),
+            "output_scope": getattr(requested_flood_segmenter, "output_scope", "flooded_road_class"),
             "roi_kind": "road_surface",
             "physical_area_or_depth": False,
             "runtime_status": "inference_failed" if "flood" in optional_model_errors else "loaded",

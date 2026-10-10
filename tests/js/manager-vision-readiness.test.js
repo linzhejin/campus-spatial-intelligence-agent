@@ -1065,6 +1065,31 @@ test('flood candidates show their limits and expose per-candidate review', async
   assert.equal(descendants(card).filter((node) => node.tagName === 'button' && node.textContent === '确认此候选').length, 1);
 });
 
+test('visible-water candidates do not present the prediction as a confirmed flood', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'job-visible-water', status: 'needs_review', media_kind: 'image', original_name: '航拍.png',
+    result: { candidates: [{
+      kind: 'possible_flooding', confidence: 0.82,
+      evidence: { summary: {
+        region_id: 'road-surface-east', water_evidence_type: 'visible_water',
+        max_visible_water_area_ratio: 0.27, outline_polygons: [],
+      } },
+    }] },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const cardText = descendants(harness.elements.get('vision-jobs').children[0])
+    .map((node) => node.textContent || '').join(' ');
+  assert.match(cardText, /路面区域可见水体线索/);
+  assert.match(cardText, /需人工核对/);
+  assert.doesNotMatch(cardText, /路面区域可见水体线索 · 置信度/);
+  assert.match(cardText, /可见水体像素约占 27%/);
+  assert.match(cardText, /无法区分路面积水与其他可见水体/);
+});
+
 test('video candidate cards play their bounded manager-only evidence clip', async () => {
   const harness = managerHarness();
   await flush();

@@ -79,6 +79,54 @@ def test_flood_segmenter_measures_flooded_road_only_inside_marked_roi():
     assert session.feed["images"].mean() > 1.0  # The model receives marked road tiles, not the whole scene.
 
 
+def test_binary_visible_water_segmenter_keeps_scope_as_visual_clue_inside_road_roi():
+    logits = np.full((1, 2, 8, 8), -4.0, dtype=np.float32)
+    logits[:, 1, :, :] = 4.0
+    session = FakeSession(logits, input_shape=(1, 3, 8, 8))
+    segmenter = OnnxFloodSegmenter("water.onnx", session=session)
+    frame = np.zeros((80, 80, 3), dtype=np.uint8)
+    region = {"id": "east-road", "kind": "road_surface", "polygon": [
+        [0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75],
+    ]}
+
+    prediction = segmenter.predict(frame, region, include_mask=True)
+
+    assert prediction["model_id"] == "visible-water-mobilenetv3-unet"
+    assert prediction["class_label"] == "visible_water"
+    assert prediction["water_evidence_type"] == "visible_water"
+    assert prediction["flooded_road_area_ratio"] == pytest.approx(1.0)
+    assert prediction["flooded_road_mask"].sum() == 1600
+    assert prediction["flooded_road_mask"][:20].sum() == 0
+
+
+def test_flood_segmenter_rejects_unrecognized_class_count():
+    with pytest.raises(ValueError, match="类别数必须为 2 或 10"):
+        OnnxFloodSegmenter("water.onnx", session=FakeSession(
+            np.zeros((1, 5, 8, 8), dtype=np.float32), input_shape=(1, 3, 8, 8),
+        ))
+
+
+def test_binary_and_floodnet_models_use_separate_probability_thresholds(monkeypatch):
+    monkeypatch.setenv("VISION_FLOOD_CLASS_PROBABILITY_THRESHOLD", "0.91")
+    monkeypatch.delenv("VISION_VISIBLE_WATER_CLASS_PROBABILITY_THRESHOLD", raising=False)
+    visible_logits = np.zeros((1, 2, 8, 8), dtype=np.float32)
+    visible = OnnxFloodSegmenter("water.onnx", session=FakeSession(
+        visible_logits, input_shape=(1, 3, 8, 8),
+    ))
+    flood_logits = np.zeros((1, 10, 8, 8), dtype=np.float32)
+    floodnet = OnnxFloodSegmenter("flood.onnx", session=FakeSession(
+        flood_logits, input_shape=(1, 3, 8, 8),
+    ))
+
+    assert visible.flood_probability_threshold is None
+    assert floodnet.flood_probability_threshold == pytest.approx(0.91)
+    monkeypatch.setenv("VISION_VISIBLE_WATER_CLASS_PROBABILITY_THRESHOLD", "0.72")
+    visible_with_own_threshold = OnnxFloodSegmenter("water.onnx", session=FakeSession(
+        visible_logits, input_shape=(1, 3, 8, 8),
+    ))
+    assert visible_with_own_threshold.flood_probability_threshold == pytest.approx(0.72)
+
+
 def test_flood_segmenter_calibrated_probability_threshold_returns_score_map():
     logits = np.full((1, 10, 8, 8), -8.0, dtype=np.float32)
     logits[:, 0, :, :] = 0.0
@@ -130,6 +178,26 @@ def test_specialized_candidates_require_persistent_evidence_and_never_auto_publi
     assert all(item["review_required"] and not item["auto_publish"] for item in candidates)
     assert by_kind["possible_flooding"]["evidence"]["summary"]["region_id"] == "road"
     assert by_kind["possible_flooding"]["evidence"]["summary"]["outline_polygons"]
+
+
+def test_visible_water_candidate_does_not_claim_confirmed_road_flooding():
+    observations = [
+        {"time_seconds": 1.0, "region_id": "east-road",
+         "flooded_road_area_ratio": 0.16, "water_evidence_type": "visible_water",
+         "outline_polygons": []},
+        {"time_seconds": 2.0, "region_id": "east-road",
+         "flooded_road_area_ratio": 0.14, "water_evidence_type": "visible_water",
+         "outline_polygons": []},
+    ]
+
+    candidate = build_specialized_candidates(observations, sample_interval_s=1.0)[0]
+
+    assert candidate["kind"] == "possible_flooding"
+    assert "可见水体线索" in candidate["reason"]
+    assert "无法区分路面积水与其他可见水体" in candidate["reason"]
+    assert candidate["evidence"]["summary"]["water_evidence_type"] == "visible_water"
+    assert candidate["review_required"] is True
+    assert candidate["auto_publish"] is False
 
 
 def test_single_frame_flood_reflection_does_not_create_a_video_candidate():

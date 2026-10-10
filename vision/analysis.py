@@ -187,6 +187,9 @@ def build_specialized_candidates(
             flood_records.append({
                 "time_seconds": float(when), "area_ratio": float(ratio),
                 "region_id": str(observation.get("region_id") or "road-surface"),
+                "water_evidence_type": ("visible_water"
+                                         if observation.get("water_evidence_type") == "visible_water"
+                                         else "flooded_road"),
                 "outline_polygons": observation.get("outline_polygons") or [],
             })
 
@@ -226,10 +229,10 @@ def build_specialized_candidates(
                 },
             ))
 
-    flood_regions: dict[str, list[dict]] = defaultdict(list)
+    flood_regions: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for item in flood_records:
-        flood_regions[item["region_id"]].append(item)
-    for region_id, region_records in flood_regions.items():
+        flood_regions[(item["region_id"], item["water_evidence_type"])].append(item)
+    for (region_id, water_evidence_type), region_records in flood_regions.items():
         selected_by_time = {}
         for item in region_records:
             current = selected_by_time.get(item["time_seconds"])
@@ -244,24 +247,35 @@ def build_specialized_candidates(
             if not flood_supported:
                 continue
             strongest = max(event, key=lambda item: item["area_ratio"])
+            visible_water_only = water_evidence_type == "visible_water"
+            reason = (
+                "可见水体分割模型在管理员圈定的路面画面区域内检出可见水体线索；"
+                "模型无法区分路面积水与其他可见水体，须人工核对。"
+                if visible_water_only else
+                "积水分割模型在已圈定路面区域内检出疑似淹水像素；"
+                "面积比例按画面区域计算，不代表实际水深或地面范围，须人工核对。"
+            )
+            summary = {
+                "region_id": region_id,
+                "water_evidence_type": water_evidence_type,
+                "supporting_frames": len(event),
+                "outline_time_seconds": round(strongest["time_seconds"], 3),
+                "outline_polygons": strongest["outline_polygons"][:8],
+                "water_depth_estimated": False,
+            }
+            summary["max_visible_water_area_ratio" if visible_water_only
+                    else "max_flooded_road_area_ratio"] = round(strongest["area_ratio"], 4)
             candidates.append(_candidate(
                 "possible_flooding",
                 min(0.99, 0.6 + strongest["area_ratio"] / 2),
-                "积水分割模型在已圈定路面区域内检出疑似淹水像素；面积比例按画面区域计算，不代表实际水深或地面范围，须人工核对。",
+                reason,
                 {
                     "segments": [{
                         "start_seconds": item["time_seconds"],
                         "end_seconds": item["time_seconds"] + sample_interval_s,
                         "confidence": round(item["area_ratio"], 4),
                     } for item in event[:200]],
-                    "summary": {
-                        "region_id": region_id,
-                        "max_flooded_road_area_ratio": round(strongest["area_ratio"], 4),
-                        "outline_time_seconds": round(strongest["time_seconds"], 3),
-                        "supporting_frames": len(event),
-                        "outline_polygons": strongest["outline_polygons"][:8],
-                        "water_depth_estimated": False,
-                    },
+                    "summary": summary,
                 },
             ))
     return candidates

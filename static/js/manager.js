@@ -1087,7 +1087,11 @@
     } finally { state.visionStatusBusy = false; }
   }
 
-  function candidateName(kind) {
+  function candidateName(kind, item) {
+    var summary = item && item.evidence && item.evidence.summary || {};
+    if (kind === 'possible_flooding' && summary.water_evidence_type === 'visible_water') {
+      return '路面区域可见水体线索';
+    }
     return {
       possible_congestion: '可能存在车辆排队/低速聚集',
       possible_crowding: '人行区域人群聚集候选',
@@ -1234,9 +1238,13 @@
         (Number.isFinite(accidentScore) ? '，最高分 ' + Math.round(accidentScore * 100) + '%' : '') +
         '；此模型不能定位事故车辆。';
     } else if (candidate.kind === 'possible_flooding') {
-      var ratio = Number(summary.max_flooded_road_area_ratio);
-      line += '圈选路面中疑似淹水像素约占 ' + (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
-        '；这是画面比例，不是水深或实际淹水面积。' +
+      var visibleWaterOnly = summary.water_evidence_type === 'visible_water';
+      var ratio = Number(visibleWaterOnly ? summary.max_visible_water_area_ratio : summary.max_flooded_road_area_ratio);
+      line += (visibleWaterOnly ? '圈选路面画面内可见水体像素约占 ' : '圈选路面中疑似淹水像素约占 ') +
+        (Number.isFinite(ratio) ? Math.round(ratio * 100) + '%' : '未计算') +
+        (visibleWaterOnly
+          ? '；模型无法区分路面积水与其他可见水体，须人工核对。'
+          : '；这是画面比例，不是水深或实际淹水面积。') +
         (mediaKind === 'image' && summary.outline_polygons && summary.outline_polygons.length ? ' 原图已叠加疑似轮廓。' : '');
     } else if (candidate.kind === 'possible_congestion') {
       var observedSeconds = Number(summary.observed_duration_seconds);
@@ -1425,7 +1433,9 @@
         var legacyReview = job.review_status && (job.review_candidate_index === index || ((result.candidates || []).length === 1 && job.review_candidate_index == null));
         var candidate = document.createElement('div'); candidate.className = 'candidate-card';
         var titleNode = document.createElement('strong');
-        titleNode.textContent = candidateName(item.kind) + ' · 置信度 ' + Math.round((item.confidence || 0) * 100) + '%';
+        titleNode.textContent = candidateName(item.kind, item) + (item.kind === 'possible_flooding'
+          ? ' · 需人工核对'
+          : ' · 置信度 ' + Math.round((item.confidence || 0) * 100) + '%');
         if (candidateReview) titleNode.textContent += candidateReview.status === 'confirmed' ? ' · 已确认' : ' · 已排除';
         else if (legacyReview) titleNode.textContent += job.review_status === 'confirmed' ? ' · 已确认' : ' · 已排除';
         var why = document.createElement('p'); why.textContent = item.reason || '请结合原始影像复核。';

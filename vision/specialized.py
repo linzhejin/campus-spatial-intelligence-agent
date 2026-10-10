@@ -20,7 +20,7 @@ _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def _onnx_contract(model_path, session, *, expected_classes: int | None = None,
+def _onnx_contract(model_path, session, *, expected_classes: int | tuple[int, ...] | None = None,
                    expected_output_rank: int | None = None, class_axis: int = -1):
     if session is None:
         if not model_path or not Path(model_path).is_file():
@@ -51,12 +51,15 @@ def _onnx_contract(model_path, session, *, expected_classes: int | None = None,
         if expected_output_rank is not None and len(output_shape) != expected_output_rank:
             raise ValueError(f"模型输出维度必须为 {expected_output_rank}")
         if expected_classes is not None:
+            allowed_classes = (expected_classes if isinstance(expected_classes, tuple)
+                               else (expected_classes,))
             normalized_axis = class_axis if class_axis >= 0 else len(output_shape) + class_axis
             if normalized_axis < 0 or normalized_axis >= len(output_shape):
                 raise ValueError("模型类别维度配置错误")
             size = output_shape[normalized_axis]
-            if size not in (expected_classes, str(expected_classes)):
-                raise ValueError(f"模型输出类别数必须为 {expected_classes}")
+            if size not in allowed_classes and size not in tuple(str(value) for value in allowed_classes):
+                expected_text = " 或 ".join(str(value) for value in allowed_classes)
+                raise ValueError(f"模型输出类别数必须为 {expected_text}")
     return session, input_tensor.name, outputs[0].name, (int(shape[3]), int(shape[2]))
 
 
@@ -128,18 +131,29 @@ class OnnxAiderClassifier:
 
 
 class OnnxFloodSegmenter:
-    """FloodNet-class segmentation clipped to an admin-marked road ROI."""
+    """Water segmentation clipped to an admin-marked road ROI for human review."""
 
-    model_id = "floodnet-mobilenetv3-unet"
     FLOODED_ROAD_CLASS = 3
+    VISIBLE_WATER_CLASS = 1
 
     def __init__(self, model_path: str, *, session=None, model_version: str | None = None,
                  min_area_ratio: float | None = None,
                  flood_probability_threshold: float | None = None):
         self.session, self.input_name, self.output_name, self.input_size = _onnx_contract(
-            model_path, session, expected_classes=len(FLOODNET_CLASSES),
+            model_path, session, expected_classes=(2, len(FLOODNET_CLASSES)),
             expected_output_rank=4, class_axis=1,
         )
+        class_count = self.session.get_outputs()[0].shape[1]
+        self.class_count = int(class_count)
+        self.is_binary_visible_water = self.class_count == 2
+        self.model_id = ("visible-water-mobilenetv3-unet" if self.is_binary_visible_water
+                         else "floodnet-mobilenetv3-unet")
+        self.classes = (["background_or_non_water", "visible_water"]
+                        if self.is_binary_visible_water else list(FLOODNET_CLASSES))
+        self.output_scope = ("visible_water_intersection_with_marked_road_roi"
+                             if self.is_binary_visible_water else "flooded_road_class")
+        self.water_class_id = (self.VISIBLE_WATER_CLASS if self.is_binary_visible_water
+                               else self.FLOODED_ROAD_CLASS)
         self.model_path = str(model_path or "injected-session")
         self.model_version = model_version or os.getenv("VISION_FLOOD_REVISION", "unverified")
         self.min_area_ratio = float(min_area_ratio if min_area_ratio is not None else os.getenv(
@@ -147,7 +161,10 @@ class OnnxFloodSegmenter:
         ))
         if not math.isfinite(self.min_area_ratio) or not 0 < self.min_area_ratio <= 1:
             raise ValueError("VISION_FLOOD_MIN_AREA_RATIO 必须大于 0 且不超过 1")
-        raw_threshold = (os.getenv("VISION_FLOOD_CLASS_PROBABILITY_THRESHOLD")
+        threshold_env = ("VISION_VISIBLE_WATER_CLASS_PROBABILITY_THRESHOLD"
+                         if self.is_binary_visible_water
+                         else "VISION_FLOOD_CLASS_PROBABILITY_THRESHOLD")
+        raw_threshold = (os.getenv(threshold_env)
                          if flood_probability_threshold is None else flood_probability_threshold)
         if raw_threshold in (None, ""):
             self.flood_probability_threshold = None
@@ -209,8 +226,8 @@ class OnnxFloodSegmenter:
                 raise RuntimeError(f"积水分割模型推理失败：{error}") from error
             logits = np.asarray(raw[0], dtype=np.float32)
             if (logits.ndim != 4 or logits.shape[0] != 1
-                    or logits.shape[1] != len(FLOODNET_CLASSES)):
-                raise ValueError("积水分割模型必须返回 FloodNet 的 10 类语义分割结果")
+                    or logits.shape[1] != self.class_count):
+                raise ValueError(f"积水/水体分割模型必须返回 {self.class_count} 类语义分割结果")
             if not np.isfinite(logits).all():
                 raise ValueError("积水分割模型返回非有限结果")
             tile_logits = logits[0]
@@ -224,7 +241,7 @@ class OnnxFloodSegmenter:
             exponentials = np.exp(tile_logits - maxima[None, :, :])
             denominator = exponentials.sum(axis=0)
             confidence = 1.0 / denominator
-            flood_probability = exponentials[self.FLOODED_ROAD_CLASS] / denominator
+            flood_probability = exponentials[self.water_class_id] / denominator
             predicted = tile_logits.argmax(axis=0).astype(np.uint8)
             target_confidence = best_confidence[tile_y:tile_y2, tile_x:tile_x2]
             better = confidence > target_confidence
@@ -234,7 +251,7 @@ class OnnxFloodSegmenter:
             target_flood_probability = best_flood_probability[tile_y:tile_y2, tile_x:tile_x2]
             target_flood_probability[better] = flood_probability[better]
         classified_flood = (
-            labels == self.FLOODED_ROAD_CLASS
+            labels == self.water_class_id
             if self.flood_probability_threshold is None
             else best_flood_probability >= self.flood_probability_threshold
         )
@@ -259,7 +276,9 @@ class OnnxFloodSegmenter:
             "outline_polygons": outlines,
             "model_id": self.model_id,
             "model_version": self.model_version,
-            "class_label": "flooded_road",
+            "class_label": "visible_water" if self.is_binary_visible_water else "flooded_road",
+            "water_evidence_type": "visible_water" if self.is_binary_visible_water else "flooded_road",
+            "model_output_scope": self.output_scope,
             "area_measurement": "fraction_of_marked_image_region",
             "water_depth_estimated": False,
             "analysis_tile_count": len(windows),
@@ -274,4 +293,6 @@ class OnnxFloodSegmenter:
             full_probability = np.zeros((height, width), dtype=np.float32)
             full_probability[y1:y2, x1:x2] = best_flood_probability
             prediction["flooded_road_probability"] = full_probability
+            if self.is_binary_visible_water:
+                prediction["visible_water_probability"] = full_probability
         return prediction

@@ -22,6 +22,17 @@ def test_floodnet_mobilenet_unet_returns_ten_class_full_resolution_logits():
     assert torch.isfinite(logits).all()
 
 
+def test_visible_water_unet_returns_two_class_full_resolution_logits():
+    model = build_floodnet_model(num_classes=2, pretrained=False)
+    model.eval()
+
+    with torch.inference_mode():
+        logits = model(torch.zeros((1, 3, 64, 64), dtype=torch.float32))
+
+    assert tuple(logits.shape) == (1, 2, 64, 64)
+    assert torch.isfinite(logits).all()
+
+
 def test_exported_floodnet_onnx_has_fixed_contract_and_cpu_parity(tmp_path):
     pytest.importorskip("onnx")
     pytest.importorskip("onnxruntime")
@@ -30,4 +41,14 @@ def test_exported_floodnet_onnx_has_fixed_contract_and_cpu_parity(tmp_path):
 
     assert report["input_shape"] == [1, 3, 32, 32]
     assert report["output_shape"] == [1, 10, 32, 32]
+    assert report["max_absolute_error"] < 1e-4
+
+
+def test_exported_binary_water_onnx_has_two_class_contract(tmp_path):
+    pytest.importorskip("onnx")
+    pytest.importorskip("onnxruntime")
+    model = torch.nn.Conv2d(3, 2, kernel_size=1)
+    report = export_floodnet_onnx(model, tmp_path / "binary-water.onnx", input_size=32)
+
+    assert report["output_shape"] == [1, 2, 32, 32]
     assert report["max_absolute_error"] < 1e-4

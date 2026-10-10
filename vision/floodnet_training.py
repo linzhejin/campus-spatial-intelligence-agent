@@ -400,11 +400,17 @@ def export_floodnet_onnx(model, output_path, *, input_size: int = 512, opset_ver
     actual = session.run(["logits"], {"image": sample.numpy()})[0]
     with torch.inference_mode():
         expected = model(sample).cpu().numpy()
+    expected_shape = tuple(expected.shape)
     max_error = float(np.max(np.abs(actual - expected)))
-    if actual.shape != (1, 10, input_size, input_size) or not np.allclose(actual, expected, rtol=1e-3, atol=1e-4):
+    if (expected.ndim != 4 or expected_shape[0] != 1
+            or expected_shape[1] not in (2, 10)
+            or expected_shape[-2:] != (input_size, input_size)
+            or actual.shape != expected_shape
+            or not np.allclose(actual, expected, rtol=1e-3, atol=1e-4)):
         raise ValueError("exported ONNX model failed CPU parity check")
     return {"path": str(path), "input_shape": [1, 3, input_size, input_size],
-            "output_shape": list(actual.shape), "max_absolute_error": max_error}
+            "output_shape": list(actual.shape), "class_count": int(actual.shape[1]),
+            "max_absolute_error": max_error}
 
 
 def _relative_dataset_path(value: object, field: str) -> str:
@@ -511,10 +517,11 @@ def build_floodnet_model(*, num_classes: int = 10, pretrained: bool = False) -> 
     """Create a MobileNetV3-small encoder with a lightweight U-Net decoder.
 
     The model consumes ImageNet-normalized RGB tensors and emits full-resolution
-    class logits in the exact class order expected by ``vision.specialized``.
+    class logits. Ten outputs retain FloodNet's class order; two outputs are
+    background and visible water for the Floodwater experiment.
     """
-    if isinstance(num_classes, bool) or not isinstance(num_classes, int) or num_classes != 10:
-        raise ValueError("FloodNet model must output exactly ten classes")
+    if isinstance(num_classes, bool) or not isinstance(num_classes, int) or num_classes not in (2, 10):
+        raise ValueError("segmentation model must output either two visible-water or ten FloodNet classes")
     import torch
     from torch import nn
     from torch.nn import functional as functional
