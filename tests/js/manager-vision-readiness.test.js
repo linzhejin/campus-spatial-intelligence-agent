@@ -257,7 +257,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
   assert.match(managerHtml, /manager\.css\?v=20261010a/);
-  assert.match(managerHtml, /manager\.js\?v=20261010e/);
+  assert.match(managerHtml, /manager\.js\?v=20261011a/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
