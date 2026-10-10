@@ -131,12 +131,18 @@ def validate_split_manifest(manifest, *, task: str, split: str = "test") -> dict
     """Validate a held-out manifest against its declared disjoint split groups."""
     if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
         raise ValueError("manifest schema_version must be 1")
-    if task not in {"accident_classification", "flooded_road_segmentation"}:
+    if task not in {
+        "accident_classification", "flooded_road_segmentation",
+        "visible_water_road_segmentation",
+    }:
         raise ValueError("unsupported evaluation task")
     if split not in {"train", "validation", "test"}:
         raise ValueError("split must be train, validation, or test")
     if manifest.get("task") != task:
         raise ValueError("manifest task does not match the requested evaluation task")
+    if (task == "visible_water_road_segmentation"
+            and manifest.get("mask_encoding") != "binary_0_255"):
+        raise ValueError("visible-water manifest mask_encoding must be binary_0_255")
     if not str(manifest.get("dataset") or "").strip():
         raise ValueError("manifest dataset name is required")
     if not str(manifest.get("split_unit") or "").strip():
@@ -162,6 +168,7 @@ def validate_split_manifest(manifest, *, task: str, split: str = "test") -> dict
     if not isinstance(samples, list) or not samples:
         raise ValueError("manifest samples must be a non-empty list")
     seen_images = set()
+    sample_groups = set()
     allowed_classes = set(AIDER_CLASSES) if task == "accident_classification" else None
     for index, sample in enumerate(samples):
         if not isinstance(sample, dict):
@@ -175,6 +182,7 @@ def validate_split_manifest(manifest, *, task: str, split: str = "test") -> dict
         seen_images.add(image)
         if group_id not in normalized_groups[split]:
             raise ValueError(f"sample {index} does not belong to the declared {split} split")
+        sample_groups.add(group_id)
         if task == "accident_classification":
             if sample.get("label") not in allowed_classes:
                 raise ValueError(f"sample {index} has an unknown AIDER class")
@@ -185,15 +193,20 @@ def validate_split_manifest(manifest, *, task: str, split: str = "test") -> dict
             polygon = sample.get("road_surface_polygon")
             if not mask or not isinstance(polygon, list) or len(polygon) < 3:
                 raise ValueError(f"sample {index} requires a mask and road_surface_polygon")
-            class_id = sample.get("flooded_road_class_id", 3)
-            if isinstance(class_id, bool) or class_id != FLOODNET_CLASSES.index("flooded_road"):
-                raise ValueError(f"sample {index} must use FloodNet flooded_road class id 3")
+            if task == "flooded_road_segmentation":
+                class_id = sample.get("flooded_road_class_id", 3)
+                if (isinstance(class_id, bool)
+                        or class_id != FLOODNET_CLASSES.index("flooded_road")):
+                    raise ValueError(f"sample {index} must use FloodNet flooded_road class id 3")
             for point in polygon:
                 if (not isinstance(point, (list, tuple)) or len(point) != 2
                         or any(isinstance(value, bool) or not isinstance(value, (int, float))
                                or not math.isfinite(float(value)) or not 0 <= value <= 1
                                for value in point)):
                     raise ValueError(f"sample {index} has an invalid normalized road polygon")
+    if (task == "visible_water_road_segmentation" and split == "test"
+            and sample_groups != set(normalized_groups["test"])):
+        raise ValueError("every declared test flight must have at least one sample")
     result = dict(manifest)
     result["split_groups"] = normalized_groups
     return result

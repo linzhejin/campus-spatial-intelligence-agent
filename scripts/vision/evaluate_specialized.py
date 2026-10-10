@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate local AIDER/FloodNet-compatible ONNX weights on a held-out manifest.
+"""Evaluate local aerial vision ONNX weights on a held-out manifest.
 
 The evaluator never creates a random image-level split. The manifest must list
 disjoint train/validation/test groups and only test-split samples. Whether
@@ -199,9 +199,153 @@ def _evaluate_flood(manifest, root: Path, model_path: Path, min_area_ratio: floa
     }
 
 
+def _evaluate_visible_water_road(manifest, root: Path, model_path: Path, *,
+                                 probability_threshold: float):
+    """Evaluate a binary visible-water model on manually labeled road pixels.
+
+    Unlike the FloodNet evaluator, this contract uses masks encoded as 0/255,
+    requires exact image/mask alignment, and reports false alarms on negative
+    frames and whole flights separately from pixel overlap.
+    """
+    if (isinstance(probability_threshold, bool)
+            or not isinstance(probability_threshold, (int, float))
+            or not np.isfinite(float(probability_threshold))
+            or not 0 <= probability_threshold <= 1):
+        raise ValueError("visible-water probability threshold must be between 0 and 1")
+    segmenter = OnnxFloodSegmenter(
+        str(model_path), flood_probability_threshold=float(probability_threshold),
+    )
+    if not segmenter.is_binary_visible_water:
+        raise ValueError("campus visible-water evaluation requires a two-class model")
+
+    total = [0, 0, 0]
+    group_counts: dict[str, list[int]] = {}
+    group_sample_states: dict[str, list[dict]] = {}
+    per_sample = []
+    negative_sample_ratios = []
+    negative_sample_false_alarms = 0
+    for sample in manifest["samples"]:
+        image_path = _dataset_path(root, sample["image"])
+        mask_path = _dataset_path(root, sample["mask"])
+        frame = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        truth_mask = cv2.imread(str(mask_path), cv2.IMREAD_UNCHANGED)
+        if frame is None:
+            raise ValueError(f"cannot decode test image: {sample['image']}")
+        if truth_mask is None or truth_mask.ndim != 2:
+            raise ValueError(f"ground truth must be a grayscale binary mask: {sample['mask']}")
+        if not np.isin(np.unique(truth_mask), (0, 255)).all():
+            raise ValueError(f"ground truth mask must contain only 0 and 255: {sample['mask']}")
+        if frame.shape[:2] != truth_mask.shape:
+            raise ValueError(f"image/mask dimensions must match exactly: {sample['image']}")
+
+        roi = _polygon_mask(frame.shape, sample["road_surface_polygon"])
+        roi_pixels = int(roi.sum())
+        if roi_pixels == 0:
+            raise ValueError(f"road ROI is empty: {sample['image']}")
+        prediction = segmenter.predict(
+            frame,
+            {"id": sample["group_id"], "kind": "road_surface",
+             "polygon": sample["road_surface_polygon"]},
+            include_mask=True,
+        )
+        if prediction is None or "flooded_road_mask" not in prediction:
+            raise ValueError(f"visible-water model did not return a mask: {sample['image']}")
+        predicted_mask = np.asarray(prediction["flooded_road_mask"])
+        if predicted_mask.shape != roi.shape:
+            raise ValueError(f"predicted mask dimensions do not match the image: {sample['image']}")
+        predicted = predicted_mask.astype(bool) & roi
+        actual = (truth_mask == 255) & roi
+        counts = [
+            int(np.logical_and(predicted, actual).sum()),
+            int(np.logical_and(predicted, ~actual & roi).sum()),
+            int(np.logical_and(~predicted, actual).sum()),
+        ]
+        for index, value in enumerate(counts):
+            total[index] += value
+        group_id = sample["group_id"]
+        group = group_counts.setdefault(group_id, [0, 0, 0])
+        for index, value in enumerate(counts):
+            group[index] += value
+
+        predicted_ratio = float(predicted.sum()) / roi_pixels
+        actual_ratio = float(actual.sum()) / roi_pixels
+        is_negative = not bool(actual.any())
+        false_alarm = is_negative and bool(predicted.any())
+        if is_negative:
+            negative_sample_ratios.append(predicted_ratio)
+            negative_sample_false_alarms += int(false_alarm)
+        state = {"has_actual_water": bool(actual.any()), "has_predicted_water": bool(predicted.any())}
+        group_sample_states.setdefault(group_id, []).append(state)
+        per_sample.append({
+            "sample_id": sample.get("sample_id", Path(sample["image"]).stem),
+            "group_id": group_id,
+            **summarize_binary_counts(tp=counts[0], fp=counts[1], fn=counts[2]),
+            "road_roi_pixel_count": roi_pixels,
+            "actual_road_water_area_ratio": round(actual_ratio, 6),
+            "predicted_road_water_area_ratio": round(predicted_ratio, 6),
+            "negative_sample": is_negative,
+            "false_alarm": bool(false_alarm),
+            "image_sha256": _sha256(image_path),
+            "mask_sha256": _sha256(mask_path),
+        })
+
+    def _iou_for_groups(groups):
+        counts = [sum(batch[index] for batch in groups) for index in range(3)]
+        return summarize_binary_counts(tp=counts[0], fp=counts[1], fn=counts[2])["iou"]
+
+    per_group = {}
+    negative_flights = []
+    for group_id, counts in group_counts.items():
+        states = group_sample_states[group_id]
+        group_is_negative = not any(item["has_actual_water"] for item in states)
+        predicted_water = any(item["has_predicted_water"] for item in states)
+        per_group[group_id] = {
+            **summarize_binary_counts(tp=counts[0], fp=counts[1], fn=counts[2]),
+            "sample_count": len(states),
+            "negative_flight": group_is_negative,
+            "false_alarm": bool(group_is_negative and predicted_water),
+        }
+        if group_is_negative:
+            negative_flights.append(bool(predicted_water))
+
+    negative_count = len(negative_sample_ratios)
+    return {
+        **summarize_binary_counts(tp=total[0], fp=total[1], fn=total[2]),
+        "model_class_count": 2,
+        "visible_water_probability_threshold": float(probability_threshold),
+        "sample_count": len(per_sample),
+        "flight_count": len(group_counts),
+        "negative_sample_count": negative_count,
+        "negative_sample_false_positive_rate": (
+            negative_sample_false_alarms / negative_count if negative_count else None
+        ),
+        "mean_negative_road_false_positive_area_ratio": (
+            round(sum(negative_sample_ratios) / negative_count, 6) if negative_count else None
+        ),
+        "negative_flight_count": len(negative_flights),
+        "negative_flight_false_alarm_rate": (
+            sum(negative_flights) / len(negative_flights) if negative_flights else None
+        ),
+        "mean_per_sample_iou": round(
+            sum(item["iou"] for item in per_sample if item["iou"] is not None)
+            / max(1, sum(item["iou"] is not None for item in per_sample)), 6,
+        ) if any(item["iou"] is not None for item in per_sample) else None,
+        "group_bootstrap_95_ci_iou": cluster_bootstrap_interval(group_counts, _iou_for_groups),
+        "interpretation": (
+            "像素指标仅在人工标注的道路观察区域内计算；负样本误报率按图像与航次分别报告；"
+            "不代表水深、道路通行状态或自动封路准确率。"
+        ),
+        "per_group": per_group,
+        "per_sample": per_sample,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--task", choices=("accident_classification", "flooded_road_segmentation"), required=True)
+    parser.add_argument("--task", choices=(
+        "accident_classification", "flooded_road_segmentation",
+        "visible_water_road_segmentation",
+    ), required=True)
     parser.add_argument("--manifest", type=Path, required=True,
                         help="UTF-8 JSON held-out manifest with disjoint train/validation/test groups")
     parser.add_argument("--dataset-root", type=Path, required=True)
@@ -212,14 +356,17 @@ def main() -> int:
                         help="Flooded-road minimum image-region fraction")
     parser.add_argument("--flood-class-threshold", type=float,
                         help="optional flooded-road class probability threshold")
+    parser.add_argument("--visible-water-class-threshold", type=float, default=0.5,
+                        help="fixed binary visible-water probability threshold; choose on validation flights")
     parser.add_argument("--output", type=Path, help="optional JSON report path")
     args = parser.parse_args()
     if not args.manifest.is_file() or not args.dataset_root.is_dir() or not args.model.is_file():
         parser.error("manifest, dataset root, and model must exist")
     if (not 0 < args.threshold <= 1 or not 0 < args.flood_min_area <= 1
             or (args.flood_class_threshold is not None
-                and not 0 <= args.flood_class_threshold <= 1)):
-        parser.error("thresholds must be greater than zero and at most one")
+                and not 0 <= args.flood_class_threshold <= 1)
+            or not 0 <= args.visible_water_class_threshold <= 1):
+        parser.error("thresholds are outside their allowed ranges")
     try:
         manifest_bytes = args.manifest.read_bytes()
         manifest = validate_split_manifest(
@@ -227,12 +374,20 @@ def main() -> int:
         )
         model_path = args.model.resolve()
         started = time.monotonic()
-        metrics = (
-            _evaluate_classification(manifest, args.dataset_root, model_path, args.threshold)
-            if args.task == "accident_classification" else
-            _evaluate_flood(manifest, args.dataset_root, model_path, args.flood_min_area,
-                            args.flood_class_threshold)
-        )
+        if args.task == "accident_classification":
+            metrics = _evaluate_classification(
+                manifest, args.dataset_root, model_path, args.threshold,
+            )
+        elif args.task == "flooded_road_segmentation":
+            metrics = _evaluate_flood(
+                manifest, args.dataset_root, model_path, args.flood_min_area,
+                args.flood_class_threshold,
+            )
+        else:
+            metrics = _evaluate_visible_water_road(
+                manifest, args.dataset_root, model_path,
+                probability_threshold=args.visible_water_class_threshold,
+            )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError, RuntimeError) as error:
         parser.error(str(error))
     report = {
