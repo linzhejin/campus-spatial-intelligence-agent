@@ -288,6 +288,7 @@ def test_video_reports_live_progress_between_durable_segment_checkpoints(tmp_pat
 
     live_updates = [item for item in progress if not item.get("checkpoint")]
     assert len(live_updates) >= 2
+    assert all(item["progress"]["total_sampled_frames"] == 10 for item in live_updates)
     assert [item["progress"]["frames_analyzed"] for item in live_updates] == sorted(
         item["progress"]["frames_analyzed"] for item in live_updates
     )

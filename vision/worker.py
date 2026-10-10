@@ -116,10 +116,17 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             resume_state=job.get("checkpoint"),
             cancel_check=cancellation_requested,
         )
+        finalizing_progress = {"phase": "finalizing", "percent": 99}
+        if job["media_kind"] == "video":
+            video_coverage = result.get("video_coverage", {})
+            sampled_frames = video_coverage.get("sampled_frames")
+            finalizing_progress.update({
+                "frames_analyzed": sampled_frames,
+                "total_sampled_frames": sampled_frames,
+                "analyzed_through_seconds": video_coverage.get("analyzed_through_seconds"),
+            })
         finalizing = vision_repository.update_job_progress(
-            database_url, job_id, worker_id,
-            progress={"phase": "finalizing", "percent": 99,
-                      "frames_analyzed": result.get("video_coverage", {}).get("sampled_frames", 1)},
+            database_url, job_id, worker_id, progress=finalizing_progress,
         )
         if finalizing is None:
             lease_lost.set()

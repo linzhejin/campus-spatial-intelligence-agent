@@ -336,9 +336,12 @@ def test_video_worker_attaches_generated_clips_to_the_job_result(monkeypatch, tm
         "checkpoint": None,
     }
     finished = {}
+    progress_updates = []
     monkeypatch.setattr(worker.config, "VISION_UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(vision_repository, "claim_next_job", lambda *_args, **_kwargs: job)
-    monkeypatch.setattr(vision_repository, "update_job_progress", lambda *_args, **_kwargs: {"cancel_requested": False})
+    monkeypatch.setattr(vision_repository, "update_job_progress", lambda _db, _job, _worker, *, progress, checkpoint=None: (
+        progress_updates.append(progress) or {"cancel_requested": False}
+    ))
     monkeypatch.setattr(vision_repository, "finish_job", lambda _db, _job, _worker, *, status, result=None, error=None:
                         finished.update(status=status, result=result, error=error) or status)
     monkeypatch.setattr(worker, "analyze_media", lambda *_args, **_kwargs: {
@@ -353,6 +356,7 @@ def test_video_worker_attaches_generated_clips_to_the_job_result(monkeypatch, tm
 
     assert outcome["status"] == "needs_review"
     assert finished["result"]["evidence_clip_summary"]["clips_created"] == 1
+    assert progress_updates[-1]["total_sampled_frames"] == progress_updates[-1]["frames_analyzed"] == 1
 
 
 def test_worker_honors_cancellation_requested_after_analysis_before_finalizing(monkeypatch, tmp_path):
@@ -367,11 +371,12 @@ def test_worker_honors_cancellation_requested_after_analysis_before_finalizing(m
         "checkpoint": None,
     }
     finished = {}
+    progress_updates = []
     monkeypatch.setattr(worker.config, "VISION_UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(vision_repository, "claim_next_job", lambda *_args, **_kwargs: job)
-    monkeypatch.setattr(vision_repository, "update_job_progress", lambda *_args, **_kwargs: {
-        "cancel_requested": True,
-    })
+    monkeypatch.setattr(vision_repository, "update_job_progress", lambda _db, _job, _worker, *, progress, checkpoint=None: (
+        progress_updates.append(progress) or {"cancel_requested": True}
+    ))
     monkeypatch.setattr(
         vision_repository, "finish_job",
         lambda _db, _job, _worker, *, status, result=None, error=None:
@@ -387,6 +392,7 @@ def test_worker_honors_cancellation_requested_after_analysis_before_finalizing(m
     assert outcome["status"] == "cancelled"
     assert finished["status"] == "cancelled"
     assert finished["result"] is None
+    assert progress_updates[-1] == {"phase": "finalizing", "percent": 99}
 
 
 def test_worker_polls_mid_segment_cancellation_and_keeps_the_saved_checkpoint(monkeypatch, tmp_path):

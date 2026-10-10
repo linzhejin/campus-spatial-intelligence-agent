@@ -596,6 +596,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             duration_seconds = total_frames / fps if total_frames else None
             target_fps = max(0.1, float(getattr(config, "VISION_SAMPLE_FPS", 5)))
             stride = max(1, round(fps / target_fps))
+            total_sampled_frames = math.ceil(total_frames / stride) if total_frames else None
             sample_interval = stride / fps
             specialized_stride = max(stride, round(fps))
             dense_trigger_threshold = float(getattr(
@@ -648,6 +649,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                         progress_callback({
                             "progress": {"phase": "analyzing", "percent": 0,
                                          "frames_analyzed": 0, "total_frames": total_frames,
+                                         "total_sampled_frames": total_sampled_frames,
                                          "analyzed_through_seconds": 0.0,
                                          "duration_seconds": round(duration_seconds, 3) if duration_seconds else None},
                             "checkpoint": {"next_frame_index": 0, "segments": []},
@@ -699,6 +701,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                             "percent": percent,
                             "frames_analyzed": sampled_count,
                             "total_frames": total_frames,
+                            "total_sampled_frames": total_sampled_frames,
                             "analyzed_through_seconds": round(segment_end, 3),
                             "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
                         },
@@ -730,6 +733,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                         "progress": {
                             "phase": "analyzing", "percent": percent,
                             "frames_analyzed": sampled_count, "total_frames": total_frames,
+                            "total_sampled_frames": total_sampled_frames,
                             "analyzed_through_seconds": analyzed_through,
                             "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
                         },
@@ -838,6 +842,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                                 "progress": {
                                     "phase": "analyzing", "percent": percent,
                                     "frames_analyzed": sampled_count, "total_frames": total_frames,
+                                    "total_sampled_frames": total_sampled_frames,
                                     "analyzed_through_seconds": round(
                                         min(duration_seconds, frame_index / fps)
                                         if duration_seconds else frame_index / fps, 3,

@@ -257,7 +257,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
   assert.match(managerHtml, /manager\.css\?v=20261010a/);
-  assert.match(managerHtml, /manager\.js\?v=20261010c/);
+  assert.match(managerHtml, /manager\.js\?v=20261010d/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
@@ -774,6 +774,28 @@ test('completed image jobs show vehicle counts and safely render detector boxes'
   assert.match(summaryText, /检出车辆 2/);
   assert.match(summaryText, /事故场景模型 未启用/);
   assert.match(summaryText, /路面积水分割模型 未启用/);
+});
+
+test('running video progress compares analyzed samples with the sampled-frame total', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'running-video', status: 'running', media_kind: 'video',
+    original_name: 'campus.mp4', progress: {
+      phase: 'analyzing', percent: 42, frames_analyzed: 63, total_frames: 18000,
+      total_sampled_frames: 3000, analyzed_through_seconds: 126, duration_seconds: 600,
+    },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const rendered = descendants(harness.elements.get('vision-jobs').children[0]);
+  const progress = rendered.find((node) => node.className === 'vision-job-meta'
+    && /抽样帧/.test(node.textContent || ''));
+  assert.ok(progress);
+  assert.match(progress.textContent, /63\s*\/\s*3000 个抽样帧/);
+  assert.match(progress.textContent, /已分析到 126\.0 秒/);
+  assert.doesNotMatch(progress.textContent, /18000/);
 });
 
 function descendants(node) {

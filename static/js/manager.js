@@ -1359,7 +1359,11 @@
       var progressLine = document.createElement('p'); progressLine.className = 'vision-job-meta';
       var parts = [];
       if (progressInfo.percent != null && Number.isFinite(Number(progressInfo.percent))) parts.push(Number(progressInfo.percent) + '%');
-      if (progressInfo.frames_analyzed != null) parts.push(Number(progressInfo.frames_analyzed) + ' / ' + Number(progressInfo.total_frames || 0) + ' 帧');
+      if (progressInfo.frames_analyzed != null) {
+        var sampledTotal = Number(progressInfo.total_sampled_frames);
+        parts.push(Number(progressInfo.frames_analyzed) + (Number.isFinite(sampledTotal) && sampledTotal > 0
+          ? ' / ' + sampledTotal + ' 个抽样帧' : ' 个抽样帧'));
+      }
       if (progressInfo.analyzed_through_seconds != null) parts.push('已分析到 ' + Number(progressInfo.analyzed_through_seconds).toFixed(1) + ' 秒');
       progressLine.textContent = parts.length ? parts.join(' · ') : '等待视觉工作进程';
       card.appendChild(progressLine);
