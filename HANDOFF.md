@@ -12,7 +12,7 @@
 
 <!-- FACTS:BEGIN -->
 （以下为自动生成区，勿手改；更新：python scripts/docs/gen_facts.py）
-- 版本：codex/aerial-vision-release @ 156210c ｜ origin/main 同步 ｜ gitee/main 同步 ｜ 生成于 2026-10-10 13:07
+- 版本：codex/aerial-vision-release @ 0952596 ｜ origin/main 同步 ｜ gitee/main 同步 ｜ 生成于 2026-10-10 13:20
 - Agent 工具 14 ｜ POI 443（含校门 17） ｜ 路网 5,087 节点 / 14,622 有向边 ｜ 人工边覆盖 208
 - 前端 SW whu-walker-v87 ｜ Android 1.4.1 (versionCode 6) ｜ 数据库迁移 12（最新 012）
 <!-- FACTS:END -->
@@ -26,17 +26,13 @@
 - 本次场景复用改动、回归和线上验收见[观察场景复用与道路绑定验收](docs/development/24_观察场景复用与道路绑定验收_20261010.md)。
 - 大观察区域的检测已采用重叠切片，避免整幅 1080p/4K 画面缩到模型尺寸后损失过多小目标细节；本机 CPU 耗时和适用边界见[观察区域大图切片推理修复](docs/development/25_观察区域大图切片推理修复_20261010.md)。
 
-- 最近提交集中在管理端影像删除失败后的恢复/重试、道路状态更新可靠性、刷新会话行为和地图交互修正。完整差异以提交记录为准。
-- 2026-10-05 生产核验：服务器 `main` 检出 `3beea8d`，与 Gitee `origin/main` 一致；Gitee `main` 也是该提交。GitHub `origin/main` 仍为 `602c65b`，落后 13 个提交；生产部署以 Gitee 为准。本次无需推送或重置代码。
-- Web、Agent worker、vision worker 均为 active；本地与公网 `/health` 正常，`/manager`、当前页面引用的 JS/CSS 均返回 HTTP 200。数据库迁移 `009_vision_job_delete.sql` 已应用，视觉 worker 就绪检查为 true。
-- 服务器原先的 vision worker 进程早于 `3beea8d`，且本次提交更新了它使用的存储模块。确认影像队列无待处理/运行任务后，仅重启该 worker。未运行全量测试；本次完成的是生产健康与资源 smoke check。此前测试基线仍是历史记录：JavaScript `f19156c` 上 79/79；Python `81084d1` 上 823 通过、47 跳过、1 预期失败。
-- 服务器工作区的未跟踪文件 `cloudflared`、`scripts/_probe_shortest.py`、`wget-log` 均保留，未清理。当前提交上的全量测试状态没有在本轮重验。
+- 2026-10-10 当前发布：提交 `0952596` 已推送至 GitHub、Gitee `main` 并快进部署到腾讯云 `/home/ubuntu/campus-spatial-intelligence-agent`。本轮改动只影响视觉 worker 的观察区域推理；部署前影像队列没有 queued/running 任务，无数据库迁移或模型权重更新。
+- 部署后 `whu-walker`、`whu-agent-worker`、`whu-vision-worker` 均为 active；视觉 worker 最新心跳为 ready，公网 `/health` 返回 HTTP 200、`status=ok`。服务器工作目录的未跟踪文件 `cloudflared`、`scripts/_probe_shortest.py`、`wget-log` 保持原样。
+- 本轮全量回归：Python `1035 passed、48 skipped、1 xfailed`，JavaScript `113 passed`；48 项依赖本机没有的独立 PostgreSQL 测试环境。切片全帧 ROI 的本机 CPU 耗时约为普通整帧的 4 倍，实际使用应圈窄道路区域，不能称为实时。
 
 ## 当前工作区边界
 
-工作区已有未提交内容，不能整体暂存、还原或清理。本次文档整理只涉及 `HANDOFF.md`、`README.md`、`docs/README.md`、`research/README.md` 和 2026-10-04 状态报告。
-
-另一个对话负责的数据任务不在本次范围。本机当前还能看到相关的新研究方案、数据目录、下载脚本、`package.json` 改动和若干 pytest 临时目录；本次未继续处理、修改、移动、删除、暂存或验证这些任务内容。接手时请先看 `git status`，保留这些文件并让数据任务所在对话继续处理。
+本次实现位于隔离工作树 `codex/aerial-vision-release`，提交已发布；原始主 checkout 未被本轮改动。服务器原有未跟踪文件已保留。接手新工作前仍先检查目标工作树的 `git status`，勿把服务器未跟踪文件当作本地项目垃圾清理。
 
 ## 最近功能与边界
 
@@ -47,10 +43,10 @@
 
 ## 推荐接手顺序
 
-1. 先检查工作区和远程分支差异，确认哪些改动属于当前任务；不要对整个工作区执行暂存、回滚或清理。
-2. 如果要处理线上管理端问题，先核对实际部署提交及静态资源缓存，再在浏览器验证上传、标注/取消、重新选择、删除和完成状态；目前没有对 `3beea8d` 做线上核验。
-3. 针对卫星地图截图的 0 车辆结果，优先用清晰的原始航拍图验证现有模型边界；若需求确实是卫星底图识别，再单独建立数据集和验收方案，不把这类改动混入本次文档整理。
-4. 研究主线仍需用预先冻结的独立多轮任务集评估状态保持和空间工具调用；C1 结果仅为开发预实验，不是独立留出集。
+1. 借到无人机后先采集 3–5 个稳定、经许可的代表性航段，保留原视频、拍摄时间和地点；每段先人工标记行车道、人行区和停车区，优先检查典型目标大小与镜头变化。
+2. 用同一批航段对比整帧缩放与道路 ROI 切片，按车辆/行人尺寸分层记录漏检、误检和耗时；在校园样本评估前，不把公开 VisDrone 指标外推为武大现场结论。
+3. 事故和积水仍需解决授权、按航次拆分的独立评测和校园样本适配；未达预设门槛前保持关闭，人工审核路线联动继续作为安全边界。
+4. 根据窄 ROI 的实际处理速度与视频长度，再和导师决定是否配置 GPU；当前实现是上传后离线处理，不是实时机载识别。
 
 ## 文档导航
 
