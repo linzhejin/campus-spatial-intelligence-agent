@@ -178,7 +178,7 @@ class OnnxDetector:
         return detections
 
     def detect_regions(self, frame, regions: list[dict], *, tracking: bool = False) -> list[dict[str, Any]]:
-        """Run high-resolution inference on annotated road/people/parking crops."""
+        """Run inference on annotated areas, tiling large crops at model-input scale."""
         height, width = frame.shape[:2]
         crop_boxes = []
         for region in regions or []:
@@ -208,11 +208,25 @@ class OnnxDetector:
         detections = []
         for x1, y1, x2, y2 in crop_boxes:
             crop = frame[y1:y2, x1:x2]
-            for item in self.detect(crop, tracking=tracking):
-                shifted = dict(item)
-                bx1, by1, bx2, by2 = map(float, item["box"])
-                shifted["box"] = [bx1 + x1, by1 + y1, bx2 + x1, by2 + y1]
-                detections.append(shifted)
+            crop_height, crop_width = crop.shape[:2]
+            # A 1.25x source tile is reduced only 20% at inference, versus a
+            # much larger reduction when resizing a full 1080p/4K frame.
+            tile_size = max(self.input_size, round(self.input_size * 1.25))
+            overlap = max(1, round(tile_size * 0.2))
+            x_offsets = self._tile_offsets(crop_width, tile_size, overlap)
+            y_offsets = self._tile_offsets(crop_height, tile_size, overlap)
+            for tile_y in y_offsets:
+                for tile_x in x_offsets:
+                    tile = crop[tile_y:min(tile_y + tile_size, crop_height),
+                                tile_x:min(tile_x + tile_size, crop_width)]
+                    for item in self.detect(tile, tracking=tracking):
+                        shifted = dict(item)
+                        bx1, by1, bx2, by2 = map(float, item["box"])
+                        shifted["box"] = [
+                            bx1 + x1 + tile_x, by1 + y1 + tile_y,
+                            bx2 + x1 + tile_x, by2 + y1 + tile_y,
+                        ]
+                        detections.append(shifted)
         detections.sort(key=lambda item: item["confidence"], reverse=True)
         deduplicated = []
         for item in detections:
@@ -227,12 +241,26 @@ class OnnxDetector:
                     0.0, min(y2, ky2) - max(y1, ky1)
                 )
                 union = area + max(0.0, kx2 - kx1) * max(0.0, ky2 - ky1) - intersection
-                if union > 0 and intersection / union >= 0.6:
+                kept_area = max(0.0, kx2 - kx1) * max(0.0, ky2 - ky1)
+                overlap_over_smaller = intersection / min(area, kept_area) if min(area, kept_area) > 0 else 0
+                if union > 0 and (intersection / union >= 0.6 or overlap_over_smaller >= 0.8):
+                    # A box clipped at one tile edge may be completed by its overlapping neighbor.
+                    kept["box"] = [min(x1, kx1), min(y1, ky1), max(x2, kx2), max(y2, ky2)]
                     duplicate = True
                     break
             if not duplicate:
                 deduplicated.append(item)
         return deduplicated
+
+    @staticmethod
+    def _tile_offsets(length: int, tile_size: int, overlap: int) -> list[int]:
+        """Cover an axis with overlapping tiles and anchor the final tile at its end."""
+        if length <= tile_size:
+            return [0]
+        stride = max(1, tile_size - overlap)
+        final_offset = length - tile_size
+        tile_count = math.ceil(final_offset / stride) + 1
+        return [round(index * final_offset / (tile_count - 1)) for index in range(tile_count)]
 
 
 def _gray_for_motion(frame, cv2):

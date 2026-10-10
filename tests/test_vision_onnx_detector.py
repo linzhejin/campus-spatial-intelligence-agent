@@ -93,6 +93,42 @@ def test_onnx_detector_uses_annotated_crop_and_restores_full_frame_coordinates()
     assert session.feed["images"].shape == (1, 3, 960, 960)
 
 
+def test_onnx_detector_tiles_large_observation_regions_and_merges_seam_duplicates():
+    class TiledSession(FakeSession):
+        def __init__(self):
+            super().__init__()
+            self.feeds = []
+
+        def run(self, output_names, input_feed):
+            self.feeds.append(input_feed)
+            outputs = [
+                ([3], [[640, 80, 704, 144]], [0.90]),
+                ([3], [[160, 80, 224, 144]], [0.85]),
+                ([3], [[720, 80, 768, 128]], [0.88]),
+            ][len(self.feeds) - 1]
+            labels, boxes, scores = outputs
+            return [
+                np.asarray([labels]),
+                np.asarray([boxes], dtype=np.float32).reshape(1, len(boxes), 4),
+                np.asarray([scores], dtype=np.float32),
+            ]
+
+    session = TiledSession()
+    detector = OnnxDetector("model.onnx", session=session, confidence_threshold=0.25)
+    frame = np.zeros((1200, 2400, 3), dtype=np.uint8)
+
+    detections = detector.detect_regions(frame, [{
+        "id": "lane", "kind": "vehicle_lane",
+        "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]],
+    }])
+
+    assert len(session.feeds) == 3, "large crops should be covered by overlapping higher-detail tiles"
+    assert all(feed["images"].shape == (1, 3, 960, 960) for feed in session.feeds)
+    assert len(detections) == 2, "the same vehicle detected on an overlap seam should appear once"
+    assert detections[0]["box"] == pytest.approx([800, 100, 880, 180])
+    assert detections[1]["box"] == pytest.approx([2100, 100, 2160, 160])
+
+
 def test_onnx_detector_rejects_model_with_unexpected_signature():
     session = FakeSession(input_shape=(1, 3, "height", "width"))
     with pytest.raises(VisionConfigurationError, match="静态方形输入"):
