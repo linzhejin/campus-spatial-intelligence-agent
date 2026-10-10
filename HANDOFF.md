@@ -28,7 +28,7 @@
 
 - 2026-10-10 当前发布：提交 `0952596` 已推送至 GitHub、Gitee `main` 并快进部署到腾讯云 `/home/ubuntu/campus-spatial-intelligence-agent`。本轮改动只影响视觉 worker 的观察区域推理；部署前影像队列没有 queued/running 任务，无数据库迁移或模型权重更新。
 - 部署后 `whu-walker`、`whu-agent-worker`、`whu-vision-worker` 均为 active；视觉 worker 最新心跳为 ready，公网 `/health` 返回 HTTP 200、`status=ok`。服务器工作目录的未跟踪文件 `cloudflared`、`scripts/_probe_shortest.py`、`wget-log` 保持原样。
-- 本轮全量回归：Python `1035 passed、48 skipped、1 xfailed`，JavaScript `113 passed`；48 项依赖本机没有的独立 PostgreSQL 测试环境。切片全帧 ROI 的本机 CPU 耗时约为普通整帧的 4 倍，实际使用应圈窄道路区域，不能称为实时。
+- 本轮全量回归：Python `1035 passed、48 skipped、1 xfailed`，JavaScript `113 passed`；48 项依赖本机没有的独立 PostgreSQL 测试环境。重复 5 次的本机 CPU 测速中，全帧 ROI 切片处理约为普通整帧的 4.41 倍；实际使用应圈窄道路区域，不能称为实时。
 
 ## 当前工作区边界
 
