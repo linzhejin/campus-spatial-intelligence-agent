@@ -78,7 +78,7 @@ def get_job_cancel_state(url: str | None, job_id: str, worker_id: str) -> dict |
 
 def update_job_progress(url: str | None, job_id: str, worker_id: str, *,
                         progress: dict, checkpoint: dict | None = None) -> dict | None:
-    """Persist a completed video segment checkpoint and report cancellation state."""
+    """Persist live progress, optionally checkpointing a completed video segment."""
     with database.connect(url) as conn:
         row = conn.execute(
             "UPDATE manager_vision_job SET progress=%s, checkpoint=COALESCE(%s, checkpoint), updated_at=now()"

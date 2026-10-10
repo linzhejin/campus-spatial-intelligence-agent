@@ -261,6 +261,40 @@ def test_video_pipeline_samples_entire_clip_in_segments_not_just_first_180_secon
     assert progress[-1]["checkpoint"]["next_frame_index"] == 1900
 
 
+def test_video_reports_live_progress_between_durable_segment_checkpoints(tmp_path, monkeypatch):
+    import config
+    from vision import engine
+
+    source = tmp_path / "live-progress.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 20
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 50)
+    monkeypatch.setattr(config, "VISION_PROGRESS_UPDATE_SECONDS", 0.5, raising=False)
+    clock = {"value": 0.0}
+
+    def monotonic():
+        clock["value"] += 1.0
+        return clock["value"]
+
+    monkeypatch.setattr(engine.time, "monotonic", monotonic)
+    progress = []
+
+    analyze_media(
+        source, "video", None, camera_stabilized=True, detector=FakeDetector(),
+        progress_callback=progress.append,
+    )
+
+    live_updates = [item for item in progress if not item.get("checkpoint")]
+    assert len(live_updates) >= 2
+    assert [item["progress"]["frames_analyzed"] for item in live_updates] == sorted(
+        item["progress"]["frames_analyzed"] for item in live_updates
+    )
+    assert live_updates[0]["progress"]["frames_analyzed"] > 0
+    assert progress[-1]["checkpoint"]["next_frame_index"] == 20
+
+
 def test_video_cancel_stops_between_frames_and_persists_partial_segment_checkpoint(tmp_path, monkeypatch):
     import config
     from vision.engine import VisionAnalysisCancelled

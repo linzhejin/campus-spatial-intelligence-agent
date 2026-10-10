@@ -80,12 +80,12 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
         def save_progress(snapshot):
             saved = vision_repository.update_job_progress(
                 database_url, job_id, worker_id,
-                progress=snapshot["progress"], checkpoint=snapshot["checkpoint"],
+                progress=snapshot["progress"], checkpoint=snapshot.get("checkpoint"),
             )
             if saved is None:
                 lease_lost.set()
                 raise RuntimeError("影像任务工作租约已失效")
-            if saved["cancel_requested"]:
+            if saved["cancel_requested"] and snapshot.get("checkpoint") is not None:
                 raise VisionJobCancelled("管理员已取消该影像任务")
 
         last_cancel_poll = None

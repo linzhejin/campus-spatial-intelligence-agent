@@ -612,6 +612,15 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
             accident_dense_until_frame = int(
                 (resume_state or {}).get("accident_dense_until_frame", -1)
             )
+            try:
+                progress_interval_seconds = float(getattr(
+                    config, "VISION_PROGRESS_UPDATE_SECONDS", 2.0,
+                ))
+            except (TypeError, ValueError):
+                progress_interval_seconds = 2.0
+            if not math.isfinite(progress_interval_seconds) or progress_interval_seconds <= 0:
+                progress_interval_seconds = 2.0
+            last_live_progress_at = started
             segment_limit = max(5, int(getattr(config, "VISION_SEGMENT_FRAMES", config.VISION_MAX_VIDEO_FRAMES)))
             frame_index = int((resume_state or {}).get("next_frame_index", 0))
             if frame_index:
@@ -648,6 +657,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
 
             def flush_segment(next_frame_index: int):
                 nonlocal frames, transforms, frame_indices, specialized_observations
+                nonlocal last_live_progress_at
                 if not frames:
                     return
                 segment_start = frame_indices[0] / fps
@@ -694,6 +704,7 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                         },
                         "checkpoint": checkpoint,
                     })
+                    last_live_progress_at = time.monotonic()
                 frames = []
                 transforms = [None]
                 frame_indices = []
@@ -809,6 +820,32 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                             previous_gray, previous_scale = gray, scale
                         elif not camera_stabilized:
                             previous_gray, previous_scale = _gray_for_motion(frame, cv2)
+                        now = time.monotonic()
+                        if (progress_callback
+                                and now - last_live_progress_at >= progress_interval_seconds):
+                            sampled_count = sum(
+                                item["metrics"].get("frames_analyzed", 0)
+                                for item in completed_segments
+                            ) + len(frames)
+                            next_frame_index = min(
+                                frame_index + 1, total_frames or frame_index + 1,
+                            )
+                            percent = (
+                                min(99, round(next_frame_index / total_frames * 100))
+                                if total_frames else None
+                            )
+                            progress_callback({
+                                "progress": {
+                                    "phase": "analyzing", "percent": percent,
+                                    "frames_analyzed": sampled_count, "total_frames": total_frames,
+                                    "analyzed_through_seconds": round(
+                                        min(duration_seconds, frame_index / fps)
+                                        if duration_seconds else frame_index / fps, 3,
+                                    ),
+                                    "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
+                                },
+                            })
+                            last_live_progress_at = now
                         if len(frames) >= segment_limit:
                             flush_segment(frame_index + 1)
                         if time.monotonic() - started > config.VISION_MAX_ANALYSIS_SECONDS:
