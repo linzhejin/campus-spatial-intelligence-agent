@@ -64,6 +64,18 @@ def heartbeat_job(url: str | None, job_id: str, worker_id: str, lease_seconds: i
     return row is not None
 
 
+def get_job_cancel_state(url: str | None, job_id: str, worker_id: str) -> dict | None:
+    """Read cancellation state without writing a progress checkpoint per frame."""
+    with database.connect(url) as conn:
+        row = conn.execute(
+            "SELECT cancel_requested FROM manager_vision_job"
+            " WHERE job_id=%s AND worker_id=%s AND status='running'"
+            " AND deleted_at IS NULL AND lease_until>now()",
+            (job_id, worker_id),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def update_job_progress(url: str | None, job_id: str, worker_id: str, *,
                         progress: dict, checkpoint: dict | None = None) -> dict | None:
     """Persist a completed video segment checkpoint and report cancellation state."""
@@ -79,7 +91,7 @@ def update_job_progress(url: str | None, job_id: str, worker_id: str, *,
 
 
 def request_cancel_job(url: str | None, job_id: str) -> dict | None:
-    """Cancel queued work immediately or ask a running worker to stop at its next checkpoint."""
+    """Cancel queued work immediately or ask a running worker to stop between sampled frames."""
     with database.connect(url) as conn:
         row = conn.execute(
             "UPDATE manager_vision_job SET"

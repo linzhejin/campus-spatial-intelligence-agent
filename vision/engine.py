@@ -26,6 +26,10 @@ class VisionConfigurationError(RuntimeError):
     """The optional vision runtime or its model is not usable."""
 
 
+class VisionAnalysisCancelled(RuntimeError):
+    """A video analysis was cancelled between sampled frames."""
+
+
 def _validate_frame_dimensions(width: int, height: int) -> None:
     if width <= 0 or height <= 0:
         raise ValueError("影像分辨率无效")
@@ -508,7 +512,8 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                   camera_stabilized: bool = False,
                   *, detector=None, accident_model=None, flood_segmenter=None,
                   regions: list[dict] | None = None,
-                  progress_callback=None, resume_state: dict | None = None) -> dict:
+                  progress_callback=None, resume_state: dict | None = None,
+                  cancel_check=None) -> dict:
     """Analyze all sampled frames in bounded chunks and retain resumable review evidence."""
     path = Path(media_path)
     if not path.is_file():
@@ -694,8 +699,41 @@ def analyze_media(media_path: str | Path, media_kind: str, anchor_gcj: dict | No
                 frame_indices = []
                 specialized_observations = []
 
+            def persist_cancel_checkpoint(next_frame_index: int):
+                if frames:
+                    flush_segment(next_frame_index)
+                    return
+                if progress_callback:
+                    sampled_count = sum(
+                        item["metrics"].get("frames_analyzed", 0)
+                        for item in completed_segments
+                    )
+                    analyzed_through = max(
+                        (item["end_seconds"] for item in completed_segments), default=0.0,
+                    )
+                    percent = (
+                        min(99, round(next_frame_index / total_frames * 100))
+                        if total_frames else None
+                    )
+                    progress_callback({
+                        "progress": {
+                            "phase": "analyzing", "percent": percent,
+                            "frames_analyzed": sampled_count, "total_frames": total_frames,
+                            "analyzed_through_seconds": analyzed_through,
+                            "duration_seconds": round(duration_seconds, 3) if duration_seconds else None,
+                        },
+                        "checkpoint": {
+                            "next_frame_index": next_frame_index,
+                            "segments": completed_segments,
+                            "accident_dense_until_frame": accident_dense_until_frame,
+                        },
+                    })
+
             try:
                 while True:
+                    if cancel_check and cancel_check():
+                        persist_cancel_checkpoint(frame_index)
+                        raise VisionAnalysisCancelled("管理员已取消该影像任务")
                     ok, frame = capture.read()
                     if not ok:
                         if total_frames and frame_index < total_frames:

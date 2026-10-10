@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from storage import database
 from storage import vision_repository
 from vision.evidence import attach_evidence_clips
-from vision.engine import OnnxDetector, analyze_media
+from vision.engine import OnnxDetector, VisionAnalysisCancelled, analyze_media
 from vision.specialized import OnnxAiderClassifier, OnnxFloodSegmenter
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def load_optional_models(*, accident_path=None, accident_revision=None,
 
 
 class VisionJobCancelled(RuntimeError):
-    """A manager cancelled a running job after its last saved segment."""
+    """A manager cancelled a running job after its last saved checkpoint."""
 
 
 def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90, *,
@@ -88,6 +88,24 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             if saved["cancel_requested"]:
                 raise VisionJobCancelled("管理员已取消该影像任务")
 
+        last_cancel_poll = None
+        cached_cancel_state = False
+
+        def cancellation_requested():
+            nonlocal last_cancel_poll, cached_cancel_state
+            if lease_lost.is_set():
+                return True
+            now = time.monotonic()
+            if last_cancel_poll is not None and now - last_cancel_poll < 1.0:
+                return cached_cancel_state
+            state = vision_repository.get_job_cancel_state(database_url, job_id, worker_id)
+            last_cancel_poll = now
+            if state is None:
+                lease_lost.set()
+                return True
+            cached_cancel_state = bool(state.get("cancel_requested"))
+            return cached_cancel_state
+
         result = analyze_media(
             path, job["media_kind"], job["anchor_gcj"],
             camera_stabilized=job["camera_stabilized"], detector=detector,
@@ -96,6 +114,7 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             regions=job.get("observation_regions") or [],
             progress_callback=save_progress,
             resume_state=job.get("checkpoint"),
+            cancel_check=cancellation_requested,
         )
         finalizing = vision_repository.update_job_progress(
             database_url, job_id, worker_id,
@@ -137,7 +156,7 @@ def process_next_job(database_url: str, worker_id: str, lease_seconds: int = 90,
             database_url, job_id, worker_id, status=status, result=result,
         )
         return {"job_id": job_id, "status": final_status or "lease_lost"}
-    except VisionJobCancelled:
+    except (VisionJobCancelled, VisionAnalysisCancelled):
         if lease_lost.is_set():
             return {"job_id": job_id, "status": "lease_lost"}
         vision_repository.update_job_progress(

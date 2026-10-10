@@ -387,3 +387,55 @@ def test_worker_honors_cancellation_requested_after_analysis_before_finalizing(m
     assert outcome["status"] == "cancelled"
     assert finished["status"] == "cancelled"
     assert finished["result"] is None
+
+
+def test_worker_polls_mid_segment_cancellation_and_keeps_the_saved_checkpoint(monkeypatch, tmp_path):
+    from vision import worker
+    from storage import vision_repository
+
+    job_id = "12345678-1234-4234-8234-123456789abc"
+    (tmp_path / "source.mp4").write_bytes(b"source")
+    job = {
+        "job_id": job_id, "media_kind": "video", "media_path": "source.mp4",
+        "anchor_gcj": None, "camera_stabilized": True, "observation_regions": [],
+        "checkpoint": None,
+    }
+    saved = {}
+    finished = {}
+    monkeypatch.setattr(worker.config, "VISION_UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(vision_repository, "claim_next_job", lambda *_args, **_kwargs: job)
+    monkeypatch.setattr(vision_repository, "get_job_cancel_state", lambda *_args: {
+        "cancel_requested": True,
+    })
+
+    def update_progress(_db, _job, _worker, *, progress, checkpoint=None):
+        if checkpoint is not None:
+            saved["checkpoint"] = checkpoint
+        return {"cancel_requested": True}
+
+    monkeypatch.setattr(vision_repository, "update_job_progress", update_progress)
+    monkeypatch.setattr(
+        vision_repository, "finish_job",
+        lambda _db, _job, _worker, *, status, result=None, error=None:
+            finished.update(status=status, result=result, error=error) or status,
+    )
+
+    def analyze_with_cancel(_path, _kind, _anchor, **kwargs):
+        assert kwargs["cancel_check"]() is True
+        kwargs["progress_callback"]({
+            "progress": {"phase": "analyzing", "percent": 5},
+            "checkpoint": {"next_frame_index": 10, "segments": [{
+                "start_seconds": 0.0, "end_seconds": 0.9,
+                "metrics": {"frames_analyzed": 5},
+            }]},
+        })
+        pytest.fail("cancelled analysis must stop before returning a result")
+
+    monkeypatch.setattr(worker, "analyze_media", analyze_with_cancel)
+
+    outcome = worker.process_next_job("db", "worker", lease_seconds=90)
+
+    assert outcome["status"] == "cancelled"
+    assert saved["checkpoint"]["next_frame_index"] == 10
+    assert finished["status"] == "cancelled"
+    assert finished["result"] is None

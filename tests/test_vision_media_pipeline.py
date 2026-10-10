@@ -261,6 +261,37 @@ def test_video_pipeline_samples_entire_clip_in_segments_not_just_first_180_secon
     assert progress[-1]["checkpoint"]["next_frame_index"] == 1900
 
 
+def test_video_cancel_stops_between_frames_and_persists_partial_segment_checkpoint(tmp_path, monkeypatch):
+    import config
+    from vision.engine import VisionAnalysisCancelled
+
+    source = tmp_path / "cancel-mid-segment.mp4"
+    source.write_bytes(b"fake-video")
+    FakeCV2._total_frames = 100
+    monkeypatch.setitem(sys.modules, "cv2", FakeCV2)
+    monkeypatch.setattr(config, "VISION_SAMPLE_FPS", 5)
+    monkeypatch.setattr(config, "VISION_SEGMENT_FRAMES", 50)
+    detector = FakeDetector()
+    progress = []
+    checks = 0
+
+    def cancellation_requested():
+        nonlocal checks
+        checks += 1
+        return checks >= 4
+
+    with pytest.raises(VisionAnalysisCancelled):
+        analyze_media(
+            source, "video", None, camera_stabilized=True, detector=detector,
+            progress_callback=progress.append, cancel_check=cancellation_requested,
+        )
+
+    assert detector.calls == 2
+    assert progress[-1]["checkpoint"]["next_frame_index"] == 3
+    assert progress[-1]["checkpoint"]["segments"][-1]["metrics"]["frames_analyzed"] == 2
+    assert progress[-1]["progress"]["analyzed_through_seconds"] == 0.2
+
+
 def test_specialized_video_evidence_is_merged_across_processing_segments(tmp_path, monkeypatch):
     import config
 
