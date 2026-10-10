@@ -59,8 +59,20 @@ def test_moving_camera_video_requires_roi_reassociation_before_congestion_candid
 
     assert result["metrics"]["motion_assessment"] == "camera_motion_compensated"
     assert all(item["kind"] != "possible_congestion" for item in result["candidates"])
+    assert result["safety"]["observation_region_reassociation_required"] is True
     assert result["safety"]["automatically_changes_routing"] is False
     assert result["safety"]["accident_recognition_supported"] is False
+
+
+def test_fixed_camera_does_not_require_observation_region_reassociation():
+    frames = [frame_of_stopped_vehicles() for _ in range(3)]
+    roi = [{"id": "lane", "kind": "vehicle_lane", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}]
+
+    result = analyze_observations(
+        frames, frame_width=640, frame_height=480, camera_stabilized=True, regions=roi,
+    )
+
+    assert result["safety"]["observation_region_reassociation_required"] is False
 
 
 def test_video_with_unreliable_camera_motion_compensation_only_reports_vehicle_counts():

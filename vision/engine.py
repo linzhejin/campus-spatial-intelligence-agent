@@ -433,6 +433,10 @@ def _merge_segment_analyses(segments: list[dict], *, accident_threshold: float =
             "requires_human_review": True,
             "camera_motion_compensated": bool(motion_ready and not stabilized),
             "camera_stabilized_assumed": stabilized,
+            "observation_region_reassociation_required": any(
+                item.get("safety", {}).get("observation_region_reassociation_required") is True
+                for item in segments
+            ),
             "accident_recognition_supported": accident_model_enabled,
             "flood_segmentation_supported": flood_model_enabled,
             "automatically_changes_routing": False,

@@ -1269,6 +1269,7 @@
 
   function appendVisionMetrics(card, result, mediaKind) {
     var metrics = result.metrics || {};
+    var safety = result.safety || {};
     var summary = document.createElement('div'); summary.className = 'vision-metrics';
     var count = document.createElement('strong');
     count.textContent = mediaKind === 'video'
@@ -1280,12 +1281,17 @@
       summary.appendChild(peak);
       var motion = document.createElement('span');
       motion.textContent = {
-        camera_motion_compensated: '镜头运动校正通过',
+        camera_motion_compensated: '轨迹运动补偿通过，道路区域仍需核对',
         operator_declared_stabilized: '按管理员声明使用固定/已稳像视角',
         camera_motion_uncompensated: '镜头运动校正不足，仅供查看车辆数量',
         insufficient_single_frame: '画面数量不足',
       }[metrics.motion_assessment] || '镜头运动状态未知';
       summary.appendChild(motion);
+      if (safety.observation_region_reassociation_required === true) {
+        var regionReview = document.createElement('small');
+        regionReview.textContent = '镜头移动后请重新核对观察区域与道路的对应关系，再确认事件路段。';
+        summary.appendChild(regionReview);
+      }
     }
     var counts = metrics.peak_class_counts || {};
     var classes = Object.keys(counts).filter(function (label) { return Number(counts[label]) > 0; }).slice(0, 8);
@@ -1295,7 +1301,6 @@
       summary.appendChild(list);
     }
     var model = result.model || {};
-    var safety = result.safety || {};
     var accident = model.accident_model;
     var flood = model.flood_model;
     var optionalErrors = Array.isArray(result.optional_model_errors) ? result.optional_model_errors : [];

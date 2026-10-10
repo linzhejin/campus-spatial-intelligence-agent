@@ -155,6 +155,20 @@ def test_segment_merge_keeps_candidates_for_distinct_observation_regions_separat
     } == {"north-lane", "south-lane"}
 
 
+def test_segment_merge_propagates_observation_region_reassociation_requirement():
+    segment = {
+        "start_seconds": 0.0,
+        "end_seconds": 5.0,
+        "metrics": {"frames_analyzed": 5},
+        "candidates": [],
+        "safety": {"observation_region_reassociation_required": True},
+    }
+
+    result = _merge_segment_analyses([segment])
+
+    assert result["safety"]["observation_region_reassociation_required"] is True
+
+
 def test_segment_merge_splits_same_region_events_when_an_intervening_segment_has_no_candidate():
     def segment(start, end, candidate=True):
         return {

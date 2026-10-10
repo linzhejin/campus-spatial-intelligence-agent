@@ -257,7 +257,7 @@ test('manager media summary has responsive preview styling and no rough-location
   assert.match(managerCss, /\.selected-media-preview\{[^}]*object-fit:contain/);
   assert.match(managerCss, /\.selected-media-copy strong\{[^}]*overflow-wrap:anywhere/);
   assert.match(managerHtml, /manager\.css\?v=20261010a/);
-  assert.match(managerHtml, /manager\.js\?v=20261010d/);
+  assert.match(managerHtml, /manager\.js\?v=20261010e/);
   assert.match(managerHtml, /value="road_surface"/);
   assert.match(managerHtml, /id="pick-anchor"/);
   assert.match(managerHtml, /id="start-region"/);
@@ -796,6 +796,27 @@ test('running video progress compares analyzed samples with the sampled-frame to
   assert.match(progress.textContent, /63\s*\/\s*3000 个抽样帧/);
   assert.match(progress.textContent, /已分析到 126\.0 秒/);
   assert.doesNotMatch(progress.textContent, /18000/);
+});
+
+test('moving camera results ask the manager to recheck the observation region', async () => {
+  const harness = managerHarness();
+  await flush();
+  harness.setVisionJobs([{
+    job_id: 'moving-video', status: 'completed', media_kind: 'video', original_name: 'moving.mp4',
+    result: {
+      metrics: { peak_vehicle_count: 3, motion_assessment: 'camera_motion_compensated' },
+      safety: { observation_region_reassociation_required: true },
+      candidates: [],
+    },
+  }]);
+  harness.intervalCallbacks[0]();
+  await flush();
+
+  const card = harness.elements.get('vision-jobs').children[0];
+  const summary = card.children.find((node) => node.className === 'vision-metrics');
+  const summaryText = descendants(summary).map((node) => node.textContent || '').join(' ');
+  assert.match(summaryText, /镜头移动后请重新核对观察区域与道路的对应关系/);
+  assert.match(summaryText, /轨迹运动补偿通过/);
 });
 
 function descendants(node) {

@@ -285,8 +285,10 @@ def analyze_observations(
 
     ``frame_transforms[i]`` maps coordinates in frame ``i-1`` to frame ``i``.
     A missing transform is treated as failed camera-motion estimation. A video
-    congestion candidate requires at least 80% valid frame-to-frame transforms,
+    track-motion estimate requires at least 80% valid frame-to-frame transforms,
     unless the manager explicitly declares a fixed or already stabilized camera.
+    Fixed image ROIs do not follow camera motion, so congestion/crowd candidates
+    still require that declaration and other views require region reassociation.
     """
     if frame_width <= 0 or frame_height <= 0 or sample_interval_s <= 0:
         raise ValueError("valid frame dimensions and sample interval are required")
@@ -616,6 +618,9 @@ def analyze_observations(
             "requires_human_review": True,
             "camera_motion_compensated": bool(motion_compensation_ready and not camera_stabilized),
             "camera_stabilized_assumed": bool(camera_stabilized),
+            "observation_region_reassociation_required": bool(
+                regions and transition_count > 0 and not camera_stabilized
+            ),
             "accident_recognition_supported": False,
             "pedestrian_region_required_for_crowding": True,
             "automatically_changes_routing": False,
